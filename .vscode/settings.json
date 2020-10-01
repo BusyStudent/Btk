@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "list": "cpp",
+        "thread": "cpp",
+        "mutex": "cpp",
+        "tuple": "cpp"
+    }
+}
