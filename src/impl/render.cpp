@@ -5,6 +5,7 @@ namespace Btk{
         if(render == nullptr){
             //...
         }
+        SDL_SetRenderDrawBlendMode(render,SDL_BLENDMODE_BLEND);
         current.h = 0;
         current.w = 0;
         current.x = 0;
@@ -19,7 +20,9 @@ namespace Btk{
         SDL_DestroyRenderer(render);
     }
     void RendererImpl::start(){
+        SDL_SetRenderDrawColor(render,color.r,color.g,color.b,color.a);
         SDL_RenderClear(render);
+        
     }
     void RendererImpl::done(){
         SDL_RenderPresent(render);

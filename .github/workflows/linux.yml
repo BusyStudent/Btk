@@ -1,0 +1,18 @@
+name: C/C++ CI on Linux
+on: [push]
+
+jobs:
+  build:
+    name: Build Btk
+    runs-on: ubuntu-latest
+    steps:
+    - name: configure
+      run: sudo apt update && sudo apt install libsdl2-ttf-dev libsdl2-dev libsdl2-gfx-dev libsdl2-ttf-dev libsdl2-image-dev -y
+    - uses: actions/checkout@v2
+    - name: setup xmake
+      uses: xmake-io/github-action-setup-xmake@v1
+      with:
+      # The version to use. Should be a semver range or 'latest'. Or use branch@{branch_name} to select a branch.
+        xmake-version: latest
+    - name: Build release
+      run: xmake -y

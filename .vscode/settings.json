@@ -3,6 +3,8 @@
         "list": "cpp",
         "thread": "cpp",
         "mutex": "cpp",
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "new": "cpp",
+        "string_view": "cpp"
     }
 }

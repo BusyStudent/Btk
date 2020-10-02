@@ -5,6 +5,12 @@ namespace Btk{
     struct RendererImpl{
         RendererImpl(SDL_Window *win);
         ~RendererImpl();
+        void set_color(SDL_Color c){
+            color.r = c.r;
+            color.g = c.g;
+            color.b = c.b;
+            color.a = c.a;
+        }
         void start();//Start for rendering
         void done();//Finished rendering
         SDL_Rect current;//Current Postions
