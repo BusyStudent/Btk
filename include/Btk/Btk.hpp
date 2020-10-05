@@ -6,7 +6,8 @@
 namespace Btk{
     typedef bool(*ExceptionHandler)(std::exception*);
     extern ExceptionHandler SetExceptionHandler(ExceptionHandler);
-    extern int Main();
+    extern void Init();
+    extern  int Main();
 };
 
 #endif // _BTK_HPP_

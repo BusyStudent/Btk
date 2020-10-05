@@ -11,4 +11,7 @@ namespace Btk{
     [[noreturn]] void throwSDLError(const char *err){
         throw SDLError(err);
     }
+    [[noreturn]] void throwRuntimeError(const char *str){
+        throw RuntimeError(str);
+    }
 }

@@ -1,12 +1,15 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include <cstdlib>
 #include <thread>
 #include <mutex>
 #include <unordered_map>
+#include <filesystem>
 
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/core.hpp>
+#include <Btk/exception.hpp>
 #include <Btk/defs.hpp>
 #include <Btk/Btk.hpp>
 #define Btk_defer ScopeGuard __GUARD__ = [&]()
@@ -23,25 +26,37 @@ namespace{
 };
 namespace Btk{
     System* System::instance = nullptr;
+    bool    System::is_running = false;
     void Init(){
         //Init Btk
         static std::once_flag flag;
         std::call_once(flag,[](){
             System::instance = new System();
             std::atexit([](){
+                if(System::is_running){
+                    //call exit during the eventlooping
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::Core]std::exit() is called");
+                    //fflush(stderr);
+                    std::abort();
+                    //throwRuntimeError("a uncepected error");
+                }
                 delete System::instance;
             });
         });
     }
     int Main(){
         static std::thread::id thid = std::this_thread::get_id();
-        static bool is_running = false;
-        if(thid != std::this_thread::get_id() or is_running == true){
+       
+        if(thid != std::this_thread::get_id() or System::is_running == true){
             //double call or call from another thread
             return -1;
         }
+        Btk_defer{
+            //Quit main
+            System::is_running = false;
+        };
         //resume from error
-        resume:is_running = true;
+        resume:System::is_running = true;
         try{
             
             System::instance->run();
@@ -75,16 +90,26 @@ namespace Btk{
         SDL_Init(SDL_INIT_VIDEO);
         defer_call_ev_id = SDL_RegisterEvents(1);
         if(defer_call_ev_id == (Uint32)-1){
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR,"Could not regitser event");
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
         }
+        if(TTF_Init() == -1){
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,"[System::TTF]Init failed");
+        }
+        
         #ifndef NDEBUG
+        SDL_version ver;
+        SDL_GetVersion(&ver);
         SDL_Log("[System::Core]Init SDL2 Platfrom %s",SDL_GetPlatform());
+        SDL_Log("[System::Core]SDL2 version: %d.%d.%d",ver.major,ver.major,ver.patch);
         #endif
     }
     System::~System(){
+        for(auto &handler:atexit_handlers){
+            handler();
+        }
         IMG_Quit();
+        TTF_Quit();
         SDL_Quit();
-        
     }
     //EventLoop
     void System::run(){
@@ -97,7 +122,7 @@ namespace Btk{
                     #endif
                     std::lock_guard<std::recursive_mutex> locker(map_mtx);
                     for(auto &win:wins_map){
-                        if(win.second->close()){
+                        if(win.second->on_close()){
                             //Close Window
                             
                             unregister_window(win.second);
@@ -119,6 +144,10 @@ namespace Btk{
                     on_dropev(event);
                     break;
                 }
+                case SDL_MOUSEMOTION:{
+                    on_mousemotion(event);
+                    break;
+                }
                 default:{
                     if(event.type == defer_call_ev_id){
                         //defer call
@@ -128,6 +157,21 @@ namespace Btk{
                         SDL_Log("[System::EventDispather]call %p data = %p",fn,event.user.data2);
                         #endif
                         fn(event.user.data2);
+                    }
+                    else{
+                        //get function from event callbacks map
+                        auto iter = evcbs_map.find(event.type);
+                        if(iter != evcbs_map.end()){
+                            iter->second(event);
+                        }
+                        else{
+                            SDL_LogWarn(
+                                SDL_LOG_CATEGORY_APPLICATION,
+                                "[System::EventDispather]unknown event id %d timestamp %d",
+                                event.type,
+                                SDL_GetTicks()
+                            );
+                        }
                     }
                 }
             }
@@ -151,7 +195,7 @@ namespace Btk{
             }
             case SDL_WINDOWEVENT_CLOSE:{
                 //Close window;
-                if(win->close()){
+                if(win->on_close()){
                     //success to close
                     //Delete Wnidow;
                     unregister_window(win);
@@ -162,7 +206,15 @@ namespace Btk{
                 }
                 break;
             }
+            case SDL_WINDOWEVENT_RESIZED:{
+                //window resize
+                win->on_resize(event.window.data1,event.window.data2);
+                break;
+            }
         }
+    }
+    void System::on_mousemotion(SDL_Event &){
+        //....
     }
     //DropFile
     void System::on_dropev(SDL_Event &event){
@@ -175,7 +227,7 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        win->dropfile(event.drop.file);
+        win->on_dropfile(event.drop.file);
     }
     void System::register_window(WindowImpl *impl){
         if(impl == nullptr){
@@ -198,6 +250,7 @@ namespace Btk{
         auto iter = wins_map.find(winid);
         if(iter == wins_map.end()){
             //Handle err
+            SDL_LogWarn(SDL_LOG_CATEGORY_SYSTEM,"[System::WindowsManager]cannot get window %d",winid);
         }
         else{
             //erase it
@@ -215,11 +268,16 @@ namespace Btk{
         event.user.data2 = data;
         SDL_PushEvent(&event);
     }
+    //register a exit handler
+    void System::atexit(std::function<void()> &&fn){
+        atexit_handlers.push_back(fn);
+    }
     WindowImpl *System::get_window(Uint32 winid){
         auto iter = wins_map.find(winid);
         if(iter == wins_map.end()){
-            //Error
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System]:cannot get window %d",winid);
+            //Warn
+            //maybe the window is closed
+            SDL_LogWarn(SDL_LOG_CATEGORY_SYSTEM,"[System::WindowsManager]cannot get window %d",winid);
             return nullptr;
         }
         else{
@@ -227,9 +285,13 @@ namespace Btk{
         }
     }
     void Exit(int code){
-        System::instance->defer_call([](void*){
-            throw int(1);
-        });
+        //FIXME possible memory leak on here
+        int *value = new int(code);
+        System::instance->defer_call([](void *ptr){
+            int v = *static_cast<int*>(ptr);
+            delete ptr;
+            throw v;
+        },value);
     }
     ExceptionHandler SetExceptionHandler(ExceptionHandler handler){
         ExceptionHandler current = System::instance->handle_exception;

@@ -6,6 +6,7 @@
 #include "defs.hpp"
 namespace Btk{
     struct WindowImpl;
+    class Surface;
     class BTKAPI Window{
         public:
             //callback functions
@@ -25,18 +26,24 @@ namespace Btk{
             }
             //Move window position
             void move(int x,int y);
-
             void show();
             void draw();
+            void close();//try close window
             void present();
             bool mainloop();
+            //Get window surface
+            Surface surface();
             //Set window title
             void set_title(std::string_view title);
             //Set window Icon
             void set_icon(std::string_view file);
+            void set_icon(const Surface &surf);
             //Set callback
             void on_close(const OnCloseFunc &);
             void on_dropfile(const OnDropFileFunc &);
+            //Get information
+            int w() const noexcept;//get w
+            int h() const noexcept;//get h
         private:
             WindowImpl *pimpl;
     };

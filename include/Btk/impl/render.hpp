@@ -11,6 +11,20 @@ namespace Btk{
             color.b = c.b;
             color.a = c.a;
         }
+        //Draw something
+        void line(int x1,int y1,int x2,int y2);
+        void aaline(int x1,int y1,int x2,int y2);
+        //fill a rect
+        void fill_rect(const SDL_Rect &);
+        //draw a rect
+        void draw_rect(const SDL_Rect &);
+        //some alias
+        inline void rect(const SDL_Rect &r){
+            fill_rect(r);
+        }
+        inline void box(const SDL_Rect &r){
+            draw_rect(r);
+        }
         void start();//Start for rendering
         void done();//Finished rendering
         SDL_Rect current;//Current Postions
