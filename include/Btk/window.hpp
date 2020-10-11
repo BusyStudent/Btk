@@ -7,6 +7,7 @@
 namespace Btk{
     struct WindowImpl;
     class Surface;
+    class Widget;
     class BTKAPI Window{
         public:
             //callback functions
@@ -23,6 +24,14 @@ namespace Btk{
             //Get impl
             inline WindowImpl *impl() const noexcept{
                 return pimpl;
+            }
+            //add widget
+            bool add(Widget *ptr);
+            template<class T,class ...Args>
+            T &add(Args &&...args){
+                T *ptr = new T(std::forward<Args>(args)...);
+                add(ptr);
+                return *ptr;
             }
             //Move window position
             void move(int x,int y);

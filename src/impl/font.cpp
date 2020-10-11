@@ -13,16 +13,6 @@
 #ifdef BTK_USE_FONTCONFIG
     #include <fontconfig/fontconfig.h>
 #endif
-namespace{
-    inline SDL_Color translate_color(Btk::Color color){
-        return SDL_Color{
-            .r = color.r,
-            .g = color.g,
-            .b = color.b,
-            .a = color.a
-        };
-    }
-};
 namespace Btk{
     //Font
     FontImpl::FontImpl(std::string_view fname,int size){
@@ -71,7 +61,7 @@ namespace Btk{
         return pimpl->ptsize;
     }
     Surface Font::render_solid(std::string_view text,Color color){
-        SDL_Surface *surf = TTF_RenderUTF8_Solid(pimpl->font,text.data(),translate_color(color));
+        SDL_Surface *surf = TTF_RenderUTF8_Solid(pimpl->font,text.data(),color);
         if(surf == nullptr){
             throwSDLError(TTF_GetError());
         }
@@ -81,8 +71,8 @@ namespace Btk{
         SDL_Surface *surf = TTF_RenderUTF8_Shaded(
             pimpl->font,
             text.data(),
-            translate_color(fg),
-            translate_color(bg)
+            fg,
+            bg
         );
         
         if(surf == nullptr){
@@ -91,7 +81,7 @@ namespace Btk{
         return surf;
     }
     Surface Font::render_blended(std::string_view text,Color color){
-        SDL_Surface *surf = TTF_RenderUTF8_Blended(pimpl->font,text.data(),translate_color(color));
+        SDL_Surface *surf = TTF_RenderUTF8_Blended(pimpl->font,text.data(),color);
         if(surf == nullptr){
             throwSDLError(TTF_GetError());
         }

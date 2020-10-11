@@ -5,10 +5,11 @@
 #include <string_view>
 #include <functional>
 #include <list>
+#include "render.hpp"
 namespace Btk{
     //Impl for Window
-    struct RendererImpl;
-    struct WidgetImpl;
+    struct Renderer;
+    struct Widget;
     struct WindowImpl{
         //Init SDL Window
         WindowImpl(const char *title,int x,int y,int w,int h,int flags);
@@ -25,14 +26,16 @@ namespace Btk{
         void ref();//ref the  object
 
         SDL_Window *win;
-        RendererImpl *render;
+        Renderer    render;
         //callbacks
         std::function<bool()> onclose_cb;//CloseWIndow
         std::function<void(std::string_view)> ondropfile_cb;//DropFile
         //widgets
-        std::list<WidgetImpl*> widgets_list;
+        std::list<Widget*> widgets_list;
         //refcount
         int refcount;
+        //BackGroud Color
+        SDL_Color bg_color;
     };
 };
 

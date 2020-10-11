@@ -1,11 +1,11 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_filesystem.h>
 #include <cstdlib>
 #include <thread>
 #include <mutex>
 #include <unordered_map>
-#include <filesystem>
 
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/core.hpp>
@@ -22,6 +22,15 @@ namespace{
             fn();
         }
         T &fn;
+    };
+    void defer_call_cb(SDL_Event &ev,void *){
+        //defer call
+        typedef void (*defer_fn_t)(void*);
+        defer_fn_t fn = reinterpret_cast<defer_fn_t>(ev.user.data1);
+        #ifndef NDEBUG
+            SDL_Log("[System::EventDispather]call %p data = %p",fn,ev.user.data2);
+        #endif
+        fn(ev.user.data2);
     };
 };
 namespace Btk{
@@ -73,7 +82,7 @@ namespace Btk{
                     goto resume;
                 }
             }
-            std::abort();
+            throw;
         }
         catch(...){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::GetException]Unknown");
@@ -82,7 +91,7 @@ namespace Btk{
                     goto resume;
                 }
             }
-            std::abort();
+            throw;
         }
         return 0;
     }
@@ -91,6 +100,10 @@ namespace Btk{
         defer_call_ev_id = SDL_RegisterEvents(1);
         if(defer_call_ev_id == (Uint32)-1){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
+        }
+        else{
+            //regitser handler
+            regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
         }
         if(TTF_Init() == -1){
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,"[System::TTF]Init failed");
@@ -149,29 +162,18 @@ namespace Btk{
                     break;
                 }
                 default:{
-                    if(event.type == defer_call_ev_id){
-                        //defer call
-                        typedef void(*defer_fn_t)(void*);
-                        defer_fn_t fn = reinterpret_cast<defer_fn_t>(event.user.data1);
-                        #ifndef NDEBUG
-                        SDL_Log("[System::EventDispather]call %p data = %p",fn,event.user.data2);
-                        #endif
-                        fn(event.user.data2);
+                    //get function from event callbacks map
+                    auto iter = evcbs_map.find(event.type);
+                    if(iter != evcbs_map.end()){
+                        iter->second(event);
                     }
                     else{
-                        //get function from event callbacks map
-                        auto iter = evcbs_map.find(event.type);
-                        if(iter != evcbs_map.end()){
-                            iter->second(event);
-                        }
-                        else{
-                            SDL_LogWarn(
-                                SDL_LOG_CATEGORY_APPLICATION,
-                                "[System::EventDispather]unknown event id %d timestamp %d",
-                                event.type,
-                                SDL_GetTicks()
-                            );
-                        }
+                        SDL_LogWarn(
+                            SDL_LOG_CATEGORY_APPLICATION,
+                            "[System::EventDispather]unknown event id %d timestamp %d",
+                            event.type,
+                            SDL_GetTicks()
+                        );
                     }
                 }
             }
@@ -269,8 +271,24 @@ namespace Btk{
         SDL_PushEvent(&event);
     }
     //register a exit handler
-    void System::atexit(std::function<void()> &&fn){
-        atexit_handlers.push_back(fn);
+    void System::atexit(void (*fn)(void *),void *data){
+        atexit_handlers.push_back({
+            fn,
+            data
+        });
+    }
+    //std c handlers
+    void System::atexit(void (*fn)()){
+        System::atexit([](void *fn){
+            (reinterpret_cast<void(*)()>(fn))();
+        },reinterpret_cast<void*>(fn));
+    }
+    //event callbacks cb
+    void System::regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data){
+        evcbs_map[evid] = {
+            ptr,
+            data
+        };
     }
     WindowImpl *System::get_window(Uint32 winid){
         auto iter = wins_map.find(winid);

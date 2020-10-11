@@ -1,7 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #ifdef BTK_USE_GFX
-    #include <SDL2/SDL2_rotozoom.h>
+    #include "../thirdparty/SDL2_rotozoom.h"
 #endif
 
 #include <Btk/exception.hpp>

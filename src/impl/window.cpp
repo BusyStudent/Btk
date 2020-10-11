@@ -1,13 +1,14 @@
 #include <SDL2/SDL_image.h>
 
 #include <Btk/impl/window.hpp>
-#include <Btk/impl/widget.hpp>
 #include <Btk/impl/render.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
+#include <Btk/widget.hpp>
 namespace Btk{
+    
     WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags){
         refcount = 0;//default refcount
         //Btk::Window doesnnot has it ownship
@@ -16,34 +17,40 @@ namespace Btk{
         win = SDL_CreateWindow(title,x,y,w,h,flags);
         if(win == nullptr){
             //Handle err....
+            throwSDLError();
         }
-        render = new RendererImpl(win);
-        render->set_color({
+        render = SDL_CreateRenderer(win,-1,SDL_RENDERER_ACCELERATED);
+        if(render == nullptr){
+            throwSDLError();
+        }
+        bg_color = {
             255,
             255,
             255,
             255
-        });
+        };
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
         for(auto widget:widgets_list){
             delete widget;
         }
-        delete render;
+        SDL_DestroyRenderer(*render);
         SDL_DestroyWindow(win);
+
+        render = nullptr;
     }
     //Draw window
     void WindowImpl::draw(){
         #ifndef NDEBUG
         SDL_Log("[System::Renderer]Draw Window %p",win);
         #endif
-        render->start();
+        render.start(bg_color);
         //Draw each widget
         for(auto widget:widgets_list){
-            widget->draw();
+            widget->draw(render);
         }
-        render->done();
+        render.done();
     }
     //TryCloseWIndow
     bool WindowImpl::on_close(){
@@ -73,7 +80,7 @@ namespace Btk{
     }
     void WindowImpl::pixels_size(int *w,int *h){
         //SDL_GetWindowSize(win,w,h);
-        SDL_GetRendererOutputSize(render->render,w,h);
+        SDL_GetRendererOutputSize(*render,w,h);
     }
 }
 namespace Btk{
@@ -156,5 +163,15 @@ namespace Btk{
         int h;
         SDL_GetWindowSize(pimpl->win,nullptr,&h);
         return h;
+    }
+    //add widget
+    bool Window::add(Widget *ptr){
+        if(ptr == nullptr){
+            return false;
+        }
+        else{
+            pimpl->widgets_list.push_back(ptr);
+            return true;
+        }
     }
 }

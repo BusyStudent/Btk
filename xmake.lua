@@ -2,8 +2,6 @@ add_rules("mode.debug", "mode.release")
 --add SDL require
 add_requires("SDL2","SDL2_image","SDL2_ttf")
 
-add_requires("SDL2_gfx")
-
 add_cxxflags("-std=c++17","-Wall","-Wextra")
 add_includedirs("include")
 
@@ -16,11 +14,8 @@ target("btk")
     on_load(function(target)
         target:add(find_packages("SDL2","SDL2_image","SDL2_ttf","SDL2_gfx","fontconfig"))
     end)
-    if has_package("SDL2_gfx") then
-        add_defines("BTK_USE_GFX")
-        add_links("SDL2_gfx")
-    end
-
+    add_defines("BTK_USE_GFX")
+    add_defines("USE_MMX")
     if is_plat("linux") then
         add_links("fontconfig")
     end
@@ -32,6 +27,8 @@ target("btk")
     add_files("./src/*.cpp")
     --widgets
     add_files("./src/widgets/*.cpp")
+    --SDL_gfx
+    add_files("./src/thirdparty/*.c")
     
 target("hello")
     set_kind("binary")

@@ -2,14 +2,15 @@
 #define _BTK_WIDGET_HPP_
 
 namespace Btk{
-    struct WidgetImpl;
+    class Renderer;
+    class Window;
     class Widget{
         public:
             //some method
-            ~Widget();
-            void draw();
+            virtual ~Widget();
+            virtual void draw(Renderer &render) = 0;
         protected:
-            WidgetImpl *pimpl;
+            Window *win;
     };
 };
 

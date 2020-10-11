@@ -1,55 +1,39 @@
 #include <Btk/impl/render.hpp>
 #include <Btk/exception.hpp>
 #ifdef BTK_USE_GFX
-    #include <SDL2/SDL2_gfxPrimitives.h>
+    #include "../thirdparty/SDL2_gfxPrimitives.h"
 #endif
+#define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
 namespace Btk{
-    RendererImpl::RendererImpl(SDL_Window *win){
-        render = SDL_CreateRenderer(win,-1,SDL_RENDERER_ACCELERATED);
-        if(render == nullptr){
-            //...
-            throwSDLError();
-        }
-        SDL_SetRenderDrawBlendMode(render,SDL_BLENDMODE_BLEND);
-        current.h = 0;
-        current.w = 0;
-        current.x = 0;
-        current.y = 0;
-
-        color.a = 0;
-        color.r = 0;
-        color.g = 0;
-        color.b = 0;
-    }
-    RendererImpl::~RendererImpl(){
+    Renderer::~Renderer(){
         SDL_DestroyRenderer(render);
     }
-    void RendererImpl::start(){
-        SDL_SetRenderDrawColor(render,color.r,color.g,color.b,color.a);
+    void Renderer::start(SDL_Color bgcolor){
+        SDL_SetRenderDrawColor(render,UNPACK_COLOR(bgcolor));
         SDL_RenderClear(render);
         
     }
-    void RendererImpl::done(){
+    void Renderer::done(){
         SDL_RenderPresent(render);
     }
     //Draw something
-    void RendererImpl::line(int x1,int y1,int x2,int y2){
+    void Renderer::line(int x1,int y1,int x2,int y2,SDL_Color color){
         #ifdef BTK_USE_GFX
-        lineRGBA(render,x1,y1,x2,y2,color.r,color.g,color.b,color.a);
+        lineRGBA(render,x1,y1,x2,y2,UNPACK_COLOR(color));
         #else
-        SDL_SetRenderDrawColor(render,color.r,color.g,color.b,color.a);
+        SDL_SetRenderDrawColor(render,UNPACK_COLOR(bgcolor));
         SDL_RenderDrawLine(render,x1,y1,x2,y2);
         #endif
     }
-    void RendererImpl::aaline(int x1,int y1,int x2,int y2){
+    void Renderer::aaline(int x1,int y1,int x2,int y2,SDL_Color color){
         #ifdef BTK_USE_GFX
-        aalineRGBA(render,x1,y1,x2,y2,color.r,color.g,color.b,color.a);
+        aalineRGBA(render,x1,y1,x2,y2,UNPACK_COLOR(color));
         #else
         //doesnot support
-        RendererImpl::line(x1,y1,x2,y2);
+        Renderer::line(x1,y1,x2,y2);
         #endif
     }
-    void RendererImpl::draw_rect(const SDL_Rect &rect){
+    void Renderer::draw_rect(const SDL_Rect &rect,SDL_Color color){
         #ifdef BTK_USE_GFX
         rectangleRGBA(
             render,
@@ -57,17 +41,14 @@ namespace Btk{
             rect.y,
             rect.x + rect.w,
             rect.y + rect.h,
-            color.r,
-            color.g,
-            color.b,
-            color.a
+            UNPACK_COLOR(color)
         );
         #else
-        SDL_SetRenderDrawColor(render,color.r,color.g,color.b,color.a);
+        SDL_SetRenderDrawColor(render,UNPACK_COLOR(color));
         SDL_RenderDrawRect(render,&rect);
         #endif
     }
-    void RendererImpl::fill_rect(const SDL_Rect &rect){
+    void Renderer::fill_rect(const SDL_Rect &rect,SDL_Color color){
         #ifdef BTK_USE_GFX
         boxRGBA(
             render,
@@ -75,13 +56,10 @@ namespace Btk{
             rect.y,
             rect.x + rect.w,
             rect.y + rect.h,
-            color.r,
-            color.g,
-            color.b,
-            color.a
+            UNPACK_COLOR(color)
         );
         #else
-        SDL_SetRenderDrawColor(render,color.r,color.g,color.b,color.a);
+        SDL_SetRenderDrawColor(render,UNPACK_COLOR(color));
         SDL_RenderFillRect(render,&rect);
         #endif
     }

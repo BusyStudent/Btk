@@ -4,17 +4,13 @@
 #include <cstdlib>
 #include <cstddef>
 #include <iosfwd>
+#include <SDL2/SDL_pixels.h>
 struct SDL_Surface;
 namespace Btk{
     //Surface 
     class RWops;
     //like sdl color structure
-    struct Color{
-        uint8_t r;
-        uint8_t g;
-        uint8_t b;
-        uint8_t a;
-    };
+    typedef SDL_Color Color;
     class Surface{
         public:
             
