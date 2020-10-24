@@ -3,6 +3,7 @@
 #include <string_view>
 #include <functional>
 #include <string>
+#include "signal/signal.hpp"
 #include "defs.hpp"
 namespace Btk{
     struct WindowImpl;
@@ -10,9 +11,9 @@ namespace Btk{
     class Widget;
     class BTKAPI Window{
         public:
-            //callback functions
-            typedef std::function<bool()> OnCloseFunc;
-            typedef std::function<void(std::string_view)> OnDropFileFunc;
+            //Signals
+            typedef Signal<bool()> SignalClose;
+            typedef Signal<void(std::string_view)> SignalDropFile;
         public:
             Window():pimpl(nullptr){};
             Window(const Window &) = delete;
@@ -47,9 +48,18 @@ namespace Btk{
             //Set window Icon
             void set_icon(std::string_view file);
             void set_icon(const Surface &surf);
-            //Set callback
-            void on_close(const OnCloseFunc &);
-            void on_dropfile(const OnDropFileFunc &);
+            //Set Callbacks
+            template<class T>
+            void on_close(T &&callable){
+                sig_close().connect(std::forward<T>(callable));
+            }
+            template<class T>
+            void on_dropfile(T &&callable){
+                sig_dropfile().connect(std::forward<T>(callable));
+            }
+            //Connect Signals
+            SignalClose&    sig_close();
+            SignalDropFile& sig_dropfile();
             //Get information
             int w() const noexcept;//get w
             int h() const noexcept;//get h

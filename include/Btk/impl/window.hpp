@@ -5,6 +5,7 @@
 #include <string_view>
 #include <functional>
 #include <list>
+#include "../signal/signal.hpp"
 #include "render.hpp"
 namespace Btk{
     //Impl for Window
@@ -28,8 +29,8 @@ namespace Btk{
         SDL_Window *win;
         Renderer    render;
         //callbacks
-        std::function<bool()> onclose_cb;//CloseWIndow
-        std::function<void(std::string_view)> ondropfile_cb;//DropFile
+        Signal<bool()> onclose_cb;//CloseWIndow
+        Signal<void(std::string_view)> ondropfile_cb;//DropFile
         //widgets
         std::list<Widget*> widgets_list;
         //refcount

@@ -65,6 +65,8 @@
         "valarray": "cpp",
         "variant": "cpp",
         "filesystem": "cpp",
-        "*.xpm": "cpp"
+        "*.xpm": "cpp",
+        "*.ipp": "cpp",
+        "forward_list": "cpp"
     }
 }

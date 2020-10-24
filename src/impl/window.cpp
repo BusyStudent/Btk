@@ -99,11 +99,11 @@ namespace Btk{
     bool Window::mainloop(){
         return Main() == 0;
     }
-    void Window::on_close(const OnCloseFunc &fn){
-        pimpl->onclose_cb = fn;
+    Window::SignalClose &Window::sig_close(){
+        return pimpl->onclose_cb;
     }
-    void Window::on_dropfile(const OnDropFileFunc &fn){
-        pimpl->ondropfile_cb = fn;
+    Window::SignalDropFile& Window::sig_dropfile(){
+        return pimpl->ondropfile_cb;
     }
     void Window::set_title(std::string_view title){
         SDL_SetWindowTitle(pimpl->win,title.data());
