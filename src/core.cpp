@@ -8,21 +8,12 @@
 #include <unordered_map>
 
 #include <Btk/impl/window.hpp>
+#include <Btk/impl/scope.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/defs.hpp>
 #include <Btk/Btk.hpp>
-#define Btk_defer ScopeGuard __GUARD__ = [&]()
 namespace{
-    //ScopeGuard
-    template<class T>
-    struct ScopeGuard{
-        inline ScopeGuard(T &&f):fn(f){}
-        inline ~ScopeGuard(){
-            fn();
-        }
-        T &fn;
-    };
     void defer_call_cb(SDL_Event &ev,void *){
         //defer call
         typedef void (*defer_fn_t)(void*);
@@ -38,20 +29,7 @@ namespace Btk{
     bool    System::is_running = false;
     void Init(){
         //Init Btk
-        static std::once_flag flag;
-        std::call_once(flag,[](){
-            System::instance = new System();
-            std::atexit([](){
-                if(System::is_running){
-                    //call exit during the eventlooping
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::Core]std::exit() is called");
-                    //fflush(stderr);
-                    std::abort();
-                    //throwRuntimeError("a uncepected error");
-                }
-                delete System::instance;
-            });
-        });
+        System::Init();
     }
     int Main(){
         static std::thread::id thid = std::this_thread::get_id();
@@ -96,7 +74,6 @@ namespace Btk{
         return 0;
     }
     System::System(){
-        SDL_Init(SDL_INIT_VIDEO);
         defer_call_ev_id = SDL_RegisterEvents(1);
         if(defer_call_ev_id == (Uint32)-1){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
@@ -105,23 +82,47 @@ namespace Btk{
             //regitser handler
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
         }
-        if(TTF_Init() == -1){
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,"[System::TTF]Init failed");
-        }
-        
-        #ifndef NDEBUG
-        SDL_version ver;
-        SDL_GetVersion(&ver);
-        SDL_Log("[System::Core]Init SDL2 Platfrom %s",SDL_GetPlatform());
-        SDL_Log("[System::Core]SDL2 version: %d.%d.%d",ver.major,ver.major,ver.patch);
-        #endif
     }
     System::~System(){
+        //run all exit handlers
         for(auto &handler:atexit_handlers){
             handler();
         }
+    }
+    //Init or Quit
+    int  System::Init(){
+        if(instance == nullptr){
+            if(SDL_Init(SDL_INIT_VIDEO) == -1){
+                //Failed to init
+                return -1;
+            }
+            #ifndef NDEBUG
+            //show detail version
+            SDL_version ver;
+            const SDL_version *iver = IMG_Linked_Version();
+            SDL_GetVersion(&ver);
+            SDL_Log("[System::Core]Init SDL2 Platfrom %s",SDL_GetPlatform());
+            SDL_Log("[System::Core]SDL2 version: %d.%d.%d",ver.major,ver.major,ver.patch);
+            SDL_Log("[System::Core]SDL2 image version: %d.%d.%d",iver->major,iver->major,iver->patch);
+            #endif
+            //Create instance
+            instance = new System();
+            //regitser atexit callback
+            std::atexit(System::Quit);
+        }
+        return 1;
+    }
+    //Global Cleanup
+    void System::Quit(){
+        if(instance->is_running){
+            abort();
+        }
+        //delete instance to cleanup windows
+        delete instance;
+        instance = nullptr;
+        //Quit SDL
         IMG_Quit();
-        TTF_Quit();
+        //TTF_Quit();
         SDL_Quit();
     }
     //EventLoop

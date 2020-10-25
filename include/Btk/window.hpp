@@ -9,7 +9,7 @@ namespace Btk{
     struct WindowImpl;
     class Surface;
     class Widget;
-    class BTKAPI Window{
+    class BTKAPI Window:public HasSlots{
         public:
             //Signals
             typedef Signal<bool()> SignalClose;

@@ -30,6 +30,45 @@ namespace Btk{
             return Surface(surf);
         }
     }
+    //save surface
+    void Surface::save_bmp(RWops &rw){
+        if(SDL_SaveBMP_RW(surf,rw.get(),false) == -1){
+            throwSDLError();
+        }
+    }
+    void Surface::save_jpg(RWops &rw,int quality){
+        if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
+            throwSDLError();
+        }
+    }
+    void Surface::save_png(RWops &rw,int quality){
+        if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
+            throwSDLError();
+        }
+    }
+
+    void Surface::save_bmp(std::string_view fname){
+        auto rw = RWops::FromFile(fname.data(),"rb");
+        Surface::save_bmp(rw);
+    }
+    void Surface::save_jpg(std::string_view fname,int quality){
+        auto rw = RWops::FromFile(fname.data(),"rb");
+        Surface::save_jpg(rw,quality);
+    }
+    void Surface::save_png(std::string_view fname,int quality){
+        auto rw = RWops::FromFile(fname.data(),"rb");
+        Surface::save_png(rw,quality);
+    }
+    //operators
+    Surface &Surface::operator =(SDL_Surface *sf){
+        SDL_FreeSurface(surf);
+        surf = sf;
+    }
+    Surface &Surface::operator =(Surface &&sf){
+        SDL_FreeSurface(surf);
+        surf = sf.surf;
+        sf.surf = nullptr;
+    }
     //static method
     Surface Surface::FromMem(const void *mem,size_t size){
         SDL_Surface *surf = IMG_Load_RW(SDL_RWFromConstMem(mem,size),true);
@@ -61,5 +100,9 @@ namespace Btk{
             throwSDLError();
         }
         return Surface(surf);
+    }
+    //Textures
+    Texture::~Texture(){
+        SDL_DestroyTexture(texture);
     }
 };

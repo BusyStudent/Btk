@@ -16,22 +16,8 @@
 namespace Btk{
     //Font
     FontImpl::FontImpl(std::string_view fname,int size){
-        #ifdef BTK_USE_FONTCONFIG
-        //Init Fontconfig
-        static std::once_flag flag;
-        std::call_once(flag,[](){
-            Btk::Init();
-            if(FcInit() == FcTrue){
-                System::instance->atexit(FcFini);
-            }
-            else{
-                //Handle err...
-            }
-        });
-        #else
-        //Init Main System
-        Btk::Init();
-        #endif
+        //Init Font System
+        InitFontSystem();
 
         font  = TTF_OpenFont(fname.data(),size);
         if(font == nullptr){

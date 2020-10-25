@@ -17,6 +17,7 @@ target("btk")
     add_defines("BTK_USE_GFX")
     add_defines("USE_MMX")
     if is_plat("linux") then
+        add_files("./src/platfrom/x11_fontconfig.cpp")
         add_links("fontconfig")
     end
     add_links("SDL2","SDL2_image","SDL2_ttf")
@@ -29,7 +30,8 @@ target("btk")
     add_files("./src/widgets/*.cpp")
     --SDL_gfx
     add_files("./src/thirdparty/*.c")
-    
+    --Themes
+    add_files("./src/themes/*.cpp")
 target("hello")
     set_kind("binary")
     add_files("./tests/hello.cpp")

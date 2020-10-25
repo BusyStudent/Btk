@@ -57,6 +57,9 @@ namespace Btk{
         void atexit(void (*fn)());
 
         void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data);
+        //Init Global
+        static int  Init();
+        static void Quit();
     };
     extern int  Main();
     extern void Init();

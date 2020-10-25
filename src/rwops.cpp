@@ -1,5 +1,8 @@
 #include <SDL2/SDL.h>
+#include <Btk/exception.hpp>
 #include <Btk/rwops.hpp>
+#include <cstring>
+#include <cstdlib>
 #include <istream>
 #include <ostream>
 #include <fstream>
@@ -167,6 +170,13 @@ namespace Btk{
         
         return fptr;
     }
+    RWops RWops::FromFile(const char *fname,const char *modes){
+        SDL_RWops *rw = SDL_RWFromFile(fname,modes);
+        if(rw == nullptr){
+            throwSDLError();
+        }
+        return rw;
+    }
     //close rwops
     bool RWops::close(){
         if(fptr != nullptr){
@@ -176,5 +186,151 @@ namespace Btk{
         }
         
         return false;
+    }
+    //Function to cast 
+    inline MemBuffer &GetMemBuffer(SDL_RWops *ctxt){
+        return *static_cast<MemBuffer*>(
+            ctxt->hidden.unknown.data1
+        );
+    }
+    //MemBuffer
+    MemBuffer::MemBuffer():
+        RWops(SDL_AllocRW()){
+        
+        buf_base = nullptr;
+        buf_ptr = nullptr;
+        buf_end = nullptr;
+        //set current
+        //use it to set object pointer
+        fptr->hidden.unknown.data1 = this;
+
+        fptr->type = SDL_RWOPS_UNKNOWN;
+        fptr->size = [](SDL_RWops *ctxt) -> Sint64{
+            //return buffer capcitity
+            return GetMemBuffer(ctxt).capcitity();
+        };
+        fptr->seek = [](SDL_RWops *ctxt,Sint64 offset,int whence) -> Sint64{
+            return GetMemBuffer(ctxt).seek(offset,whence);
+        };
+        fptr->write = [](SDL_RWops *ctxt,const void *buf,size_t size,size_t n) -> size_t{
+            return GetMemBuffer(ctxt).write(buf,size,n);
+        };
+        fptr->read  = [](SDL_RWops *ctxt,void *buf,size_t size,size_t n) -> size_t{
+            return GetMemBuffer(ctxt).read(buf,size,n);
+        };
+        fptr->close = [](SDL_RWops *ctxt) -> int{
+            MemBuffer &buf = GetMemBuffer(ctxt);
+            if(buf.buf_base != nullptr){
+                //Free memory
+                std::free(buf.buf_base);
+            }
+            buf.buf_base = nullptr;
+            buf.buf_ptr = nullptr;
+            buf.buf_end = nullptr;
+            return true;
+        };
+    }
+    MemBuffer::MemBuffer(MemBuffer &&buf):RWops(std::move(buf)){
+        
+        fptr->hidden.unknown.data1 = this;
+    }
+    MemBuffer::~MemBuffer(){
+
+    }
+    //methods
+    Sint64 MemBuffer::tellp() const noexcept{
+        return buf_ptr - buf_base;
+    }
+    size_t MemBuffer::write(const void *buf,size_t num,size_t n){
+        size_t size = num * n;
+        if(buf_ptr + size > buf_end){
+            //overflow
+            //begin realloc
+            
+            size_t cur = buf_ptr - buf_base;//restore current pos
+            size_t end = buf_ptr - buf_base;//restore end pos
+
+            uint8_t *new_ptr = (uint8_t*) realloc(buf_base,size + capcitity());
+            if(new_ptr == nullptr){
+                //failed
+                SDL_OutOfMemory();
+                return 0;
+            }
+            else{
+                buf_base = new_ptr;
+
+                buf_ptr = buf_base + cur;
+                buf_end = buf_base + end;
+            }
+        }
+        //memcpy
+        memcpy(buf_ptr,buf,size);
+
+        buf_ptr += size;
+
+        return n;
+    }
+    size_t MemBuffer::read(void *buf,size_t size,size_t n){
+        size_t rest = buf_end - buf_ptr;
+        //rest data blocks
+        if(rest == 0){
+            //doesnnot have data
+            SDL_Error(SDL_EFREAD);
+            return 0;
+        }
+        size_t blcoks = rest % size;//useable blocks
+        memcpy(buf,buf_ptr,blcoks * size);
+
+        buf_ptr += (blcoks * size);
+
+        return blcoks;
+    }
+
+    Sint64 MemBuffer::seek(Sint64 offset,int whence){
+        switch(whence){
+            case RW_SEEK_CUR:{
+                //from current pos
+                if(buf_ptr + offset <= buf_end){
+                    buf_ptr += offset;
+                    //return current pos
+                    return buf_ptr - buf_base;
+                }
+                else{
+                    return -1;
+                }
+            };
+            case RW_SEEK_SET:{
+                //from buf begin
+                if(buf_base + offset <= buf_end){
+                    buf_ptr = buf_base + offset;
+                    //return current pos
+                    return offset;
+                }
+                else{
+                    return -1;
+                }
+            };
+            case RW_SEEK_END:{
+                //from buf end
+                if(buf_end + offset <= buf_end){
+                    buf_ptr += offset;
+                    //return current pos
+                    return buf_ptr - buf_base;
+                }
+                else{
+                    return -1;
+                }
+                break;
+            };
+            default:
+                SDL_Unsupported();
+                return -1;
+        }
+    }
+    std::ostream &operator <<(std::ostream &str,const MemBuffer &buf){
+        if(buf.buf_base != nullptr){
+            str.write((char*)buf.buf_base,buf.size());
+        }
+        return str;
     }
 };

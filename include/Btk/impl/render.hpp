@@ -2,6 +2,8 @@
 #define _BTKIMPL_RENDER_HPP_
 #include <SDL2/SDL_render.h>
 namespace Btk{
+    class Surface;
+    class Texture;
     struct Renderer{
 
         Renderer(SDL_Renderer *ren = nullptr):render(ren){};
@@ -13,6 +15,8 @@ namespace Btk{
         void fill_rect(const SDL_Rect &,SDL_Color c);
         //draw a rect
         void draw_rect(const SDL_Rect &,SDL_Color c);
+        void rounded_box(const SDL_Rect &,int rad,SDL_Color c);
+        void rounded_rect(const SDL_Rect &,int rad,SDL_Color c);
         //some alias
         inline void rect(const SDL_Rect &r,SDL_Color c){
             fill_rect(r,c);
@@ -33,8 +37,14 @@ namespace Btk{
         }
         void start(SDL_Color bgcolor);//Start for rendering
         void done();//Finished rendering
+        //texture methods
+        //create texture
+        Texture create_from(const Surface &surf);
+        Surface dump_texture(const Texture &);//dump texture to surface
+
         SDL_Renderer *render;
     };
+    
 };
 
 
