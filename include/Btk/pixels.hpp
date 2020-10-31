@@ -45,6 +45,13 @@ namespace Btk{
             
             Surface &operator =(SDL_Surface *);//assign
             Surface &operator =(Surface &&);//assign
+            //check empty
+            bool empty() const noexcept{
+                return surf == nullptr;
+            }
+            SDL_Surface *operator ->() const noexcept{
+                return surf;
+            }
             //Some static method to load image
             static Surface FromFile(std::string_view file);
             static Surface FromFile(FILE *f);
@@ -66,6 +73,13 @@ namespace Btk{
             ~Texture();
             int w() const;
             int h() const;
+            //check is empty
+            bool empty() const noexcept{
+                return texture == nullptr;
+            }
+            //assign
+            Texture &operator =(SDL_Texture*);
+            Texture &operator =(Texture &&);
         private:
             SDL_Texture *texture;
         friend struct Renderer;

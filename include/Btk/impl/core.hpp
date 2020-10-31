@@ -35,9 +35,9 @@ namespace Btk{
         void register_window(WindowImpl *impl);
         void unregister_window(WindowImpl *impl);
         //Handle event
-        void on_windowev(SDL_Event &event);//Handle SDL_WINDOWEVENT
-        void on_dropev(SDL_Event &event);//Handle SDL_DropEvent
-        void on_mousemotion(SDL_Event &event);//Handle SDL_MouseMotion
+        inline void on_windowev(SDL_Event &event);//Handle SDL_WINDOWEVENT
+        inline void on_dropev(SDL_Event &event);//Handle SDL_DropEvent
+        inline void on_mousemotion(SDL_Event &event);//Handle SDL_MouseMotion
         //defercall in eventloop
         void defer_call(void(* fn)(void*),void *data = nullptr);
         //Get window from WindowID
@@ -61,7 +61,7 @@ namespace Btk{
         static int  Init();
         static void Quit();
     };
-    extern int  Main();
+    extern int  run();
     extern void Init();
     //Exit the app
     extern void Exit(int code);

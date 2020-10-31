@@ -9,20 +9,20 @@ namespace Btk{
         Renderer(SDL_Renderer *ren = nullptr):render(ren){};
         ~Renderer();
         //Draw something
-        void line(int x1,int y1,int x2,int y2,SDL_Color c);
-        void aaline(int x1,int y1,int x2,int y2,SDL_Color c);
+        int line(int x1,int y1,int x2,int y2,SDL_Color c);
+        int aaline(int x1,int y1,int x2,int y2,SDL_Color c);
         //fill a rect
-        void fill_rect(const SDL_Rect &,SDL_Color c);
+        int fill_rect(const SDL_Rect &,SDL_Color c);
         //draw a rect
-        void draw_rect(const SDL_Rect &,SDL_Color c);
-        void rounded_box(const SDL_Rect &,int rad,SDL_Color c);
-        void rounded_rect(const SDL_Rect &,int rad,SDL_Color c);
+        int draw_rect(const SDL_Rect &,SDL_Color c);
+        int rounded_box(const SDL_Rect &,int rad,SDL_Color c);
+        int rounded_rect(const SDL_Rect &,int rad,SDL_Color c);
         //some alias
-        inline void rect(const SDL_Rect &r,SDL_Color c){
-            fill_rect(r,c);
+        inline int rect(const SDL_Rect &r,SDL_Color c){
+            return fill_rect(r,c);
         }
-        inline void box(const SDL_Rect &r,SDL_Color c){
-            draw_rect(r,c);
+        inline int box(const SDL_Rect &r,SDL_Color c){
+            return draw_rect(r,c);
         }
         //operators
         Renderer &operator =(SDL_Renderer *renderer){
@@ -35,7 +35,9 @@ namespace Btk{
         bool operator ==(SDL_Renderer *r) const noexcept{
             return render == r;
         }
-        void start(SDL_Color bgcolor);//Start for rendering
+        //copy texture
+        int  copy(const Texture &t,const SDL_Rect *src,const SDL_Rect *dst);
+        int  start(SDL_Color bgcolor);//Start for rendering
         void done();//Finished rendering
         //texture methods
         //create texture

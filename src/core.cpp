@@ -31,7 +31,7 @@ namespace Btk{
         //Init Btk
         System::Init();
     }
-    int Main(){
+    int  run(){
         static std::thread::id thid = std::this_thread::get_id();
        
         if(thid != std::this_thread::get_id() or System::is_running == true){
@@ -74,6 +74,8 @@ namespace Btk{
         return 0;
     }
     System::System(){
+        handle_exception = nullptr;
+
         defer_call_ev_id = SDL_RegisterEvents(1);
         if(defer_call_ev_id == (Uint32)-1){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
@@ -96,6 +98,7 @@ namespace Btk{
                 //Failed to init
                 return -1;
             }
+            SDL_EnableScreenSaver();
             #ifndef NDEBUG
             //show detail version
             SDL_version ver;
@@ -181,46 +184,26 @@ namespace Btk{
         }
     }
     //WindowEvent
-    void System::on_windowev(SDL_Event &event){
+    inline void System::on_windowev(SDL_Event &event){
         WindowImpl *win;
         std::lock_guard<std::recursive_mutex> locker(map_mtx);
         win = get_window(event.window.windowID);
         if(win == nullptr){
             return;
         }
-
-
-        switch(event.window.event){
-            case SDL_WINDOWEVENT_EXPOSED:{
-                //redraw window
-                win->draw();
-                break;
-            }
-            case SDL_WINDOWEVENT_CLOSE:{
-                //Close window;
-                if(win->on_close()){
-                    //success to close
-                    //Delete Wnidow;
-                    unregister_window(win);
-                    if(wins_map.empty()){
-                        //No window exist
-                        Btk::Exit(0);
-                    }
-                }
-                break;
-            }
-            case SDL_WINDOWEVENT_RESIZED:{
-                //window resize
-                win->on_resize(event.window.data1,event.window.data2);
-                break;
-            }
-        }
+        win->handle_windowev(event);
     }
-    void System::on_mousemotion(SDL_Event &){
-        //....
+    inline void System::on_mousemotion(SDL_Event &event){
+        WindowImpl *win;
+        std::lock_guard<std::recursive_mutex> locker(map_mtx);
+        win = get_window(event.motion.windowID);
+        if(win == nullptr){
+            return;
+        }
+        win->handle_mousemotion(event);
     }
     //DropFile
-    void System::on_dropev(SDL_Event &event){
+    inline void System::on_dropev(SDL_Event &event){
         Btk_defer{
             SDL_free(event.drop.file);
         };
@@ -303,6 +286,8 @@ namespace Btk{
             return iter->second;
         }
     }
+};
+namespace Btk{
     void Exit(int code){
         //FIXME possible memory leak on here
         int *value = new int(code);
@@ -316,5 +301,11 @@ namespace Btk{
         ExceptionHandler current = System::instance->handle_exception;
         System::instance->handle_exception = handler;
         return current;
+    }
+    void AtExit(void(* fn)(void*),void *data){
+        System::instance->atexit(fn,data);
+    }
+    void AtExit(void(* fn)()){
+        System::instance->atexit(fn);
     }
 };

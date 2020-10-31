@@ -61,8 +61,9 @@ namespace Btk{
         ~SignalBase();
         //disconnect all slots
         void disconnect_all(){
-            for(auto s:slots){
-                s->cleanup();
+            for(auto iter = slots.begin();iter != slots.end();){
+                (*iter)->cleanup();
+                iter = slots.erase(iter);
             }
         }
         bool empty() const noexcept{
@@ -74,6 +75,12 @@ namespace Btk{
         };
         bool operator !=(std::nullptr_t) const noexcept{
             return not empty();
+        };
+        operator bool() const noexcept{
+            return not empty();
+        };
+        size_t connected_slots() const noexcept{
+            return slots.size();
         };
         std::list<Impl::SlotBase*> slots;
     };

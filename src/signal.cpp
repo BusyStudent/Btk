@@ -14,9 +14,10 @@ namespace Btk{
         disconnect_all();
     }
     void HasSlots::disconnect_all(){
-        for(auto c:_connections){
+        for(auto iter = _connections.begin();iter != _connections.end();){
             //from ~HasSlots()
-            c.disconnect(true);
+            iter->disconnect(true);
+            iter = _connections.erase(iter);
         }
     }
 };

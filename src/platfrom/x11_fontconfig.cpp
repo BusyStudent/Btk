@@ -1,6 +1,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <fontconfig/fontconfig.h>
 #include <Btk/impl/core.hpp>
+#include <Btk/Btk.hpp>
 namespace Btk{
     //X11 Font System Impl
     static bool font_inited = false;
@@ -20,7 +21,7 @@ namespace Btk{
             return -1;
         }
         else{
-            System::instance->atexit(QuitFontSystem);
+            AtExit(QuitFontSystem);
         }
         return 0;
     }

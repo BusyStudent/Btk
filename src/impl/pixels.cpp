@@ -105,4 +105,15 @@ namespace Btk{
     Texture::~Texture(){
         SDL_DestroyTexture(texture);
     }
+    Texture &Texture::operator =(SDL_Texture *t){
+        SDL_DestroyTexture(texture);
+        texture = t;
+        return *this;
+    }
+    Texture &Texture::operator =(Texture &&t){
+        SDL_DestroyTexture(texture);
+        texture = t.texture;
+        t.texture = nullptr;
+        return *this;
+    }
 };

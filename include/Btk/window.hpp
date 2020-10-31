@@ -13,6 +13,7 @@ namespace Btk{
         public:
             //Signals
             typedef Signal<bool()> SignalClose;
+            typedef Signal<void(int w,int h)> SignalResize;
             typedef Signal<void(std::string_view)> SignalDropFile;
         public:
             Window():pimpl(nullptr){};
@@ -34,6 +35,11 @@ namespace Btk{
                 add(ptr);
                 return *ptr;
             }
+            //update widgets postions
+            void update();
+            //multi threading
+            void lock();
+            void unlock();
             //Move window position
             void move(int x,int y);
             void show();
@@ -48,10 +54,16 @@ namespace Btk{
             //Set window Icon
             void set_icon(std::string_view file);
             void set_icon(const Surface &surf);
+            //Set window resizeable
+            void set_resizeable(bool val = true);
             //Set Callbacks
             template<class T>
             void on_close(T &&callable){
                 sig_close().connect(std::forward<T>(callable));
+            }
+            template<class T>
+            void on_resize(T &&callable){
+                sig_resize().connect(std::forward<T>(callable));
             }
             template<class T>
             void on_dropfile(T &&callable){
@@ -59,7 +71,11 @@ namespace Btk{
             }
             //Connect Signals
             SignalClose&    sig_close();
+            SignalResize&   sig_resize();
             SignalDropFile& sig_dropfile();
+            //Set window cursor
+            void set_cursor();//reset to default
+            void set_cursor(const Surface &surf,int hot_x = 0,int hot_y = 0);
             //Get information
             int w() const noexcept;//get w
             int h() const noexcept;//get h

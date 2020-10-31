@@ -55,7 +55,7 @@ namespace{
         }
         else{
             auto current = str->tellp();
-            return current - last / num;
+            return (current - last) / num;
         }
     }
 

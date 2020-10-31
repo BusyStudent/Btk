@@ -11,35 +11,35 @@ namespace Btk{
     Renderer::~Renderer(){
         SDL_DestroyRenderer(render);
     }
-    void Renderer::start(SDL_Color bgcolor){
+    int Renderer::start(SDL_Color bgcolor){
         SDL_SetRenderDrawColor(render,UNPACK_COLOR(bgcolor));
-        SDL_RenderClear(render);
+        return SDL_RenderClear(render);
         
     }
     void Renderer::done(){
         SDL_RenderPresent(render);
     }
     //Draw something
-    void Renderer::line(int x1,int y1,int x2,int y2,SDL_Color color){
+    int Renderer::line(int x1,int y1,int x2,int y2,SDL_Color color){
         #ifdef BTK_USE_GFX
-        lineRGBA(render,x1,y1,x2,y2,UNPACK_COLOR(color));
+        return lineRGBA(render,x1,y1,x2,y2,UNPACK_COLOR(color));
         #else
         SDL_SetRenderDrawColor(render,UNPACK_COLOR(bgcolor));
-        SDL_RenderDrawLine(render,x1,y1,x2,y2);
+        return SDL_RenderDrawLine(render,x1,y1,x2,y2);
         #endif
     }
-    void Renderer::aaline(int x1,int y1,int x2,int y2,SDL_Color color){
+    int Renderer::aaline(int x1,int y1,int x2,int y2,SDL_Color color){
         #ifdef BTK_USE_GFX
-        aalineRGBA(render,x1,y1,x2,y2,UNPACK_COLOR(color));
+        return aalineRGBA(render,x1,y1,x2,y2,UNPACK_COLOR(color));
         #else
         //doesnot support
         Renderer::line(x1,y1,x2,y2);
         #endif
     }
-    void Renderer::draw_rect(const SDL_Rect &rect,SDL_Color color){
+    int Renderer::draw_rect(const SDL_Rect &rect,SDL_Color color){
         #ifdef BTK_USE_GFX
         if(not SDL_RectEmpty(&rect)){
-            rectangleRGBA(
+            return rectangleRGBA(
                 render,
                 rect.x,
                 rect.y,
@@ -48,15 +48,18 @@ namespace Btk{
                 UNPACK_COLOR(color)
             );
         }
+        else{
+            return -1;
+        }
         #else
         SDL_SetRenderDrawColor(render,UNPACK_COLOR(color));
-        SDL_RenderDrawRect(render,&rect);
+        return SDL_RenderDrawRect(render,&rect);
         #endif
     }
-    void Renderer::fill_rect(const SDL_Rect &rect,SDL_Color color){
+    int Renderer::fill_rect(const SDL_Rect &rect,SDL_Color color){
         #ifdef BTK_USE_GFX
         if(not SDL_RectEmpty(&rect)){
-            boxRGBA(
+            return boxRGBA(
                 render,
                 rect.x,
                 rect.y,
@@ -65,15 +68,18 @@ namespace Btk{
                 UNPACK_COLOR(color)
             );
         }
+        else{
+            return -1;
+        }
         #else
         SDL_SetRenderDrawColor(render,UNPACK_COLOR(color));
-        SDL_RenderFillRect(render,&rect);
+        return SDL_RenderFillRect(render,&rect);
         #endif
     }
-    void Renderer::rounded_rect(const SDL_Rect &rect,int rad,SDL_Color c){
+    int Renderer::rounded_rect(const SDL_Rect &rect,int rad,SDL_Color c){
         #ifdef BTK_USE_GFX
         if(not SDL_RectEmpty(&rect)){
-            roundedRectangleRGBA(
+            return roundedRectangleRGBA(
                 render,
                 rect.x,
                 rect.y,
@@ -83,12 +89,15 @@ namespace Btk{
                 UNPACK_COLOR(c)
             );
         }
+        else{
+            return -1;
+        }
         #endif
     }
-    void Renderer::rounded_box(const SDL_Rect &rect,int rad,SDL_Color c){
+    int Renderer::rounded_box(const SDL_Rect &rect,int rad,SDL_Color c){
         #ifdef BTK_USE_GFX
         if(not SDL_RectEmpty(&rect)){
-            roundedBoxRGBA(
+            return roundedBoxRGBA(
                 render,
                 rect.x,
                 rect.y,
@@ -98,9 +107,13 @@ namespace Btk{
                 UNPACK_COLOR(c)
             );
         }
+        return -1;
         #endif
     }
     //texture methods
+    int Renderer::copy(const Texture &t,const SDL_Rect *src,const SDL_Rect *dst){
+        return SDL_RenderCopy(render,t.texture,src,dst);
+    }
     Texture Renderer::create_from(const Surface &surf){
         SDL_Texture *t = SDL_CreateTextureFromSurface(
             render,

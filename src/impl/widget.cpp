@@ -6,4 +6,14 @@ namespace Btk{
     Widget::~Widget(){
         
     }
+    Container::Container(){
+
+    }
+    //delete container
+    Container::~Container(){
+        for(auto iter = widgets_list.begin();iter != widgets_list.end();){
+            delete *iter;
+            iter = widgets_list.erase(iter);
+        }
+    }
 };

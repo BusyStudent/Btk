@@ -1,9 +1,9 @@
 #if !defined(_BTKIMPL_WINDOW_HPP_)
 #define _BTKIMPL_WINDOW_HPP_
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_syswm.h>
 #include <string_view>
 #include <functional>
+#include <mutex>
 #include <list>
 #include "../signal/signal.hpp"
 #include "render.hpp"
@@ -22,21 +22,32 @@ namespace Btk{
         bool on_close();
         void on_resize(int new_w,int new_h);
         void on_dropfile(std::string_view file);
-        
+        //handle event 
+        void handle_windowev(const SDL_Event &event);
+        void handle_mousemotion(const SDL_Event &event);
+
         void unref();//unref the object
         void ref();//ref the  object
-
+        //update wingets postions
+        void update_postion();
         SDL_Window *win;
         Renderer    render;
-        //callbacks
-        Signal<bool()> onclose_cb;//CloseWIndow
-        Signal<void(std::string_view)> ondropfile_cb;//DropFile
+        //Signals
+        Signal<void()> sig_leave;//mouse leave
+        Signal<void()> sig_enter;//mouse enter
+        Signal<bool()> sig_close;//CloseWIndow
+        Signal<void(std::string_view)> sig_dropfile;//DropFile
+        Signal<void(int new_w,int new_h)> sig_resize;//WindowResize
         //widgets
         std::list<Widget*> widgets_list;
         //refcount
         int refcount;
         //BackGroud Color
         SDL_Color bg_color;
+        //Background cursor
+        SDL_Cursor *cursor;
+        //mutex
+        std::recursive_mutex mtx;
     };
 };
 
