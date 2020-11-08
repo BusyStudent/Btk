@@ -34,7 +34,6 @@ namespace Btk{
             Font(FontImpl *i):pimpl(i){};
             FontImpl *pimpl;
     };
-    extern int  InitFontSystem();
 };
 
 

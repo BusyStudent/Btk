@@ -4,6 +4,7 @@
 #include <Btk/impl/font.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
+#include <Btk/platform.hpp>
 #include <Btk/pixels.hpp>
 #include <Btk/font.hpp>
 
@@ -17,8 +18,8 @@ namespace Btk{
     //Font
     FontImpl::FontImpl(std::string_view fname,int size){
         //Init Font System
-        InitFontSystem();
-
+        Platform::InitFont();
+        
         font  = TTF_OpenFont(fname.data(),size);
         if(font == nullptr){
             throwSDLError(TTF_GetError());

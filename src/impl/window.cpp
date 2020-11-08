@@ -31,6 +31,8 @@ namespace Btk{
             255
         };
         cursor = nullptr;
+        //Disable Rt draw
+        rt_fps = 0;
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -40,7 +42,6 @@ namespace Btk{
         SDL_FreeCursor(cursor);
         SDL_DestroyRenderer(*render);
         SDL_DestroyWindow(win);
-
         render = nullptr;
     }
     //Draw window
@@ -53,7 +54,7 @@ namespace Btk{
         //Draw each widget
         for(auto widget:widgets_list){
             //check widgets
-            if((not widget->is_hided) and not(widget->pos.empty())){
+            if((widget->visible()) and not(widget->pos.empty())){
                 widget->draw(render);
             }
         }
@@ -101,13 +102,15 @@ namespace Btk{
             //w = window's w
             //h = window's h
             Widget *widget = *widgets_list.begin();
-            widget->pos.x = 0;
-            widget->pos.y = 0;
-            
-            pixels_size(
-                &(widget->pos.w),
-                &(widget->pos.h)
-            );
+            if(not widget->attr.user_pos){
+                widget->pos.x = 0;
+                widget->pos.y = 0;
+                
+                pixels_size(
+                    &(widget->pos.w),
+                    &(widget->pos.h)
+                );
+            }
         }
         else{
             //not to change widgets postion
@@ -180,17 +183,27 @@ namespace Btk{
     }
 }
 namespace Btk{
+    thread_local Window *Window::Current = nullptr;
     Window::Window(std::string_view title,int w,int h){
         Init();
+        #ifdef __ANDROID__
+        //Android need full screen
+        constexpr Uint32 flags = 
+            SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN_DESKTOP;
+        #else
+        constexpr Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN;
+        #endif
         pimpl = new WindowImpl(
             title.data(),
             SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED,
             w,
             h,
-            SDL_WINDOW_ALLOW_HIGHDPI
+            flags
         );
         System::instance->register_window(pimpl);
+        //Set Windows
+        Window::Current = this;
     }
     bool Window::mainloop(){
         return Btk::run() == 0;
@@ -215,13 +228,16 @@ namespace Btk{
             static_cast<WindowImpl*>(win)->draw();
         },pimpl);
         */
-       SDL_Event event;
-       SDL_zero(event);
-       event.type = SDL_WINDOWEVENT;
-       event.window.timestamp = SDL_GetTicks();
-       event.window.windowID = SDL_GetWindowID(pimpl->win);
-       event.window.event = SDL_WINDOWEVENT_EXPOSED;
-       SDL_PushEvent(&event);
+       if(pimpl->rt_fps == 0){
+            //Window is not drawing eveytimes
+            SDL_Event event;
+            SDL_zero(event);
+            event.type = SDL_WINDOWEVENT;
+            event.window.timestamp = SDL_GetTicks();
+            event.window.windowID = SDL_GetWindowID(pimpl->win);
+            event.window.event = SDL_WINDOWEVENT_EXPOSED;
+            SDL_PushEvent(&event);
+       }
     }
     void Window::close(){
         //send a close request
@@ -275,6 +291,19 @@ namespace Btk{
             return true;
         }
     }
+    //Window exists
+    bool Window::exists() const{
+        //Lock maps
+        std::lock_guard<std::recursive_mutex> locker(
+            System::instance->map_mtx
+        );
+        for(auto win:System::instance->wins_map){
+            if(win.second == pimpl){
+                return true;
+            }
+        }
+        return false;
+    }
     //update widgets postions
     void Window::update(){
         pimpl->update_postion();
@@ -325,5 +354,11 @@ namespace Btk{
     }
     void Window::unlock(){
         pimpl->mtx.unlock();
+    }
+    //Show window and set Widget postions
+    void Window::done(){
+        update();
+        SDL_ShowWindow(pimpl->win);
+        Current = nullptr;
     }
 }

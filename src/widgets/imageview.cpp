@@ -7,7 +7,7 @@
 #include <Btk/pixels.hpp>
 namespace Btk{
     ImageView::ImageView(){
-        win = nullptr;
+        win = Window::Current;
         image_rect.x = 0;
         image_rect.y = 0;
         image_rect.w = 0;
@@ -18,7 +18,6 @@ namespace Btk{
         pos.w = 0;
         pos.h = 0;
 
-        is_hided = false;
     }
     ImageView::~ImageView(){
 
@@ -52,6 +51,10 @@ namespace Btk{
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;
+        draw();
+    }
+    void ImageView::set_clip(const Rect &r){
+        image_rect = r;
         draw();
     }
 };

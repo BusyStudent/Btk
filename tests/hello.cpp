@@ -13,5 +13,7 @@ int main(){
     win.on_dropfile([&win](std::string_view file){
         win.set_icon(file);
     });
+
+    win.done();
     win.mainloop();
 }

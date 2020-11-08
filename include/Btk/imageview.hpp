@@ -3,9 +3,10 @@
 #include "widget.hpp"
 #include "pixels.hpp"
 #include "rect.hpp"
+#include "defs.hpp"
 //the image view widget
 namespace Btk{
-    class ImageView:public Widget{
+    class BTKAPI ImageView:public Widget{
         public:
             ImageView();
             ImageView(Window&,int x,int y,int w,int h);
@@ -18,6 +19,15 @@ namespace Btk{
             void draw();
             //called from parent widget
             void draw(Renderer &);
+            //Clip this image
+            void set_clip(const Rect &r);
+
+            PixBuf &image(){
+                return pixelbuf;
+            }
+            const PixBuf &image() const{
+                return pixelbuf;
+            }
         private:
             PixBuf pixelbuf;
             Texture texture;

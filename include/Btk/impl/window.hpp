@@ -48,6 +48,8 @@ namespace Btk{
         SDL_Cursor *cursor;
         //mutex
         std::recursive_mutex mtx;
+        //Rt draw
+        Uint32 rt_fps;
     };
 };
 

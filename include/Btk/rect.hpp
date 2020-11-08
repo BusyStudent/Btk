@@ -3,6 +3,13 @@
 #include <SDL2/SDL_rect.h>
 namespace Btk{
     struct Rect:public SDL_Rect{
+        Rect() = default;
+        Rect(const SDL_Rect &r){
+            x = r.w;
+            h = r.h;
+            x = r.x;
+            y = r.y;
+        }
         //is empty?
         bool empty() const noexcept{
             return SDL_RectEmpty(this);

@@ -63,11 +63,13 @@ namespace Btk{
     Surface &Surface::operator =(SDL_Surface *sf){
         SDL_FreeSurface(surf);
         surf = sf;
+        return *this;
     }
     Surface &Surface::operator =(Surface &&sf){
         SDL_FreeSurface(surf);
         surf = sf.surf;
         sf.surf = nullptr;
+        return *this;
     }
     //static method
     Surface Surface::FromMem(const void *mem,size_t size){

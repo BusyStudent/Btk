@@ -4,6 +4,7 @@
 #include <utility>
 #include <cstddef>
 #include <list>
+#include "../defs.hpp"
 namespace Btk{
     //TODO: improve thread safety
 
@@ -31,7 +32,7 @@ namespace Btk{
                 invoke_ptr(fn){};
             //invoke self
             RetT invoke(Args ...args) const{
-                invoke_ptr(this,std::forward<Args>(args)...);
+                return invoke_ptr(this,std::forward<Args>(args)...);
             }
             InvokeFn invoke_ptr;
         };
@@ -55,7 +56,7 @@ namespace Btk{
         };
     };
     //Signal
-    struct SignalBase{
+    struct BTKAPI SignalBase{
         SignalBase();
         SignalBase(const SignalBase &) = delete;
         ~SignalBase();
@@ -115,7 +116,7 @@ namespace Btk{
     struct Signal<RetT(Args...)>;
 
     //a class to auto track connections
-    struct HasSlots{
+    struct BTKAPI HasSlots{
         HasSlots();
         HasSlots(const HasSlots &) = delete;
         ~HasSlots();

@@ -15,6 +15,8 @@ namespace Btk{
             typedef Signal<bool()> SignalClose;
             typedef Signal<void(int w,int h)> SignalResize;
             typedef Signal<void(std::string_view)> SignalDropFile;
+            //Current window for add widgets
+            static thread_local Window *Current;
         public:
             Window():pimpl(nullptr){};
             Window(const Window &) = delete;
@@ -40,6 +42,8 @@ namespace Btk{
             //multi threading
             void lock();
             void unlock();
+            //Show window and set Widget postions
+            void done();
             //Move window position
             void move(int x,int y);
             void show();
@@ -47,6 +51,8 @@ namespace Btk{
             void close();//try close window
             void present();
             bool mainloop();
+            //Window exists
+            bool exists() const;
             //Get window surface
             Surface surface();
             //Set window title
@@ -58,16 +64,16 @@ namespace Btk{
             void set_resizeable(bool val = true);
             //Set Callbacks
             template<class T>
-            void on_close(T &&callable){
-                sig_close().connect(std::forward<T>(callable));
+            Connection on_close(T &&callable){
+                return sig_close().connect(std::forward<T>(callable));
             }
             template<class T>
-            void on_resize(T &&callable){
-                sig_resize().connect(std::forward<T>(callable));
+            Connection on_resize(T &&callable){
+                return sig_resize().connect(std::forward<T>(callable));
             }
             template<class T>
-            void on_dropfile(T &&callable){
-                sig_dropfile().connect(std::forward<T>(callable));
+            Connection on_dropfile(T &&callable){
+                return sig_dropfile().connect(std::forward<T>(callable));
             }
             //Connect Signals
             SignalClose&    sig_close();
@@ -76,6 +82,10 @@ namespace Btk{
             //Set window cursor
             void set_cursor();//reset to default
             void set_cursor(const Surface &surf,int hot_x = 0,int hot_y = 0);
+            //Start add widgets
+            void make_current() noexcept{
+                Window::Current = this;
+            }
             //Get information
             int w() const noexcept;//get w
             int h() const noexcept;//get h

@@ -93,6 +93,7 @@ namespace Btk{
     }
     //Init or Quit
     int  System::Init(){
+        static std::once_flag flag;
         if(instance == nullptr){
             if(SDL_Init(SDL_INIT_VIDEO) == -1){
                 //Failed to init
@@ -111,7 +112,7 @@ namespace Btk{
             //Create instance
             instance = new System();
             //regitser atexit callback
-            std::atexit(System::Quit);
+            std::call_once(flag,std::atexit,System::Quit);
         }
         return 1;
     }
@@ -204,16 +205,16 @@ namespace Btk{
     }
     //DropFile
     inline void System::on_dropev(SDL_Event &event){
-        Btk_defer{
-            SDL_free(event.drop.file);
-        };
         WindowImpl *win;
+        //auto free it
+        SDLScopePtr ptr(event.drop.file);
         std::lock_guard<std::recursive_mutex> locker(map_mtx);
         win = get_window(event.drop.windowID);
         if(win == nullptr){
             return;
         }
         win->on_dropfile(event.drop.file);
+        
     }
     void System::register_window(WindowImpl *impl){
         if(impl == nullptr){
@@ -293,7 +294,7 @@ namespace Btk{
         int *value = new int(code);
         System::instance->defer_call([](void *ptr){
             int v = *static_cast<int*>(ptr);
-            delete ptr;
+            delete static_cast<int*>(ptr);
             throw v;
         },value);
     }

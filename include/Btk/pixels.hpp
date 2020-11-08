@@ -80,6 +80,10 @@ namespace Btk{
             //assign
             Texture &operator =(SDL_Texture*);
             Texture &operator =(Texture &&);
+            //Get pointer
+            SDL_Texture *get() const noexcept{
+                return texture;
+            }
         private:
             SDL_Texture *texture;
         friend struct Renderer;

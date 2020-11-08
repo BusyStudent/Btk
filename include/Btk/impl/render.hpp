@@ -1,11 +1,13 @@
 #if !defined(_BTKIMPL_RENDER_HPP_)
 #define _BTKIMPL_RENDER_HPP_
 #include <SDL2/SDL_render.h>
+#include "../rect.hpp"
 namespace Btk{
     class Surface;
     class Texture;
     struct Renderer{
-
+        //Software render
+        Renderer(Surface &);
         Renderer(SDL_Renderer *ren = nullptr):render(ren){};
         ~Renderer();
         //Draw something
@@ -35,6 +37,14 @@ namespace Btk{
         bool operator ==(SDL_Renderer *r) const noexcept{
             return render == r;
         }
+        //ViewPort
+        Rect get_viewport();//Get ViewPort
+        int  set_viewport();//Reset View[prt]
+        int  set_viewport(const SDL_Rect &r);//Set ViewPort
+        //ClipRect
+        Rect get_cliprect();
+        int  set_cliprect();
+        int  set_cliprect(const SDL_Rect &r);
         //copy texture
         int  copy(const Texture &t,const SDL_Rect *src,const SDL_Rect *dst);
         int  start(SDL_Color bgcolor);//Start for rendering

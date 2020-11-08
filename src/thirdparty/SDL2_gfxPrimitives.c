@@ -34,7 +34,6 @@ Andreas Schiffler -- aschiffler at ferzkopp dot net
 
 #include "SDL2_gfxPrimitives.h"
 #include "SDL2_rotozoom.h"
-#include "SDL2_gfxPrimitives_font.h"
 
 /* ---- Structures */
 
@@ -3216,7 +3215,8 @@ int texturedPolygon(SDL_Renderer *renderer, const Sint16 * vx, const Sint16 * vy
 	*/
 	return (texturedPolygonMT(renderer, vx, vy, n, texture, texture_dx, texture_dy, NULL, NULL));
 }
-
+//We donot use SDL2_gfx Character
+#if 0
 /* ---- Character */
 
 /*!
@@ -3561,7 +3561,7 @@ int stringRGBA(SDL_Renderer * renderer, Sint16 x, Sint16 y, const char *s, Uint8
 
 	return (result);
 }
-
+#endif
 /* ---- Bezier curve */
 
 /*!

@@ -110,6 +110,30 @@ namespace Btk{
         return -1;
         #endif
     }
+    //ViewPort
+    Rect Renderer::get_viewport(){
+        Rect rect;
+        SDL_RenderGetViewport(render,&rect);
+        return rect;
+    }
+    int  Renderer::set_viewport(){
+        return SDL_RenderSetViewport(render,nullptr);
+    }
+    int  Renderer::set_viewport(const SDL_Rect &r){
+        return SDL_RenderSetViewport(render,&r);
+    }
+    //ClipRect
+    Rect Renderer::get_cliprect(){
+        Rect rect;
+        SDL_RenderGetClipRect(render,&rect);
+        return rect;
+    }
+    int  Renderer::set_cliprect(){
+        return SDL_RenderSetClipRect(render,nullptr);
+    }
+    int  Renderer::set_cliprect(const SDL_Rect &r){
+        return SDL_RenderSetClipRect(render,&r);
+    }
     //texture methods
     int Renderer::copy(const Texture &t,const SDL_Rect *src,const SDL_Rect *dst){
         return SDL_RenderCopy(render,t.texture,src,dst);

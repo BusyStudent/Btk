@@ -3,25 +3,34 @@
 #include <list>
 #include "signal/signal.hpp"
 #include "rect.hpp"
+#include "defs.hpp"
 namespace Btk{
     class Renderer;
     class Window;
-    class Widget:public HasSlots{
+    //Attribute for Widget
+    struct WidgetAttr{
+        bool hide = false;//Is hide
+        bool user_pos = false;//Using user defined position
+    };
+    class BTKAPI Widget:public HasSlots{
         public:
             //some method
             Widget() = default;
             Widget(const Widget &) = delete;
             virtual ~Widget();
             virtual void draw(Renderer &render) = 0;
+            bool visible() const noexcept{
+                return not attr.hide;
+            }
         protected:
-            bool is_hided;
+            WidgetAttr attr;
             Rect pos;//Widget pos
             Window *win;
         friend class  Window;
         friend class  Layout;
         friend struct WindowImpl;
     };
-    class Container:public Widget{
+    class BTKAPI Container:public Widget{
         public:
             Container();
             ~Container();
