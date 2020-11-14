@@ -1,36 +1,46 @@
 #include <Btk/impl/render.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/layout.hpp>
+#include <Btk/event.hpp>
 #include <Btk/rect.hpp>
 #include <list>
 namespace Btk{
     void Layout::draw(Renderer &render){
         //draw layout widgets
-        //Get ViewPort calcuate layout viewport
-        Rect viewport = render.get_viewport();
+        //Get ClipRect calcuate layout cliprect
+        Rect cliprect = render.get_cliprect();
         Rect current;
-        if(not viewport.empty()){
+        if(not cliprect.empty()){
             //on another container
-            current.x = pos.x + viewport.x;
-            current.y = pos.y + viewport.y;
+            current.x = rect.x + cliprect.x;
+            current.y = rect.y + cliprect.y;
             
-            current.w = pos.w;
-            current.h = pos.h;
+            current.w = rect.w;
+            current.h = rect.h;
         }
         else{
-            current = pos;
+            current = rect;
         }
-        render.set_viewport(current);
+        render.set_cliprect(current);
         Btk_defer{
-            //reset viewport
-            if(viewport.empty()){
-                render.set_viewport(viewport);
+            //reset cliprect
+            if(cliprect.empty()){
+                render.set_cliprect(cliprect);
             }
         };
         for(auto w:widgets_list){
-            if(visible() and (not w->pos.empty())){
+            if(visible() and (not w->rect.empty())){
                 w->draw(render);
             }
         }
+    }
+    bool Layout::handle(Event &event){
+        for(auto widget:widgets_list){
+            if(widget->handle(event)){
+                //Accept this event
+                return true;
+            }
+        }
+        return false;
     }
 };

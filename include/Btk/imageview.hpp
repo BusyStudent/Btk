@@ -8,7 +8,7 @@
 namespace Btk{
     class BTKAPI ImageView:public Widget{
         public:
-            ImageView();
+            ImageView(Window&);
             ImageView(Window&,int x,int y,int w,int h);
             ~ImageView();
             //set image

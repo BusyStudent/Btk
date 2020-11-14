@@ -3,11 +3,11 @@
 #include <SDL2/SDL_render.h>
 #include "../rect.hpp"
 namespace Btk{
-    class Surface;
+    class PixBuf;
     class Texture;
     struct Renderer{
         //Software render
-        Renderer(Surface &);
+        Renderer(PixBuf &);
         Renderer(SDL_Renderer *ren = nullptr):render(ren){};
         ~Renderer();
         //Draw something
@@ -51,8 +51,8 @@ namespace Btk{
         void done();//Finished rendering
         //texture methods
         //create texture
-        Texture create_from(const Surface &surf);
-        Surface dump_texture(const Texture &);//dump texture to surface
+        Texture create_from(const PixBuf &pixbuf);
+        PixBuf dump_texture(const Texture &);//dump texture to pixels
 
         SDL_Renderer *render;
     };

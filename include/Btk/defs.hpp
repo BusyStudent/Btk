@@ -1,6 +1,6 @@
 #if !defined(_BTK_DEFS_HPP_)
 #define _BTK_DEFS_HPP_
-
+#include <cstdint>
 #ifdef _WIN32
     #ifdef _MSV_VER_
     #define BTKEXPORT __declspec((dllexport))
@@ -21,5 +21,23 @@
 #else
     #define BTKAPI BTKIMPORT
 #endif
+namespace Btk{
+    //Some int defs in SDL2
+    //Uint
+    using Uint8 = uint8_t;
+    using Uint16 = uint16_t;
+    using Uint32 = uint32_t;
+    using Uint64 = uint64_t;
+    //Sint
+    using Int8 = int8_t;
+    using Int16 = int16_t;
+    using Int32 = int32_t;
+    using Int64 = int64_t;
 
+    using Sint8 = int8_t;
+    using Sint16 = int16_t;
+    using Sint32 = int32_t;
+    using Sint64 = int64_t;
+    //end
+};
 #endif // _BTK_DEFS_HPP_

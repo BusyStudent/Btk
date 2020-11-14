@@ -11,10 +11,11 @@
 #include <Btk/impl/scope.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
+#include <Btk/event.hpp>
 #include <Btk/defs.hpp>
 #include <Btk/Btk.hpp>
 namespace{
-    void defer_call_cb(SDL_Event &ev,void *){
+    void defer_call_cb(const SDL_Event &ev,void *){
         //defer call
         typedef void (*defer_fn_t)(void*);
         defer_fn_t fn = reinterpret_cast<defer_fn_t>(ev.user.data1);
@@ -76,13 +77,15 @@ namespace Btk{
     System::System(){
         handle_exception = nullptr;
 
-        defer_call_ev_id = SDL_RegisterEvents(1);
+        defer_call_ev_id = SDL_RegisterEvents(2);
         if(defer_call_ev_id == (Uint32)-1){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
         }
         else{
+            dispatch_ev_id = defer_call_ev_id + 1;
             //regitser handler
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
+            regiser_eventcb(dispatch_ev_id,DispatchEvent,nullptr);
         }
     }
     System::~System(){
@@ -185,7 +188,7 @@ namespace Btk{
         }
     }
     //WindowEvent
-    inline void System::on_windowev(SDL_Event &event){
+    inline void System::on_windowev(const SDL_Event &event){
         WindowImpl *win;
         std::lock_guard<std::recursive_mutex> locker(map_mtx);
         win = get_window(event.window.windowID);
@@ -194,7 +197,7 @@ namespace Btk{
         }
         win->handle_windowev(event);
     }
-    inline void System::on_mousemotion(SDL_Event &event){
+    inline void System::on_mousemotion(const SDL_Event &event){
         WindowImpl *win;
         std::lock_guard<std::recursive_mutex> locker(map_mtx);
         win = get_window(event.motion.windowID);
@@ -204,7 +207,7 @@ namespace Btk{
         win->handle_mousemotion(event);
     }
     //DropFile
-    inline void System::on_dropev(SDL_Event &event){
+    inline void System::on_dropev(const SDL_Event &event){
         WindowImpl *win;
         //auto free it
         SDLScopePtr ptr(event.drop.file);
@@ -253,6 +256,7 @@ namespace Btk{
         event.type = defer_call_ev_id;
         event.user.data1 = reinterpret_cast<void*>(fn);
         event.user.data2 = data;
+        event.user.timestamp = SDL_GetTicks();
         SDL_PushEvent(&event);
     }
     //register a exit handler

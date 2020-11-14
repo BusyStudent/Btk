@@ -6,18 +6,33 @@
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
 namespace Btk{
-    ImageView::ImageView(){
-        win = Window::Current;
+    ImageView::ImageView(Window& w){
+        win = &w;
         image_rect.x = 0;
         image_rect.y = 0;
         image_rect.w = 0;
         image_rect.h = 0;
 
-        pos.x = 0;
-        pos.y = 0;
-        pos.w = 0;
-        pos.h = 0;
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = 0;
+        rect.h = 0;
 
+    }
+    ImageView::ImageView(Window&wi,int x,int y,int w,int h){
+        win = &wi;
+
+        image_rect.x = 0;
+        image_rect.y = 0;
+        image_rect.w = 0;
+        image_rect.h = 0;
+
+        rect.x = x;
+        rect.y = y;
+        rect.w = w;
+        rect.h = h;
+        //User defined its position
+        attr.user_rect = true;
     }
     ImageView::~ImageView(){
 
@@ -29,7 +44,7 @@ namespace Btk{
                 texture = render.create_from(pixelbuf);
             }
             //render image
-            render.copy(texture,&image_rect,&pos);
+            render.copy(texture,&image_rect,&rect);
         }
     }
     void ImageView::draw(){

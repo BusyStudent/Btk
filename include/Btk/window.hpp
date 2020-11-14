@@ -4,10 +4,11 @@
 #include <functional>
 #include <string>
 #include "signal/signal.hpp"
+#include "rect.hpp"
 #include "defs.hpp"
 namespace Btk{
     struct WindowImpl;
-    class Surface;
+    class PixBuf;
     class Widget;
     class BTKAPI Window:public HasSlots{
         public:
@@ -15,8 +16,6 @@ namespace Btk{
             typedef Signal<bool()> SignalClose;
             typedef Signal<void(int w,int h)> SignalResize;
             typedef Signal<void(std::string_view)> SignalDropFile;
-            //Current window for add widgets
-            static thread_local Window *Current;
         public:
             Window():pimpl(nullptr){};
             Window(const Window &) = delete;
@@ -31,9 +30,10 @@ namespace Btk{
             }
             //add widget
             bool add(Widget *ptr);
+            //add widget template
             template<class T,class ...Args>
             T &add(Args &&...args){
-                T *ptr = new T(std::forward<Args>(args)...);
+                T *ptr = new T(*this,std::forward<Args>(args)...);
                 add(ptr);
                 return *ptr;
             }
@@ -53,27 +53,29 @@ namespace Btk{
             bool mainloop();
             //Window exists
             bool exists() const;
-            //Get window surface
-            Surface surface();
+            //Get window Pixbuf
+            PixBuf pixbuf();
             //Set window title
             void set_title(std::string_view title);
             //Set window Icon
             void set_icon(std::string_view file);
-            void set_icon(const Surface &surf);
+            void set_icon(const PixBuf &pixbuf);
+            //Set window fullscreen
+            void set_fullscreen(bool val = true);
             //Set window resizeable
             void set_resizeable(bool val = true);
             //Set Callbacks
-            template<class T>
-            Connection on_close(T &&callable){
-                return sig_close().connect(std::forward<T>(callable));
+            template<class ...T>
+            Connection on_close(T &&...args){
+                return sig_close().connect(std::forward<T>(args)...);
             }
-            template<class T>
-            Connection on_resize(T &&callable){
-                return sig_resize().connect(std::forward<T>(callable));
+            template<class ...T>
+            Connection on_resize(T &&...args){
+                return sig_resize().connect(std::forward<T>(args)...);
             }
-            template<class T>
-            Connection on_dropfile(T &&callable){
-                return sig_dropfile().connect(std::forward<T>(callable));
+            template<class ...T>
+            Connection on_dropfile(T &&...args){
+                return sig_dropfile().connect(std::forward<T>(args)...);
             }
             //Connect Signals
             SignalClose&    sig_close();
@@ -81,11 +83,7 @@ namespace Btk{
             SignalDropFile& sig_dropfile();
             //Set window cursor
             void set_cursor();//reset to default
-            void set_cursor(const Surface &surf,int hot_x = 0,int hot_y = 0);
-            //Start add widgets
-            void make_current() noexcept{
-                Window::Current = this;
-            }
+            void set_cursor(const PixBuf &surf,int hot_x = 0,int hot_y = 0);
             //Get information
             int w() const noexcept;//get w
             int h() const noexcept;//get h

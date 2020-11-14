@@ -180,7 +180,7 @@ namespace Btk{
             }
             else{
                 //Get return value
-                RetT ret;
+                RetT ret{};
                 for(auto s:slots){
                     ret = static_cast<Impl::Slot<RetT,Args...>*>(s)->invoke(
                         std::forward<Args>(args)...

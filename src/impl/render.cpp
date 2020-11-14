@@ -138,28 +138,23 @@ namespace Btk{
     int Renderer::copy(const Texture &t,const SDL_Rect *src,const SDL_Rect *dst){
         return SDL_RenderCopy(render,t.texture,src,dst);
     }
-    Texture Renderer::create_from(const Surface &surf){
+    Texture Renderer::create_from(const PixBuf &pixbuf){
         SDL_Texture *t = SDL_CreateTextureFromSurface(
             render,
-            surf.get()
+            pixbuf.get()
         );
         if(t == nullptr){
             throwSDLError();
         }
         return t;
     }
-    Surface Renderer::dump_texture(const Texture &t){
-        SDL_PixelFormat *fmt = nullptr;
+    PixBuf Renderer::dump_texture(const Texture &t){
         void *pixels = nullptr;
         Uint32 ufmt;
         int w,h;
         //cleanup 
         Btk_defer{
-            SDL_FreeFormat(fmt);
             SDL_SetRenderTarget(render,nullptr);
-            if(pixels != nullptr){
-                free(pixels);
-            }
         };
         //get fmt w h
         if(SDL_QueryTexture(t.texture,&ufmt,nullptr,&w,&h) == -1){
@@ -169,16 +164,17 @@ namespace Btk{
             //current target
             throwSDLError();
         }
-        //alloc format
-        fmt = SDL_AllocFormat(ufmt);
+        int pixel_size = SDL_BYTESPERPIXEL(ufmt);
         //alloc buffer
-        pixels = malloc(w * h * (fmt->BytesPerPixel));;
+        pixels = malloc(w * h * pixel_size);;
         if(pixels == nullptr){
             SDL_OutOfMemory();
             throwSDLError();
         }
+        //set guard
+        SDLScopePtr ptr(pixels);
         //read pixels
-        if(SDL_RenderReadPixels(render,nullptr,ufmt,pixels,w * fmt->BytesPerPixel) == -1){
+        if(SDL_RenderReadPixels(render,nullptr,ufmt,pixels,w * pixel_size) == -1){
             //Error
             throwSDLError();
         }
@@ -186,8 +182,8 @@ namespace Btk{
             pixels,
             w,
             h,
-            fmt->BytesPerPixel,
-            fmt->BytesPerPixel * w,
+            pixel_size,
+            pixel_size * w,
             ufmt
         );
         if(surf == nullptr){

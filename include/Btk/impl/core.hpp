@@ -19,7 +19,7 @@ namespace Btk{
             }
         };
         struct EventHandler{
-            typedef void (*FnPtr)(SDL_Event &ev,void *data);
+            typedef void (*FnPtr)(const SDL_Event &ev,void *data);
             FnPtr fn;
             void *data;
             void operator()(SDL_Event &ev) const{
@@ -35,9 +35,9 @@ namespace Btk{
         void register_window(WindowImpl *impl);
         void unregister_window(WindowImpl *impl);
         //Handle event
-        inline void on_windowev(SDL_Event &event);//Handle SDL_WINDOWEVENT
-        inline void on_dropev(SDL_Event &event);//Handle SDL_DropEvent
-        inline void on_mousemotion(SDL_Event &event);//Handle SDL_MouseMotion
+        inline void on_windowev(const SDL_Event &event);//Handle SDL_WINDOWEVENT
+        inline void on_dropev(const SDL_Event &event);//Handle SDL_DropEvent
+        inline void on_mousemotion(const SDL_Event &event);//Handle SDL_MouseMotion
         //defercall in eventloop
         void defer_call(void(* fn)(void*),void *data = nullptr);
         //Get window from WindowID
@@ -47,6 +47,7 @@ namespace Btk{
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
         std::recursive_mutex map_mtx;
         Uint32 defer_call_ev_id;//defer call Event ID
+        Uint32 dispatch_ev_id;//dispatch our event Event ID
         //called after a exception was throwed
         //return false to abort program
         bool (*handle_exception)(std::exception *);

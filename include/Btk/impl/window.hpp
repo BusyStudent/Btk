@@ -8,6 +8,7 @@
 #include "../signal/signal.hpp"
 #include "render.hpp"
 namespace Btk{
+    class Event;
     //Impl for Window
     struct Renderer;
     struct Widget;
@@ -25,7 +26,9 @@ namespace Btk{
         //handle event 
         void handle_windowev(const SDL_Event &event);
         void handle_mousemotion(const SDL_Event &event);
-
+        //Dispatch Event to Widgets
+        bool dispatch(Event &event);
+        
         void unref();//unref the object
         void ref();//ref the  object
         //update wingets postions

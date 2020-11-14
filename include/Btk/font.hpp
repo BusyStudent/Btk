@@ -17,11 +17,11 @@ namespace Btk{
             ~Font();
             //render text
             //fastest
-            Surface render_solid(std::string_view text,Color color);
+            PixBuf render_solid(std::string_view text,Color color);
             //mid
-            Surface render_shaded(std::string_view text,Color fg,Color bg);
+            PixBuf render_shaded(std::string_view text,Color fg,Color bg);
             //best
-            Surface render_blended(std::string_view text,Color color);
+            PixBuf render_blended(std::string_view text,Color color);
             //Get font information
             int ptsize() const noexcept;
             

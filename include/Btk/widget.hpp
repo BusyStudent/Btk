@@ -7,10 +7,12 @@
 namespace Btk{
     class Renderer;
     class Window;
+    class Event;
     //Attribute for Widget
     struct WidgetAttr{
         bool hide = false;//Is hide
-        bool user_pos = false;//Using user defined position
+        bool user_rect = false;//Using user defined position
+        bool container = false;//Is container
     };
     class BTKAPI Widget:public HasSlots{
         public:
@@ -19,12 +21,22 @@ namespace Btk{
             Widget(const Widget &) = delete;
             virtual ~Widget();
             virtual void draw(Renderer &render) = 0;
+            virtual bool handle(Event &);//Process Event return true for accept event
             bool visible() const noexcept{
                 return not attr.hide;
             }
+            Vec2 position() const noexcept{
+                return {
+                    rect.x,
+                    rect.y
+                };
+            };
+            Window &master() const noexcept{
+                return *win;
+            };
         protected:
             WidgetAttr attr;
-            Rect pos;//Widget pos
+            Rect rect;//Widget rect
             Window *win;
         friend class  Window;
         friend class  Layout;
@@ -34,10 +46,11 @@ namespace Btk{
         public:
             Container();
             ~Container();
-            //add widgets
+            //add widgets template
             template<class T,class ...Args>
             T& add(Args &&...args){
                 T *ptr = new T(
+                    *win,
                     std::forward<Args>(args)...
                 );
                 widgets_list.push_back(ptr);

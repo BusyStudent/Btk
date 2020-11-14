@@ -6,6 +6,7 @@ namespace Btk{
     class Layout:public Container{
         public:
             void draw(Renderer &render);
+            bool handle(Event&);
             //update each widgets postions
             virtual void update() = 0;
     };

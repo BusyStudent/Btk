@@ -47,14 +47,14 @@ namespace Btk{
     int Font::ptsize() const noexcept{
         return pimpl->ptsize;
     }
-    Surface Font::render_solid(std::string_view text,Color color){
+    PixBuf Font::render_solid(std::string_view text,Color color){
         SDL_Surface *surf = TTF_RenderUTF8_Solid(pimpl->font,text.data(),color);
         if(surf == nullptr){
             throwSDLError(TTF_GetError());
         }
         return surf;
     }
-    Surface Font::render_shaded(std::string_view text,Color fg,Color bg){
+    PixBuf Font::render_shaded(std::string_view text,Color fg,Color bg){
         SDL_Surface *surf = TTF_RenderUTF8_Shaded(
             pimpl->font,
             text.data(),
@@ -67,7 +67,7 @@ namespace Btk{
         }
         return surf;
     }
-    Surface Font::render_blended(std::string_view text,Color color){
+    PixBuf Font::render_blended(std::string_view text,Color color){
         SDL_Surface *surf = TTF_RenderUTF8_Blended(pimpl->font,text.data(),color);
         if(surf == nullptr){
             throwSDLError(TTF_GetError());

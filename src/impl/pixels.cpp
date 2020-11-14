@@ -8,101 +8,152 @@
 #include <Btk/pixels.hpp>
 #include <Btk/rwops.hpp>
 namespace Btk{
-    Surface::~Surface(){
+    PixBuf::~PixBuf(){
         SDL_FreeSurface(surf);
     }
-    Surface::Surface(std::string_view file){
+    PixBuf::PixBuf(std::string_view file){
         surf = IMG_Load(file.data());
         if(surf == nullptr){
             throwSDLError(IMG_GetError());
         }
     }
-    Surface Surface::ref() const{
-        surf->refcount ++;
-        return Surface(surf);
+    PixBuf::PixBuf(int w,int h,Uint32 fmt){
+        surf = SDL_CreateRGBSurfaceWithFormat(
+            0,
+            w,
+            h,
+            SDL_BYTESPERPIXEL(fmt),
+            fmt
+        );
+        if(surf == nullptr){
+            throwSDLError();
+        }
     }
-    Surface Surface::clone() const{
+    PixBuf PixBuf::ref() const{
+        surf->refcount ++;
+        return PixBuf(surf);
+    }
+    PixBuf PixBuf::clone() const{
         SDL_Surface *surf = SDL_DuplicateSurface(this->surf);
         if(surf == nullptr){
             throwSDLError(SDL_GetError());
         }
         else{
-            return Surface(surf);
+            return PixBuf(surf);
         }
     }
-    //save surface
-    void Surface::save_bmp(RWops &rw){
+    //Lock
+    void PixBuf::lock(){
+        if(SDL_LockSurface(surf) != 0){
+            throwSDLError();
+        }
+    }
+    void PixBuf::unlock() noexcept{
+        SDL_UnlockSurface(surf);
+    }
+    void PixBuf::set_rle(bool val){
+        if(SDL_SetSurfaceRLE(surf,val) == -1){
+            throwSDLError();
+        }
+    }
+    //save PixBuf
+    void PixBuf::save_bmp(RWops &rw){
         if(SDL_SaveBMP_RW(surf,rw.get(),false) == -1){
             throwSDLError();
         }
     }
-    void Surface::save_jpg(RWops &rw,int quality){
+    void PixBuf::save_jpg(RWops &rw,int quality){
         if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
             throwSDLError();
         }
     }
-    void Surface::save_png(RWops &rw,int quality){
+    void PixBuf::save_png(RWops &rw,int quality){
         if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
             throwSDLError();
         }
     }
 
-    void Surface::save_bmp(std::string_view fname){
+    void PixBuf::save_bmp(std::string_view fname){
         auto rw = RWops::FromFile(fname.data(),"rb");
-        Surface::save_bmp(rw);
+        PixBuf::save_bmp(rw);
     }
-    void Surface::save_jpg(std::string_view fname,int quality){
+    void PixBuf::save_jpg(std::string_view fname,int quality){
         auto rw = RWops::FromFile(fname.data(),"rb");
-        Surface::save_jpg(rw,quality);
+        PixBuf::save_jpg(rw,quality);
     }
-    void Surface::save_png(std::string_view fname,int quality){
+    void PixBuf::save_png(std::string_view fname,int quality){
         auto rw = RWops::FromFile(fname.data(),"rb");
-        Surface::save_png(rw,quality);
+        PixBuf::save_png(rw,quality);
     }
     //operators
-    Surface &Surface::operator =(SDL_Surface *sf){
+    PixBuf &PixBuf::operator =(SDL_Surface *sf){
         SDL_FreeSurface(surf);
         surf = sf;
         return *this;
     }
-    Surface &Surface::operator =(Surface &&sf){
+    PixBuf &PixBuf::operator =(PixBuf &&sf){
         SDL_FreeSurface(surf);
         surf = sf.surf;
         sf.surf = nullptr;
         return *this;
     }
     //static method
-    Surface Surface::FromMem(const void *mem,size_t size){
+    PixBuf PixBuf::FromMem(const void *mem,size_t size){
         SDL_Surface *surf = IMG_Load_RW(SDL_RWFromConstMem(mem,size),true);
         if(surf == nullptr){
             throwSDLError(IMG_GetError());
         }
-        return Surface(surf);
+        return PixBuf(surf);
     }
-    Surface Surface::FromFile(std::string_view file){
-        return Surface(file);
+    PixBuf PixBuf::FromFile(std::string_view file){
+        return PixBuf(file);
     }
-    Surface Surface::FromFile(FILE *f){
+    PixBuf PixBuf::FromFile(FILE *f){
         SDL_Surface *surf = IMG_Load_RW(SDL_RWFromFP(f,SDL_FALSE),true);
         if(surf == nullptr){
             throwSDLError(IMG_GetError());
         }
-        return Surface(surf);
+        return PixBuf(surf);
     }
-    Surface Surface::FromXPMArray(char **da){
-        SDL_Surface *surf = IMG_ReadXPMFromArray(da);
+    PixBuf PixBuf::FromXPMArray(const char *const*da){
+        SDL_Surface *surf = IMG_ReadXPMFromArray(const_cast<char**>(da));
         if(surf == nullptr){
             throwSDLError(IMG_GetError());
         }
-        return Surface(surf);
+        return PixBuf(surf);
     }
-    Surface Surface::FromRWops(RWops &rwops){
+    PixBuf PixBuf::FromRWops(RWops &rwops){
         SDL_Surface *surf = IMG_Load_RW(rwops.get(),false);
         if(surf == nullptr){
             throwSDLError();
         }
-        return Surface(surf);
+        return PixBuf(surf);
     }
+}
+namespace Btk{
+    //PixelFormat
+    PixFmt::PixFmt(Uint32 pixfmt){
+        fmt = SDL_AllocFormat(pixfmt);
+        if(fmt == nullptr){
+            throwSDLError();
+        }
+    }
+    PixFmt::~PixFmt(){
+        SDL_FreeFormat(fmt);
+    }
+    //Map RGB
+    Uint32 PixFmt::map_rgb (Uint8 r,Uint8 g,Uint8 b) const{
+        return SDL_MapRGB(fmt,r,g,b);
+    }
+    Uint32 PixFmt::map_rgba(Uint8 r,Uint8 g,Uint8 b,Uint8 a) const{
+        return SDL_MapRGBA(fmt,r,g,b,a);
+    }
+    //Get names
+    std::string_view PixFmt::name() const{
+        return SDL_GetPixelFormatName(fmt->format);
+    }
+};
+namespace Btk{
     //Textures
     Texture::~Texture(){
         SDL_DestroyTexture(texture);

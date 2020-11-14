@@ -54,7 +54,7 @@ namespace Btk{
         //Draw each widget
         for(auto widget:widgets_list){
             //check widgets
-            if((widget->visible()) and not(widget->pos.empty())){
+            if((widget->visible()) and not(widget->rect.empty())){
                 widget->draw(render);
             }
         }
@@ -102,13 +102,13 @@ namespace Btk{
             //w = window's w
             //h = window's h
             Widget *widget = *widgets_list.begin();
-            if(not widget->attr.user_pos){
-                widget->pos.x = 0;
-                widget->pos.y = 0;
+            if(not widget->attr.user_rect){
+                widget->rect.x = 0;
+                widget->rect.y = 0;
                 
                 pixels_size(
-                    &(widget->pos.w),
-                    &(widget->pos.h)
+                    &(widget->rect.w),
+                    &(widget->rect.h)
                 );
             }
         }
@@ -123,6 +123,15 @@ namespace Btk{
                 }
             }
         }
+    }
+    //Dispatch Event
+    bool WindowImpl::dispatch(Event &event){
+        for(auto widget:widgets_list){
+            if(widget->handle(event)){
+                return true;
+            }
+        }
+        return false;
     }
 }
 //Event Processing
@@ -183,7 +192,6 @@ namespace Btk{
     }
 }
 namespace Btk{
-    thread_local Window *Window::Current = nullptr;
     Window::Window(std::string_view title,int w,int h){
         Init();
         #ifdef __ANDROID__
@@ -202,10 +210,9 @@ namespace Btk{
             flags
         );
         System::instance->register_window(pimpl);
-        //Set Windows
-        Window::Current = this;
     }
     bool Window::mainloop(){
+        done();
         return Btk::run() == 0;
     }
     Window::SignalClose &Window::sig_close(){
@@ -261,11 +268,11 @@ namespace Btk{
         SDL_SetWindowIcon(pimpl->win,image);
         SDL_FreeSurface(image);
     }
-    void Window::set_icon(const Surface &surf){
-        SDL_SetWindowIcon(pimpl->win,surf.get());
+    void Window::set_icon(const PixBuf &pixbuf){
+        SDL_SetWindowIcon(pimpl->win,pixbuf.get());
     }
 
-    Surface Window::surface(){
+    PixBuf Window::pixbuf(){
         return SDL_GetWindowSurface(pimpl->win);
     }
     
@@ -323,10 +330,10 @@ namespace Btk{
             }
         }
     }
-    void Window::set_cursor(const Surface &surf,int hotx,int hoty){
+    void Window::set_cursor(const PixBuf &pixbuf,int hotx,int hoty){
         SDL_FreeCursor(pimpl->cursor);
         pimpl->cursor = SDL_CreateColorCursor(
-            surf.get(),hotx,hoty
+            pixbuf.get(),hotx,hoty
         );
         SDL_Window *win = SDL_GetMouseFocus();
         if(win != nullptr){
@@ -335,6 +342,18 @@ namespace Btk{
                 //reset cursor right now
                 SDL_SetCursor(pimpl->cursor);
             }
+        }
+    }
+    void Window::set_fullscreen(bool val){
+        Uint32 flags;
+        if(val){
+            flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
+        }
+        else{
+            flags = 0;
+        }
+        if(SDL_SetWindowFullscreen(pimpl->win,flags) != 0){
+            throwSDLError();
         }
     }
     //set resize able
@@ -359,6 +378,5 @@ namespace Btk{
     void Window::done(){
         update();
         SDL_ShowWindow(pimpl->win);
-        Current = nullptr;
     }
 }
