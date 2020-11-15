@@ -12,7 +12,7 @@ end
 
 target("btk")
     on_load(function(target)
-        target:add(find_packages("SDL2","SDL2_image","SDL2_ttf","SDL2_gfx","fontconfig"))
+        target:add(find_packages("SDL2","SDL2_image","SDL2_ttf"))
     end)
     add_defines("BTK_USE_GFX")
     add_defines("USE_MMX")

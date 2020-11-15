@@ -1,4 +1,5 @@
 #include <Btk/Btk.hpp>
+#include <Btk/lable.hpp>
 #include <iostream>
 int main(){
     Btk::Window win("Hello",100,100);
@@ -13,7 +14,7 @@ int main(){
     win.on_dropfile([&win](std::string_view file){
         win.set_icon(file);
     });
-
+    win.add<Btk::Lable>("Hello World");
     win.done();
     win.mainloop();
 }

@@ -6,12 +6,18 @@
 #include <string_view>
 #include "atomic.hpp"
 namespace Btk{
+    /**
+     * @brief Font Impl
+     * 
+     */
     struct FontImpl{
-        //OpenFont
         FontImpl(std::string_view fname,int size);
         ~FontImpl();
+        //ref Font
+        FontImpl *ref();
+        void unref();
+        
         int ptsize;
-
         std::string filename;
 
         TTF_Font *font;

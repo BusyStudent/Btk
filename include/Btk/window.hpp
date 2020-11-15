@@ -10,6 +10,7 @@ namespace Btk{
     struct WindowImpl;
     class PixBuf;
     class Widget;
+    class Font;
     class BTKAPI Window:public HasSlots{
         public:
             //Signals
@@ -87,6 +88,7 @@ namespace Btk{
             //Get information
             int w() const noexcept;//get w
             int h() const noexcept;//get h
+            Font font() const;//get font
         private:
             WindowImpl *pimpl;
     };

@@ -1,12 +1,6 @@
 #include <Btk/font.hpp>
 #include <Btk/Btk.hpp>
+#include <iostream>
 int main(){
-    //this file dosnet exists
-    Btk::Init();
-    try{
-        Btk::Font::FromFile("xxxx",45);
-    }
-    catch(...){
-
-    }
+    std::cout << Btk::FontUtils::GetFileByName("Arial") << std::endl;
 }

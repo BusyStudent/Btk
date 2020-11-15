@@ -14,6 +14,12 @@ namespace Btk{
             x = r.x;
             y = r.y;
         }
+        Rect(int x,int y,int w,int h){
+            this->x = x;
+            this->y = y;
+            this->w = w;
+            this->h = h;
+        }
         //is empty?
         bool empty() const noexcept{
             return SDL_RectEmpty(this);
@@ -38,8 +44,24 @@ namespace Btk{
         }
     };
     //Define Point
-    typedef SDL_Point Vec2;
-    typedef SDL_Point Point;
+    struct Point:public SDL_Point{
+        Point() = default;
+        Point(int x,int y){
+            this->x = x;
+            this->y = y;
+        };
+        Point(const SDL_Point &p){
+            x = p.x;
+            y = p.y;
+        }
+        bool operator ==(const SDL_Point &p) const noexcept{
+            return x == p.x and y == p.y;
+        }
+        bool operator !=(const SDL_Point &p) const noexcept{
+            return x != p.x or y != p.y;
+        }
+    };
+    typedef Point Vec2;
     /**
      * @brief Size of a Widget or Window
      * 

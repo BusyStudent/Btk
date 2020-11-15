@@ -33,6 +33,8 @@ namespace Btk{
         cursor = nullptr;
         //Disable Rt draw
         rt_fps = 0;
+        //Open DefaultFont
+        default_font.open("",15);
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -378,5 +380,8 @@ namespace Btk{
     void Window::done(){
         update();
         SDL_ShowWindow(pimpl->win);
+    }
+    Font Window::font() const{
+        return pimpl->default_font;
     }
 }

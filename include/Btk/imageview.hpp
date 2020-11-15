@@ -15,8 +15,6 @@ namespace Btk{
             void set_image(const PixBuf &buf);
             //ref image
             void ref_image(PixBuf &buf);
-            //redraw self
-            void draw();
             //called from parent widget
             void draw(Renderer &);
             //Clip this image

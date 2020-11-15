@@ -14,10 +14,27 @@ namespace Btk{
         bool user_rect = false;//Using user defined position
         bool container = false;//Is container
     };
+    //Alignment
+    enum class Align:unsigned int{
+        Center,
+
+        //Vertical Alignment
+        Top,
+        Buttom,
+        //Horizontal Alignment
+        Right,
+        Left
+    };
     class BTKAPI Widget:public HasSlots{
         public:
-            //some method
-            Widget() = default;
+            /**
+             * @brief Construct a new Widget object
+             * @note All data will be inited to 0
+             */
+            Widget():attr(),rect(
+                0,0,0,0
+            ),win(nullptr){};
+
             Widget(const Widget &) = delete;
             virtual ~Widget();
             virtual void draw(Renderer &render) = 0;

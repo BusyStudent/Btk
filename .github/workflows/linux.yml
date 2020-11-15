@@ -16,3 +16,8 @@ jobs:
         xmake-version: latest
     - name: Build release
       run: xmake -y
+    - name: update release
+      uses: actions/upload-artifact@v2
+      with:
+          name: libbtk.so
+          path: ./build/linux/x86_64/release/libbtk.so

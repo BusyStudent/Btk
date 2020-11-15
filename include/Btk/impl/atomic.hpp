@@ -4,8 +4,8 @@
 namespace Btk{
     //a wrapper for SDL_atomic_t
     struct Atomic{
-        Atomic(){}
-        //uninited value
+        Atomic():value({}){}
+        //default value
         Atomic(int val){
             SDL_AtomicSet(&value,val);
         }

@@ -5,8 +5,9 @@
 #include <functional>
 #include <mutex>
 #include <list>
-#include "../signal/signal.hpp"
 #include "render.hpp"
+#include "../signal/signal.hpp"
+#include "../font.hpp"
 namespace Btk{
     class Event;
     //Impl for Window
@@ -53,6 +54,8 @@ namespace Btk{
         std::recursive_mutex mtx;
         //Rt draw
         Uint32 rt_fps;
+        //Widgets Default Font
+        Font default_font;
     };
 };
 

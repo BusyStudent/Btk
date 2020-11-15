@@ -2,9 +2,6 @@
 #define _BTK_PLATFORM_X11_HPP_
 namespace Btk{
     namespace X11{
-        //Font config
-        void InitFont();
-        void QuitFont();
         
     };
 };

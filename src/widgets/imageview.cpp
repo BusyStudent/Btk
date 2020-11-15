@@ -47,18 +47,13 @@ namespace Btk{
             render.copy(texture,&image_rect,&rect);
         }
     }
-    void ImageView::draw(){
-        if(win != nullptr){
-            win->draw();
-        }
-    }
     void ImageView::set_image(const PixBuf &buf){
         pixelbuf = buf.clone();
         texture = nullptr;
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;
-        draw();
+        win->draw();
     }
     void ImageView::ref_image(PixBuf &buf){
         pixelbuf = buf.ref();
@@ -66,10 +61,10 @@ namespace Btk{
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;
-        draw();
+        win->draw();
     }
     void ImageView::set_clip(const Rect &r){
         image_rect = r;
-        draw();
+        win->draw();
     }
 };

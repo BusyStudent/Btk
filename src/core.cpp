@@ -24,6 +24,17 @@ namespace{
         #endif
         fn(ev.user.data2);
     };
+    /**
+     * @brief A wrapper to call function pointer void(*)()
+     * 
+     * @param fn function pointer
+     */
+    void callback_wrapper(void *fn){
+        auto f = reinterpret_cast<void(*)()>(fn);
+        if(f != nullptr){
+            f();
+        }
+    };
 };
 namespace Btk{
     System* System::instance = nullptr;
@@ -102,6 +113,10 @@ namespace Btk{
                 //Failed to init
                 return -1;
             }
+            if(TTF_Init() == -1){
+                //Failed to init font engine
+                return -1;
+            }
             SDL_EnableScreenSaver();
             #ifndef NDEBUG
             //show detail version
@@ -129,7 +144,7 @@ namespace Btk{
         instance = nullptr;
         //Quit SDL
         IMG_Quit();
-        //TTF_Quit();
+        TTF_Quit();
         SDL_Quit();
     }
     //EventLoop
@@ -268,9 +283,7 @@ namespace Btk{
     }
     //std c handlers
     void System::atexit(void (*fn)()){
-        System::atexit([](void *fn){
-            (reinterpret_cast<void(*)()>(fn))();
-        },reinterpret_cast<void*>(fn));
+        System::atexit(callback_wrapper,reinterpret_cast<void*>(fn));
     }
     //event callbacks cb
     void System::regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data){
@@ -312,5 +325,15 @@ namespace Btk{
     }
     void AtExit(void(* fn)()){
         System::instance->atexit(fn);
+    }
+    void DeferCall(void(*fn)(void*),void *userdata){
+        System::instance->defer_call(
+            fn,userdata
+        );
+    }
+    void DeferCall(void(*fn)()){
+        System::instance->defer_call(
+            callback_wrapper,reinterpret_cast<void*>(fn)
+        );
     }
 };
