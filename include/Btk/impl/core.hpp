@@ -35,9 +35,11 @@ namespace Btk{
         void register_window(WindowImpl *impl);
         void unregister_window(WindowImpl *impl);
         //Handle event
-        inline void on_windowev(const SDL_Event &event);//Handle SDL_WINDOWEVENT
         inline void on_dropev(const SDL_Event &event);//Handle SDL_DropEvent
+        inline void on_windowev(const SDL_Event &event);//Handle SDL_WINDOWEVENT
+        inline void on_keyboardev(const SDL_Event &event);//Handle SDL_KeyboardEvent
         inline void on_mousemotion(const SDL_Event &event);//Handle SDL_MouseMotion
+        inline void on_mousebutton(const SDL_Event &event);//Handle SDL_MouseButton
         //defercall in eventloop
         void defer_call(void(* fn)(void*),void *data = nullptr);
         //Get window from WindowID

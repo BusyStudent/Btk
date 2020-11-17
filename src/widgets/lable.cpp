@@ -2,23 +2,34 @@
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/window.hpp>
+#include <Btk/themes.hpp>
 #include <Btk/lable.hpp>
 namespace Btk{
-    //Lable Impl;
+    //Lable Impl
+    
     Lable::Lable(Window &w){
         win = &w;
         font_ = win->font();
-        text_color = {
-            0,0,0,255
-        };
+        //Set text color inherted at window
+        text_color = win->impl()->theme->text_color;
     }
     Lable::Lable(Window &w,std::string_view text){
         win = &w;
         font_ = win->font();
-        text_color = {
-            0,0,0,255
-        };
+        //Set text color inherted at window
+        text_color = win->impl()->theme->text_color;
         text_ = text;
+    }
+    //Construct from posititon
+    Lable::Lable(Window &wi,int x,int y,int w,int h){
+        win = &wi;
+        font_ = win->font();
+        //Set text color inherted at window
+        text_color = win->impl()->theme->text_color;
+
+        rect = {
+            x,y,w,h
+        };
     }
     Lable::~Lable(){
 
@@ -53,8 +64,5 @@ namespace Btk{
         texture  = nullptr;
         text_buf = nullptr;
         win->draw();
-    }
-    bool Lable::handle(Event &){
-        return false;
     }
 };

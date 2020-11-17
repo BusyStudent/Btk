@@ -7,8 +7,12 @@ namespace Btk{
     Widget::~Widget(){
         
     }
-    bool Widget::handle(Event&){
-        //reject event
+    bool Widget::handle(Event& ev){
+        //Default Process event
+        if(ev.type() == Event::Type::SetRect){
+            rect = static_cast<SetRectEvent&>(ev).rect();
+            return true;
+        }
         return false;
     }
     Container::Container(){

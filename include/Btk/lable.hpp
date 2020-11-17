@@ -15,6 +15,15 @@ namespace Btk{
         public:
             Lable(Window&);
             Lable(Window&,std::string_view text);
+            /**
+             * @brief Construct a new Lable object
+             * 
+             * @param x Lable x
+             * @param y Lable y
+             * @param w Lable w
+             * @param h Lable h
+             */
+            Lable(Window&,int x,int y,int w,int h);
             ~Lable();
             std::string text() const{
                 return text_;
@@ -22,13 +31,13 @@ namespace Btk{
             //Set Lable text
             void set_text(std::string_view text);
             void draw(Renderer&);
-            bool handle(Event&);
         private:
-            std::string text_;
-            Font font_;
-            PixBuf text_buf;
-            Texture texture;
-            Color text_color;
+            std::string text_;//text
+            Font font_;//font
+            
+            PixBuf text_buf;//text pixels buf
+            Texture texture;//text texture
+            Color text_color;//text color
 
             Align v_align = Align::Left;
             Align h_align = Align::Center;

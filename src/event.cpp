@@ -1,7 +1,10 @@
 #include <SDL2/SDL.h>
 
+#include "build.hpp"
+
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/core.hpp>
+#include <Btk/exception.hpp>
 #include <Btk/window.hpp>
 #include <Btk/widget.hpp>
 #include <Btk/event.hpp>
@@ -99,4 +102,63 @@ namespace Btk{
             widget->handle(*event);
         }
     }
+};
+namespace Btk{
+    //Another Event
+    
+    SetRectEvent::~SetRectEvent(){}
+
+    //Translate KeyEvent from SDL_KeyEvent
+    KeyEvent::KeyEvent(const SDL_Event &ev):Event(
+        Event::Type::KeyBoard
+    ){
+        switch(ev.key.type){
+            case SDL_KEYUP:
+                ktype = UP;
+                break;
+            case SDL_KEYDOWN:
+                ktype = DOWN;
+                break;
+            default:
+                throwRuntimeError("This is not a KeyEvent");
+        }
+
+        if(ev.key.state == SDL_PRESSED){
+            kstate = Pressed;
+        }
+        else{
+            kstate = Released;
+        }
+
+        kcode = ev.key.keysym.sym;
+        scode = ev.key.keysym.scancode;
+        kmode = static_cast<Keymode>(ev.key.keysym.mod);
+
+        repeat = ev.key.repeat;
+    }
+    KeyEvent::~KeyEvent(){}
+
+    //Translate MouseButton Event
+    MouseEvent::MouseEvent(const SDL_MouseButtonEvent &event):
+        Event(Type::Click){
+        
+        new_x = event.x;
+        new_y = event.y;
+
+        if(event.type == SDL_MOUSEBUTTONDOWN){
+            mtype = Down;
+        }
+        else{
+            mtype = Up;
+        }
+        if(event.state == SDL_PRESSED){
+            mstate = Pressed;
+        }
+        else{
+            mstate = Released;
+        }
+
+        mclicks = event.clicks;
+    }
+    MouseEvent::~MouseEvent(){}
 };

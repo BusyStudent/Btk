@@ -17,7 +17,6 @@ namespace Btk{
     //Alignment
     enum class Align:unsigned int{
         Center,
-
         //Vertical Alignment
         Top,
         Buttom,
@@ -38,10 +37,16 @@ namespace Btk{
             Widget(const Widget &) = delete;
             virtual ~Widget();
             virtual void draw(Renderer &render) = 0;
-            virtual bool handle(Event &);//Process Event return true for accept event
+            /**
+             * @brief Process event
+             * 
+             * @return true if widget processed it
+             * @return false if widget unprocessed it
+             */
+            virtual bool handle(Event &);
             bool visible() const noexcept{
                 return not attr.hide;
-            }
+            };
             Vec2 position() const noexcept{
                 return {
                     rect.x,
@@ -50,6 +55,18 @@ namespace Btk{
             };
             Window &master() const noexcept{
                 return *win;
+            };
+            int x() const noexcept{
+                return rect.x;
+            };
+            int y() const noexcept{
+                return rect.y;
+            };
+            int w() const noexcept{
+                return rect.w;
+            };
+            int h() const noexcept{
+                return rect.h;
             };
         protected:
             WidgetAttr attr;

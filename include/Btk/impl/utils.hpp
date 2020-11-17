@@ -3,6 +3,7 @@
 //This headers provide some utils
 #include "../widget.hpp"
 #include "../rect.hpp"
+#include "window.hpp"
 namespace Btk{
     /**
      * @brief Calcaute a area in a Rect by alignment
@@ -29,7 +30,7 @@ namespace Btk{
                 x = rect.x + rect.w - w;
                 break;
             case Align::Center:
-                x = rect.x + rect.w / - w / 2;
+                x = rect.x + ((rect.w - w) / 2);
                 break;
             default:
                 x = -1;
@@ -42,7 +43,7 @@ namespace Btk{
                 y = rect.y + rect.h - h;
                 break;
             case Align::Center:
-                y = rect.y + rect.w / 2 - w / 2;
+                y = rect.y + ((rect.h - h) / 2);
                 break;
             default:
                 y = -1;

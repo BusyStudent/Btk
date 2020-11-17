@@ -7,6 +7,8 @@
 #include <mutex>
 #include <unordered_map>
 
+#include "build.hpp"
+
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/impl/core.hpp>
@@ -184,6 +186,16 @@ namespace Btk{
                     on_mousemotion(event);
                     break;
                 }
+                case SDL_MOUSEBUTTONUP:
+                case SDL_MOUSEBUTTONDOWN:{
+                    on_mousebutton(event);
+                    break;
+                }
+                case SDL_KEYUP:
+                case SDL_KEYDOWN:{
+                    on_keyboardev(event);
+                    break;
+                }
                 default:{
                     //get function from event callbacks map
                     auto iter = evcbs_map.find(event.type);
@@ -212,6 +224,7 @@ namespace Btk{
         }
         win->handle_windowev(event);
     }
+    //MouseMotion
     inline void System::on_mousemotion(const SDL_Event &event){
         WindowImpl *win;
         std::lock_guard<std::recursive_mutex> locker(map_mtx);
@@ -220,6 +233,16 @@ namespace Btk{
             return;
         }
         win->handle_mousemotion(event);
+    }
+    //MouseButton
+    inline void System::on_mousebutton(const SDL_Event &event){
+        WindowImpl *win;
+        std::lock_guard<std::recursive_mutex> locker(map_mtx);
+        win = get_window(event.button.windowID);
+        if(win == nullptr){
+            return;
+        }
+        win->handle_mousebutton(event);
     }
     //DropFile
     inline void System::on_dropev(const SDL_Event &event){
@@ -233,6 +256,16 @@ namespace Btk{
         }
         win->on_dropfile(event.drop.file);
         
+    }
+    //KeyBoardEvent
+    inline void System::on_keyboardev(const SDL_Event &event){
+        WindowImpl *win;
+        std::lock_guard<std::recursive_mutex> locker(map_mtx);
+        win = get_window(event.key.windowID);
+        if(win == nullptr){
+            return;
+        }
+        win->handle_keyboardev(event);
     }
     void System::register_window(WindowImpl *impl){
         if(impl == nullptr){

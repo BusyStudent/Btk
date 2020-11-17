@@ -13,6 +13,7 @@ namespace Btk{
     //Impl for Window
     struct Renderer;
     struct Widget;
+    struct Theme;
     struct WindowImpl{
         //Init SDL Window
         WindowImpl(const char *title,int x,int y,int w,int h,int flags);
@@ -26,7 +27,9 @@ namespace Btk{
         void on_dropfile(std::string_view file);
         //handle event 
         void handle_windowev(const SDL_Event &event);
+        void handle_keyboardev(const SDL_Event &event);
         void handle_mousemotion(const SDL_Event &event);
+        void handle_mousebutton(const SDL_Event &event);
         //Dispatch Event to Widgets
         bool dispatch(Event &event);
         
@@ -54,8 +57,17 @@ namespace Btk{
         std::recursive_mutex mtx;
         //Rt draw
         Uint32 rt_fps;
+        //Last draw ticks
+        Uint32 last_draw_ticks;
         //Widgets Default Font
         Font default_font;
+        //Window theme
+        Theme *theme;
+        //Mouse Position
+        int mouse_x;
+        int mouse_y;
+        //Last Widget has focus
+        Widget *last_widget;
     };
 };
 

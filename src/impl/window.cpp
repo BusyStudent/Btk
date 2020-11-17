@@ -1,5 +1,7 @@
 #include <SDL2/SDL_image.h>
 
+#include "../build.hpp"
+
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/render.hpp>
 #include <Btk/impl/core.hpp>
@@ -8,6 +10,8 @@
 #include <Btk/pixels.hpp>
 #include <Btk/widget.hpp>
 #include <Btk/layout.hpp>
+#include <Btk/themes.hpp>
+#include <Btk/event.hpp>
 namespace Btk{
     
     WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags){
@@ -24,17 +28,21 @@ namespace Btk{
         if(render == nullptr){
             throwSDLError();
         }
-        bg_color = {
-            255,
-            255,
-            255,
-            255
-        };
         cursor = nullptr;
         //Disable Rt draw
         rt_fps = 0;
         //Open DefaultFont
-        default_font.open("",15);
+        default_font.open("",12);
+        //Set theme
+        theme = Themes::GetDefault();
+        //Set background color
+        bg_color = theme->window_bg;
+
+        last_draw_ticks = 0;
+        //Init it to -1
+        mouse_x = -1;
+        mouse_y = -1;
+        last_widget = nullptr;
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -48,6 +56,15 @@ namespace Btk{
     }
     //Draw window
     void WindowImpl::draw(){
+        auto current = SDL_GetTicks();
+        if(current < last_draw_ticks + 10){
+            //drawing too fast
+            last_draw_ticks = current;
+            return;
+        }
+        else{
+            last_draw_ticks = current;
+        }
         #ifndef NDEBUG
         SDL_Log("[System::Renderer]Draw Window %p",win);
         #endif
@@ -105,13 +122,15 @@ namespace Btk{
             //h = window's h
             Widget *widget = *widgets_list.begin();
             if(not widget->attr.user_rect){
-                widget->rect.x = 0;
-                widget->rect.y = 0;
-                
-                pixels_size(
-                    &(widget->rect.w),
-                    &(widget->rect.h)
-                );
+                int w,h;
+                pixels_size(&w,&h);
+                SetRectEvent ev({
+                    0,
+                    0,
+                    w,
+                    h
+                });
+                widget->handle(ev); 
             }
         }
         else{
@@ -128,12 +147,14 @@ namespace Btk{
     }
     //Dispatch Event
     bool WindowImpl::dispatch(Event &event){
+        bool flags = false;
         for(auto widget:widgets_list){
-            if(widget->handle(event)){
-                return true;
+            flags |= widget->handle(event);
+            if(event.is_accepted()){
+                return flags;
             }
         }
-        return false;
+        return flags;
     }
 }
 //Event Processing
@@ -189,8 +210,60 @@ namespace Btk{
         }
     }
     //mouse motion
-    void WindowImpl::handle_mousemotion(const SDL_Event&){
+    void WindowImpl::handle_mousemotion(const SDL_Event &event){
+        //Get new x and y
+        int x = event.motion.x;
+        int y = event.motion.y;
 
+        if(last_widget != nullptr){
+            if(last_widget->rect.has_point(x,y)){
+                //It does nnot change
+                //Dispatch this motion event
+                MouseEvent ev(x,y);
+                last_widget->handle(ev);
+                return;
+            }
+            else{
+                //widget leave
+                MouseEvent ev(Event::Type::Leave,x,y);
+                last_widget->handle(ev);
+                last_widget = nullptr;
+            }
+        }
+        //find new widget which has this point
+        for(auto widget:widgets_list){
+            if(widget->rect.has_point(x,y)){
+                last_widget = widget;
+                //widget enter
+                MouseEvent ev(Event::Type::Enter,x,y);
+                last_widget->handle(ev);
+                break;
+            }
+        }
+    }
+    //MouseButton down or up
+    void WindowImpl::handle_mousebutton(const SDL_Event &event){
+        int x = event.button.x;
+        int y = event.button.y;
+
+        if(last_widget == nullptr){
+            for(auto widget:widgets_list){
+                if(last_widget->rect.has_point(x,y)){
+                    //We find it
+                    last_widget = widget;
+                    goto find;
+                }
+            }
+            return;
+        }
+        find:
+        MouseEvent ev(event.button);
+        last_widget->handle(ev);
+    }
+    //keyboard event
+    void WindowImpl::handle_keyboardev(const SDL_Event &event){
+        KeyEvent ev(event);
+        dispatch(ev);
     }
 }
 namespace Btk{
@@ -199,7 +272,7 @@ namespace Btk{
         #ifdef __ANDROID__
         //Android need full screen
         constexpr Uint32 flags = 
-            SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_FULLSCREEN_DESKTOP;
+            SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN_DESKTOP;
         #else
         constexpr Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN;
         #endif
@@ -211,6 +284,9 @@ namespace Btk{
             h,
             flags
         );
+        SDL_SetWindowData(pimpl->win,"btk_win",this);
+        SDL_SetWindowData(pimpl->win,"btk_imp",pimpl);
+
         System::instance->register_window(pimpl);
     }
     bool Window::mainloop(){
