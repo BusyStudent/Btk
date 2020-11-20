@@ -98,7 +98,11 @@ namespace Btk{
         }
     }
     Font Font::clone() const{
-        return FromFile(pimpl->filename,pimpl->ptsize);
+        Font f = FromFile(pimpl->filename,pimpl->ptsize);
+        //First open font
+        //Set style
+        TTF_SetFontStyle(f.pimpl->font,TTF_GetFontStyle(pimpl->font));
+        return f;
     }
 
     PixBuf Font::render_solid(std::string_view text,Color color){
@@ -115,7 +119,6 @@ namespace Btk{
             fg,
             bg
         );
-        
         if(surf == nullptr){
             throwSDLError(TTF_GetError());
         }
@@ -127,6 +130,62 @@ namespace Btk{
             throwSDLError(TTF_GetError());
         }
         return surf;
+    }
+    //UNICODE Versions
+    PixBuf Font::render_solid(std::u16string_view text,Color color){
+        SDL_Surface *surf = TTF_RenderUNICODE_Solid(
+            pimpl->font,reinterpret_cast<const Uint16*>(text.data()),
+            color
+        );
+        if(surf == nullptr){
+            throwSDLError(TTF_GetError());
+        }
+        return surf;
+    }
+    PixBuf Font::render_shaded(std::u16string_view text,Color fg,Color bg){
+        SDL_Surface *surf = TTF_RenderUNICODE_Shaded(
+            pimpl->font,
+            reinterpret_cast<const Uint16*>(text.data()),
+            fg,
+            bg
+        );
+        if(surf == nullptr){
+            throwSDLError(TTF_GetError());
+        }
+        return surf;
+    }
+    PixBuf Font::render_blended(std::u16string_view text,Color color){
+        SDL_Surface *surf = TTF_RenderUNICODE_Blended(
+            pimpl->font,
+            reinterpret_cast<const Uint16*>(text.data()),
+            color
+        );
+        if(surf == nullptr){
+            throwSDLError(TTF_GetError());
+        }
+        return surf;
+    }
+    //font style
+    FontStyle Font::style() const {
+        return static_cast<FontStyle>(TTF_GetFontStyle(pimpl->font));
+    }
+    std::string Font::style_name() const{
+        char *name = TTF_FontFaceStyleName(pimpl->font);
+        if(name == nullptr){
+            throwSDLError(TTF_GetError());
+        }
+        std::string s(name);
+        SDL_free(name);
+        return s;
+    }
+    std::string Font::family() const{
+        char *name = TTF_FontFaceFamilyName(pimpl->font);
+        if(name == nullptr){
+            throwSDLError(TTF_GetError());
+        }
+        std::string s(name);
+        SDL_free(name);
+        return s;
     }
     Font &Font::operator =(const Font &f){
         if(&f != this){

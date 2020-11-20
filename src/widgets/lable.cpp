@@ -1,3 +1,5 @@
+#include "../build.hpp"
+
 #include <Btk/impl/render.hpp>
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/utils.hpp>

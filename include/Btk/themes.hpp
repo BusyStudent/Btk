@@ -5,14 +5,24 @@
 //A file of themes
 namespace Btk{
     struct Theme{
-        //Window Background Color
-        Color window_bg;
+        //Background Color
+        Color background_color;
         //Text Color
         Color text_color;
+        //Default font name
+        const char *font;
+        //Default font size
+        int         font_ptsize;
+        //Border Color
+        Color border_color;
+        //Hight light Color
+        Color high_light;
+        //Hight light Text
+        Color high_light_text;
     };
     namespace Themes{
         void   SetDefault(Theme *);
-        Theme *GetDefault();
+        Theme &GetDefault();
     };
 };
 

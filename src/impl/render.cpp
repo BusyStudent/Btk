@@ -1,3 +1,6 @@
+
+#include "../build.hpp"
+
 #include <Btk/impl/render.hpp>
 #include <Btk/impl/scope.hpp>
 //for Btk_defer
@@ -120,6 +123,9 @@ namespace Btk{
         return SDL_RenderSetViewport(render,nullptr);
     }
     int  Renderer::set_viewport(const SDL_Rect &r){
+        if(SDL_RectEmpty(&r)){
+            return SDL_RenderSetViewport(render,nullptr);
+        }
         return SDL_RenderSetViewport(render,&r);
     }
     //ClipRect
@@ -132,6 +138,10 @@ namespace Btk{
         return SDL_RenderSetClipRect(render,nullptr);
     }
     int  Renderer::set_cliprect(const SDL_Rect &r){
+        if(SDL_RectEmpty(&r)){
+            //Disable Clipping
+            return SDL_RenderSetClipRect(render,nullptr);
+        }
         return SDL_RenderSetClipRect(render,&r);
     }
     //texture methods

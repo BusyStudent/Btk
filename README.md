@@ -1,6 +1,10 @@
 # Btk
 
-A library for developing Gui based on SDL2
+A library for developing Gui based on SDL2  
+
+## CLI
+
+![C/C++ CI on Linux](https://github.com/BusyStudent/Btk/workflows/C/C++%20CI%20on%20Linux/badge.svg)
 
 ## It base on
 

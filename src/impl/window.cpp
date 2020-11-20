@@ -31,12 +31,12 @@ namespace Btk{
         cursor = nullptr;
         //Disable Rt draw
         rt_fps = 0;
-        //Open DefaultFont
-        default_font.open("",12);
         //Set theme
-        theme = Themes::GetDefault();
+        theme = &Themes::GetDefault();
+        //Open DefaultFont
+        default_font.open(theme->font,theme->font_ptsize);
         //Set background color
-        bg_color = theme->window_bg;
+        bg_color = theme->background_color;
 
         last_draw_ticks = 0;
         //Init it to -1
@@ -248,7 +248,7 @@ namespace Btk{
 
         if(last_widget == nullptr){
             for(auto widget:widgets_list){
-                if(last_widget->rect.has_point(x,y)){
+                if(widget->rect.has_point(x,y)){
                     //We find it
                     last_widget = widget;
                     goto find;

@@ -15,6 +15,11 @@ namespace Btk{
         }
         return false;
     }
+    void Widget::set_rect(const Rect &rect){
+        attr.user_rect = true;
+        SetRectEvent ev(rect);
+        handle(ev);
+    }
     Container::Container(){
         attr.container = true;
     }

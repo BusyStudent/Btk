@@ -56,6 +56,11 @@ namespace Btk{
             Window &master() const noexcept{
                 return *win;
             };
+            //Set widget rect
+            void set_rect(const Rect &rect);
+            void set_rect(int x,int y,int w,int h){
+                 set_rect({x,y,w,h});
+            };
             int x() const noexcept{
                 return rect.x;
             };

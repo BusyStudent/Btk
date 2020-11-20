@@ -6,6 +6,17 @@
 #include "pixels.hpp"
 namespace Btk{
     struct FontImpl;
+    /**
+     * @brief FontStyle from SDL_ttf
+     * 
+     */
+    enum class FontStyle:int{
+        Normal = 0x00,
+        Bold = 0x01,
+        Italic = 0x02,
+        Underline = 0x04,
+        Strikethrough = 0x08
+    };
     class Font{
         public:
             //empty font
@@ -32,6 +43,7 @@ namespace Btk{
              * @return PixBuf 
              */
             PixBuf render_solid(std::string_view text,Color color);
+            PixBuf render_solid(std::u16string_view text,Color color);
             /**
              * @brief Render shaded text
              * 
@@ -42,6 +54,7 @@ namespace Btk{
              * @return PixBuf 
              */
             PixBuf render_shaded(std::string_view text,Color fg,Color bg);
+            PixBuf render_shaded(std::u16string_view text,Color fg,Color bg);
             /**
              * @brief Render blended text
              * 
@@ -51,6 +64,7 @@ namespace Btk{
              * @return PixBuf 
              */
             PixBuf render_blended(std::string_view text,Color color);
+            PixBuf render_blended(std::u16string_view text,Color color);
             /**
              * @brief Get font ptsize
              * 
@@ -94,10 +108,28 @@ namespace Btk{
              * @return Font 
              */
             Font clone() const;
+            /**
+             * @brief Get this font's style
+             * 
+             * @return FontStyle 
+             */
+            FontStyle style() const;
+            /**
+             * @brief Set the style 
+             * 
+             * @param style The style you want to set
+             */
+            void  set_style(FontStyle style);
             FontImpl *impl() const noexcept{
                 return pimpl;
             }
-
+            /**
+             * @brief Get font family name
+             * 
+             * @return family name
+             */
+            std::string family() const;
+            std::string style_name() const;
             /**
              * @brief Assign font
              * 
@@ -105,6 +137,9 @@ namespace Btk{
              */
             Font &operator =(const Font &);
             Font &operator =(Font &&);
+            bool empty() const noexcept{
+                return pimpl == nullptr;
+            };
             /**
              * @brief Open font by its filename
              * 
@@ -143,6 +178,24 @@ namespace Btk{
          */
         void Quit();
     };
+    //operators for FontStyle
+    inline FontStyle operator |(FontStyle s1,FontStyle s2) noexcept{
+        return static_cast<FontStyle>(int(s1) | int(s2));
+    }
+    inline FontStyle operator +(FontStyle s1,FontStyle s2) noexcept{
+        return static_cast<FontStyle>(int(s1) | int(s2));
+    }
+    inline FontStyle operator &(FontStyle s1,FontStyle s2) noexcept{
+        return static_cast<FontStyle>(int(s1) & int(s2));
+    }
+    inline FontStyle& operator +=(FontStyle s1,FontStyle s2) noexcept{
+        s1 = static_cast<FontStyle>(int(s1) | int(s2));
+        return s1;
+    }
+    inline FontStyle& operator |=(FontStyle s1,FontStyle s2) noexcept{
+        s1 = static_cast<FontStyle>(int(s1) | int(s2));
+        return s1;
+    }
 };
 
 

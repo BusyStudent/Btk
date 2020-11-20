@@ -2,6 +2,7 @@
 #define _BTK_BUTTON_HPP_
 #include "widget.hpp"
 #include "pixels.hpp"
+#include "themes.hpp"
 #include "font.hpp"
 #include "defs.hpp"
 namespace Btk{
@@ -14,8 +15,12 @@ namespace Btk{
             //Process event
             bool handle(Event &);
         protected:
-            virtual void onclick(int x,int y) = 0;
+            virtual void onclick(int x,int y,bool pressed) = 0;
+            virtual void onenter();
+            virtual void onleave();
             bool is_entered;//Is mouse on the button?
+            bool is_pressed;//Is mouse pressed the button?
+            Theme *theme;
     };
     /**
      * @brief A simple pushbutton
@@ -23,9 +28,30 @@ namespace Btk{
      */
     class BTKAPI Button:public AbstructButton{
         public:
+            Button(Window&);
+            Button(Window&,std::string_view text);
+            Button(Window&,int x,int y,int w,int h);
+            ~Button();
             void draw(Renderer &);
+            template<class ...T>
+            void on_click(T &&...args){
+                clicked.connect(std::forward<T>(args)...);
+            };
+            Signal<void()> &sig_click(){
+                return clicked;
+            };
+            void set_text(std::string_view text);
         protected:
-            void onclick(int x,int y);
+            void onclick(int x,int y,bool pressed);
+            void onleave();
+
+            Signal<void()> clicked;
+
+            //Button text
+            std::string btext;
+            PixBuf  textbuf;
+            Texture texture;
+            Font    textfont;
     };
 };
 
