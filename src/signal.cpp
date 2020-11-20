@@ -1,3 +1,5 @@
+#include "build.hpp"
+
 #include <Btk/signal/signal.hpp>
 namespace Btk{
     SignalBase::SignalBase(){

@@ -1,10 +1,12 @@
 #if !defined(_BOXIMPL_CORE_HPP_)
 #define _BOXIMPL_CORE_HPP_
 #include <SDL2/SDL.h>
-#include <exception>
+#include <condition_variable>
 #include <unordered_map>
-#include <functional>
+#include <exception>
+#include <atomic>
 #include <mutex>
+#include <queue>
 #include <list>
 namespace Btk{
     struct WindowImpl;
@@ -52,12 +54,28 @@ namespace Btk{
         Uint32 dispatch_ev_id;//dispatch our event Event ID
         //called after a exception was throwed
         //return false to abort program
-        bool (*handle_exception)(std::exception *);
+        bool (*handle_exception)(std::exception *) = nullptr;
         //called atexit
         std::list<ExitHandler> atexit_handlers;
         //register handlers
         void atexit(void (*fn)(void *),void *data);
         void atexit(void (*fn)());
+        //The async doesnnot finishned yet
+        //async workers
+        struct AsyncWorker{
+            std::atomic<bool> running;//Is worker running?
+            std::atomic<bool> is_free;//Is worker able to use
+            SDL_Thread *thread;//Workers thread
+        };
+        struct AsyncData{
+            void *async_package;
+            void (*async_main)(void*);
+        };
+        std::condition_variable async_condvar;
+        std::list<AsyncWorker> async_workers;
+        std::queue<AsyncData> async_queue;
+        std::mutex async_mtx;
+        int async_wmax = 4;//Max workers
 
         void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data);
         //Init Global

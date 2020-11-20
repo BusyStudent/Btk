@@ -1,4 +1,7 @@
 #include <SDL2/SDL.h>
+
+#include "build.hpp"
+
 #include <Btk/exception.hpp>
 #include <Btk/rwops.hpp>
 #include <cstring>

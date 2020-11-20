@@ -3,10 +3,11 @@
 #include <iosfwd>
 #include <cstdint>
 #include <cstddef>
-//A Simple wrapper for SDL_RWOps
+#include "defs.hpp"
 struct SDL_RWops;
 namespace Btk{
-    class RWops{
+    //A Simple wrapper for SDL_RWOps
+    class BTKAPI RWops{
         public:
             RWops(SDL_RWops *r):fptr(r){};
             RWops(const RWops &) = delete;
@@ -30,7 +31,7 @@ namespace Btk{
         friend class MemBuffer;
     };
     //Memory buffer
-    class MemBuffer:public RWops{
+    class BTKAPI MemBuffer:public RWops{
         public:
             MemBuffer();
             //MemBuffer(const MemBuffer &);

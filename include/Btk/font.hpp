@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 #include "pixels.hpp"
+#include "defs.hpp"
 namespace Btk{
     struct FontImpl;
     /**
@@ -17,7 +18,7 @@ namespace Btk{
         Underline = 0x04,
         Strikethrough = 0x08
     };
-    class Font{
+    class BTKAPI Font{
         public:
             //empty font
             Font():pimpl(nullptr){};
@@ -166,17 +167,17 @@ namespace Btk{
          * @param name font name
          * @return std::string 
          */
-        std::string GetFileByName(std::string_view name);
+        BTKAPI std::string GetFileByName(std::string_view name);
         /**
          * @brief Init font utils
          * 
          */
-        void Init();
+        BTKAPI void Init();
         /**
          * @brief Quit font utils
          * 
          */
-        void Quit();
+        BTKAPI void Quit();
     };
     //operators for FontStyle
     inline FontStyle operator |(FontStyle s1,FontStyle s2) noexcept{
@@ -188,13 +189,11 @@ namespace Btk{
     inline FontStyle operator &(FontStyle s1,FontStyle s2) noexcept{
         return static_cast<FontStyle>(int(s1) & int(s2));
     }
-    inline FontStyle& operator +=(FontStyle s1,FontStyle s2) noexcept{
-        s1 = static_cast<FontStyle>(int(s1) | int(s2));
-        return s1;
+    inline FontStyle operator +=(FontStyle s1,FontStyle s2) noexcept{
+        return static_cast<FontStyle>(int(s1) | int(s2));
     }
-    inline FontStyle& operator |=(FontStyle s1,FontStyle s2) noexcept{
-        s1 = static_cast<FontStyle>(int(s1) | int(s2));
-        return s1;
+    inline FontStyle operator |=(FontStyle s1,FontStyle s2) noexcept{
+        return static_cast<FontStyle>(int(s1) | int(s2));
     }
 };
 

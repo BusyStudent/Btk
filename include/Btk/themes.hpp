@@ -21,8 +21,8 @@ namespace Btk{
         Color high_light_text;
     };
     namespace Themes{
-        void   SetDefault(Theme *);
-        Theme &GetDefault();
+        BTKAPI void   SetDefault(Theme *);
+        BTKAPI Theme &GetDefault();
     };
 };
 

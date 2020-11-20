@@ -16,7 +16,7 @@ namespace Btk{
 
     };
     //PixelBuffer
-    class PixBuf{
+    class BTKAPI PixBuf{
         public:
             PixBuf(SDL_Surface *s = nullptr):surf(s){};//empty 
             PixBuf(int w,int h,Uint32 format);//Create a buffer
@@ -97,7 +97,7 @@ namespace Btk{
             SDL_Surface *surf;
     };
     //PixelFormat
-    class PixFmt{
+    class BTKAPI PixFmt{
         public:
             //Create a pixel format
             PixFmt(Uint32 pix_fmt);
@@ -140,7 +140,7 @@ namespace Btk{
             SDL_PixelFormat *fmt;
     };
     //RendererTexture
-    class Texture{
+    class BTKAPI Texture{
         public:
             Texture(SDL_Texture *t = nullptr):texture(t){};
             Texture(const Texture &) = delete;

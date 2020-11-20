@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "../build.hpp"
+
 #include <Btk/impl/font.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>

@@ -11,7 +11,7 @@ namespace Btk{
      * @brief Lable widget
      * 
      */
-    class Lable:public Widget{
+    class BTKAPI Lable:public Widget{
         public:
             Lable(Window&);
             Lable(Window&,std::string_view text);

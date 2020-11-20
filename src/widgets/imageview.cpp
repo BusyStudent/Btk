@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
 
+#include "../build.hpp"
+
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/render.hpp>
 #include <Btk/imageview.hpp>

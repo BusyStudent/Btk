@@ -9,7 +9,10 @@ if is_plat("linux") then
     -- linux has fontconfig
     add_defines("BTK_USE_FONTCONFIG")
 end
-
+if is_mode("release") then
+    add_cxxflags("-march=native")
+    add_cflags("-march=native")
+end
 target("btk")
     on_load(function(target)
         target:add(find_packages("SDL2","SDL2_image","SDL2_ttf"))
@@ -52,5 +55,9 @@ if is_mode("debug") then
     target("fn")
         set_kind("binary")
         add_files("./tests/fn.cpp")
+        add_deps("btk")
+    target("async")
+        set_kind("binary")
+        add_files("./tests/async.cpp")
         add_deps("btk")
 end

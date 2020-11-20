@@ -4,6 +4,8 @@
     #include "../thirdparty/SDL2_rotozoom.h"
 #endif
 
+#include "../build.hpp"
+
 #include <Btk/exception.hpp>
 #include <Btk/pixels.hpp>
 #include <Btk/rwops.hpp>

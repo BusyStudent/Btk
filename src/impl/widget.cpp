@@ -1,4 +1,6 @@
 //Widget impl
+#include "../build.hpp"
+
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/widget.hpp>

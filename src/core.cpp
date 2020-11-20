@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_filesystem.h>
 #include <cstdlib>
 #include <thread>
@@ -9,6 +10,7 @@
 
 #include "build.hpp"
 
+#include <Btk/async/async.hpp>
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/impl/core.hpp>
@@ -88,7 +90,6 @@ namespace Btk{
         return 0;
     }
     System::System(){
-        handle_exception = nullptr;
 
         defer_call_ev_id = SDL_RegisterEvents(2);
         if(defer_call_ev_id == (Uint32)-1){
@@ -102,6 +103,15 @@ namespace Btk{
         }
     }
     System::~System(){
+        //join all async workers
+        for(auto &workers:async_workers){
+            workers.running = false;
+        }
+        async_condvar.notify_all();
+        for(auto &workers:async_workers){
+            SDL_WaitThread(workers.thread,nullptr);
+        }
+
         //run all exit handlers
         for(auto &handler:atexit_handlers){
             handler();
@@ -369,4 +379,15 @@ namespace Btk{
             callback_wrapper,reinterpret_cast<void*>(fn)
         );
     }
+};
+namespace Btk{
+namespace Impl{
+    void RtLunch(void *pakcage,void(*package_main)(void*)){
+        
+    }
+    void DeferLunch(void *pakcage,void(*package_main)(void*)){
+
+    }
+    
+};
 };

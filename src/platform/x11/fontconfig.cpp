@@ -1,6 +1,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <fontconfig/fontconfig.h>
 
+#include "../../build.hpp"
 #include <Btk/platform/x11.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/font.hpp>
