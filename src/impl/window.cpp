@@ -286,7 +286,7 @@ namespace Btk{
         );
         SDL_SetWindowData(pimpl->win,"btk_win",this);
         SDL_SetWindowData(pimpl->win,"btk_imp",pimpl);
-
+        winid = SDL_GetWindowID(pimpl->win);
         System::instance->register_window(pimpl);
     }
     bool Window::mainloop(){
@@ -319,7 +319,7 @@ namespace Btk{
             SDL_zero(event);
             event.type = SDL_WINDOWEVENT;
             event.window.timestamp = SDL_GetTicks();
-            event.window.windowID = SDL_GetWindowID(pimpl->win);
+            event.window.windowID = winid;
             event.window.event = SDL_WINDOWEVENT_EXPOSED;
             SDL_PushEvent(&event);
        }
@@ -330,7 +330,7 @@ namespace Btk{
         SDL_zero(event);
         event.type = SDL_WINDOWEVENT;
         event.window.timestamp = SDL_GetTicks();
-        event.window.windowID = SDL_GetWindowID(pimpl->win);
+        event.window.windowID = winid;
         event.window.event = SDL_WINDOWEVENT_CLOSE;
         SDL_PushEvent(&event);
     }
@@ -382,10 +382,12 @@ namespace Btk{
         std::lock_guard<std::recursive_mutex> locker(
             System::instance->map_mtx
         );
-        for(auto win:System::instance->wins_map){
-            if(win.second == pimpl){
-                return true;
-            }
+        auto iter = System::instance->wins_map.find(winid);
+        if(iter == System::instance->wins_map.end()){
+            return false;
+        }
+        else if(iter->second == pimpl){
+            return true;
         }
         return false;
     }
@@ -401,7 +403,7 @@ namespace Btk{
         );
         SDL_Window *win = SDL_GetMouseFocus();
         if(win != nullptr){
-            if(SDL_GetWindowID(pimpl->win) == SDL_GetWindowID(win)){
+            if(winid == SDL_GetWindowID(win)){
                 //Window has focus
                 //reset cursor right now
                 SDL_SetCursor(pimpl->cursor);
@@ -415,7 +417,7 @@ namespace Btk{
         );
         SDL_Window *win = SDL_GetMouseFocus();
         if(win != nullptr){
-            if(SDL_GetWindowID(pimpl->win) == SDL_GetWindowID(win)){
+            if(winid == SDL_GetWindowID(win)){
                 //Window has focus
                 //reset cursor right now
                 SDL_SetCursor(pimpl->cursor);

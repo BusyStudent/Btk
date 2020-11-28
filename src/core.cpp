@@ -12,6 +12,7 @@
 
 #include <Btk/async/async.hpp>
 #include <Btk/impl/window.hpp>
+#include <Btk/impl/thread.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
@@ -90,7 +91,7 @@ namespace Btk{
         return 0;
     }
     System::System(){
-
+        AsyncInit();
         defer_call_ev_id = SDL_RegisterEvents(2);
         if(defer_call_ev_id == (Uint32)-1){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
@@ -103,15 +104,7 @@ namespace Btk{
         }
     }
     System::~System(){
-        //join all async workers
-        for(auto &workers:async_workers){
-            workers.running = false;
-        }
-        async_condvar.notify_all();
-        for(auto &workers:async_workers){
-            SDL_WaitThread(workers.thread,nullptr);
-        }
-
+        AsyncQuit();
         //run all exit handlers
         for(auto &handler:atexit_handlers){
             handler();
@@ -148,9 +141,7 @@ namespace Btk{
     }
     //Global Cleanup
     void System::Quit(){
-        if(instance->is_running){
-            abort();
-        }
+        BTK_ASSERT(System::instance->is_running == false);
         //delete instance to cleanup windows
         delete instance;
         instance = nullptr;
@@ -364,12 +355,16 @@ namespace Btk{
         return current;
     }
     void AtExit(void(* fn)(void*),void *data){
+        BTK_ASSERT(System::instance != nullptr);
+
         System::instance->atexit(fn,data);
     }
     void AtExit(void(* fn)()){
         System::instance->atexit(fn);
     }
     void DeferCall(void(*fn)(void*),void *userdata){
+        BTK_ASSERT(System::instance != nullptr);
+        
         System::instance->defer_call(
             fn,userdata
         );
@@ -382,12 +377,6 @@ namespace Btk{
 };
 namespace Btk{
 namespace Impl{
-    void RtLunch(void *pakcage,void(*package_main)(void*)){
-        
-    }
-    void DeferLunch(void *pakcage,void(*package_main)(void*)){
-
-    }
     
 };
 };

@@ -39,7 +39,7 @@ namespace Btk{
         }
         //ViewPort
         Rect get_viewport();//Get ViewPort
-        int  set_viewport();//Reset View[prt]
+        int  set_viewport();//Reset ViewPort
         int  set_viewport(const SDL_Rect &r);//Set ViewPort
         //ClipRect
         Rect get_cliprect();
@@ -52,7 +52,8 @@ namespace Btk{
         //texture methods
         //create texture
         Texture create_from(const PixBuf &pixbuf);
-        PixBuf dump_texture(const Texture &);//dump texture to pixels
+        Texture clone_texture(const Texture &);
+        PixBuf   dump_texture(const Texture &);//dump texture to pixels
 
         SDL_Renderer *render;
     };

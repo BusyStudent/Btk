@@ -19,6 +19,14 @@ target("btk")
     end)
     add_defines("BTK_USE_GFX")
     add_defines("USE_MMX")
+
+    if is_mode("release") then
+        add_cxxflags("NDEBUG")
+        add_cflags("NDEBUG")
+    else
+        add_ldflags("-rdynamic")
+    end
+    
     if is_plat("linux") then
         add_files("./src/platform/x11/*.cpp")
         add_links("fontconfig")
@@ -39,6 +47,8 @@ target("btk")
     add_files("./src/themes/*.cpp")
     --Platform
     add_files("./src/platform/platform.cpp")
+    --Threading
+    add_files("./src/thread/*.cpp")
 if is_mode("debug") then
     target("hello")
         set_kind("binary")

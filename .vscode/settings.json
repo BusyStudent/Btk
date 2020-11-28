@@ -67,6 +67,7 @@
         "filesystem": "cpp",
         "*.xpm": "cpp",
         "*.ipp": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "future": "cpp"
     }
 }

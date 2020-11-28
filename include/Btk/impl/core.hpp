@@ -8,6 +8,9 @@
 #include <mutex>
 #include <queue>
 #include <list>
+
+#include "thread.hpp"
+
 namespace Btk{
     struct WindowImpl;
     struct System{
@@ -60,22 +63,6 @@ namespace Btk{
         //register handlers
         void atexit(void (*fn)(void *),void *data);
         void atexit(void (*fn)());
-        //The async doesnnot finishned yet
-        //async workers
-        struct AsyncWorker{
-            std::atomic<bool> running;//Is worker running?
-            std::atomic<bool> is_free;//Is worker able to use
-            SDL_Thread *thread;//Workers thread
-        };
-        struct AsyncData{
-            void *async_package;
-            void (*async_main)(void*);
-        };
-        std::condition_variable async_condvar;
-        std::list<AsyncWorker> async_workers;
-        std::queue<AsyncData> async_queue;
-        std::mutex async_mtx;
-        int async_wmax = 4;//Max workers
 
         void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data);
         //Init Global

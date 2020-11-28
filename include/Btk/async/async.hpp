@@ -1,76 +1,158 @@
 #if !defined(BTK_ASYNC_HPP_)
 #define BTK_ASYNC_HPP_
 #include <tuple>
+#include <future>
 #include "../signal/signal.hpp"
 #include "../defs.hpp"
 namespace Btk{
+    extern void DeferCall(void(* fn)(void*),void *data);
     namespace Impl{
         template<class RetT>
-        struct AsyncResult{
-            Signal<void(RetT)> sig;
+        struct AsyncSignal{
+            using type = Signal<void(RetT)>;
         };
         template<>
-        struct AsyncResult<void>{
-            Signal<void()> sig;
+        struct AsyncSignal<void>{
+            using type = Signal<void()>;
         };
+        //A struct to store task value
+        template<class RetT>
+        struct AsyncResultHolder{
+            union{
+                RetT data;
+            }data;
+            void cleanup(){
+                data.data.~RetT();
+            };
+            template<class T>
+            void operator =(T &&t){
+                data.data = std::forward<T>(t);
+            };
+        };
+        template<>
+        struct AsyncResultHolder<void>{
+            void cleanup(){
+
+            };
+        };
+
         template<class Callable,class ...Args>
-        struct AsyncPackage{
-            AsyncPackage(Callable &&c,Args &&...args):
-                callable(std::forward<Callable>(c)),
-                args_pak(std::forward<Args>(args)...){
-                
-            }
+        struct AsyncInvoker{
+            using result_type = std::invoke_result_t<Callable,Args...>;
+            //define signal
+            typename AsyncSignal<result_type>::type sig;
             Callable callable;
-            std::tuple<Args...> args_pak;
-            //AsyncResult
-            AsyncResult<std::invoke_result_t<Callable,Args...>> aret;
+            std::tuple<Args...> args;
+            AsyncResultHolder<result_type> holder;
+            //Create a invoker
+            AsyncInvoker(Callable &&_callable,Args &&..._args):
+                callable(std::forward<Callable>(_callable)),
+                args{std::forward<Args>(args)...}{
+
+            };
+            //Main entry
             static void Run(void *__self){
-                auto *self = static_cast<AsyncPackage*>(__self);
-                if constexpr(std::is_same<void,std::invoke_result_t<Callable,Args...>>::value){
-                    std::apply(self->callable,self->args_pak);
-                    auto &sig = self->aret.sig;
-                    if(not sig.empty()){
-                        sig.emit();
+                auto *ptr = static_cast<AsyncInvoker*>(__self);
+
+                if constexpr(std::is_same<result_type,void>()){
+                    std::apply(ptr->callable,ptr->args);
+                    if(not ptr->sig.empty()){
+                        //Emit this signal on main thread
+                        DeferCall(EmitSignal,ptr);
+                    }
+                    else{
+                        //cleanup
+                        delete ptr;
                     }
                 }
                 else{
-                    auto ret = std::apply(self->callable,self->args_pak);
-                    auto &sig = self->aret.sig;
-                    if(not sig.empty()){
-                        sig.emit(ret);
+                    ptr->holder = std::apply(ptr->callable,ptr->args);
+                    if(not ptr->sig.empty()){
+                        //Emit this signal on main thread
+                        DeferCall(EmitSignal,ptr);
+                    }
+                    else{
+                        //Cleanup returned value
+                        ptr->holder.cleanup();
+                        delete ptr;
                     }
                 }
-                delete self;
+            };
+            static void EmitSignal(void *__self){
+                auto *ptr = static_cast<AsyncInvoker*>(__self);
+
+                if constexpr(std::is_same<result_type,void>()){
+                    ptr->sig.emit();
+                }
+                else{
+                    ptr->sig.emit(ptr->holder.data.data);
+                    ptr->holder.cleanup();
+                }
+                delete ptr;
             };
         };
         /**
-         * @brief Lunch a AsyncPackage right now
+         * @brief Lauch a AsyncInvoker right now
          * 
-         * @param package the Package pointer
-         * @param run the Package entry
+         * @param invoker the invoker pointer
+         * @param run the invoker entry
          */
-        BTKAPI void RtLunch(void *package,void(*run)(void*package));
-        BTKAPI void DeferLunch(void *package,void(*run)(void*package));
+        BTKAPI void RtLauch(void *invoker,void(*run)(void*invoker));
+        BTKAPI void DeferLauch(void *invoker,void(*run)(void*invoker));
+    };
+    enum class Lauch{
+        Async = 0,
+        Defered = 1
     };
     template<class Callable,class ...Args>
-    struct AsyncTask{
-        Impl::AsyncPackage<Callable,Args...> *package;
-        void lunch();
-        //lunch it right now
-        void rt_lunch(){
-            Impl::RtLunch(package,Impl::AsyncPackage<Callable,Args...>::Run);
-        };
+    class AsyncTask{
+        public:
+            using result_type = typename std::invoke_result_t<Callable,Args...>;
+            using signal_type = typename Impl::AsyncSignal<result_type>::type;
+
+            AsyncTask(Callable &&callable,Args&& ...args){
+                invoker = new Impl::AsyncInvoker<Callable,Args...>(
+                    std::forward<Callable>(callable),
+                    std::forward<Args>(args)...
+                );
+            };
+            AsyncTask(AsyncTask &&task){
+                invoker = task.invoker;
+                task.invoker = nullptr;
+            };
+            AsyncTask(const AsyncTask &) = delete;
+            ~AsyncTask(){
+                lauch();
+            };
+            void lauch(Lauch lauch = Lauch::Async){
+                if(invoker != nullptr){
+                    if(lauch == Lauch::Async){
+                        Impl::RtLauch(invoker,Impl::AsyncInvoker<Callable,Args...>::Run);
+                    }
+                    else{
+                        Impl::DeferLauch(invoker,Impl::AsyncInvoker<Callable,Args...>::Run);
+                    }
+                    invoker = nullptr;
+                }
+            };
+            signal_type *operator ->() const noexcept{
+                return &(invoker->sig);
+            }
+            signal_type &operator *() const noexcept{
+                return (invoker->sig);
+            }
+        private:
+            Impl::AsyncInvoker<Callable,Args...> *invoker;
     };
-    //Create a task
-    template<class Callable,class ...Args>
-    AsyncTask<Callable,Args...> Async(Callable &&callable,Args &&...args){
-        AsyncTask<Callable,Args...> task;
-        task.package = new Impl::AsyncPackage<Callable,Args...>(
-            std::forward<Callable>(callable),
+    template<class T,class ...Args>
+    AsyncTask<T,Args...> Async(T &&callable,Args ...args){
+        return AsyncTask<T,Args...>(
+            std::forward<T>(callable),
             std::forward<Args>(args)...
         );
-        return task;
     };
+    void AsyncInit();
+    void AsyncQuit();
 };
 
 

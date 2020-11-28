@@ -38,6 +38,14 @@ namespace Btk{
         Atomic operator /(int value) const noexcept{
             return Atomic(static_cast<int>(*this) / value);
         }
+        Atomic &operator -=(int value) noexcept{
+            SDL_AtomicAdd(&(this->value),-value);
+            return *this;
+        };
+        Atomic &operator +=(int value) noexcept{
+            SDL_AtomicAdd(&(this->value),value);
+            return *this;
+        };
     };
 };
 

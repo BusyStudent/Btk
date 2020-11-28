@@ -184,16 +184,7 @@ namespace Btk{
              * @param event a SDL_Event structure
              */
             KeyEvent(const SDL_Event &event);
-            KeyEvent(const KeyEvent &ev)
-                :Event(ev){
-                
-                kcode = ev.kcode;
-                scode = ev.scode;
-                kmode = ev.kmode;
-                kstate = ev.kstate;
-                ktype = ev.ktype;
-                repeat = ev.repeat;
-            };
+            KeyEvent(const KeyEvent &ev) = default;
             ~KeyEvent();
             //Get informations
             KType type() const noexcept{
@@ -233,9 +224,7 @@ namespace Btk{
             SetRectEvent(const Rect n):
                 Event(Type::SetRect),
                 new_rect(n){};
-            SetRectEvent(const SetRectEvent &ev):
-                Event(ev),
-                new_rect(ev.new_rect){};
+            SetRectEvent(const SetRectEvent &ev) = default;
             ~SetRectEvent();
             /**
              * @brief Get new rect

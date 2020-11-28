@@ -91,6 +91,7 @@ namespace Btk{
             Font font() const;//get font
         private:
             WindowImpl *pimpl;
+            Uint32 winid;
     };
 }
 #endif // _BTK_WINDOW_HPP_
