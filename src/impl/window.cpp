@@ -4,6 +4,7 @@
 
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/render.hpp>
+#include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
@@ -29,8 +30,6 @@ namespace Btk{
             throwSDLError();
         }
         cursor = nullptr;
-        //Disable Rt draw
-        rt_fps = 0;
         //Set theme
         theme = &Themes::GetDefault();
         //Open DefaultFont
@@ -42,7 +41,7 @@ namespace Btk{
         //Init it to -1
         mouse_x = -1;
         mouse_y = -1;
-        last_widget = nullptr;
+        cur_widget = nullptr;
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -166,6 +165,14 @@ namespace Btk{
                 draw();
                 break;
             }
+            case SDL_WINDOWEVENT_HIDDEN:{
+                visible = false;
+                break;
+            }
+            case SDL_WINDOWEVENT_SHOWN:{
+                visible = true;
+                break;
+            }
             case SDL_WINDOWEVENT_CLOSE:{
                 //Close window;
                 if(on_close()){
@@ -215,28 +222,29 @@ namespace Btk{
         int x = event.motion.x;
         int y = event.motion.y;
 
-        if(last_widget != nullptr){
-            if(last_widget->rect.has_point(x,y)){
-                //It does nnot change
+        MotionEvent ev = TranslateEvent(event.motion);
+
+        if(cur_widget != nullptr){
+            if(cur_widget->rect.has_point(x,y)){
+                //It does not change
                 //Dispatch this motion event
-                MouseEvent ev(x,y);
-                last_widget->handle(ev);
+                cur_widget->handle(ev);
                 return;
             }
             else{
                 //widget leave
-                MouseEvent ev(Event::Type::Leave,x,y);
-                last_widget->handle(ev);
-                last_widget = nullptr;
+                ev.set_type(Event::Type::Leave);
+                cur_widget->handle(ev);
+                cur_widget = nullptr;
             }
         }
         //find new widget which has this point
         for(auto widget:widgets_list){
             if(widget->rect.has_point(x,y)){
-                last_widget = widget;
+                cur_widget = widget;
                 //widget enter
-                MouseEvent ev(Event::Type::Enter,x,y);
-                last_widget->handle(ev);
+                ev.set_type(Event::Type::Enter);
+                cur_widget->handle(ev);
                 break;
             }
         }
@@ -246,23 +254,23 @@ namespace Btk{
         int x = event.button.x;
         int y = event.button.y;
 
-        if(last_widget == nullptr){
+        if(cur_widget == nullptr){
             for(auto widget:widgets_list){
                 if(widget->rect.has_point(x,y)){
                     //We find it
-                    last_widget = widget;
+                    cur_widget = widget;
                     goto find;
                 }
             }
             return;
         }
         find:
-        MouseEvent ev(event.button);
-        last_widget->handle(ev);
+        auto ev = TranslateEvent(event.button);
+        cur_widget->handle(ev);
     }
     //keyboard event
     void WindowImpl::handle_keyboardev(const SDL_Event &event){
-        KeyEvent ev(event);
+        auto ev = TranslateEvent(event.key);
         dispatch(ev);
     }
 }
@@ -313,8 +321,8 @@ namespace Btk{
             static_cast<WindowImpl*>(win)->draw();
         },pimpl);
         */
-       if(pimpl->rt_fps == 0){
-            //Window is not drawing eveytimes
+       if(pimpl->visible){
+            //Window is not visible
             SDL_Event event;
             SDL_zero(event);
             event.type = SDL_WINDOWEVENT;

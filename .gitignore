@@ -34,3 +34,6 @@
 /build
 /.xmake
 #vscode
+
+#scons
+.sconsign.dblite

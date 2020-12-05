@@ -8,6 +8,7 @@
 #include "render.hpp"
 #include "../signal/signal.hpp"
 #include "../font.hpp"
+#include "atomic.hpp"
 namespace Btk{
     class Event;
     //Impl for Window
@@ -55,8 +56,7 @@ namespace Btk{
         SDL_Cursor *cursor;
         //mutex
         std::recursive_mutex mtx;
-        //Rt draw
-        Uint32 rt_fps;
+        Atomic visible = false;
         //Last draw ticks
         Uint32 last_draw_ticks;
         //Widgets Default Font
@@ -66,8 +66,16 @@ namespace Btk{
         //Mouse Position
         int mouse_x;
         int mouse_y;
-        //Last Widget has focus
-        Widget *last_widget;
+        /**
+         * @brief The widget which the mouse point in
+         * 
+         */
+        Widget * cur_widget = nullptr;
+        /**
+         * @brief The widget where the drag begin
+         * 
+         */
+        Widget *drag_widget = nullptr;
     };
 };
 

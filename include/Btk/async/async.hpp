@@ -1,7 +1,6 @@
 #if !defined(BTK_ASYNC_HPP_)
 #define BTK_ASYNC_HPP_
 #include <tuple>
-#include <future>
 #include "../signal/signal.hpp"
 #include "../defs.hpp"
 namespace Btk{
@@ -19,14 +18,18 @@ namespace Btk{
         template<class RetT>
         struct AsyncResultHolder{
             union{
+                //erase the destructor
                 RetT data;
+                bool __unused = false;
             }data;
             void cleanup(){
-                data.data.~RetT();
+                if constexpr(not std::is_pod<RetT>()){
+                    data.data.~RetT();
+                }
             };
             template<class T>
-            void operator =(T &&t){
-                data.data = std::forward<T>(t);
+            void store(T &&t){
+                new (&data.data)T(std::forward<T>(t));
             };
         };
         template<>
@@ -35,22 +38,40 @@ namespace Btk{
 
             };
         };
-
+        /**
+         * @brief The AsyncInvoker
+         * 
+         * @tparam Callable The callable type
+         * @tparam Args The args types
+         */
         template<class Callable,class ...Args>
-        struct AsyncInvoker{
+        struct AsyncInvoker:public AsyncResultHolder<std::invoke_result_t<Callable,Args...>>{
+
+            /**
+             * @brief The result type
+             * 
+             */
             using result_type = std::invoke_result_t<Callable,Args...>;
-            //define signal
+            /**
+             * @brief The signal 
+             * 
+             * @note It will be emit after exec
+             */
             typename AsyncSignal<result_type>::type sig;
             Callable callable;
             std::tuple<Args...> args;
-            AsyncResultHolder<result_type> holder;
+            
             //Create a invoker
             AsyncInvoker(Callable &&_callable,Args &&..._args):
                 callable(std::forward<Callable>(_callable)),
                 args{std::forward<Args>(args)...}{
 
             };
-            //Main entry
+            /**
+             * @brief The main entry for invoker
+             * 
+             * @param __self The invoker's ptr
+             */
             static void Run(void *__self){
                 auto *ptr = static_cast<AsyncInvoker*>(__self);
 
@@ -66,18 +87,23 @@ namespace Btk{
                     }
                 }
                 else{
-                    ptr->holder = std::apply(ptr->callable,ptr->args);
+                    ptr->store(std::apply(ptr->callable,ptr->args));
                     if(not ptr->sig.empty()){
                         //Emit this signal on main thread
                         DeferCall(EmitSignal,ptr);
                     }
                     else{
                         //Cleanup returned value
-                        ptr->holder.cleanup();
+                        ptr->leanup();
                         delete ptr;
                     }
                 }
             };
+            /**
+             * @brief Emit Signal in main thread
+             * 
+             * @param __self The invoker ptr
+             */
             static void EmitSignal(void *__self){
                 auto *ptr = static_cast<AsyncInvoker*>(__self);
 
@@ -85,8 +111,8 @@ namespace Btk{
                     ptr->sig.emit();
                 }
                 else{
-                    ptr->sig.emit(ptr->holder.data.data);
-                    ptr->holder.cleanup();
+                    ptr->sig.emit(ptr->data.data);
+                    ptr->cleanup();
                 }
                 delete ptr;
             };
@@ -104,6 +130,12 @@ namespace Btk{
         Async = 0,
         Defered = 1
     };
+    /**
+     * @brief The AsyncTask
+     * 
+     * @tparam Callable The callable type
+     * @tparam Args The args type
+     */
     template<class Callable,class ...Args>
     class AsyncTask{
         public:

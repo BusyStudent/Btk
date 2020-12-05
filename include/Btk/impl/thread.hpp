@@ -74,6 +74,7 @@ namespace Btk{
             Thread &operator =(Thread &&th){
                 thrd = th.thrd;
                 th.thrd = nullptr;
+                return *this;
             };
         private:
             SDL_Thread *thrd;

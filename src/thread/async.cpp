@@ -5,6 +5,7 @@
 #include <Btk/impl/atomic.hpp>
 
 #include <condition_variable>
+#include <thread>
 #include <queue>
 #include <mutex>
 #include <list>

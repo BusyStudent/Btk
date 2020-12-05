@@ -22,13 +22,13 @@ namespace Btk{
             }
             case Type::SetRect:{
                 //SetPositions
-                rect = static_cast<SetRectEvent&>(event).rect();
+                rect = event_cast<SetRectEvent&>(event).rect;
                 break;
             }
             case Type::Click:{
                 //Click button
-                auto &ev = static_cast<MouseEvent&>(event);
-                onclick(ev.x(),ev.y(),ev.is_pressed());
+                auto &ev = event_cast<MouseEvent&>(event);
+                onclick(ev.x,ev.y,ev.is_pressed());
                 break;
             }
             default:
@@ -86,16 +86,18 @@ namespace Btk{
     //draw button
     void Button::draw(Renderer &render){
         //Fist draw backgroud
+        //Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 1}
+        //It makes button look better
         if(is_pressed){
             render.rounded_box(
-                rect,
+                Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
                 5,
                 theme->high_light
             );
         }
         else{
             render.rounded_box(
-                rect,
+                Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
                 5,
                 theme->background_color
             );
@@ -104,14 +106,14 @@ namespace Btk{
         //second draw border
         if(is_entered){
             render.rounded_rect(
-                rect,
+                Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
                 5,
                 theme->high_light
             );
         }
         else{
             render.rounded_rect(
-                rect,
+                Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
                 5,
                 theme->border_color
             );

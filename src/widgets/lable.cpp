@@ -37,6 +37,9 @@ namespace Btk{
 
     }
     void Lable::draw(Renderer &render){
+        if(text_.size() == 0){
+            return;
+        }
         if(texture.empty()){
             if(text_buf.empty()){
                 text_buf = font_.render_blended(text_,text_color);

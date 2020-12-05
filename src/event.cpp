@@ -3,6 +3,7 @@
 #include "build.hpp"
 
 #include <Btk/impl/window.hpp>
+#include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
@@ -107,58 +108,51 @@ namespace Btk{
     //Another Event
     
     SetRectEvent::~SetRectEvent(){}
-
-    //Translate KeyEvent from SDL_KeyEvent
-    KeyEvent::KeyEvent(const SDL_Event &ev):Event(
-        Event::Type::KeyBoard
-    ){
-        switch(ev.key.type){
-            case SDL_KEYUP:
-                ktype = UP;
-                break;
-            case SDL_KEYDOWN:
-                ktype = DOWN;
-                break;
-            default:
-                throwRuntimeError("This is not a KeyEvent");
-        }
-
-        if(ev.key.state == SDL_PRESSED){
-            kstate = Pressed;
-        }
-        else{
-            kstate = Released;
-        }
-
-        kcode = ev.key.keysym.sym;
-        scode = ev.key.keysym.scancode;
-        kmode = static_cast<Keymode>(ev.key.keysym.mod);
-
-        repeat = ev.key.repeat;
-    }
     KeyEvent::~KeyEvent(){}
-
-    //Translate MouseButton Event
-    MouseEvent::MouseEvent(const SDL_MouseButtonEvent &event):
-        Event(Type::Click){
-        
-        new_x = event.x;
-        new_y = event.y;
-
-        if(event.type == SDL_MOUSEBUTTONDOWN){
-            mtype = Down;
-        }
-        else{
-            mtype = Up;
-        }
-        if(event.state == SDL_PRESSED){
-            mstate = Pressed;
-        }
-        else{
-            mstate = Released;
-        }
-
-        mclicks = event.clicks;
-    }
     MouseEvent::~MouseEvent(){}
+    MotionEvent::~MotionEvent(){}
+};
+namespace Btk{
+    //Btk Translate Event
+    MotionEvent TranslateEvent(const SDL_MouseMotionEvent &event){
+        MotionEvent ev;
+
+        ev.x = event.x;
+        ev.y = event.y;
+        ev.xrel = event.xrel;
+        ev.yrel = event.yrel;
+
+        return ev;
+    };
+    MouseEvent TranslateEvent(const SDL_MouseButtonEvent &event){
+        MouseEvent ev;
+
+        if(event.state == SDL_PRESSED){
+            ev.state = MouseEvent::Pressed;
+        }
+        else{
+            ev.state = MouseEvent::Released;
+        }
+        ev.x = event.x;
+        ev.y = event.y;
+
+        ev.clicks = event.clicks;
+        return ev;
+    }
+    KeyEvent TranslateEvent(const SDL_KeyboardEvent &event){
+        KeyEvent ev;
+        if(event.state == SDL_PRESSED){
+            ev.state = KeyEvent::Pressed;
+        }
+        else{
+            ev.state = KeyEvent::Released;
+        }
+
+        ev.keycode = event.keysym.sym;
+        ev.scancode = event.keysym.scancode;
+        ev.keymode = static_cast<Keymode>(event.keysym.mod);
+
+        ev.repeat = event.repeat;
+        return ev;
+    }
 };

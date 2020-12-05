@@ -11,6 +11,10 @@ namespace Btk{
     class PixBuf;
     class Widget;
     class Font;
+    /**
+     * @brief A Basic Window 
+     * 
+     */
     class BTKAPI Window:public HasSlots{
         public:
             //Signals
@@ -24,46 +28,137 @@ namespace Btk{
                 pimpl = win.pimpl;
                 win.pimpl = nullptr;
             };
+            /**
+             * @brief Construct a new Window object
+             * 
+             * @param title The window title
+             * @param w The window width
+             * @param h Thw window height
+             */
             Window(std::string_view title,int w,int h);
-            //Get impl
+            /**
+             * @brief Get window impl
+             * 
+             * @return WindowImpl* 
+             */
             inline WindowImpl *impl() const noexcept{
                 return pimpl;
             }
-            //add widget
+            /**
+             * @brief Add widget to window
+             * 
+             * @param ptr The widget pointer(It can be nullptr)
+             * @return true The ptr is not nullptr
+             * @return false The ptr is nullptr
+             */
             bool add(Widget *ptr);
-            //add widget template
+            /**
+             * @brief A helper template to add widget
+             * 
+             * @tparam T The widget type
+             * @tparam Args The args to want to pass to construc it
+             * @param args  The args
+             * @return T& The widget reference
+             */
             template<class T,class ...Args>
             T &add(Args &&...args){
                 T *ptr = new T(*this,std::forward<Args>(args)...);
                 add(ptr);
                 return *ptr;
             }
-            //update widgets postions
+            /**
+             * @brief Update widgets position
+             * 
+             */
             void update();
-            //multi threading
+            /**
+             * @brief Lock the window before access it
+             * 
+             */
             void lock();
+            /**
+             * @brief Unlock thw window
+             * 
+             */
             void unlock();
-            //Show window and set Widget postions
+            /**
+             * @brief Show window and set Widget postions
+             * 
+             */
             void done();
-            //Move window position
+            /**
+             * @brief Move the window
+             * 
+             * @param x The new x
+             * @param y The new y
+             */
             void move(int x,int y);
+            /**
+             * @brief Make the window visiable
+             * 
+             */
             void show();
+            /**
+             * @brief Redraw the window
+             * 
+             * @note Is is safe to call in multithreading without lock it
+             */
             void draw();
-            void close();//try close window
-            void present();
+            /**
+             * @brief Send a close request
+             * 
+             * @note Is is safe to call in multithreading without lock it
+             */
+            void close();
+            /**
+             * @brief Enter the main event loop
+             * 
+             * @return true The event loop finished normally
+             * @return false Double call
+             */
             bool mainloop();
-            //Window exists
+            /**
+             * @brief Check the window is exist
+             * 
+             * @return true The window is exists
+             * @return false The window is not exists
+             */
             bool exists() const;
-            //Get window Pixbuf
+            /**
+             * @brief Get window's pixbuf
+             * 
+             * @return PixBuf 
+             */
             PixBuf pixbuf();
-            //Set window title
+            /**
+             * @brief Set the title 
+             * 
+             * @param title The new title
+             */
             void set_title(std::string_view title);
-            //Set window Icon
+            /**
+             * @brief Set the icon 
+             * 
+             * @param file The image file name
+             */
             void set_icon(std::string_view file);
+            /**
+             * @brief Set the icon 
+             * 
+             * @param pixbuf The image pixbuf
+             */
             void set_icon(const PixBuf &pixbuf);
-            //Set window fullscreen
+            /**
+             * @brief Set the fullscreen
+             * 
+             * @param val The fullscreen flags
+             */
             void set_fullscreen(bool val = true);
-            //Set window resizeable
+            /**
+             * @brief Set the resizeable 
+             * 
+             * @param val The resizeable flags
+             */
             void set_resizeable(bool val = true);
             //Set Callbacks
             template<class ...T>
@@ -82,9 +177,19 @@ namespace Btk{
             SignalClose&    sig_close();
             SignalResize&   sig_resize();
             SignalDropFile& sig_dropfile();
-            //Set window cursor
-            void set_cursor();//reset to default
-            void set_cursor(const PixBuf &surf,int hot_x = 0,int hot_y = 0);
+            /**
+             * @brief Set the cursor to default
+             * 
+             */
+            void set_cursor();
+            /**
+             * @brief Set the cursor 
+             * 
+             * @param pixbuf The image pixelbuf
+             * @param hot_x The cursor's x
+             * @param hot_y The cursor's y
+             */
+            void set_cursor(const PixBuf &pixbuf,int hot_x = 0,int hot_y = 0);
             //Get information
             int w() const noexcept;//get w
             int h() const noexcept;//get h

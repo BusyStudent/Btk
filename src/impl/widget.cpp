@@ -12,7 +12,7 @@ namespace Btk{
     bool Widget::handle(Event& ev){
         //Default Process event
         if(ev.type() == Event::Type::SetRect){
-            rect = static_cast<SetRectEvent&>(ev).rect();
+            rect = event_cast<SetRectEvent&>(ev).rect;
             return true;
         }
         return false;

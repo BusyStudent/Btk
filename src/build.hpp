@@ -3,6 +3,7 @@
 //For Trigger BreakPoint
 #include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_log.h>
+#include <utility>
 //Is sourse
 #define _BTK_SOURCE
 
@@ -33,4 +34,15 @@
 #else
     #define BTK_ASSERT(EXP) (EXP)
 #endif
+namespace Btk{
+    //Cast event for debugging
+    template<class T,class U>
+    T event_cast(U &&u){
+        #ifndef NDEBUG
+        return dynamic_cast<T>(std::forward<U>(u));
+        #else
+        return static_cast<T>(std::forward<U>(u));
+        #endif
+    }
+};
 #endif // _BTK_BUILD_HPP_

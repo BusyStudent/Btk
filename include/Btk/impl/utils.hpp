@@ -1,7 +1,9 @@
 #if !defined(_BTKIMPL_UTILS_HPP_)
 #define _BTKIMPL_UTILS_HPP_
 //This headers provide some utils
+#include <SDL2/SDL_events.h>
 #include "../widget.hpp"
+#include "../event.hpp"
 #include "../rect.hpp"
 #include "window.hpp"
 namespace Btk{
@@ -55,6 +57,10 @@ namespace Btk{
             h   
         };
     };
+    //Translate SDL_Event to Btk's event
+    MotionEvent TranslateEvent(const SDL_MouseMotionEvent &event);
+    MouseEvent  TranslateEvent(const SDL_MouseButtonEvent &event);
+    KeyEvent    TranslateEvent(const SDL_KeyboardEvent &event);
 };
 
 #endif // _BTKIMPL_UTILS_HPP_

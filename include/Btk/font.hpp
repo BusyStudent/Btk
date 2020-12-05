@@ -18,6 +18,10 @@ namespace Btk{
         Underline = 0x04,
         Strikethrough = 0x08
     };
+    /**
+     * @brief Font Class
+     * 
+     */
     class BTKAPI Font{
         public:
             //empty font

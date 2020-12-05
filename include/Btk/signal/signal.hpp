@@ -160,7 +160,12 @@ namespace Btk{
             }
         };
     };
-
+    /**
+     * @brief Btk Signal
+     * 
+     * @tparam RetT The signal return type
+     * @tparam Args The signal args
+     */
     template<class RetT,class ...Args>
     struct Signal<RetT(Args...)>:public SignalBase{
         Signal(){}

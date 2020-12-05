@@ -20,11 +20,16 @@ namespace Btk{
                 SetRect = 0,//Update widget's rect
                 KeyBoard = 1,//Key pressed or released
 
-                //This is all mouse event
+                //MotionEvent
                 Enter = 2,//Mouse enter Widget 
                 Leave = 3,//Mouse leave Widget
                 Motion = 4,//Mouse motion in Widget
+                //MouseEvent
                 Click = 5,//Mouse Click
+
+                DragBegin = 6,//The drag is begin
+                Drag = 7,//Is draging now
+                DragEnd = 8,//The drag is end
                 
                 USER = 1000,
                 USER_MAX = UINT32_MAX - 1,
@@ -62,6 +67,15 @@ namespace Btk{
             void reject() noexcept{
                 _accepted = false;
             };
+            /**
+             * @brief Chaneg the event type
+             * 
+             * @warning It is very dangerous to use
+             * @param t The new type
+             */
+            void set_type(Type t) noexcept{
+                _type = t;
+            };
         private:
             //Event type
             Type _type;
@@ -70,178 +84,131 @@ namespace Btk{
     };
     class ResizeEvent:public Event{
         
-    };
+    };    
     /**
-     * @brief A event about mouse
+     * @brief A event about mouse click
      * 
      */
-    class MouseEvent:public Event{
-        public:
-            //Up or down
-            enum MType{
-                UP = 0,
-                Up = 0,
-                DOWN = 1,
-                Down = 1,
-            };
-            //Mouse State
-            enum MState{
-                Pressed = 0,
-                Released = 1
-            };
-        public:
-            MouseEvent(int new_x,int new_y):
-                Event(Event::Type::Motion){
-                    this->new_x = new_x;
-                    this->new_y = new_y;
+    struct MouseEvent:public Event{
+        /**
+         * @brief Construct a new Mouse Event object
+         * 
+         * @param event must be MouseButtonEvent
+         */
+        MouseEvent():Event(Event::Type::Click){};
+        MouseEvent(const MouseEvent &) = default;
+        ~MouseEvent();
 
-                    mclicks = -1;
-                    mstate = static_cast<MState>(-1);
-                    mtype = static_cast<MType>(-1);
-                };
-            MouseEvent(Type type,int new_x,int new_y):
-                Event(type){
-                    this->new_x = new_x;
-                    this->new_y = new_y;
-
-                    mclicks = -1;
-                    mstate = static_cast<MState>(-1);
-                    mtype = static_cast<MType>(-1);
-                };
-            /**
-             * @brief Construct a new Mouse Event object
-             * 
-             * @param event must be MouseButtonEvent
-             */
-            MouseEvent(const SDL_MouseButtonEvent &);
-            ~MouseEvent();
-            int x() const noexcept{
-                return new_x;
-            };
-            int y() const noexcept{
-                return new_y;
-            };
-            int clicks() const noexcept{
-                return mclicks;
-            };
-            MState state() const noexcept{
-                return mstate;
-            };
-            MType type() const noexcept{
-                return mtype;
-            };
-
-            //Check it is pressed
-            bool is_pressed() const noexcept{
-                return mstate == Pressed;
-            }
-            //Check it is released
-            bool is_released() const noexcept{
-                return mstate == Released;
-            };
-
-            //Check is button up
-            bool is_up() const noexcept{
-                return mtype == Up;
-            };
-            //Check is button down
-            bool is_down() const noexcept{
-                return mtype == Down;
-            };
-        private:
-            
-            int mclicks;//Mouse Clicks count -1 means no clicks
-            MState mstate;//Mouse state
-            MType  mtype;//Mouse type
-            
-            int new_x;
-            int new_y;
+        bool is_pressed() const noexcept{
+            return state == Pressed;
+        };
+        bool is_released() const noexcept{
+            return state == Released;
+        };
+        bool is_up() const noexcept{
+            return state == Pressed;
+        };
+        bool is_down() const noexcept{
+            return state == Released;
+        };
+        Vec2 position() const noexcept{
+            return {x,y};
+        };
+        /**
+         * @brief Mouse state
+         * 
+         */
+        enum{
+            Pressed,//< Button UP
+            Released//< Button Down
+        }state;
+        /**
+         * @brief Clicks count
+         * 
+         */
+        Uint8 clicks;
+        /**
+         * @brief Mouse position
+         * 
+         */
+        int x;
+        int y;
     };
     /**
      * @brief A event about keyboard
      * 
      */
-    class KeyEvent:public Event{
-        public:
-            enum KState{
-                //Pressed key
-                Pressed = 0,
-                //Released Key
-                Released = 1,
-            };
-            enum KType{
-                //KeyUp
-                UP = 0,
-                Up = 0,
-                //KeyDown
-                DOWN = 1,
-                Down = 1,
-            };
-            /**
-             * @brief Construct a new Key Event object
-             * 
-             * @note event.type must be SDL_KYDOWN or SDL_KEYUP
-             * @param event a SDL_Event structure
-             */
-            KeyEvent(const SDL_Event &event);
-            KeyEvent(const KeyEvent &ev) = default;
-            ~KeyEvent();
-            //Get informations
-            KType type() const noexcept{
-                return ktype;
-            };
-            Keycode key() const noexcept{
-                return kcode;
-            };
-            Scancode scancode() const noexcept{
-                return scode;
-            };
-            Keymode keymode() const noexcept{
-                return kmode;
-            };
-            KState state() const noexcept{
-                return kstate;
-            };
-            bool is_repeat() const noexcept{
-                return repeat;
-            };
-        private:
-            //Keycode and scancode
-            Keycode  kcode;
-            Scancode scode;
-            Keymode  kmode;
-            //Event state
-            KState kstate;
-            KType  ktype;//Type of this Event
-            bool repeat;//is repeat
+    struct KeyEvent:public Event{
+        /**
+         * @brief Construct a new Key Event object
+         * 
+         * @note event.type must be SDL_KYDOWN or SDL_KEYUP
+         * @param event a SDL_Event structure
+         */
+        KeyEvent():Event(Event::Type::KeyBoard){};
+        KeyEvent(const KeyEvent &ev) = default;
+        ~KeyEvent();
+        //Keycode and scancode
+        Scancode scancode;
+        Keycode  keycode;
+        Keymode  keymode;
+        enum{
+            Pressed,
+            Released
+        }state;
+        bool repeat;//is repeat
     };
     /**
      * @brief A event about set Widget rect
      * 
      */
-    class SetRectEvent:public Event{
-        public:
-            SetRectEvent(const Rect n):
-                Event(Type::SetRect),
-                new_rect(n){};
-            SetRectEvent(const SetRectEvent &ev) = default;
-            ~SetRectEvent();
-            /**
-             * @brief Get new rect
-             * 
-             * @return the new rect
-             */
-            const Rect &rect() const noexcept{
-                return new_rect;
-            };
-            Vec2 position() const noexcept{
-                return {
-                    new_rect.x,
-                    new_rect.y
-                };
-            };
-        private:
-            Rect new_rect;
+    struct SetRectEvent:public Event{
+        SetRectEvent(const Rect n):
+            Event(Type::SetRect),
+            rect(n){};
+        SetRectEvent(const SetRectEvent &ev) = default;
+        ~SetRectEvent();
+
+        Vec2 position() const noexcept{
+            return {rect.x,rect.y};
+        };
+
+        Rect rect;
+    };
+    /**
+     * @brief A event about mouse drag
+     * 
+     */
+    struct DragEvent:public Event{
+        DragEvent();
+        DragEvent(const DragEvent &) = default;
+        ~DragEvent();
+
+        int x;
+        int y;
+        int refx;
+        int refy;
+    };
+    /**
+     * @brief A event about mouse motion
+     * 
+     */
+    struct MotionEvent:public Event{
+        MotionEvent(Event::Type type = Event::Type::Motion):
+            Event(type){};
+        MotionEvent(const MotionEvent &) = default;
+        ~MotionEvent();
+
+        //datas
+        int x;
+        int y;
+
+        int xrel;
+        int yrel;
+        //methods
+        Vec2 position() const noexcept{
+            return {x,y};
+        };
     };
     /**
      * @brief Push event to queue
