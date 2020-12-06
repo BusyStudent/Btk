@@ -61,6 +61,8 @@ namespace Btk{
     MotionEvent TranslateEvent(const SDL_MouseMotionEvent &event);
     MouseEvent  TranslateEvent(const SDL_MouseButtonEvent &event);
     KeyEvent    TranslateEvent(const SDL_KeyboardEvent &event);
+    
+    TextInputEvent TranslateEvent(const SDL_TextInputEvent &event);
 };
 
 #endif // _BTKIMPL_UTILS_HPP_

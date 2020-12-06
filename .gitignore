@@ -36,4 +36,5 @@
 #vscode
 
 #scons
+*.os
 .sconsign.dblite

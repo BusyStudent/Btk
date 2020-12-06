@@ -69,5 +69,16 @@
         "*.ipp": "cpp",
         "forward_list": "cpp",
         "future": "cpp"
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/*.os":true,
+        "**/.sconsign.dblite":true,
+        "**/.xmake":true,
+        "**/build":true
     }
 }

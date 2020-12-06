@@ -18,9 +18,9 @@ namespace Btk{
             virtual void onclick(int x,int y,bool pressed) = 0;
             virtual void onenter();
             virtual void onleave();
-            bool is_entered;//Is mouse on the button?
-            bool is_pressed;//Is mouse pressed the button?
-            Theme *theme;
+            bool is_entered;//< Is mouse on the button?
+            bool is_pressed;//< Is mouse pressed the button?
+            Theme *theme;//< current theme
     };
     /**
      * @brief A simple pushbutton

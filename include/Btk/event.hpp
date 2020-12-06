@@ -31,6 +31,7 @@ namespace Btk{
                 Drag = 7,//Is draging now
                 DragEnd = 8,//The drag is end
                 
+                TextInput = 9,//Text the Input
                 USER = 1000,
                 USER_MAX = UINT32_MAX - 1,
                 ERROR = UINT32_MAX
@@ -176,20 +177,6 @@ namespace Btk{
         Rect rect;
     };
     /**
-     * @brief A event about mouse drag
-     * 
-     */
-    struct DragEvent:public Event{
-        DragEvent();
-        DragEvent(const DragEvent &) = default;
-        ~DragEvent();
-
-        int x;
-        int y;
-        int refx;
-        int refy;
-    };
-    /**
      * @brief A event about mouse motion
      * 
      */
@@ -209,6 +196,49 @@ namespace Btk{
         Vec2 position() const noexcept{
             return {x,y};
         };
+    };
+    /**
+     * @brief A event about mouse drag
+     * 
+     */
+    struct DragEvent:public Event{
+        /**
+         * @brief Construct a new Drag Event object
+         * 
+         * @param type The DragEvent type(It can be Drag DragBegin DragEnd)
+         * @param x The x which relative to window
+         * @param y The y which relative to window
+         * @param xrel The x relative to direction
+         * @param yrel The y relative to direction
+         */
+        DragEvent(Event::Type type,int x,int y,int xrel,int yrel):
+            Event(type),
+            x(x),
+            y(y),
+            xrel(xrel),
+            yrel(yrel){};
+        /**
+         * @brief Construct a new Drag Event object from MotionEvent
+         * 
+         * @param type The DragEvent type(It can be Drag DragBegin DragEnd)
+         * @param motion The motion event which you want to get its motion data
+         */
+        DragEvent(Event::Type type,const MotionEvent &motion):Event(type){
+            x = motion.x;
+            y = motion.y;
+            xrel = motion.xrel;
+            yrel = motion.yrel;
+        };
+        DragEvent(const DragEvent &) = default;
+        ~DragEvent();
+
+        int x;
+        int y;
+        int xrel;//< Note It cannot be used at DragEnd
+        int yrel;//< Note It cannot be used at DragEnd
+    };
+    struct TextInputEvent:public Event{
+
     };
     /**
      * @brief Push event to queue

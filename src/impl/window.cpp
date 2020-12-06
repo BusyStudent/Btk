@@ -13,6 +13,9 @@
 #include <Btk/layout.hpp>
 #include <Btk/themes.hpp>
 #include <Btk/event.hpp>
+
+#include <algorithm>
+
 namespace Btk{
     
     WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags){
@@ -224,6 +227,33 @@ namespace Btk{
 
         MotionEvent ev = TranslateEvent(event.motion);
 
+        //Is dragging
+        if(drag_widget != nullptr){
+            DragEvent drag_ev(Event::Drag,ev);
+            drag_widget->handle(drag_ev);
+        }
+        else if(mouse_pressed == true and 
+                cur_widget != nullptr and 
+                not(drag_rejected)){
+            //Send Drag Begin
+            DragEvent drag_ev(Event::DragBegin,ev);
+            if(cur_widget->handle(drag_ev)){
+                if(drag_ev.is_accepted()){
+                    //The event is accepted
+                    drag_widget = cur_widget;
+                    BTK_LOGINFO("%p accepted DragBegin",cur_widget);
+                }
+                else{
+                    drag_rejected = true;
+                    BTK_LOGINFO("%p rejected DragBegin",cur_widget);
+                }
+            }
+            else{
+                drag_rejected = true;
+                BTK_LOGINFO("%p rejected DragBegin",cur_widget);
+            }
+        }
+
         if(cur_widget != nullptr){
             if(cur_widget->rect.has_point(x,y)){
                 //It does not change
@@ -254,6 +284,22 @@ namespace Btk{
         int x = event.button.x;
         int y = event.button.y;
 
+        
+        if(event.button.state == SDL_PRESSED){
+            mouse_pressed = true;
+        }
+        else{
+            //clean flags
+            mouse_pressed = false;
+            drag_rejected = false;
+            //The drag is end
+            if(drag_widget != nullptr){
+                DragEvent ev(Event::DragEnd,x,y,-1,-1);
+                drag_widget->handle(ev);
+                
+                drag_widget = nullptr;
+            }
+        }
         if(cur_widget == nullptr){
             for(auto widget:widgets_list){
                 if(widget->rect.has_point(x,y)){
@@ -271,6 +317,21 @@ namespace Btk{
     //keyboard event
     void WindowImpl::handle_keyboardev(const SDL_Event &event){
         auto ev = TranslateEvent(event.key);
+        
+        if(focus_widget != nullptr){
+            if(focus_widget->handle(ev)){
+                if(ev.is_accepted()){
+                    return;
+                }
+            }
+        }
+        if(cur_widget != nullptr){
+            if(cur_widget->handle(ev)){
+                if(ev.is_accepted()){
+                    return;
+                }
+            }
+        }
         dispatch(ev);
     }
 }

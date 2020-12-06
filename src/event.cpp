@@ -110,6 +110,7 @@ namespace Btk{
     SetRectEvent::~SetRectEvent(){}
     KeyEvent::~KeyEvent(){}
     MouseEvent::~MouseEvent(){}
+    DragEvent::~DragEvent(){}
     MotionEvent::~MotionEvent(){}
 };
 namespace Btk{

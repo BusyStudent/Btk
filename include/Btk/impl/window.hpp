@@ -76,6 +76,18 @@ namespace Btk{
          * 
          */
         Widget *drag_widget = nullptr;
+        /**
+         * @brief The mouse is pressed
+         * 
+         * @note This var is used to check the drag status
+         */
+        bool mouse_pressed = false;
+        bool drag_rejected = false;
+        /**
+         * @brief The widget which has focus
+         * 
+         */
+        Widget *focus_widget = nullptr;
     };
 };
 
