@@ -8,9 +8,49 @@
 #include "window.hpp"
 namespace Btk{
     /**
+     * @brief Calcaute a area's X in a Rect by alignment
+     * 
+     * @param rect The rect
+     * @param w The W
+     * @param v_align V alignment
+     * @return -1 if failed
+     */
+    inline int CalculateXByAlign(const Rect &rect,int w,Align v_align){
+        switch(v_align){
+            case Align::Left:
+                return rect.x;
+            case Align::Right:
+                return rect.x + rect.w - w;
+            case Align::Center:
+                return rect.x + ((rect.w - w) / 2);
+            default:
+                return -1;
+        }
+    };
+    /**
+     * @brief Calcaute a area's Y in a Rect by alignment
+     * 
+     * @param rect The rect
+     * @param h The height
+     * @param h_align H alignment
+     * @return -1 if failed
+     */
+    inline int CalculateYByAlign(const Rect &rect,int h,Align h_align){
+        switch(h_align){
+            case Align::Top:
+                return rect.y;
+            case Align::Buttom:
+                return rect.y + rect.h - h;
+            case Align::Center:
+                return rect.y + ((rect.h - h) / 2);
+            default:
+                return -1;
+        }
+    };
+    /**
      * @brief Calcaute a area in a Rect by alignment
      * 
-     * @param r The area
+     * @param rect The Rect
      * @param w area w
      * @param h area h
      * @param v_align V alignment
@@ -23,36 +63,10 @@ namespace Btk{
          Align v_align,
          Align h_align){
         
-        int x,y;
-        switch(v_align){
-            case Align::Left:
-                x = rect.x;
-                break;
-            case Align::Right:
-                x = rect.x + rect.w - w;
-                break;
-            case Align::Center:
-                x = rect.x + ((rect.w - w) / 2);
-                break;
-            default:
-                x = -1;
-        }
-        switch(h_align){
-            case Align::Top:
-                y = rect.y;
-                break;
-            case Align::Buttom:
-                y = rect.y + rect.h - h;
-                break;
-            case Align::Center:
-                y = rect.y + ((rect.h - h) / 2);
-                break;
-            default:
-                y = -1;
-        }
+        
         return Rect{
-            x,
-            y,
+            CalculateXByAlign(rect,w,v_align),
+            CalculateYByAlign(rect,h,h_align),
             w,
             h   
         };

@@ -67,7 +67,8 @@ namespace Btk{
      * 
      */
     struct Size{
-        int w,h;
+        int w;
+        int h;
     };
 };
 #endif // _BTK_RECT_HPP_

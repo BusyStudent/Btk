@@ -4,6 +4,9 @@
 #include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_log.h>
 #include <utility>
+#include <cstdarg>
+#include <cstring>
+#include <string>
 //Is sourse
 #define _BTK_SOURCE
 
@@ -12,6 +15,7 @@
     #define BTK_FUNCTION __FUNCSIG__
 #elif defined(__GNUC__)
     //GCC
+    #include <strings.h>
     #define BTK_FUNCTION __PRETTY_FUNCTION__
 #else
     #define BTK_FUNCTION SDL_FUNCTION
@@ -29,10 +33,19 @@
         SDL_LogCritical(\
             SDL_LOG_CATEGORY_APPLICATION,"Assertion faild on %s:%d %s '%s'",\
             __FILE__,__LINE__,BTK_FUNCTION,#EXP);\
+        _Btk_Backtrace();\
         SDL_TriggerBreakpoint();\
     }
 #else
     #define BTK_ASSERT(EXP) (EXP)
+#endif
+/**
+ * @brief Show the backtrace
+ * @note This function only avliabled on debug version
+ */
+extern "C" void _Btk_Backtrace();
+#ifdef NDEBUG
+extern "C" inline void _Btk_Backtrace(){};
 #endif
 namespace Btk{
     //Cast event for debugging
@@ -44,5 +57,42 @@ namespace Btk{
         return static_cast<T>(std::forward<U>(u));
         #endif
     }
+    inline int vscprintf(const char *fmt,va_list varg){
+        #ifdef _WIN32
+        return _vscprintf(fmt,varg);
+        #else
+        return vsnprintf(nullptr,0,fmt,varg);
+        #endif
+    };
+    /**
+     * @brief Using c-syle formatting
+     * 
+     * @param fmt The c-style fmt string
+     * @param ... The args you want to format
+     * @return std::string 
+     */
+    inline std::string cformat(const char *fmt,...){
+        int strsize;
+
+        //Get the size of the string
+        va_list varg;
+        va_start(varg,fmt);
+        #ifdef _WIN32
+        strsize = _vscprintf(fmt,varg);
+        #else
+        strsize = vsnprintf(nullptr,0,fmt,varg);
+        #endif
+        va_end(varg);
+        
+        std::string str;
+        str.resize(strsize);
+
+        //start formatting
+        va_start(varg,fmt);
+        vsprintf(&str[0],fmt,varg);
+        va_end(varg);
+
+        return str;
+    };
 };
 #endif // _BTK_BUILD_HPP_

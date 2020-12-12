@@ -15,7 +15,8 @@ src.extend(Glob("./src/impl/*.cpp"))
 src.extend(Glob("./src/themes/*.cpp"))
 src.extend(Glob("./src/thread/*.cpp"))
 
-src.extend(Glob("./src/widgets/*.cpp"))
+src.extend(Glob("./src/utils/*.cpp"))
+src.extend(Glob("./src/platform/*.cpp"))
 src.extend(Glob("./src/platform/*.cpp"))
 
 #Check platform

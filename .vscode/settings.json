@@ -68,7 +68,8 @@
         "*.xpm": "cpp",
         "*.ipp": "cpp",
         "forward_list": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "cstdalign": "cpp"
     },
     "files.exclude": {
         "**/.git": true,

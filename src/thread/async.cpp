@@ -18,7 +18,7 @@ namespace Btk{
         //Create a worker
         Worker(ThreadPool *p):
             pool(p),
-            thrd([this](){run();}){
+            thrd(&Btk::Worker::run,this){
             
         };
         //status for worker

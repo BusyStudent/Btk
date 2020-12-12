@@ -4,6 +4,7 @@
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_filesystem.h>
 #include <cstdlib>
+#include <csignal>
 #include <thread>
 #include <mutex>
 #include <unordered_map>
@@ -40,6 +41,26 @@ namespace{
             f();
         }
     };
+    #ifndef NDEBUG
+    void debug_crash_reporter(int sig){
+        //reset to default
+        signal(sig,SIG_DFL);
+        char *signame;
+        if(sig == SIGSEGV){
+            signame = "SIGSEGV";
+        }
+        else if(sig == SIGABRT){
+            signame = "SIGABRT";
+        }
+        else{
+            signame = "???";
+        }
+        fprintf(stderr,"Caught signal '%s'\n",signame);
+        _Btk_Backtrace();
+        //rethrow the signal
+        raise(sig);
+    };
+    #endif
 };
 namespace Btk{
     System* System::instance = nullptr;
@@ -131,6 +152,9 @@ namespace Btk{
             SDL_Log("[System::Core]Init SDL2 Platfrom %s",SDL_GetPlatform());
             SDL_Log("[System::Core]SDL2 version: %d.%d.%d",ver.major,ver.major,ver.patch);
             SDL_Log("[System::Core]SDL2 image version: %d.%d.%d",iver->major,iver->major,iver->patch);
+            //Debug crash reporter
+            signal(SIGSEGV,debug_crash_reporter);
+            signal(SIGABRT,debug_crash_reporter);
             #endif
             //Create instance
             instance = new System();

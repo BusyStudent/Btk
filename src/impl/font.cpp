@@ -9,6 +9,7 @@
 #include <Btk/platform.hpp>
 #include <Btk/pixels.hpp>
 #include <Btk/font.hpp>
+#include <Btk/rect.hpp>
 
 #include <thread>
 #include <mutex>
@@ -188,6 +189,27 @@ namespace Btk{
         std::string s(name);
         SDL_free(name);
         return s;
+    }
+    //size
+    Size Font::size(std::string_view text){
+        int w,h;
+        if(TTF_SizeUTF8(pimpl->font,text.data(),&w,&h) != 0){
+            w = -1;
+            h = -1;
+        }
+        return {w,h};
+    }
+    Size Font::size(std::u16string_view text){
+        int w,h;
+        if(TTF_SizeUNICODE(pimpl->font,
+            reinterpret_cast<const Uint16*>(text.data()),
+            &w,
+            &h) != 0){
+                
+            w = -1;
+            h = -1;
+        }
+        return {w,h};
     }
     Font &Font::operator =(const Font &f){
         if(&f != this){

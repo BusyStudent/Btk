@@ -6,6 +6,7 @@
 #include "pixels.hpp"
 #include "defs.hpp"
 namespace Btk{
+    struct Size;
     struct FontImpl;
     /**
      * @brief FontStyle from SDL_ttf
@@ -88,6 +89,14 @@ namespace Btk{
              * @param new_ptsize New ptsize
              */
             void set_ptsize(int new_ptsize);
+            /**
+             * @brief Get The text's w and h
+             * 
+             * @param text The text
+             * @return w and h (-1 if failed)
+             */
+            Size size(std::string_view text);
+            Size size(std::u16string_view text);
             /**
              * @brief Close font
              * 
