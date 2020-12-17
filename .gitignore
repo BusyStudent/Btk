@@ -34,7 +34,8 @@
 /build
 /.xmake
 #vscode
-
+/.vscode/launch.json
+/.vscode/tasks.json
 #scons
 *.os
 .sconsign.dblite

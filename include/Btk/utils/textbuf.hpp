@@ -16,11 +16,16 @@ namespace Btk{
     /**
      * @brief A container of utf16 encoded string
      * 
+     * @FIXME I donnot why iconv will skip 2 byte a the buffer begin
+     *        Is this bug?
      */
     class BTKAPI TextBuffer{
         public:
             using iterator = char16_t*;
             using const_iterator = const char16_t*;
+            using value_type = char16_t;
+            using reference = char16_t&;
+            using const_reference = const char16_t&;
             /**
              * @brief Construct a new empty Text Buffer object
              * 
@@ -41,15 +46,52 @@ namespace Btk{
             TextBuffer(const TextBuffer &);
             TextBuffer(TextBuffer &&);
             ~TextBuffer();
-
+            void clear();
+            /**
+             * @brief add content in the buf's end
+             * 
+             * @param u16 The data
+             */
             void append(std::u16string_view u16);
             void append(std::string_view u16);
             void append(const char16_t *u16str);
             void append(const char16_t *u16str,size_t len);
             void append(const char *u8);
             void append(const char *u8,size_t len);
+            void append(const TextBuffer &buffer);
+            void append(char16_t ch);
+            void append(char ch);
+            /**
+             * @brief Assign the buffer
+             * 
+             * @param buffer Another buffer
+             */
+            void assign(const TextBuffer &buffer);
+            void assign(TextBuffer &&buffer);
+            /**
+             * @brief Extend the buffer
+             * @note If new_len < max_len;It is no-op
+             * @param new_len The new length
+             */
+            void extend(size_t new_len);
 
-            void push_back(char16_t ch);
+            template<class ...Args>
+            void push_back(Args &&...args){
+                append(std::forward<Args...>(args)...);
+            }
+            void pop_back();
+
+            void shrink_to_fit();
+            /**
+             * @brief Set Buffer size
+             * @note If the new_len < len The String will be tuncated
+             * 
+             * @param new_len The new len
+             */
+            void resize(size_t new_len);
+            size_t length() const noexcept{
+                return len;
+            }
             /**
              * @brief Convert to std::string
              * 
@@ -59,7 +101,35 @@ namespace Btk{
             operator std::u16string_view() const noexcept{
                 return std::u16string_view(mem,len);
             };
+        public:
+            //iterator
+            iterator begin(){
+                return mem + 1;
+            }
+            iterator end(){
+                return mem + len;
+            }
+            iterator begin() const{
+                return mem + 1;
+            }
+            iterator end() const{
+                return mem + len;
+            }
 
+            reference operator [](size_t len){
+                return mem[len + 1];
+            }
+            const_reference operator [](size_t len) const{
+                return mem[len + 1];
+            }
+        public:
+            template<class ...Args>
+            TextBuffer &operator +=(Args &&...args){
+                append(std::forward<Args>(args)...);
+                return *this;
+            }
+            TextBuffer &operator +=(const TextBuffer &);
+            TextBuffer &operator +=(TextBuffer &&);
             /**
              * @brief To std::wstring_view
              * @note It only useable when sizeof(wchar_t) == sizeof(Uint16)
@@ -77,28 +147,8 @@ namespace Btk{
                     len
                 );
             };
-
-            template<class ...Args>
-            TextBuffer &operator +=(Args &&...args){
-                append(std::forward<Args>(args)...);
-                return *this;
-            }
-            TextBuffer &operator +=(const TextBuffer &);
-            TextBuffer &operator +=(TextBuffer &&);
-            iterator begin(){
-                return mem;
-            }
-            iterator end(){
-                return mem + len;
-            }
-            iterator begin() const{
-                return mem;
-            }
-            iterator end() const{
-                return mem + len;
-            }
-            const char16_t *c_str() const noexcept{
-                return mem;
+            operator std::string() const{
+                return to_string();
             }
         private:
             char16_t *mem;//< The buffer's memory
@@ -119,7 +169,21 @@ namespace Btk{
     inline void TextBuffer::append(std::u16string_view utf16){
         append(utf16.data(),utf16.length());
     }
+    inline void TextBuffer::append(char16_t ch){
+        append(&ch,1);
+    }
+    inline void TextBuffer::append(char ch){
+        append(&ch,1);
+    }
 
+    inline void TextBuffer::pop_back(){
+        if(len != 0){
+            --len;
+            if(mem != nullptr){
+                mem[len] = u'\0';
+            }
+        }
+    }
 
     inline TextBuffer::TextBuffer(TextBuffer &&buf){
         mem = buf.mem;

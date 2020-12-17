@@ -53,7 +53,7 @@ him for his work.
 #  include <SDL2/SDL_cpuinfo.h>
 #endif
 
-#include "SDL2_imageFilter.h"
+#include <Btk/thirdparty/SDL2_imageFilter.h>
 
 /*!
 \brief Swaps the byte order in a 32bit integer (LSB becomes MSB, etc.). 

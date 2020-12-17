@@ -47,6 +47,22 @@ namespace Btk{
                     invoker
                 );
             };
+            template<class Callable,class ...Args>
+            Thread(const char *name,Callable &&callable,Args ...args){
+                using InvokerType = Impl::ThreadInvoker
+                    <std::remove_reference_t<Callable>,Args...>;
+                
+                
+                auto *invoker = new InvokerType{
+                    std::forward<Callable>(callable),
+                    {std::forward<Args>(args)...}
+                };
+                thrd = SDL_CreateThread(
+                    InvokerType::Run,
+                    name,
+                    invoker
+                );
+            };
             Thread():thrd(nullptr){};
             Thread(const Thread &) = delete;
             Thread(Thread &&t):thrd(t.thrd){

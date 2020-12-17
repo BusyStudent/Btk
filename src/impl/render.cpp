@@ -7,7 +7,7 @@
 #include <Btk/exception.hpp>
 #include <Btk/pixels.hpp>
 #ifdef BTK_USE_GFX
-    #include "../thirdparty/SDL2_gfxPrimitives.h"
+    #include <Btk/thirdparty/SDL2_gfxPrimitives.h>
 #endif
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
 namespace Btk{

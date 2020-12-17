@@ -9,7 +9,7 @@ namespace Btk{
             return 0;
         }
         size_t len = 0;
-        while(*str != '\0'){
+        while(*str != u'\0'){
             ++len;
             ++str;
         }
@@ -24,7 +24,7 @@ namespace Btk{
         }
         while(true){
             if(*s1 == *s2){
-                if(*s1 == '\0'){
+                if(*s1 == u'\0'){
                     //reach the end
                     return 0;
                 }
@@ -46,7 +46,7 @@ namespace Btk{
         }
         while(true){
             if(*s1 == *s2){
-                if(*s1 == '\0'){
+                if(*s1 == u'\0'){
                     //reach the end
                     return 0;
                 }

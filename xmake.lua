@@ -72,4 +72,8 @@ if is_mode("debug") then
         set_kind("binary")
         add_files("./tests/async.cpp")
         add_deps("btk")
+    target("text")
+        set_kind("binary")
+        add_files("./tests/text.cpp")
+        add_deps("btk")
 end
