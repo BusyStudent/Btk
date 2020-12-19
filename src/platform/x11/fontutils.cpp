@@ -69,6 +69,7 @@ namespace FontUtils{
             FcPatternDestroy(pat);
             throwRuntimeError("Failed to match font");
         }
+        BTK_LOGINFO("FcMatch %s => %s",fontname.data(),str);
         std::string s(reinterpret_cast<char*>(str));
         FcPatternDestroy(font);
         FcPatternDestroy(pat);

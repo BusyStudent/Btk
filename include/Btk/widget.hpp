@@ -10,9 +10,9 @@ namespace Btk{
     class Event;
     //Attribute for Widget
     struct WidgetAttr{
-        bool hide = false;//Is hide
-        bool user_rect = false;//Using user defined position
-        bool container = false;//Is container
+        bool hide = false;//<Is hide
+        bool user_rect = false;//<Using user defined position
+        bool container = false;//<Is container
     };
     //Alignment
     enum class Align:unsigned int{
@@ -95,8 +95,20 @@ namespace Btk{
                 widgets_list.push_back(ptr);
                 return *ptr;
             }
+            /**
+             * @brief Dispatch Event to each widget
+             * 
+             * @return true 
+             * @return false 
+             */
+            bool handle(Event &);
         protected:
             std::list<Widget*> widgets_list;
+        private:
+            Widget *focus_widget = nullptr;//The keyboard focus widget
+            Widget *drag_widget = nullptr;//The Dragging event
+            Widget *cur_widget = nullptr;//Mouse point widget
+            
     };
 };
 

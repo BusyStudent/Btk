@@ -1,7 +1,7 @@
 #if !defined(_BTK_EVENT_HPP_)
 #define _BTK_EVENT_HPP_
 #include <cstdint>
-#include <variant>
+#include <string_view>
 #include "locals.hpp"
 #include "defs.hpp"
 #include "rect.hpp"
@@ -14,7 +14,7 @@ namespace Btk{
      * @brief A base event of all events
      * 
      */
-    class Event{
+    class BTKAPI Event{
         public:
             enum Type:Uint32{
                 SetRect = 0,//Update widget's rect
@@ -32,6 +32,11 @@ namespace Btk{
                 DragEnd = 8,//The drag is end
                 
                 TextInput = 9,//Text the Input
+
+
+                TakeFocus = 10,//The widget take focus
+                               //accept the event to task focus
+                LostFocus = 11,//The widget lost focus
                 USER = 1000,
                 USER_MAX = UINT32_MAX - 1,
                 ERROR = UINT32_MAX
@@ -90,7 +95,7 @@ namespace Btk{
      * @brief A event about mouse click
      * 
      */
-    struct MouseEvent:public Event{
+    struct BTKAPI MouseEvent:public Event{
         /**
          * @brief Construct a new Mouse Event object
          * 
@@ -124,6 +129,22 @@ namespace Btk{
             Released//< Button Down
         }state;
         /**
+         * @brief Which button?
+         * 
+         */
+        struct{
+            Uint8 value;
+            bool is_right() const noexcept{
+                return value == SDL_BUTTON_RIGHT;
+            }
+            bool is_left() const noexcept{
+                return value == SDL_BUTTON_LEFT;
+            }
+            bool is_middle() const noexcept{
+                return value == SDL_BUTTON_MIDDLE;
+            }
+        }button;
+        /**
          * @brief Clicks count
          * 
          */
@@ -139,7 +160,7 @@ namespace Btk{
      * @brief A event about keyboard
      * 
      */
-    struct KeyEvent:public Event{
+    struct BTKAPI KeyEvent:public Event{
         /**
          * @brief Construct a new Key Event object
          * 
@@ -180,7 +201,7 @@ namespace Btk{
      * @brief A event about mouse motion
      * 
      */
-    struct MotionEvent:public Event{
+    struct BTKAPI MotionEvent:public Event{
         MotionEvent(Event::Type type = Event::Type::Motion):
             Event(type){};
         MotionEvent(const MotionEvent &) = default;
@@ -198,10 +219,24 @@ namespace Btk{
         };
     };
     /**
+     * @brief A Event of text input
+     * 
+     */
+    struct BTKAPI TextInputEvent:Event{
+        TextInputEvent():Event(TextInput){};
+        std::string_view text;//<Text input buffer(utf-8 encoded)
+        /**
+         * @brief Get length of the string
+         * 
+         * @return The utf8 string length
+         */
+        size_t length() const noexcept;
+    };
+    /**
      * @brief A event about mouse drag
      * 
      */
-    struct DragEvent:public Event{
+    struct BTKAPI DragEvent:public Event{
         /**
          * @brief Construct a new Drag Event object
          * 
@@ -236,9 +271,6 @@ namespace Btk{
         int y;
         int xrel;//< Note It cannot be used at DragEnd
         int yrel;//< Note It cannot be used at DragEnd
-    };
-    struct TextInputEvent:public Event{
-
     };
     /**
      * @brief Push event to queue

@@ -18,8 +18,8 @@ namespace Themes{
             255
         },
         //Default font
-        .font = "Hack",
-        .font_ptsize = 10,
+        .font = "NotoSansCJK",
+        .font_ptsize = 12,
         .border_color = {
             208,
             208,

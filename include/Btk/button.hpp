@@ -6,6 +6,7 @@
 #include "font.hpp"
 #include "defs.hpp"
 namespace Btk{
+    class MouseEvent;
     /**
      * @brief Basic button
      * 
@@ -15,7 +16,7 @@ namespace Btk{
             //Process event
             bool handle(Event &);
         protected:
-            virtual void onclick(int x,int y,bool pressed) = 0;
+            virtual void onclick(const MouseEvent &) = 0;
             virtual void onenter();
             virtual void onleave();
             bool is_entered;//< Is mouse on the button?
@@ -42,7 +43,7 @@ namespace Btk{
             };
             void set_text(std::string_view text);
         protected:
-            void onclick(int x,int y,bool pressed);
+            void onclick(const MouseEvent &);
             void onleave();
 
             Signal<void()> clicked;

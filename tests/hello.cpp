@@ -1,4 +1,5 @@
 #include <Btk/Btk.hpp>
+#include <Btk/textbox.hpp>
 #include <Btk/button.hpp>
 #include <Btk/lable.hpp>
 #include <iostream>
@@ -29,6 +30,7 @@ int main(){
         &win
     );
     win.add<Btk::Button>(400,400,100,50).set_text("Button");;
+    win.add<Btk::TextBox>().set_rect(100,100,100,50);
     win.done();
     win.mainloop();
 }

@@ -30,7 +30,12 @@ namespace Btk{
         }
         render = SDL_CreateRenderer(win,-1,SDL_RENDERER_ACCELERATED);
         if(render == nullptr){
-            throwSDLError();
+            //try software render
+            render = SDL_CreateRenderer(win,-1,0);
+            if(render == nullptr){
+                throwSDLError();
+            }
+            
         }
         cursor = nullptr;
         //Set theme
@@ -283,8 +288,18 @@ namespace Btk{
     void WindowImpl::handle_mousebutton(const SDL_Event &event){
         int x = event.button.x;
         int y = event.button.y;
+        //Focus handling
+        if(focus_widget != nullptr){
+            if(not focus_widget->rect.has_point(x,y)){
+                //The widget lost the focus
+                Event ev(Event::LostFocus);
+                focus_widget->handle(ev);
+                BTK_LOGINFO("Widget %p lost focus",focus_widget);
+                focus_widget = nullptr;
+            }
+            BTK_LOGINFO("Widget %p has focus",focus_widget);
+        }
 
-        
         if(event.button.state == SDL_PRESSED){
             mouse_pressed = true;
         }
@@ -312,27 +327,70 @@ namespace Btk{
         }
         find:
         auto ev = TranslateEvent(event.button);
+        //Focus handling
         cur_widget->handle(ev);
+        //reset the flags
+        ev.reject();
+        ev.set_type(Event::TakeFocus);
+
+        if(focus_widget == nullptr){
+            if(cur_widget->handle(ev)){
+                if(ev.is_accepted()){
+                    //The widget take the focus
+                    focus_widget = cur_widget;
+                    BTK_LOGINFO("Focus Widget = %p",focus_widget);
+                }
+            }
+        }
+
+
     }
     //keyboard event
-    void WindowImpl::handle_keyboardev(const SDL_Event &event){
-        auto ev = TranslateEvent(event.key);
+    void WindowImpl::handle_keyboardev(KeyEvent &event){
         
         if(focus_widget != nullptr){
-            if(focus_widget->handle(ev)){
-                if(ev.is_accepted()){
+            if(focus_widget->handle(event)){
+                if(event.is_accepted()){
                     return;
                 }
             }
         }
         if(cur_widget != nullptr){
-            if(cur_widget->handle(ev)){
-                if(ev.is_accepted()){
+            if(cur_widget->handle(event)){
+                if(event.is_accepted()){
                     return;
                 }
             }
         }
-        dispatch(ev);
+        for(auto widget:widgets_list){
+            if(widget != focus_widget and widget != cur_widget){
+                widget->handle(event);
+                if(event.is_accepted()){
+                    return;
+                }
+            }
+        }
+    }
+    void WindowImpl::handle_textinput(TextInputEvent &event){
+        if(focus_widget != nullptr){
+            //Send the event to focus event
+            focus_widget->handle(event);
+            if(not event.is_accepted()){
+                //this event is rejected
+                //dispatch it to other widget
+                for(auto widget:widgets_list){
+                    if(widget != focus_widget){
+                        widget->handle(event);
+                        if(event.is_accepted()){
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        else{
+            dispatch(event);
+        }
     }
 }
 namespace Btk{

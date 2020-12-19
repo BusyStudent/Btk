@@ -7,6 +7,7 @@
 #include <list>
 #include "render.hpp"
 #include "../signal/signal.hpp"
+#include "../event.hpp"
 #include "../font.hpp"
 #include "atomic.hpp"
 namespace Btk{
@@ -28,9 +29,10 @@ namespace Btk{
         void on_dropfile(std::string_view file);
         //handle event 
         void handle_windowev(const SDL_Event &event);
-        void handle_keyboardev(const SDL_Event &event);
+        void handle_keyboardev(KeyEvent &event);
         void handle_mousemotion(const SDL_Event &event);
         void handle_mousebutton(const SDL_Event &event);
+        void handle_textinput(TextInputEvent &event);
         //Dispatch Event to Widgets
         bool dispatch(Event &event);
         

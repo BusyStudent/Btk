@@ -21,10 +21,10 @@ namespace Btk{
         int rounded_rect(const SDL_Rect &,int rad,SDL_Color c);
         //some alias
         inline int rect(const SDL_Rect &r,SDL_Color c){
-            return fill_rect(r,c);
+            return draw_rect(r,c);
         }
         inline int box(const SDL_Rect &r,SDL_Color c){
-            return draw_rect(r,c);
+            return fill_rect(r,c);
         }
         //operators
         Renderer &operator =(SDL_Renderer *renderer){

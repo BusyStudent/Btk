@@ -5,6 +5,9 @@
 #include <Btk/impl/core.hpp>
 #include <Btk/widget.hpp>
 #include <Btk/event.hpp>
+
+#include <algorithm>
+
 namespace Btk{
     Widget::~Widget(){
         
@@ -33,3 +36,24 @@ namespace Btk{
         }
     }
 };
+namespace Btk{
+    bool Container::handle(Event &event){
+        switch(event.type()){
+            case Event::Motion:
+            case Event::Click:{
+
+            }
+            default:{
+                //dispatch 
+                for(auto w:widgets_list){
+                    if(w->handle(event)){
+                        if(event.is_accepted()){
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+    }
+}

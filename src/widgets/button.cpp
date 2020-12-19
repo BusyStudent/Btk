@@ -28,7 +28,7 @@ namespace Btk{
             case Type::Click:{
                 //Click button
                 auto &ev = event_cast<MouseEvent&>(event);
-                onclick(ev.x,ev.y,ev.is_pressed());
+                onclick(ev);
                 break;
             }
             default:
@@ -91,14 +91,14 @@ namespace Btk{
         if(is_pressed){
             render.rounded_box(
                 Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
-                5,
+                2,
                 theme->high_light
             );
         }
         else{
             render.rounded_box(
                 Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
-                5,
+                2,
                 theme->background_color
             );
         }
@@ -107,14 +107,14 @@ namespace Btk{
         if(is_entered){
             render.rounded_rect(
                 Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
-                5,
+                2,
                 theme->high_light
             );
         }
         else{
             render.rounded_rect(
                 Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
-                5,
+                2,
                 theme->border_color
             );
         }
@@ -142,9 +142,9 @@ namespace Btk{
         }
         
     }
-    void Button::onclick(int x,int y,bool pressed){
-        BTK_LOGINFO("This button is clicked %p",this);
-        if(pressed){
+    void Button::onclick(const MouseEvent &event){
+        if(event.is_pressed() and event.button.is_left()){
+            BTK_LOGINFO("This button is clicked %p",this);
             is_pressed = true;
             //has text 
             if(btext.size() != 0){
@@ -154,7 +154,7 @@ namespace Btk{
             //render text
             win->draw();
         }
-        else{
+        else if(event.button.is_left()){
             //release the button
             is_pressed = false;
             //render text

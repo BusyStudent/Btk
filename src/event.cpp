@@ -112,6 +112,10 @@ namespace Btk{
     MouseEvent::~MouseEvent(){}
     DragEvent::~DragEvent(){}
     MotionEvent::~MotionEvent(){}
+    
+    size_t TextInputEvent::length() const noexcept{
+        return SDL_utf8strlen(text.data());
+    }
 };
 namespace Btk{
     //Btk Translate Event
@@ -138,6 +142,7 @@ namespace Btk{
         ev.y = event.y;
 
         ev.clicks = event.clicks;
+        ev.button.value = event.button;
         return ev;
     }
     KeyEvent TranslateEvent(const SDL_KeyboardEvent &event){

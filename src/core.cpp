@@ -15,6 +15,7 @@
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/thread.hpp>
 #include <Btk/impl/scope.hpp>
+#include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/event.hpp>
@@ -123,6 +124,8 @@ namespace Btk{
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
             regiser_eventcb(dispatch_ev_id,DispatchEvent,nullptr);
         }
+        //First stop text input
+        SDL_StopTextInput();
     }
     System::~System(){
         AsyncQuit();
@@ -221,6 +224,10 @@ namespace Btk{
                     on_keyboardev(event);
                     break;
                 }
+                case SDL_TEXTINPUT:{
+                    on_textinput(event);
+                    break;
+                }
                 default:{
                     //get function from event callbacks map
                     auto iter = evcbs_map.find(event.type);
@@ -241,9 +248,7 @@ namespace Btk{
     }
     //WindowEvent
     inline void System::on_windowev(const SDL_Event &event){
-        WindowImpl *win;
-        std::lock_guard<std::recursive_mutex> locker(map_mtx);
-        win = get_window(event.window.windowID);
+        WindowImpl *win = get_window_s(event.window.windowID);
         if(win == nullptr){
             return;
         }
@@ -251,9 +256,7 @@ namespace Btk{
     }
     //MouseMotion
     inline void System::on_mousemotion(const SDL_Event &event){
-        WindowImpl *win;
-        std::lock_guard<std::recursive_mutex> locker(map_mtx);
-        win = get_window(event.motion.windowID);
+        WindowImpl *win = get_window_s(event.motion.windowID);
         if(win == nullptr){
             return;
         }
@@ -261,9 +264,7 @@ namespace Btk{
     }
     //MouseButton
     inline void System::on_mousebutton(const SDL_Event &event){
-        WindowImpl *win;
-        std::lock_guard<std::recursive_mutex> locker(map_mtx);
-        win = get_window(event.button.windowID);
+        WindowImpl *win = get_window_s(event.button.windowID);
         if(win == nullptr){
             return;
         }
@@ -274,23 +275,30 @@ namespace Btk{
         WindowImpl *win;
         //auto free it
         SDLScopePtr ptr(event.drop.file);
-        std::lock_guard<std::recursive_mutex> locker(map_mtx);
-        win = get_window(event.drop.windowID);
+        win = get_window_s(event.drop.windowID);
         if(win == nullptr){
             return;
         }
         win->on_dropfile(event.drop.file);
-        
+        SDL_KEYDOWN;
     }
     //KeyBoardEvent
     inline void System::on_keyboardev(const SDL_Event &event){
-        WindowImpl *win;
-        std::lock_guard<std::recursive_mutex> locker(map_mtx);
-        win = get_window(event.key.windowID);
+        WindowImpl *win = get_window_s(event.key.windowID);
         if(win == nullptr){
             return;
         }
-        win->handle_keyboardev(event);
+        auto kevent = TranslateEvent(event.key);
+        win->handle_keyboardev(kevent);
+    }
+    inline void System::on_textinput(const SDL_Event &event){
+        //Get text input
+        TextInputEvent ev;
+        ev.text = event.text.text;
+        WindowImpl *win = get_window_s(event.text.windowID);
+        if(win != nullptr){
+            win->handle_textinput(ev);
+        }
     }
     void System::register_window(WindowImpl *impl){
         if(impl == nullptr){
@@ -351,6 +359,19 @@ namespace Btk{
         };
     }
     WindowImpl *System::get_window(Uint32 winid){
+        auto iter = wins_map.find(winid);
+        if(iter == wins_map.end()){
+            //Warn
+            //maybe the window is closed
+            SDL_LogWarn(SDL_LOG_CATEGORY_SYSTEM,"[System::WindowsManager]cannot get window %d",winid);
+            return nullptr;
+        }
+        else{
+            return iter->second;
+        }
+    }
+    WindowImpl *System::get_window_s(Uint32 winid){
+        std::lock_guard locker(map_mtx);
         auto iter = wins_map.find(winid);
         if(iter == wins_map.end()){
             //Warn

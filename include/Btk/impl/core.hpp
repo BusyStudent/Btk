@@ -45,10 +45,12 @@ namespace Btk{
         inline void on_keyboardev(const SDL_Event &event);//Handle SDL_KeyboardEvent
         inline void on_mousemotion(const SDL_Event &event);//Handle SDL_MouseMotion
         inline void on_mousebutton(const SDL_Event &event);//Handle SDL_MouseButton
+        inline void on_textinput(const SDL_Event &event);
         //defercall in eventloop
         void defer_call(void(* fn)(void*),void *data = nullptr);
         //Get window from WindowID
-        WindowImpl *get_window(Uint32 winid);
+        WindowImpl *get_window(Uint32 winid);//< It is thread unsafe
+        WindowImpl *get_window_s(Uint32 winid);//< It is thread safe
 
         std::unordered_map<Uint32,WindowImpl*> wins_map;//Windows map
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
