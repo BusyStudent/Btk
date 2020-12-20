@@ -14,7 +14,7 @@ extern "C" void _Btk_Backtrace(){
     void *address[100];
     int ret = backtrace(address,100);
 
-    fputs("Backtrace Begin\n",stderr);
+    fprintf(stderr,"Backtrace Begin pid:%d\n",int(getpid()));
     //get address
     char **str = backtrace_symbols(address,ret);
     if(str == nullptr){

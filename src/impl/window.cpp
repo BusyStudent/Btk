@@ -84,6 +84,14 @@ namespace Btk{
                 widget->draw(render);
             }
         }
+        //Run the draw callback
+        auto iter = draw_cbs.begin();
+        while(iter != draw_cbs.end()){
+            if(not iter->call(render)){
+                //Remove it
+                iter = draw_cbs.erase(iter);
+            }
+        }
         render.done();
     }
     //TryCloseWIndow

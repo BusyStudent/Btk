@@ -2,7 +2,7 @@ add_rules("mode.debug", "mode.release")
 --add SDL require
 add_requires("SDL2","SDL2_image","SDL2_ttf")
 
-add_cxxflags("-std=c++17","-Wall","-Wextra")
+add_cxxflags("-std=c++17","-Wall","-Wextra","-fPIC")
 add_includedirs("include")
 
 if is_plat("linux") then
@@ -12,6 +12,11 @@ end
 if is_mode("release") then
     add_cxxflags("-march=native")
     add_cflags("-march=native")
+    add_cxxflags("NDEBUG")
+    add_cflags("NDEBUG")
+else
+    add_cxxflags("-rdynamic")
+    add_cflags("-rdynamic")
 end
 target("btk")
     on_load(function(target)
@@ -19,13 +24,6 @@ target("btk")
     end)
     add_defines("BTK_USE_GFX")
     add_defines("USE_MMX")
-
-    if is_mode("release") then
-        add_cxxflags("NDEBUG")
-        add_cflags("NDEBUG")
-    else
-        add_ldflags("-rdynamic")
-    end
     
     if is_plat("linux") then
         add_files("./src/platform/x11/*.cpp")
@@ -75,5 +73,9 @@ if is_mode("debug") then
     target("text")
         set_kind("binary")
         add_files("./tests/text.cpp")
+        add_deps("btk")
+    target("timer")
+        set_kind("binary")
+        add_files("./tests/timer.cpp")
         add_deps("btk")
 end

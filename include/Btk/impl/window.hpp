@@ -16,6 +16,24 @@ namespace Btk{
     struct Renderer;
     struct Widget;
     struct Theme;
+    /**
+     * @brief The Internal Window Draw Callback
+     */
+    struct DrawCallback{
+        Widget *widget;
+        void *userdata;
+        bool (*draw_fn)(Renderer &,Widget *widget,void*);
+        /**
+         * @brief Start Render
+         * 
+         * @param render The render
+         * @return true Keep the function
+         * @return false Remove it fron the list
+         */
+        bool call(Renderer &render) const{
+            return draw_fn(render,widget,userdata);
+        }
+    };
     struct WindowImpl{
         //Init SDL Window
         WindowImpl(const char *title,int x,int y,int w,int h,int flags);
@@ -90,6 +108,10 @@ namespace Btk{
          * 
          */
         Widget *focus_widget = nullptr;
+
+        //The draw callback
+        //It will be called at last
+        std::list<DrawCallback> draw_cbs;
     };
 };
 

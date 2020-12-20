@@ -30,8 +30,8 @@ namespace Btk{
         }
         bool has_point(int x,int y) const noexcept{
             SDL_Point p{
-                x = x,
-                y = y
+                x,
+                y
             };
             return SDL_PointInRect(&p,this);
         }

@@ -387,12 +387,9 @@ namespace Btk{
 namespace Btk{
     void Exit(int code){
         //FIXME possible memory leak on here
-        int *value = new int(code);
-        System::instance->defer_call([](void *ptr){
-            int v = *static_cast<int*>(ptr);
-            delete static_cast<int*>(ptr);
-            throw v;
-        },value);
+        DeferCall([code](){
+            throw code;
+        });
     }
     ExceptionHandler SetExceptionHandler(ExceptionHandler handler){
         ExceptionHandler current = System::instance->handle_exception;
