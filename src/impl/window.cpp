@@ -301,9 +301,20 @@ namespace Btk{
             if(not focus_widget->rect.has_point(x,y)){
                 //The widget lost the focus
                 Event ev(Event::LostFocus);
-                focus_widget->handle(ev);
-                BTK_LOGINFO("Widget %p lost focus",focus_widget);
-                focus_widget = nullptr;
+                if(focus_widget->handle(ev)){
+                    if(ev.is_accepted()){
+                        BTK_LOGINFO("Widget %p lost focus",focus_widget);
+                        focus_widget = nullptr;
+                    }
+                    else{
+                        BTK_LOGINFO("Widget %p refused lost focus",focus_widget);
+                    }
+                }
+                else{
+                    //This widget refused to lost focus
+                    BTK_LOGINFO("Widget %p refused lost focus",focus_widget);
+                }
+
             }
             BTK_LOGINFO("Widget %p has focus",focus_widget);
         }

@@ -31,10 +31,12 @@ namespace Btk{
                                      int rad,
                                      SDL_Color bg,
                                      SDL_Color boarder){
+            int i = 0;
             //draw background
-            rounded_box(rect,rad,bg);
+            i |= rounded_box(rect,rad,bg);
             //draw boarder
-            rounded_rect(rect,rad,boarder);
+            i |= rounded_rect(rect,rad,boarder);
+            return i;
         }
         //operators
         Renderer &operator =(SDL_Renderer *renderer){

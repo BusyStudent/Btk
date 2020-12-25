@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_filesystem.h>
 #include <cstdlib>
@@ -60,6 +61,22 @@ namespace{
         _Btk_Backtrace();
         //rethrow the signal
         raise(sig);
+    };
+    #endif
+    #ifdef __gnu_linux__
+    //XLIB Handle ERROR 
+    int xlib_err_handler(Display *display,XErrorEvent *event){
+        char buf[128];
+        int ret = XGetErrorText(display,event->error_code,buf,sizeof(buf));
+        if(ret == -1){
+            buf[0] = '\0';
+        }
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION,
+            "[System::X11]At display \033[34m%s\033[0m \033[31m%s\033[0m",
+            XDisplayString(display),
+            buf);
+        
+        return 0;
     };
     #endif
 };
@@ -163,6 +180,10 @@ namespace Btk{
             instance = new System();
             //regitser atexit callback
             std::call_once(flag,std::atexit,System::Quit);
+            #ifdef __gnu_linux__
+            //set error handler
+            XSetErrorHandler(xlib_err_handler);
+            #endif
         }
         return 1;
     }

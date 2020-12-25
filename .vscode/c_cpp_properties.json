@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/**/include"
+                "${workspaceFolder}/**/include",
+                "/usr/include/freetype2"
             ],
             "defines": [
                 "BTK_USE_GFX",

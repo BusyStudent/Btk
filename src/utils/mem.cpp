@@ -1,8 +1,8 @@
 #include "../build.hpp"
 
+#include <Btk/utils/mem.hpp>
 #include <cstddef>
 #include <cctype>
-
 namespace Btk{
     size_t U16Strlen(const char16_t *str){
         if(str == nullptr){

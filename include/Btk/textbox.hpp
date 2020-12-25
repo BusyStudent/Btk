@@ -54,11 +54,18 @@ namespace Btk{
             PixBuf  tb_buf;//Rendered text
             Texture texture;
 
-            bool has_focus = false;
+            bool has_focus = false;//Flag of has focus
+            bool is_dragging = false;//< Flag of drag
+
             std::u16string::iterator cur_txt;//Current text
+            //It will be point from tb_text.begin() - 1
+            //to tb_text.end() - 1
+            std::u16string::iterator sel_begin;//select text begin
+            std::u16string::iterator sel_end;//select text end
 
             int ft_h;//Rendered Text's h
             int tb_boarder = 4;//The text boarder
+        friend struct TextBoxInserter;
     };
 };
 
