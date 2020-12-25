@@ -69,7 +69,8 @@
         "*.ipp": "cpp",
         "forward_list": "cpp",
         "future": "cpp",
-        "cstdalign": "cpp"
+        "cstdalign": "cpp",
+        "cerrno": "cpp"
     },
     "files.exclude": {
         "**/.git": true,

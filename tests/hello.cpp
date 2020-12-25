@@ -1,4 +1,5 @@
 #include <Btk/Btk.hpp>
+#include <Btk/msgbox/fselect.hpp>
 #include <Btk/utils/timer.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/button.hpp>
@@ -31,7 +32,19 @@ int main(){
         &Btk::Window::close,
         &win
     );
-    win.add<Btk::Button>(400,400,100,50).set_text("Button");;
+    auto &btn2 = win.add<Btk::Button>(400,400,100,50);
+
+    btn2.set_text("FSelectBox");
+    btn2.sig_click().connect([&](){
+        Btk::FSelectBox box("Select a file");
+        box.sig_async().connect([&](std::string_view f){
+            if(not f.empty()){
+                win.set_icon(f);
+            }
+        });
+        box.show();
+    });
+
     win.add<Btk::TextBox>().set_rect(100,100,100,50);
     win.done();
     win.mainloop();

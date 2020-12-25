@@ -7,6 +7,7 @@
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_surface.h>
 #include "defs.hpp"
+#include "rect.hpp"
 struct SDL_Surface;
 struct SDL_Texture;
 namespace Btk{
@@ -149,8 +150,18 @@ namespace Btk{
                 t.texture = nullptr;
             }
             ~Texture();
-            int w() const;
-            int h() const;
+            /**
+             * @brief Get the size(w and h)
+             * 
+             * @return W and H
+             */
+            Size size() const;
+            int w() const{
+                return size().w;
+            }
+            int h() const{
+                return size().h;
+            }
             //check is empty
             bool empty() const noexcept{
                 return texture == nullptr;

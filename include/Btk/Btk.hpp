@@ -21,7 +21,7 @@ namespace Btk{
     extern void AtExit(void(* fn)());
 
     template<class Callable,class ...Args>
-    void AtExit(Callable &&callable,Args &&...args){
+    void AtExit(Callable &&callable,Args ...args){
         auto *invoker = new Impl::Invoker<Callable,Args...>{
             {std::forward<Args>(args)...},
             std::forward<Callable>(callable)
@@ -40,7 +40,7 @@ namespace Btk{
     extern void DeferCall(void(* fn)());
     
     template<class Callable,class ...Args>
-    void DeferCall(Callable &&callable,Args &&...args){
+    void DeferCall(Callable &&callable,Args ...args){
         auto *invoker = new Impl::Invoker<Callable,Args...>{
             {std::forward<Args>(args)...},
             std::forward<Callable>(callable)

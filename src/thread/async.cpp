@@ -3,8 +3,10 @@
 #include <Btk/async/async.hpp>
 #include <Btk/impl/thread.hpp>
 #include <Btk/impl/atomic.hpp>
+#include <Btk/Btk.hpp>
 
 #include <condition_variable>
+#include <exception>
 #include <thread>
 #include <queue>
 #include <mutex>
@@ -88,7 +90,13 @@ namespace Btk{
             idle = false;
             pool->idle_workers -= 1;
 
-            task.run();
+            try{
+                task.run();
+            }
+            catch(...){
+                std::exception_ptr ptr = std::current_exception();
+                Btk::DeferCall(std::rethrow_exception,ptr);
+            }
             
             idle = true;
             pool->idle_workers += 1;

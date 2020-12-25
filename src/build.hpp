@@ -37,7 +37,7 @@
         SDL_TriggerBreakpoint();\
     }
 #else
-    #define BTK_ASSERT(EXP) (EXP)
+    #define BTK_ASSERT(EXP) 
 #endif
 /**
  * @brief Show the backtrace

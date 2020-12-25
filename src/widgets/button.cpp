@@ -88,37 +88,25 @@ namespace Btk{
         //Fist draw backgroud
         //Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 1}
         //It makes button look better
+        Rect fixed_rect = {rect.x,rect.y + 1,rect.w - 1,rect.h - 2};
+        Color bg;//< Background color
+        Color boarder;//< Boarder color
         if(is_pressed){
-            render.rounded_box(
-                Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
-                2,
-                theme->high_light
-            );
+            bg = theme->high_light;
         }
         else{
-            render.rounded_box(
-                Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
-                2,
-                theme->background_color
-            );
+            bg = theme->background_color;
         }
         
         //second draw border
         if(is_entered){
-            render.rounded_rect(
-                Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
-                2,
-                theme->high_light
-            );
+            boarder = theme->high_light;
         }
         else{
-            render.rounded_rect(
-                Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 2},
-                2,
-                theme->border_color
-            );
+            boarder = theme->border_color;
         }
-        
+        //Draw box
+        render.rounded_box(fixed_rect,2,bg);
         //Render text
         if(btext.size() != 0){
             //has text
@@ -140,7 +128,8 @@ namespace Btk{
             render.copy(texture,nullptr,&pos);
             render.set_cliprect(cliprect);
         }
-        
+        //draw the boarder
+        render.rounded_rect(fixed_rect,2,boarder);
     }
     void Button::onclick(const MouseEvent &event){
         if(event.is_pressed() and event.button.is_left()){
@@ -154,8 +143,9 @@ namespace Btk{
             //render text
             win->draw();
         }
-        else if(event.button.is_left()){
+        else if(event.button.is_left() and is_pressed){
             //release the button
+            //The button was clicked 
             is_pressed = false;
             //render text
             if(btext.size() != 0){

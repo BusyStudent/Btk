@@ -9,6 +9,7 @@
 #include <Btk/exception.hpp>
 #include <Btk/pixels.hpp>
 #include <Btk/rwops.hpp>
+#include <Btk/rect.hpp>
 namespace Btk{
     PixBuf::~PixBuf(){
         SDL_FreeSurface(surf);
@@ -170,5 +171,12 @@ namespace Btk{
         texture = t.texture;
         t.texture = nullptr;
         return *this;
+    }
+    Size Texture::size() const{
+        Size s;
+        if(SDL_QueryTexture(texture,nullptr,nullptr,&s.w,&s.h) == -1){
+            throwSDLError();
+        }
+        return s;
     }
 };

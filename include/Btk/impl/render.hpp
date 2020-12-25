@@ -26,6 +26,16 @@ namespace Btk{
         inline int box(const SDL_Rect &r,SDL_Color c){
             return fill_rect(r,c);
         }
+        //some useful draw methods
+        int rounded_box_with_boarder(const SDL_Rect &rect,
+                                     int rad,
+                                     SDL_Color bg,
+                                     SDL_Color boarder){
+            //draw background
+            rounded_box(rect,rad,bg);
+            //draw boarder
+            rounded_rect(rect,rad,boarder);
+        }
         //operators
         Renderer &operator =(SDL_Renderer *renderer){
             render = renderer;

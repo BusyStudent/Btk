@@ -1,9 +1,10 @@
 #Scons build file
 
-env = Environment(CPPFLAGS  = ["-O3","-std=c++17"])
+env = Environment(CXXFLAGS = ["-O3","-std=c++17"])
 
 env.Append(CPPDEFINES='BTK_USE_GFX')
 env.Append(CPPDEFINES='NDEBUG')
+env.Append(CFLAGS = ["-O3"])
 
 libs = ['SDL2','SDL2_image','SDL2_ttf']
 
@@ -16,7 +17,7 @@ src.extend(Glob("./src/themes/*.cpp"))
 src.extend(Glob("./src/thread/*.cpp"))
 
 src.extend(Glob("./src/utils/*.cpp"))
-src.extend(Glob("./src/platform/*.cpp"))
+src.extend(Glob("./src/msgbox/*.cpp"))
 src.extend(Glob("./src/platform/*.cpp"))
 
 #Check platform
