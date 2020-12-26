@@ -167,7 +167,114 @@ namespace Btk{
             FontImpl *pimpl;
     };
     class FontSet{
+        #ifdef __gnu_linux__
+        public:
+            /**
+             * @brief Construct a new Font Set object
+             * 
+             * @param pat FcPattern
+             * @param objset FcObjectSet
+             * @param fontset FcFontSet
+             */
+            FontSet(void *pat,void *objset,void *fontset):
+                fc_pat(pat),fc_objset(objset),fc_fontset(fontset){}
+            FontSet(FontSet &&set){
+                fc_pat = set.fc_pat;
+                fc_objset = set.fc_objset;
+                fc_fontset = set.fc_fontset;
 
+                set.fc_pat = nullptr;
+                set.fc_objset = nullptr;
+                set.fc_fontset = nullptr;
+            }
+        public:
+            /**
+             * @brief Font in FontSet
+             * 
+             */
+            struct Font{
+                /**
+                 * @note The return of the methods are all reference,
+                 *       If you want to use it after destroying the fontset,
+                 *       Please make a copy of the string_view
+                 */
+                std::string_view family() const;
+                std::string_view style() const;
+                std::string_view file() const;
+                void  *font;
+            };
+            /**
+             * @brief Iterator of Fontset
+             * 
+             */
+            struct Iterator{
+                Iterator() = default;
+                Iterator(const Iterator &) = default;
+
+                bool operator ==(const Iterator &i) const{
+                    return i.font.font == font.font;
+                }
+                bool operator !=(const Iterator &i) const{
+                    return i.font.font != font.font;
+                }
+                Font *operator ->(){
+                    return &font;
+                }
+                Font &operator * (){
+                    return font;
+                }
+                Iterator &operator =(const Iterator &) = default;
+
+                Iterator &operator ++();
+                Iterator &operator --();
+                
+                Font font;
+                FontSet *set;
+                size_t index;
+            };
+            static constexpr bool Supported = true;
+        private:
+            void *fc_pat;//< FcPattern
+            void *fc_objset;//FcObjectSet
+            void *fc_fontset;//FcFontSet
+        #else
+            //Unsupported
+            struct Font{};
+            struct Iterator;
+            static constexpr bool Supported = false;
+        #endif
+        public:
+            typedef Iterator iterator;
+            
+            //General methods
+            ~FontSet();
+            /**
+             * @brief Locate Font in set
+             * 
+             * @param The font location
+             * @return The font
+             */
+            Font operator [](size_t index) const;
+            /**
+             * @brief Get number of font 
+             * 
+             * @return The font count
+             */
+            size_t size() const;
+            FontSet &operator =(FontSet &&);
+            /**
+             * @brief Get the first font
+             * 
+             * @return Iterator 
+             */
+            Iterator begin();
+            /**
+             * @brief Get the last font
+             * 
+             * @return Iterator 
+             */
+            Iterator end();
+        friend struct Iterator;
     };
     /**
      * @brief Some useful function about font
@@ -191,6 +298,8 @@ namespace Btk{
          * 
          */
         BTKAPI void Quit();
+
+        BTKAPI FontSet GetFontList();
     };
     //operators for FontStyle
     inline FontStyle operator |(FontStyle s1,FontStyle s2) noexcept{

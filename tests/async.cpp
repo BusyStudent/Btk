@@ -5,7 +5,12 @@
 int main(){
     using namespace Btk;
     Init();
-    Async([](){
+    Async([]() -> std::string{
         std::cout << "Hello Wolrd" << std::endl;
+        return std::string("Hello World");
+    })->connect([](std::string_view view){
+        std::cout << view << std::endl;
+        Btk::Exit();
     });
+    Btk::run();
 }

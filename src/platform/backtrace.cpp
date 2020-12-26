@@ -1,8 +1,55 @@
 #include "../build.hpp"
 
+#include <Btk/platform/popen.hpp>
 #ifndef NDEBUG
 #include <string_view>
 #include <string>
+
+#ifdef __GNUC__
+//We could use unwind
+#define BTK_HAS_UNWIND
+#include <unwind.h>
+namespace BtkUnwind{
+    //...
+    struct Input{
+        void **array;
+        int max_size;
+        int cur;//< cur frame
+    };
+    inline int GetCallStack(void **array,int max_size){
+        //Backtrace function
+        auto fn = [](struct _Unwind_Context *uc, void *p) -> _Unwind_Reason_Code{
+            //...
+            Input *input = static_cast<Input*>(p);
+
+            if(input->cur >= input->max_size){
+                return _URC_NO_REASON;
+            }
+            
+            (input->cur) ++;
+            auto ptr = _Unwind_GetIP(uc);
+            input->array[input->cur] = reinterpret_cast<void*>(ptr);
+            return _URC_NO_REASON;
+        };
+        Input input = {
+            array,
+            max_size,
+            -1
+        };
+        _Unwind_Backtrace(fn,&input);
+        return input.cur;
+    }
+    inline int backtrace(void **array,int max_size){
+        return GetCallStack(array,max_size);
+    }
+};
+#endif
+//Use addr2line Get function name
+namespace BtkUnwind{
+    
+};
+
+
 //GNU Linux impl
 #ifdef __gnu_linux__
 #include <execinfo.h>
@@ -33,6 +80,9 @@ extern "C" void _Btk_Backtrace(){
     int demangle_status;
 
     char *func;
+    //Buffer for __cxa_demangle
+    char *outbuffer = nullptr;
+    size_t outbuflen = 0;
     for(int i = 0;i < ret;i++){
         std::string_view view(str[i]);
 
@@ -57,20 +107,19 @@ extern "C" void _Btk_Backtrace(){
             }
         }
         //To demangle the symbols
-        func = __cxa_demangle(funcname.c_str(),nullptr,nullptr,&demangle_status);
+        func = __cxa_demangle(funcname.c_str(),outbuffer,&outbuflen,&demangle_status);
         if(func == nullptr){
             //demangle failed
             //using the raw name
             func = funcname.data();
         }
-        fprintf(stderr,"  at %p: %s (in %s)\n",address[i],func,filename.c_str());
-        //Is the data from malloc
-        if(func != funcname.data()){
-            free(func);
+        else{
+            outbuffer = func;
         }
-
+        fprintf(stderr,"  at %p: %s (in %s)\n",address[i],func,filename.c_str());
     }
     free(str);
+    free(outbuffer);
     fputs("Backtrace End\n",stderr);
     fflush(stderr);
 };

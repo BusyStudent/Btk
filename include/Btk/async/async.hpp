@@ -12,7 +12,7 @@ namespace Btk{
 
         template<class RetT>
         struct AsyncSignal<true,RetT>{
-            using type = Signal<void(RetT)>;
+            using type = Signal<void(RetT &)>;
             type signal;//< The Signals
         };
         template<>
@@ -29,10 +29,14 @@ namespace Btk{
         //A struct to store task value
         template<class RetT>
         struct AsyncResultHolder{
-            union{
+            union Data{
                 //erase the destructor
                 RetT data;
-                bool __unused = false;
+                bool __unused;
+                Data(){
+                    __unused = false;
+                }
+                ~Data(){}
             }data;
             void cleanup(){
                 if constexpr(not std::is_destructible<RetT>()){
@@ -47,10 +51,15 @@ namespace Btk{
         //A specialization for ref
         template<class RetT>
         struct AsyncResultHolder<RetT&>{
-            union{
+            union Data{
                 //erase the destructor
                 std::remove_reference_t<RetT> data;
-                bool __unused = false;
+                bool __unused;
+
+                Data(){
+                    __unused = false;
+                }
+                ~Data(){}
             }data;
             void cleanup(){};
             
@@ -89,6 +98,78 @@ namespace Btk{
                     std::tuple<Args...>(std::forward<Args>(args)...){};
         };
         /**
+         * @brief A RAII class for impl Invoker
+         * 
+         * @tparam HasSiganlArg Is The signal arg is not empty?
+         * @tparam T The invoker type
+         */
+        template<bool HasSiganlArg,class T>
+        struct AsyncGuard;
+
+        template<class T>
+        struct AsyncGuard<true,T>{
+            //The invoker
+            T *invoker;
+            bool need_cleanup = true;
+            bool need_delete = true;
+            //< need We cleanup for the invoker
+            AsyncGuard(T *i){
+                invoker = i;
+            }
+            AsyncGuard(const AsyncGuard &) = delete;
+            ~AsyncGuard(){
+                if(need_cleanup){
+                    invoker->cleanup();
+                }
+                if(need_delete){
+                    delete invoker;
+                }
+            }
+            /**
+             * @brief Relase both
+             * 
+             */
+            void release(){
+                need_cleanup = false;
+                need_delete = false;
+            };
+        };
+        /**
+         * @brief The specialization of no signal arg
+         * 
+         * @tparam T The invoker type
+         */
+        template<class T>
+        struct AsyncGuard<false,T>{
+            T *invoker;
+            bool need_delete = true;
+            //< need We cleanup for the invoker
+            AsyncGuard(T *i){
+                invoker = i;
+            }
+            AsyncGuard(const AsyncGuard &) = delete;
+            ~AsyncGuard(){
+                if(need_delete){
+                    delete invoker;
+                }
+            }
+            void release(){
+                need_delete = false;
+            };
+        };
+        template<class T>
+        struct AsyncScopePtr{
+            T *invoker;
+            AsyncScopePtr(T *ptr){
+                invoker = ptr;
+            };
+            AsyncScopePtr(const AsyncScopePtr &) = delete;
+            ~AsyncScopePtr(){
+                invoker->cleanup();
+                delete invoker;
+            };
+        };
+        /**
          * @brief The AsyncInvoker
          * 
          * @tparam Callable The callable type
@@ -115,6 +196,11 @@ namespace Btk{
              */
             using result_type = std::invoke_result_t<Callable,Args...>;
             /**
+             * @brief Is the signal has args
+             * 
+             */
+            static constexpr bool signal_has_args = not std::is_same<result_type,void>();
+            /**
              * @brief Invoke the callable
              * 
              * @return The callable's result
@@ -133,27 +219,28 @@ namespace Btk{
                     std::unique_ptr<AsyncInvoker> ptr(this);
                     invoke();
                 }
-                else if constexpr(std::is_same<result_type,void>()){
+                else if constexpr(std::is_same<result_type,void>()){                    
+                    AsyncGuard<signal_has_args,AsyncInvoker> guard(this);
                     invoke();
                     if(not this->signal.empty()){
                         //Emit this signal on main thread
                         DeferCall(EmitSignal,this);
-                    }
-                    else{
-                        //cleanup
-                        delete this;
+                        //relase the guard
+                        guard.release();
                     }
                 }
                 else{
+                    AsyncGuard<signal_has_args,AsyncInvoker> guard(this);
+                    //< We didnot have the value
+                    //< So we set the flags to false
+                    guard.need_cleanup = false;
                     this->store(invoke());
+                    //< Ok,we store the value
+                    guard.need_cleanup = true;
                     if(not this->signal.empty()){
                         //Emit this signal on main thread
                         DeferCall(EmitSignal,this);
-                    }
-                    else{
-                        //Cleanup returned value
-                        this->cleanup();
-                        delete this;
+                        guard.release();
                     }
                 }
             };
@@ -164,9 +251,13 @@ namespace Btk{
             template<class T = std::enable_if<HasSignal>>
             void emit(){
                 if constexpr(std::is_same<result_type,void>()){
+                    std::unique_ptr<AsyncInvoker> ptr(this);
                     this->signal.emit();
                 }
                 else{
+                    //Add Guard
+                    AsyncScopePtr<AsyncInvoker> guard(this);
+
                     if constexpr(std::is_reference<result_type>()){
                         //Is ref
                         //So the Holder's value is a point
@@ -175,9 +266,7 @@ namespace Btk{
                     else{
                         this->signal.emit(this->data.data);
                     }
-                    this->cleanup();
                 }
-                delete this;
             };
             /**
              * @brief The main entry for invoker
@@ -262,16 +351,19 @@ namespace Btk{
                     invoker = nullptr;
                 }
             };
-
-            template<class T = std::enable_if<HasSignal,signal_type>>
-            T *operator ->() const noexcept{
-                return &(invoker->sig);
-            }
-            
-            template<class T = std::enable_if<HasSignal,signal_type>>
-            T &operator *() const noexcept{
-                return (invoker->sig);
-            }
+            /**
+             * @brief a use full operator to connect signal
+             * @note It only useable only it has signal
+             * @return The signal or void*(NoSignal)
+             */
+            signal_type *operator ->() const noexcept{
+                if constexpr(HasSignal){
+                    return &(invoker->signal);
+                }
+                else{
+                    return nullptr;
+                }
+            };
         private:
             invoker_type *invoker;
     };

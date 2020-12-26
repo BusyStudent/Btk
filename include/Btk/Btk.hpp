@@ -2,6 +2,7 @@
 #define _BTK_HPP_
 #include <exception>
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <tuple>
 #include "impl/invoker.hpp"
@@ -10,6 +11,12 @@ namespace Btk{
 
     typedef bool(*ExceptionHandler)(std::exception*);
     extern ExceptionHandler SetExceptionHandler(ExceptionHandler);
+    /**
+     * @brief End the event loop
+     * 
+     * @param code The exit code
+     */
+    extern void Exit(int code = EXIT_SUCCESS);
     extern void Init();
     /**
      * @brief Regitser atexit callback

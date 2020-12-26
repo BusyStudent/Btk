@@ -9,4 +9,7 @@ int main(){
     buf.assign("你好");
     std::cout << buf.length() << std::endl;
     std::cout << buf.to_string();
+    int num = 0;
+    
+    Btk::Memdup(&num);
 }

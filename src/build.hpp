@@ -30,10 +30,7 @@
 //Assert
 #ifndef NDEBUG
     #define BTK_ASSERT(EXP) if(not(EXP)){\
-        SDL_LogCritical(\
-            SDL_LOG_CATEGORY_APPLICATION,"Assertion faild on %s:%d %s '%s'",\
-            __FILE__,__LINE__,BTK_FUNCTION,#EXP);\
-        _Btk_Backtrace();\
+        _Btk_ReportFailure(__FILE__,__LINE__,BTK_FUNCTION,#EXP);\
         SDL_TriggerBreakpoint();\
     }
 #else
@@ -44,6 +41,16 @@
  * @note This function only avliabled on debug version
  */
 extern "C" void _Btk_Backtrace();
+/**
+ * @brief Report Assertion failure
+ * @note This function only avliabled on debug version
+ */
+extern "C" void _Btk_ReportFailure(
+    const char *file,
+    int line,
+    const char *fn,
+    const char *exp
+);
 #ifdef NDEBUG
 extern "C" inline void _Btk_Backtrace(){};
 #endif
