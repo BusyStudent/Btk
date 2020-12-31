@@ -1,9 +1,10 @@
 #if !defined(_BTKUTILS_TEXTBUFFER_HPP_)
 #define _BTKUTILS_TEXTBUFFER_HPP_
+#include <vector>
+#include <string>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
-#include <string>
 #include <string_view>
 #include <type_traits>
 
@@ -14,7 +15,7 @@ static_assert(sizeof(char16_t) == sizeof(uint16_t),"sizeof(char16_t) != sizeof(U
 
 namespace Btk{
     /**
-     * @brief A container of utf16 encoded string
+     * @brief A container of utf16 encoded string for TextEditer
      * 
      * @FIXME I donnot why iconv will skip 2 byte a the buffer begin
      *        Is this bug?
@@ -151,6 +152,7 @@ namespace Btk{
                 return to_string();
             }
         private:
+            std::vector<std::u16string> text_vec;
             char16_t *mem;//< The buffer's memory
             size_t  len;//< Current length
             size_t  max_len;//< The buffer capicity

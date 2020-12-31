@@ -5,14 +5,15 @@
 #include "rect.hpp"
 #include "defs.hpp"
 namespace Btk{
-    class Renderer;
-    class Window;
-    class Event;
+    struct Renderer;
+    class  Window;
+    class  Event;
     //Attribute for Widget
     struct WidgetAttr{
         bool hide = false;//<Is hide
         bool user_rect = false;//<Using user defined position
         bool container = false;//<Is container
+        bool disable = false;//<The widget is disabled?
     };
     //Alignment
     enum class Align:unsigned int{
@@ -61,6 +62,9 @@ namespace Btk{
             void set_rect(int x,int y,int w,int h){
                  set_rect({x,y,w,h});
             };
+            void set_position(const Vec2 &vec2){
+                set_rect(vec2.x,vec2.y,rect.w,rect.h);
+            };
             int x() const noexcept{
                 return rect.x;
             };
@@ -72,6 +76,9 @@ namespace Btk{
             };
             int h() const noexcept{
                 return rect.h;
+            };
+            bool is_enable() const noexcept{
+                return not attr.disable;
             };
         protected:
             WidgetAttr attr;

@@ -9,7 +9,9 @@ namespace Btk{
     typedef SDL_Scancode Scancode;
     //Keymode enum
     enum class Keymode:Uint16{
-
+        Ctrl = KMOD_CTRL,
+        Shift = KMOD_SHIFT,
+        //etc...
     };
     inline Keymode operator |(Keymode a,Keymode b){
         return static_cast<Keymode>
@@ -20,6 +22,12 @@ namespace Btk{
         return static_cast<Keymode>
             (static_cast<Uint16>(a) & static_cast<Uint16>(b)
         );
+    };
+    inline bool operator ==(Keymode a,Uint16 b){
+        return Uint16(a) == b;
+    };
+    inline bool operator !=(Keymode a,Uint16 b){
+        return Uint16(a) != b;
     };
 };
 

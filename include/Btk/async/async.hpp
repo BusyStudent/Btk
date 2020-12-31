@@ -32,9 +32,9 @@ namespace Btk{
             union Data{
                 //erase the destructor
                 RetT data;
-                bool __unused;
+                bool data__unused;
                 Data(){
-                    __unused = false;
+                    data__unused = false;
                 }
                 ~Data(){}
             }data;
@@ -54,10 +54,10 @@ namespace Btk{
             union Data{
                 //erase the destructor
                 std::remove_reference_t<RetT> data;
-                bool __unused;
+                bool data__unused;
 
                 Data(){
-                    __unused = false;
+                    data__unused = false;
                 }
                 ~Data(){}
             }data;

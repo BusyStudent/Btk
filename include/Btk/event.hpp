@@ -36,7 +36,13 @@ namespace Btk{
 
                 TakeFocus = 10,//The widget take focus
                                //accept the event to task focus
-                LostFocus = 11,//The widget lost focus
+
+                LostFocus = 11,//<The widget lost focus
+                               //Of course you can refuse it
+
+                Enable = 12,//The widget was enabled
+                Disable = 13,//The widget was disabled
+                
                 USER = 1000,
                 USER_MAX = UINT32_MAX - 1,
                 ERROR = UINT32_MAX
@@ -179,6 +185,10 @@ namespace Btk{
             Released
         }state;
         bool repeat;//is repeat
+        //Check kmode
+        bool has_kmod(Keymode mode) const noexcept{
+            return static_cast<bool>(keymode & mode);
+        }
     };
     /**
      * @brief A event about set Widget rect

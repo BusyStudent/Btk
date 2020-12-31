@@ -15,6 +15,16 @@
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64"
+        },{
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/**/include",
+                "${default}"
+            ],
+            "defines": [
+                "BTK_USE_GFX"
+            ]
         }
     ],
     "version": 4

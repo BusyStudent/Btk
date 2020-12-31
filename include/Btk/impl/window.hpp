@@ -66,6 +66,7 @@ namespace Btk{
         Signal<bool()> sig_close;//CloseWIndow
         Signal<void(std::string_view)> sig_dropfile;//DropFile
         Signal<void(int new_w,int new_h)> sig_resize;//WindowResize
+        Signal<bool(Event &)> sig_event;//Process Unhandled Event
         //widgets
         std::list<Widget*> widgets_list;
         //refcount

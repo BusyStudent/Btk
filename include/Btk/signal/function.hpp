@@ -118,7 +118,7 @@ namespace Btk{
                     //C function pointer
                     delete_ptr = nullptr;
                     manager_ptr = reinterpret_cast<void*>(fn);
-                    invoke_ptr = InvokeCFunction;
+                    invoke_ptr = InvokeCFunction<Fn>;
                 }
                 else{
                     //other any callable
@@ -199,9 +199,9 @@ namespace Btk{
                 return empty();
             };
             //Invoke C Function
+            template<class Fn = RetT(*)(Args...)>
             static RetT InvokeCFunction(void *fn,Args ...args){
-                typedef RetT(*fn_t)(Args...);
-                return reinterpret_cast<fn_t>(fn)(
+                return reinterpret_cast<Fn>(fn)(
                     std::forward<Args>(args)...
                 );
             };

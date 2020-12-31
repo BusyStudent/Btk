@@ -3,6 +3,7 @@
 #include <Btk/utils/timer.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/button.hpp>
+#include <Btk/event.hpp>
 #include <Btk/lable.hpp>
 #include <iostream>
 int main(){
@@ -46,6 +47,20 @@ int main(){
     });
 
     win.add<Btk::TextBox>().set_rect(100,100,100,50);
+    win.sig_event().connect([&win](Btk::Event &event){
+        if(event.type() == Btk::Event::KeyBoard){
+            auto &kevent = static_cast<Btk::KeyEvent&>(event);
+            if(kevent.keycode == SDLK_F11 and kevent.state == Btk::KeyEvent::Pressed){
+                //switch to fullscreen
+                event.accept();
+                static bool val = true;
+                win.set_fullscreen(val);
+                val = not val;
+                return true;
+            }
+        }
+        return false;
+    });
     win.done();
     win.mainloop();
 }

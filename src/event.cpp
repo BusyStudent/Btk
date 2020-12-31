@@ -78,14 +78,7 @@ namespace Btk{
     }
     //Dispatch our event to window or widgets
     void DispatchEvent(const SDL_Event &ev,void*){
-        WindowImpl *win;
-        {
-            //trying to get window
-            std::lock_guard<std::recursive_mutex> locker(
-                System::instance->map_mtx
-            );
-            win = System::instance->get_window(ev.user.windowID);
-        }
+        WindowImpl *win = System::instance->get_window_s(ev.user.windowID);
         if(win == nullptr){
             //Window is not exists
             //ignore it
@@ -100,7 +93,14 @@ namespace Btk{
         }
         else{
             //Dispatch it on Widgets
-            widget->handle(*event);
+            if(not widget->handle(*event)){
+                //It doesnnot accept it
+                if(not event->is_accepted()){
+                    if(not win->sig_event.empty()){
+                        win->sig_event(*event);
+                    }
+                }
+            }
         }
     }
 };

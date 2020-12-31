@@ -3,6 +3,7 @@
 #include <Btk/thirdparty/utf8.h>
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/render.hpp>
+#include <Btk/impl/scope.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/window.hpp>
@@ -50,32 +51,7 @@ namespace Btk{
                 }
                 event.accept();
                 auto &tevent = event_cast<TextInputEvent&>(event);
-                std::u16string::iterator iter;
-
-                if(cur_txt == --tb_text.begin()){
-                    iter = tb_text.begin();
-                }
-                else{
-                    iter = cur_txt;
-                    //Not at end,point to the next ch
-                    if(iter != tb_text.end()){
-                        ++iter;
-                    }
-                }
-                //Check the string is valid
-                BTK_ASSERT(utf8::is_valid(tevent.text.begin(),tevent.text.end()));
-
-                auto end = utf8to16(tevent.text.begin(),tevent.text.end(),TextBoxInserter{*this,iter});
-                cur_txt = --(end.cur);
-                #ifndef NDEBUG
-                std::string t;
-                utf16to8(tb_text.begin(),tb_text.end(),back_inserter(t));
-                BTK_LOGINFO("TextBox:text=%s",t.c_str());
-                #endif
-                tb_buf = nullptr;
-                texture = nullptr;
-
-                win->draw();
+                add_string(tevent.text);
                 return true;
             }
             case Event::DragBegin:{
@@ -226,6 +202,27 @@ namespace Btk{
                     }
                     break;
                 }
+                case SDLK_v:{
+                    //Ctrl + V
+                    if(event.has_kmod(Keymode::Ctrl)){
+                        BTK_LOGINFO("Ctrl + V",0);
+                        char *u8str = SDL_GetClipboardText();
+                        if(u8str == nullptr){
+                            return;
+                        }
+                        SDLScopePtr ptr(u8str);
+                        add_string(u8str);
+                    } 
+                    break;
+                }
+                case SDLK_c:{
+                    //Ctrl + C
+                    if(event.has_kmod(Keymode::Ctrl)){
+                        BTK_LOGINFO("Ctrl + C",0);
+                        SDL_SetClipboardText(u8text().c_str());
+                    }
+                    break;
+                }
             }
         }
         
@@ -246,6 +243,37 @@ namespace Btk{
         tb_buf = nullptr;
         texture = nullptr;
         cur_txt = tb_text.begin();
+        win->draw();
+    }
+    void TextBox::add_string(std::string_view text){
+        if(text.length() == 0){
+            return;
+        }
+        std::u16string::iterator iter;
+
+        if(cur_txt == --tb_text.begin()){
+            iter = tb_text.begin();
+        }
+        else{
+            iter = cur_txt;
+            //Not at end,point to the next ch
+            if(iter != tb_text.end()){
+                ++iter;
+            }
+        }
+        //Check the string is valid
+        BTK_ASSERT(utf8::is_valid(text.begin(),text.end()));
+
+        auto end = utf8to16(text.begin(),text.end(),TextBoxInserter{*this,iter});
+        cur_txt = --(end.cur);
+        #ifndef NDEBUG
+        std::string t;
+        utf16to8(tb_text.begin(),tb_text.end(),back_inserter(t));
+        BTK_LOGINFO("TextBox:text=%s",t.c_str());
+        #endif
+        tb_buf = nullptr;
+        texture = nullptr;
+
         win->draw();
     }
 }

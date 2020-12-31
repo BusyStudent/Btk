@@ -66,6 +66,7 @@ namespace{
     #ifdef __gnu_linux__
     //XLIB Handle ERROR 
     int xlib_err_handler(Display *display,XErrorEvent *event){
+        _Btk_Backtrace();
         char buf[128];
         int ret = XGetErrorText(display,event->error_code,buf,sizeof(buf));
         if(ret == -1){

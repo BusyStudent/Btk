@@ -12,7 +12,10 @@ namespace FontUtils{
 
     };
     std::string GetFileByName(std::string_view name){
-
+        #ifdef 1
+        //We doesn't impl it yet
+        return "C:/Windows/Fonts/simsun.ttc";
+        #endif
     };
 };
 };

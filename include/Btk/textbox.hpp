@@ -47,6 +47,8 @@ namespace Btk{
         private:
             //Process keyboard event
             void do_keyboard(KeyEvent &event);
+            //Add string in where the cur_text point
+            void add_string(std::string_view);
             Font  tb_font;//Text Font
             Theme theme;
             

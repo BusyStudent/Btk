@@ -169,6 +169,10 @@ namespace Btk{
                 return flags;
             }
         }
+        //No any widget accept it
+        if(not sig_event.empty()){
+            flags = sig_event(event);
+        }
         return flags;
     }
 }
@@ -389,6 +393,9 @@ namespace Btk{
                 }
             }
         }
+        if(not sig_event.empty()){
+            sig_event(event);
+        }
     }
     void WindowImpl::handle_textinput(TextInputEvent &event){
         if(focus_widget != nullptr){
@@ -441,6 +448,9 @@ namespace Btk{
     }
     Window::SignalClose &Window::sig_close(){
         return pimpl->sig_close;
+    }
+    Window::SignalEvent &Window::sig_event(){
+        return pimpl->sig_event;
     }
     Window::SignalResize &Window::sig_resize(){
         return pimpl->sig_resize;

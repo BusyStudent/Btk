@@ -10,6 +10,7 @@ namespace Btk{
     struct WindowImpl;
     class PixBuf;
     class Widget;
+    class Event;
     class Font;
     /**
      * @brief A Basic Window 
@@ -19,6 +20,7 @@ namespace Btk{
         public:
             //Signals
             typedef Signal<bool()> SignalClose;
+            typedef Signal<bool(Event&)> SignalEvent;
             typedef Signal<void(int w,int h)> SignalResize;
             typedef Signal<void(std::string_view)> SignalDropFile;
         public:
@@ -175,6 +177,7 @@ namespace Btk{
             }
             //Connect Signals
             SignalClose&    sig_close();
+            SignalEvent&    sig_event();
             SignalResize&   sig_resize();
             SignalDropFile& sig_dropfile();
             /**
