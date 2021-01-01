@@ -47,7 +47,7 @@ namespace{
     void debug_crash_reporter(int sig){
         //reset to default
         signal(sig,SIG_DFL);
-        char *signame;
+        const char *signame;
         if(sig == SIGSEGV){
             signame = "SIGSEGV";
         }
@@ -59,8 +59,13 @@ namespace{
         }
         fprintf(stderr,"Caught signal '%s'\n",signame);
         _Btk_Backtrace();
+        
+        #ifndef _WIN32
         //rethrow the signal
         raise(sig);
+        #else
+        TerminateProcess(GetCurrentProcess(),0);
+        #endif
     };
     #endif
     #ifdef __gnu_linux__

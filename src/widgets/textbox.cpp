@@ -81,8 +81,8 @@ namespace Btk{
                 //Enable Text input
                 event.accept();
                 has_focus = true;
-                SDL_StartTextInput();
                 SDL_SetTextInputRect(&rect);
+                SDL_StartTextInput();
                 win->draw();
                 return true;
             }

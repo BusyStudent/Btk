@@ -37,7 +37,7 @@ namespace{
     }
 };
 namespace Btk{
-    static std::atomic<Event::Type> current_type = Event::USER;
+    static std::atomic<Event::Type> current_type = Event::User;
     Event::~Event(){
 
     }
@@ -47,8 +47,8 @@ namespace Btk{
             std::memory_order::memory_order_consume
         );
 
-        if(now == Type::USER_MAX){
-            return Type::ERROR;
+        if(now == Type::UserMax){
+            return Type::User;
         }
         else{
             current_type.store(

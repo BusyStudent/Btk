@@ -15,7 +15,9 @@
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64"
-        },{
+        },
+        {
+            //GCC on Windows
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
@@ -24,7 +26,11 @@
             ],
             "defines": [
                 "BTK_USE_GFX"
-            ]
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "C:/msys64/mingw64/bin/gcc.exe"
         }
     ],
     "version": 4

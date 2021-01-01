@@ -1,3 +1,5 @@
+#include "../build.hpp"
+
 #include <Btk/themes.hpp>
 #include <atomic>
 namespace Btk{

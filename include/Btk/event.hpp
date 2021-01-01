@@ -43,9 +43,9 @@ namespace Btk{
                 Enable = 12,//The widget was enabled
                 Disable = 13,//The widget was disabled
                 
-                USER = 1000,
-                USER_MAX = UINT32_MAX - 1,
-                ERROR = UINT32_MAX
+                User = 1000,
+                UserMax = UINT32_MAX - 1,
+                Error = UINT32_MAX
             };
             /**
              * @brief Register a event type
