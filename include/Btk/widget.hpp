@@ -25,6 +25,12 @@ namespace Btk{
         Right,
         Left
     };
+    enum class Orientation:unsigned int{
+        Vertical = 0,
+        Horizontal = 1,
+        V = Vertical,
+        H = Horizontal
+    };
     class BTKAPI Widget:public HasSlots{
         public:
             /**
@@ -116,6 +122,16 @@ namespace Btk{
             Widget *drag_widget = nullptr;//The Dragging event
             Widget *cur_widget = nullptr;//Mouse point widget
             
+    };
+    class Line:public Widget{
+        public:
+            Line(Window &,Orientation);
+            Line(Window &,int x,int y,int w,int h,Orientation);
+            ~Line();
+            
+            void draw(Renderer &);
+        private:
+            Orientation orientation;
     };
 };
 

@@ -1,5 +1,6 @@
 #include <Btk/signal/function.hpp>
 #include <Btk/signal/signal.hpp>
+#include <Btk/module.hpp>
 #include <iostream>
 #include <functional>
 void func(int i){

@@ -1,4 +1,6 @@
-#include "../build.hpp"
+#ifdef __gnu_linux__
+
+#include "../../build.hpp"
 
 #include <Btk/platform/popen.hpp>
 #include <Btk/msgbox/fselect.hpp>
@@ -38,7 +40,6 @@ namespace Btk{
     };
     void FSelectBoxImpl::Run(){
         std::unique_ptr<FSelectBoxImpl,FSelectDeleter> ptr(this);
-        #ifdef __gnu_linux__
         //We use zenity or kdialog to impl it
         PStream pfd;
         //gen command line
@@ -65,9 +66,6 @@ namespace Btk{
         else{
             BTK_LOGINFO("Failed to exec %s %d:%s",cmd.c_str(),errno,strerror(errno));
         }
-        #else
-        throwRuntimeError("Doesn't Impl yet");
-        #endif
     }
 }
 namespace Btk{
@@ -101,3 +99,5 @@ namespace Btk{
         return pimpl->signal;
     }
 }
+
+#endif

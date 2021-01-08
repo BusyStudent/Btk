@@ -10,6 +10,7 @@
 #include <list>
 
 #include "thread.hpp"
+#include "../module.hpp"
 
 namespace Btk{
     struct WindowImpl;
@@ -67,6 +68,9 @@ namespace Btk{
         void atexit(void (*fn)());
 
         void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data);
+
+        std::list<Module> modules_list;
+        //std::list<RendererCreateFn> render_list;
         //Init Global
         static int  Init();
         static void Quit();
@@ -75,6 +79,9 @@ namespace Btk{
     extern void Init();
     //Exit the app
     extern void Exit(int code);
+    inline System &Instance(){
+        return *(System::instance);
+    }
 };
 
 

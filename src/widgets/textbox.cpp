@@ -119,7 +119,6 @@ namespace Btk{
 
     void TextBox::draw(Renderer &render){
         render.box(rect,{255,255,255,255});
-        render.rounded_rect(rect,1,theme.border_color);
         if(not tb_text.empty()){
             if(texture.empty()){
                 if(tb_buf.empty()){
@@ -165,6 +164,13 @@ namespace Btk{
                         line_y + ft_h,
                         theme.text_color
                         );
+        }
+
+        if(has_focus){
+            render.rounded_rect(rect,1,theme.high_light);
+        }
+        else{
+            render.rounded_rect(rect,1,theme.border_color);
         }
     }
     void TextBox::do_keyboard(KeyEvent &event){

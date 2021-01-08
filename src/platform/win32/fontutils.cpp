@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include <windows.h>
 #include <wingdi.h>
 
@@ -36,3 +38,5 @@ namespace FontUtils{
     };
 };
 };
+
+#endif

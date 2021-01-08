@@ -23,7 +23,7 @@ namespace{
         SDL_Event sdl_ev;
         SDL_zero(sdl_ev);
 
-        sdl_ev.type = System::instance->dispatch_ev_id;
+        sdl_ev.type = Btk::Instance().dispatch_ev_id;
         sdl_ev.user.timestamp = SDL_GetTicks();
         sdl_ev.user.windowID = winid;
         sdl_ev.user.data1 = ev;
@@ -78,7 +78,7 @@ namespace Btk{
     }
     //Dispatch our event to window or widgets
     void DispatchEvent(const SDL_Event &ev,void*){
-        WindowImpl *win = System::instance->get_window_s(ev.user.windowID);
+        WindowImpl *win = Instance().get_window_s(ev.user.windowID);
         if(win == nullptr){
             //Window is not exists
             //ignore it

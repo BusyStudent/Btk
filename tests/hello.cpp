@@ -61,6 +61,7 @@ int main(){
         }
         return false;
     });
+    win.add<Btk::Line>(0,0,100,100,Btk::Orientation::H);
     win.done();
     win.mainloop();
 }

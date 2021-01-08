@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_loadso.h>
 #include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_filesystem.h>
@@ -19,6 +20,7 @@
 #include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
+#include <Btk/module.hpp>
 #include <Btk/event.hpp>
 #include <Btk/defs.hpp>
 #include <Btk/Btk.hpp>
@@ -87,6 +89,8 @@ namespace{
     #endif
 };
 namespace Btk{
+    //< The thread id of thread which called Btk::run
+    static std::thread::id main_thrd;
     System* System::instance = nullptr;
     bool    System::is_running = false;
     void Init(){
@@ -94,9 +98,11 @@ namespace Btk{
         System::Init();
     }
     int  run(){
-        static std::thread::id thid = std::this_thread::get_id();
+        if(main_thrd == std::thread::id()){
+            main_thrd = std::this_thread::get_id();
+        }
        
-        if(thid != std::this_thread::get_id() or System::is_running == true){
+        if(main_thrd != std::this_thread::get_id() or System::is_running == true){
             //double call or call from another thread
             return -1;
         }
@@ -155,6 +161,10 @@ namespace Btk{
         //run all exit handlers
         for(auto &handler:atexit_handlers){
             handler();
+        }
+        //unload modules
+        for(auto &mod:modules_list){
+            mod.unload();
         }
     }
     //Init or Quit
@@ -442,6 +452,56 @@ namespace Btk{
         System::instance->defer_call(
             callback_wrapper,reinterpret_cast<void*>(fn)
         );
+    }
+    bool IsMainThread(){
+        return main_thrd == std::this_thread::get_id();
+    }
+};
+namespace Btk{
+    void Module::unload(){
+        if(quit != nullptr){
+            quit(*this);
+        }
+        SDL_UnloadObject(handle);
+    }
+    void LoadModule(std::string_view module_name){
+        void *handle = SDL_LoadObject(module_name.data());
+        if(handle == nullptr){
+            throwSDLError();
+        }
+        auto init_fn = reinterpret_cast<Module::InitFn>(
+            SDL_LoadFunction(handle,"BtkModule_Init")
+        );
+        if(init_fn == nullptr){
+            auto err = SDL_GetError();
+            SDL_UnloadObject(handle);
+            throwRuntimeError(err);
+        }
+        auto quit_fn = reinterpret_cast<Module::QuitFn>(
+            SDL_LoadFunction(handle,"BtkModule_Quit")
+        );
+        Module mod;
+        mod.handle = handle;
+        mod.init = init_fn;
+        mod.quit = quit_fn;
+
+        try{
+            init_fn(mod);
+        }
+        catch(...){
+            SDL_UnloadObject(handle);
+            throw;
+        }
+
+        Instance().modules_list.push_back(mod);
+    }
+    bool HasModule(std::string_view name){
+        for(auto &mod:Instance().modules_list){
+            if(mod.name == name){
+                return true;
+            }
+        }
+        return false;
     }
 };
 namespace Btk{

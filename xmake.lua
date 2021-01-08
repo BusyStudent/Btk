@@ -50,7 +50,7 @@ target("btk")
     --Utils
     add_files("./src/utils/*.cpp")
     --Msgboxs
-    add_files("./src/msgbox/*.cpp")
+    --add_files("./src/msgbox/*.cpp")
 if is_mode("debug") then
     target("hello")
         set_kind("binary")

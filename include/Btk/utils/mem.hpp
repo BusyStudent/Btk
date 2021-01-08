@@ -3,11 +3,27 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <string_view>
 #include "../defs.hpp"
 namespace Btk{
     BTKAPI size_t U16Strlen(const char16_t *str);
     BTKAPI int U16Strcmp(const char16_t *s1,const char16_t *s2);
     BTKAPI int U16Strcasecmp(const char16_t *s1,const char16_t *s2);
+
+    /**
+     * @brief Convert u16string to u8string
+     */
+    BTKAPI void Utf16To8(std::string&,std::u16string_view);
+    /**
+     * @brief Convert u8string to u16string
+     */
+    BTKAPI void Utf8To16(std::u16string&,std::string_view);
+    /**
+     * @brief Check a string is vaid utf8
+     * 
+     */
+    BTKAPI bool IsValidUtf8(std::string_view);
     /**
      * @brief A helper template for dup memory
      * 
