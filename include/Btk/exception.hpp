@@ -16,18 +16,11 @@ namespace Btk{
             BadFunctionCall(const BadFunctionCall &);
             ~BadFunctionCall();
     };
-    class EmptySignal:public RuntimeError{
-        public:
-            EmptySignal();
-            EmptySignal(const EmptySignal &);
-            ~EmptySignal();
-    };
     [[noreturn]] void throwRuntimeError(const char *);
     [[noreturn]] void throwSDLError(const char *);
     [[noreturn]] void throwSDLError();
     //throw BadFunctionCall
     [[noreturn]] void throwBadFunctionCall();
-    [[noreturn]] void throwEmptySignal();
 };
 
 

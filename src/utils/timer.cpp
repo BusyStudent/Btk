@@ -85,10 +85,7 @@ namespace Btk{
             cb();
         }
         catch(...){
-            std::exception_ptr ptr = std::current_exception();
-            DeferCall([ptr](){
-                std::rethrow_exception(ptr);
-            });
+            Btk::DeferCall(std::rethrow_exception,std::current_exception());
         }
 
         std::lock_guard locker(mtx);

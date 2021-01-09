@@ -43,6 +43,39 @@ namespace Btk{
             return not SDL_RectEquals(this,&r);
         }
     };
+    struct FPoint{
+        float x,y;
+    };
+    struct FRect{
+        FRect() = default;
+        FRect(const FRect &) = default;
+        FRect(float x,float y,float w,float h){
+            this->x = x;
+            this->y = y;
+            this->w = w;
+            this->h = h;
+        }
+        float x, y;
+        float w, h;
+        
+        bool empty() const noexcept{
+            return w <= 0 or h <= 0;
+        }
+        operator Rect() const noexcept{
+            return Rect{
+                static_cast<int>(x),
+                static_cast<int>(y),
+                static_cast<int>(w),
+                static_cast<int>(h)
+            };
+        }
+        bool operator ==(const FRect &r){
+            return x == r.x and y == r.y and w == r.w and h == r.h;
+        }
+        bool operator !=(const FRect &r){
+            return not operator ==(r);
+        }
+    };
     //Define Point
     struct Point:public SDL_Point{
         Point() = default;
@@ -61,7 +94,8 @@ namespace Btk{
             return x != p.x or y != p.y;
         }
     };
-    typedef Point Vec2;
+    typedef Point  Vec2;
+    typedef FPoint FVec2;
     /**
      * @brief Size of a Widget or Window
      * 

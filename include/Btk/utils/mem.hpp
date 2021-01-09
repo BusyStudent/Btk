@@ -34,7 +34,7 @@ namespace Btk{
      * @return The new memory block
      */
     template<class T,auto Alloc = std::malloc>
-    T* Memdup(T *ptr,size_t size){
+    T* Memdup(const T *ptr,size_t size){
         T* ret = static_cast<T*>(Alloc(size));
         if(ret == nullptr){
             return nullptr;
@@ -51,8 +51,12 @@ namespace Btk{
      * @return The new memory block
      */
     template<class T,auto Alloc = std::malloc>
-    T* Memdup(T *ptr){
+    T* Memdup(const T *ptr){
         return Memdup<T,Alloc>(ptr,sizeof(T));
+    }
+    template<class T,auto Alloc = std::malloc>
+    T* Memdup(const T &ref){
+        return Memdup<T,Alloc>(&ref,sizeof(T));
     }
 };
 

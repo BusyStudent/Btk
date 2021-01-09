@@ -18,7 +18,8 @@
 
 namespace Btk{
     
-    WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags){
+    WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags)
+        :dispatcher(widgets_list){
         refcount = 0;//default refcount
         //Btk::Window doesnnot has it ownship
         win = nullptr;
@@ -46,10 +47,6 @@ namespace Btk{
         bg_color = theme->background_color;
 
         last_draw_ticks = 0;
-        //Init it to -1
-        mouse_x = -1;
-        mouse_y = -1;
-        cur_widget = nullptr;
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -162,18 +159,18 @@ namespace Btk{
     }
     //Dispatch Event
     bool WindowImpl::dispatch(Event &event){
-        bool flags = false;
-        for(auto widget:widgets_list){
-            flags |= widget->handle(event);
+        if(dispatcher.handle(event)){
             if(event.is_accepted()){
-                return flags;
+                return true;
             }
         }
-        //No any widget accept it
-        if(not sig_event.empty()){
-            flags = sig_event(event);
+        else{
+            //Using the EventSignal
+            if(sig_event.empty()){
+                return false;
+            }
+            return sig_event(event);
         }
-        return flags;
     }
 }
 //Event Processing
@@ -236,188 +233,8 @@ namespace Btk{
             }
         }
     }
-    //mouse motion
-    void WindowImpl::handle_mousemotion(const SDL_Event &event){
-        //Get new x and y
-        int x = event.motion.x;
-        int y = event.motion.y;
-
-        MotionEvent ev = TranslateEvent(event.motion);
-
-        //Is dragging
-        if(drag_widget != nullptr){
-            DragEvent drag_ev(Event::Drag,ev);
-            drag_widget->handle(drag_ev);
-        }
-        else if(mouse_pressed == true and 
-                cur_widget != nullptr and 
-                not(drag_rejected)){
-            //Send Drag Begin
-            DragEvent drag_ev(Event::DragBegin,ev);
-            if(cur_widget->handle(drag_ev)){
-                if(drag_ev.is_accepted()){
-                    //The event is accepted
-                    drag_widget = cur_widget;
-                    BTK_LOGINFO("%p accepted DragBegin",cur_widget);
-                }
-                else{
-                    drag_rejected = true;
-                    BTK_LOGINFO("%p rejected DragBegin",cur_widget);
-                }
-            }
-            else{
-                drag_rejected = true;
-                BTK_LOGINFO("%p rejected DragBegin",cur_widget);
-            }
-        }
-
-        if(cur_widget != nullptr){
-            if(cur_widget->rect.has_point(x,y)){
-                //It does not change
-                //Dispatch this motion event
-                cur_widget->handle(ev);
-                return;
-            }
-            else{
-                //widget leave
-                ev.set_type(Event::Type::Leave);
-                cur_widget->handle(ev);
-                cur_widget = nullptr;
-            }
-        }
-        //find new widget which has this point
-        for(auto widget:widgets_list){
-            if(widget->rect.has_point(x,y)){
-                cur_widget = widget;
-                //widget enter
-                ev.set_type(Event::Type::Enter);
-                cur_widget->handle(ev);
-                break;
-            }
-        }
-    }
-    //MouseButton down or up
-    void WindowImpl::handle_mousebutton(const SDL_Event &event){
-        int x = event.button.x;
-        int y = event.button.y;
-        //Focus handling
-        if(focus_widget != nullptr){
-            if(not focus_widget->rect.has_point(x,y)){
-                //The widget lost the focus
-                Event ev(Event::LostFocus);
-                if(focus_widget->handle(ev)){
-                    if(ev.is_accepted()){
-                        BTK_LOGINFO("Widget %p lost focus",focus_widget);
-                        focus_widget = nullptr;
-                    }
-                    else{
-                        BTK_LOGINFO("Widget %p refused lost focus",focus_widget);
-                    }
-                }
-                else{
-                    //This widget refused to lost focus
-                    BTK_LOGINFO("Widget %p refused lost focus",focus_widget);
-                }
-
-            }
-            BTK_LOGINFO("Widget %p has focus",focus_widget);
-        }
-
-        if(event.button.state == SDL_PRESSED){
-            mouse_pressed = true;
-        }
-        else{
-            //clean flags
-            mouse_pressed = false;
-            drag_rejected = false;
-            //The drag is end
-            if(drag_widget != nullptr){
-                DragEvent ev(Event::DragEnd,x,y,-1,-1);
-                drag_widget->handle(ev);
-                
-                drag_widget = nullptr;
-            }
-        }
-        if(cur_widget == nullptr){
-            for(auto widget:widgets_list){
-                if(widget->rect.has_point(x,y)){
-                    //We find it
-                    cur_widget = widget;
-                    goto find;
-                }
-            }
-            return;
-        }
-        find:
-        auto ev = TranslateEvent(event.button);
-        //Focus handling
-        cur_widget->handle(ev);
-        //reset the flags
-        ev.reject();
-        ev.set_type(Event::TakeFocus);
-
-        if(focus_widget == nullptr){
-            if(cur_widget->handle(ev)){
-                if(ev.is_accepted()){
-                    //The widget take the focus
-                    focus_widget = cur_widget;
-                    BTK_LOGINFO("Focus Widget = %p",focus_widget);
-                }
-            }
-        }
-
-
-    }
-    //keyboard event
-    void WindowImpl::handle_keyboardev(KeyEvent &event){
-        
-        if(focus_widget != nullptr){
-            if(focus_widget->handle(event)){
-                if(event.is_accepted()){
-                    return;
-                }
-            }
-        }
-        if(cur_widget != nullptr){
-            if(cur_widget->handle(event)){
-                if(event.is_accepted()){
-                    return;
-                }
-            }
-        }
-        for(auto widget:widgets_list){
-            if(widget != focus_widget and widget != cur_widget){
-                widget->handle(event);
-                if(event.is_accepted()){
-                    return;
-                }
-            }
-        }
-        if(not sig_event.empty()){
-            sig_event(event);
-        }
-    }
-    void WindowImpl::handle_textinput(TextInputEvent &event){
-        if(focus_widget != nullptr){
-            //Send the event to focus event
-            focus_widget->handle(event);
-            if(not event.is_accepted()){
-                //this event is rejected
-                //dispatch it to other widget
-                for(auto widget:widgets_list){
-                    if(widget != focus_widget){
-                        widget->handle(event);
-                        if(event.is_accepted()){
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-        else{
-            dispatch(event);
-        }
-    }
+    
+    
 }
 namespace Btk{
     Window::Window(std::string_view title,int w,int h){
@@ -535,17 +352,7 @@ namespace Btk{
     //Window exists
     bool Window::exists() const{
         //Lock maps
-        std::lock_guard<std::recursive_mutex> locker(
-            System::instance->map_mtx
-        );
-        auto iter = System::instance->wins_map.find(winid);
-        if(iter == System::instance->wins_map.end()){
-            return false;
-        }
-        else if(iter->second == pimpl){
-            return true;
-        }
-        return false;
+        return Instance().get_window_s(winid) == pimpl;
     }
     //update widgets postions
     void Window::update(){

@@ -114,6 +114,8 @@ namespace Btk{
         BTK_LOGINFO("TextBox %p's ft_h=%d",this,ft_h);
         //Set current position
         cur_txt = tb_text.begin();
+
+        attr.focus = FocusPolicy::Click;
     }
     TextBox::~TextBox(){}
 

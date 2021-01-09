@@ -52,7 +52,8 @@ namespace Btk{
         std::condition_variable condvar;
         SpinLock tasks_mtx;//SpinLock for tasks_queue
         Atomic idle_workers = 0;//IDLE workers count
-
+        Atomic cur_workers = 1;//Current workers
+        Atomic max_workers = 4;// Max Worker in the pool
 
         std::mutex workers_mtx;
         ThreadPool();
@@ -94,8 +95,7 @@ namespace Btk{
                 task.run();
             }
             catch(...){
-                std::exception_ptr ptr = std::current_exception();
-                Btk::DeferCall(std::rethrow_exception,ptr);
+                Btk::DeferCall(std::rethrow_exception,std::current_exception());
             }
             
             idle = true;
@@ -158,6 +158,8 @@ namespace Btk{
     }
     //Push a task into queue
     void ThreadPool::add_task(Task t){
+        //Try add worker
+        add_worker();
         {
             std::lock_guard locker(tasks_mtx);
             tasks_queue.push(t);
@@ -166,6 +168,8 @@ namespace Btk{
     }
     //Push a task if the queue is empty
     bool ThreadPool::tryadd_task(Task t){
+        //Try add worker
+        add_worker();
         {
             std::lock_guard locker(tasks_mtx);
             if(not tasks_queue.empty()){
@@ -178,8 +182,12 @@ namespace Btk{
     }
     //Create a worker
     void ThreadPool::add_worker(){
+        if(cur_workers >= max_workers){
+            return;
+        }
         std::lock_guard locker(workers_mtx);
         workers_list.emplace_back(this);
+        cur_workers += 1;
     }
 };
 namespace Btk{

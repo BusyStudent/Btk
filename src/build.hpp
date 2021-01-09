@@ -3,6 +3,7 @@
 //For Trigger BreakPoint
 #include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_log.h>
+#include <typeinfo>
 #include <utility>
 #include <cstdarg>
 #include <cstring>
@@ -16,6 +17,7 @@
 #elif defined(__GNUC__)
     //GCC
     #include <strings.h>
+    #include <cxxabi.h>
     #define BTK_FUNCTION __PRETTY_FUNCTION__
 #else
     #define BTK_FUNCTION SDL_FUNCTION
@@ -71,6 +73,33 @@ namespace Btk{
         return vsnprintf(nullptr,0,fmt,varg);
         #endif
     };
+    /**
+     * @brief Get the typename of a type
+     * 
+     * @note It usually used in debugging
+     * @param info The typeinfo
+     * @return The name of the typeinfo(no demangled)
+     */
+    inline std::string get_typename(const std::type_info &info){
+        #ifdef __GNUC__
+        char *ret = __cxxabiv1::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
+        if(ret == nullptr){
+            //failed to demangle the name
+            return info.name();
+        }
+        else{
+            std::string name(ret);
+            free(ret);
+            return name;
+        }
+        #else
+        return info.name();
+        #endif
+    }
+    template<class T>
+    inline std::string get_typename(const T *ptr){
+        return get_typename(typeid(*ptr));
+    }
     /**
      * @brief Using c-syle formatting
      * 

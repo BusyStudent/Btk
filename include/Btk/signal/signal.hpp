@@ -172,9 +172,6 @@ namespace Btk{
         Signal(const Signal &) = delete;
         
         RetT emit(Args ...args) const{
-            if(empty()){
-                throwEmptySignal();
-            }
             if constexpr(std::is_same<RetT,void>::value){
                 //no return value
                 for(auto s:slots){

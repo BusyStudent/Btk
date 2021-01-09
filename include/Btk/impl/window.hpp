@@ -7,6 +7,7 @@
 #include <list>
 #include "render.hpp"
 #include "../signal/signal.hpp"
+#include "../widget.hpp"
 #include "../event.hpp"
 #include "../font.hpp"
 #include "atomic.hpp"
@@ -47,10 +48,6 @@ namespace Btk{
         void on_dropfile(std::string_view file);
         //handle event 
         void handle_windowev(const SDL_Event &event);
-        void handle_keyboardev(KeyEvent &event);
-        void handle_mousemotion(const SDL_Event &event);
-        void handle_mousebutton(const SDL_Event &event);
-        void handle_textinput(TextInputEvent &event);
         //Dispatch Event to Widgets
         bool dispatch(Event &event);
         
@@ -84,31 +81,7 @@ namespace Btk{
         Font default_font;
         //Window theme
         Theme *theme;
-        //Mouse Position
-        int mouse_x;
-        int mouse_y;
-        /**
-         * @brief The widget which the mouse point in
-         * 
-         */
-        Widget * cur_widget = nullptr;
-        /**
-         * @brief The widget where the drag begin
-         * 
-         */
-        Widget *drag_widget = nullptr;
-        /**
-         * @brief The mouse is pressed
-         * 
-         * @note This var is used to check the drag status
-         */
-        bool mouse_pressed = false;
-        bool drag_rejected = false;
-        /**
-         * @brief The widget which has focus
-         * 
-         */
-        Widget *focus_widget = nullptr;
+        EventDispatcher dispatcher;
 
         //The draw callback
         //It will be called at last

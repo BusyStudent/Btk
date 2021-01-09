@@ -1,6 +1,7 @@
 #include <Btk/utils/textbuf.hpp>
 #include <iostream>
 int main(){
+    #if 0
     Btk::TextBuffer buf;
     buf += "HelloWorld";
     buf += "FFFF";
@@ -9,7 +10,6 @@ int main(){
     buf.assign("你好");
     std::cout << buf.length() << std::endl;
     std::cout << buf.to_string();
-    int num = 0;
-    
-    Btk::Memdup(&num);
+    #endif
+    Btk::Memdup(0);
 }

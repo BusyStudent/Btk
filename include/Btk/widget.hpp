@@ -7,13 +7,26 @@
 namespace Btk{
     struct Renderer;
     class  Window;
+    //Event forward decl
     class  Event;
+    struct KeyEvent;
+    struct MouseEvent;
+    struct MotionEvent;
+    struct TextInputEvent;
+
+    enum class FocusPolicy{
+        None,
+        KeyBoard,
+        Click,
+        Whell
+    };
     //Attribute for Widget
     struct WidgetAttr{
         bool hide = false;//<Is hide
         bool user_rect = false;//<Using user defined position
         bool container = false;//<Is container
         bool disable = false;//<The widget is disabled?
+        FocusPolicy focus = FocusPolicy::None;//<Default the widget couldnot get focus
     };
     //Alignment
     enum class Align:unsigned int{
@@ -93,8 +106,50 @@ namespace Btk{
         friend class  Window;
         friend class  Layout;
         friend struct WindowImpl;
+        friend class  EventDispatcher;
     };
-    class BTKAPI Container:public Widget{
+    /**
+     * @brief A helper of dispatch event in widget
+     * 
+     */
+    class EventDispatcher{
+        public:
+            using container_type = std::list<Widget*>;
+            
+            EventDispatcher(container_type &w):
+                widgets(w){};
+            EventDispatcher(const EventDispatcher &) = delete;
+            ~EventDispatcher() = default;
+        public:
+            //Process Event
+            bool handle_click(MouseEvent   &);
+            bool handle_motion(MotionEvent &);
+            bool handle_keyboard(KeyEvent  &);
+            bool handle_textinput(TextInputEvent &);
+            /**
+             * @brief Generic to dispatch event to widgets
+             * 
+             * @return true 
+             * @return false 
+             */
+            bool handle(Event &);
+        private:
+            //A helper for set the current focus widget
+            void set_focus_widget(Widget *);
+
+            container_type& widgets;
+            Widget *focus_widget = nullptr;//The widget which has focus
+            Widget *drag_widget = nullptr;//The Dragging event
+            Widget *cur_widget = nullptr;//Mouse point widget
+            /**
+             * @brief The mouse is pressed
+             * 
+             * @note This value is used to check the drag status
+             */
+            bool mouse_pressed = false;
+            bool drag_rejected = false;
+    };
+    class BTKAPI Container:public Widget,private EventDispatcher{
         public:
             Container();
             ~Container();
@@ -118,9 +173,7 @@ namespace Btk{
         protected:
             std::list<Widget*> widgets_list;
         private:
-            Widget *focus_widget = nullptr;//The keyboard focus widget
-            Widget *drag_widget = nullptr;//The Dragging event
-            Widget *cur_widget = nullptr;//Mouse point widget
+            
             
     };
     class Line:public Widget{

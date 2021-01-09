@@ -282,6 +282,7 @@ namespace Btk{
         int xrel;//< Note It cannot be used at DragEnd
         int yrel;//< Note It cannot be used at DragEnd
     };
+    typedef MouseEvent ClickEvent;
     /**
      * @brief Push event to queue
      * 

@@ -11,6 +11,10 @@
 #include <mutex>
 #include <unordered_map>
 
+#ifdef SDL_VIDEO_DRIVER_X11
+    #undef None
+#endif
+
 #include "build.hpp"
 
 #include <Btk/async/async.hpp>
@@ -297,7 +301,8 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        win->handle_mousemotion(event);
+        auto motion = TranslateEvent(event.motion);
+        win->dispatcher.handle_motion(motion);
     }
     //MouseButton
     inline void System::on_mousebutton(const SDL_Event &event){
@@ -305,7 +310,8 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        win->handle_mousebutton(event);
+        auto click = TranslateEvent(event.button);
+        win->dispatcher.handle_click(click);
     }
     //DropFile
     inline void System::on_dropev(const SDL_Event &event){
@@ -326,16 +332,22 @@ namespace Btk{
             return;
         }
         auto kevent = TranslateEvent(event.key);
-        win->handle_keyboardev(kevent);
+        if(not win->dispatcher.handle_keyboard(kevent)){
+            //No one process it
+            if(not kevent.is_accepted()){
+                win->sig_event(kevent);
+            }
+        }
     }
     inline void System::on_textinput(const SDL_Event &event){
         //Get text input
         TextInputEvent ev;
         ev.text = event.text.text;
         WindowImpl *win = get_window_s(event.text.windowID);
-        if(win != nullptr){
-            win->handle_textinput(ev);
+        if(win == nullptr){
+            return;
         }
+        win->dispatcher.handle_textinput(ev);
     }
     void System::register_window(WindowImpl *impl){
         if(impl == nullptr){
