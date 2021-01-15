@@ -162,6 +162,13 @@ namespace Btk{
              * @param val The resizeable flags
              */
             void set_resizeable(bool val = true);
+            /**
+             * @brief Set the background transparent
+             * 
+             * @note Some platform unsupport it
+             * @param val The transparent value
+             */
+            void set_transparent(float value);
             //Set Callbacks
             template<class ...T>
             Connection on_close(T &&...args){

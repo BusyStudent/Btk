@@ -2,7 +2,6 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_loadso.h>
-#include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_filesystem.h>
 #include <cstdlib>
@@ -11,12 +10,9 @@
 #include <mutex>
 #include <unordered_map>
 
-#ifdef SDL_VIDEO_DRIVER_X11
-    #undef None
-#endif
-
 #include "build.hpp"
 
+#include <Btk/platform/platform.hpp>
 #include <Btk/async/async.hpp>
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/thread.hpp>
@@ -72,23 +68,6 @@ namespace{
         #else
         TerminateProcess(GetCurrentProcess(),0);
         #endif
-    };
-    #endif
-    #ifdef __gnu_linux__
-    //XLIB Handle ERROR 
-    int xlib_err_handler(Display *display,XErrorEvent *event){
-        _Btk_Backtrace();
-        char buf[128];
-        int ret = XGetErrorText(display,event->error_code,buf,sizeof(buf));
-        if(ret == -1){
-            buf[0] = '\0';
-        }
-        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION,
-            "[System::X11]At display \033[34m%s\033[0m \033[31m%s\033[0m",
-            XDisplayString(display),
-            buf);
-        
-        return 0;
     };
     #endif
 };
@@ -192,18 +171,13 @@ namespace Btk{
             SDL_Log("[System::Core]Init SDL2 Platfrom %s",SDL_GetPlatform());
             SDL_Log("[System::Core]SDL2 version: %d.%d.%d",ver.major,ver.major,ver.patch);
             SDL_Log("[System::Core]SDL2 image version: %d.%d.%d",iver->major,iver->major,iver->patch);
-            //Debug crash reporter
-            signal(SIGSEGV,debug_crash_reporter);
-            signal(SIGABRT,debug_crash_reporter);
             #endif
             //Create instance
             instance = new System();
             //regitser atexit callback
             std::call_once(flag,std::atexit,System::Quit);
-            #ifdef __gnu_linux__
-            //set error handler
-            XSetErrorHandler(xlib_err_handler);
-            #endif
+            //Init platform
+            Platform::Init();
         }
         return 1;
     }
@@ -213,6 +187,8 @@ namespace Btk{
         //delete instance to cleanup windows
         delete instance;
         instance = nullptr;
+        //Cleanup platform
+        Platform::Quit();
         //Quit SDL
         IMG_Quit();
         TTF_Quit();
@@ -323,7 +299,6 @@ namespace Btk{
             return;
         }
         win->on_dropfile(event.drop.file);
-        SDL_KEYDOWN;
     }
     //KeyBoardEvent
     inline void System::on_keyboardev(const SDL_Event &event){

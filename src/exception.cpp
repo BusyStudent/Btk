@@ -3,6 +3,7 @@
 #include "build.hpp"
 
 #include <Btk/exception.hpp>
+#include <Btk/render.hpp>
 namespace Btk{
     SDLError::SDLError(const char *err):std::runtime_error(err){}
     SDLError::SDLError(const SDLError &err):std::runtime_error(err){}
@@ -13,6 +14,10 @@ namespace Btk{
     BadFunctionCall::BadFunctionCall(const BadFunctionCall &err):
         std::runtime_error(err){}
     BadFunctionCall::~BadFunctionCall(){}
+
+    RendererError::RendererError(const char *msg):
+        std::runtime_error(msg){}
+    RendererError::~RendererError(){}
     //throwError
     [[noreturn]] void throwSDLError(){
         throw SDLError(SDL_GetError());
@@ -25,5 +30,11 @@ namespace Btk{
     }
     [[noreturn]] void throwBadFunctionCall(){
         throw BadFunctionCall();
+    }
+    [[noreturn]] void throwRendererError(const char *msg){
+        throw RendererError(msg);
+    }
+    [[noreturn]] void throwRendererError(){
+        throw RendererError(Btk_RIGetError());
     }
 }

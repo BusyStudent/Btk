@@ -2,6 +2,7 @@
 #define _BTKIMPL_RENDER_HPP_
 #include <SDL2/SDL_render.h>
 #include "../rect.hpp"
+#if 0
 namespace Btk{
     class PixBuf;
     class Texture;
@@ -71,6 +72,7 @@ namespace Btk{
     };
     
 };
-
+#endif
+#include "../render.hpp"
 
 #endif // _BTKIMPL_RENDER_HPP_

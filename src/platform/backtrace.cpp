@@ -56,7 +56,7 @@ namespace BtkUnwind{
 #include <unistd.h>
 #include <cxxabi.h>
 #include <cstdio>
-using __cxxabiv1::__cxa_demangle;
+using abi::__cxa_demangle;
 extern "C" void _Btk_Backtrace(){
     void *address[100];
     int ret = backtrace(address,100);

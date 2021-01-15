@@ -1,6 +1,8 @@
 
 #include "../build.hpp"
 
+#if 0
+
 #include <Btk/impl/render.hpp>
 #include <Btk/impl/scope.hpp>
 //for Btk_defer
@@ -202,3 +204,4 @@ namespace Btk{
         return surf;
     }
 } // namespace Btk
+#endif

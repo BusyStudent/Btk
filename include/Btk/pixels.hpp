@@ -9,7 +9,7 @@
 #include "defs.hpp"
 #include "rect.hpp"
 struct SDL_Surface;
-struct SDL_Texture;
+struct BtkTexture;
 namespace Btk{
     class RWops;
     //Color struct
@@ -143,7 +143,7 @@ namespace Btk{
     //RendererTexture
     class BTKAPI Texture{
         public:
-            Texture(SDL_Texture *t = nullptr):texture(t){};
+            Texture(BtkTexture *t = nullptr):texture(t){};
             Texture(const Texture &) = delete;
             Texture(Texture &&t){
                 texture = t.texture;
@@ -167,14 +167,14 @@ namespace Btk{
                 return texture == nullptr;
             }
             //assign
-            Texture &operator =(SDL_Texture*);
+            Texture &operator =(BtkTexture*);
             Texture &operator =(Texture &&);
             //Get pointer
-            SDL_Texture *get() const noexcept{
+            BtkTexture *get() const noexcept{
                 return texture;
             }
         private:
-            SDL_Texture *texture;
+            BtkTexture *texture;
         friend struct Renderer;
     };
     typedef PixFmt PixelFormat;

@@ -16,11 +16,20 @@ namespace Btk{
             BadFunctionCall(const BadFunctionCall &);
             ~BadFunctionCall();
     };
+    class RendererError:public RuntimeError{
+        public:
+            RendererError(const char *msg);
+            RendererError(const RendererError &) = default;
+            ~RendererError();
+    };
     [[noreturn]] void throwRuntimeError(const char *);
     [[noreturn]] void throwSDLError(const char *);
     [[noreturn]] void throwSDLError();
     //throw BadFunctionCall
     [[noreturn]] void throwBadFunctionCall();
+
+    [[noreturn]] void throwRendererError(const char *msg);
+    [[noreturn]] void throwRendererError();
 };
 
 

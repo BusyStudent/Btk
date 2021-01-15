@@ -7,6 +7,7 @@
 #include "../build.hpp"
 
 #include <Btk/exception.hpp>
+#include <Btk/render.hpp>
 #include <Btk/pixels.hpp>
 #include <Btk/rwops.hpp>
 #include <Btk/rect.hpp>
@@ -159,23 +160,23 @@ namespace Btk{
 namespace Btk{
     //Textures
     Texture::~Texture(){
-        SDL_DestroyTexture(texture);
+        Btk_DestroyTexture(texture);
     }
-    Texture &Texture::operator =(SDL_Texture *t){
-        SDL_DestroyTexture(texture);
+    Texture &Texture::operator =(BtkTexture *t){
+        Btk_DestroyTexture(texture);
         texture = t;
         return *this;
     }
     Texture &Texture::operator =(Texture &&t){
-        SDL_DestroyTexture(texture);
+        Btk_DestroyTexture(texture);
         texture = t.texture;
         t.texture = nullptr;
         return *this;
     }
     Size Texture::size() const{
         Size s;
-        if(SDL_QueryTexture(texture,nullptr,nullptr,&s.w,&s.h) == -1){
-            throwSDLError();
+        if(Btk_QueryTexture(texture,nullptr,nullptr,&s.w,&s.h) == -1){
+            throwRendererError(Btk_RIGetError());
         }
         return s;
     }

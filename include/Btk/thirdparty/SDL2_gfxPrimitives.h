@@ -36,11 +36,95 @@ Andreas Schiffler -- aschiffler at ferzkopp dot net
 #endif
 
 #include <SDL2/SDL.h>
-
+#include "../render.hpp"
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*Using our abstruct renderer*/
+#define SDL_Texture  BtkTexture
+#define SDL_Renderer BtkRenderer
+/*To prevent naming conflict to std SDL2_gfx,We need to change the name */
+#define pixelColor _BGFX_pixelColor
+#define pixelRGBA  _BGFX_pixelRGBA
+#define hlineColor _BGFX_hlineColor
+#define hlineRGBA _BGFX_hlineRGBA
+
+#define vlineColor _BGFX_vlineColor
+#define vlineRGBA _BGFX_vlineRGBA
+
+#define lineColor _BGFX_lineColor
+#define lineRGBA _BGFX_lineRGBA
+
+#define thickLineColor _BGFX_thickLineColor
+#define thickLineRGBA _BGFX_thickLineRGBA
+
+#define aalineColor _BGFX_aalineColor
+#define aalineRGBA _BGFX_aalineRGBA
+
+#define rectangleColor _BGFX_rectangleColor
+#define rectangleRGBA _BGFX_rectangleRGBA
+
+#define roundedRectangleColor _BGFX_roundedRectangleColor
+#define roundedRectangleRGBA _BGFX_roundedRectangleRGBA
+
+#define boxColor _BGFX_boxColor
+#define boxRGBA _BGFX_boxRGBA
+
+#define circleColor _BGFX_circleColor
+#define circleRGBA _BGFX_circleRGBA
+
+#define aacircleColor _BGFX_aacircleColor
+#define aacircleRGBA _BGFX_aacircleRGBA
+
+#define filledCircleColor _BGFX_filledCircleColor
+#define filledCircleRGBA _BGFX_filledCircleRGBA
+
+#define arcColor _BGFX_arcColor
+#define arcRGBA _BGFX_arcRGBA
+
+#define pieColor _BGFX_pieColor
+#define pieRGBA _BGFX_pieRGBA
+
+#define filledPieColor _BGFX_filledPieColor
+#define filledPieRGBA _BGFX_filledPieRGBA
+
+#define ellipseColor _BGFX_ellipseColor
+#define ellipseRGBA _BGFX_ellipseRGBA
+
+#define aaellipseColor _BGFX_aaellipseColor
+#define aaellipseRGBA _BGFX_aaellipseRGBA
+
+#define trigonColor _BGFX_trigonColor
+#define trigonRGBA _BGFX_trigonRGBA
+
+#define aatrigonColor _BGFX_aatrigonColor
+#define aatrigonRGBA _BGFX_aatrigonRGBA
+
+
+#define roundedBoxColor _BGFX_roundedBoxColor
+#define roundedBoxRGBA _BGFX_roundedBoxRGBA
+
+#define filledEllipseColor _BGFX_filledEllipseColor
+#define filledEllipseRGBA _BGFX_filledEllipseRGBA
+
+#define filledTrigonColor _BGFX_filledTrigonColor
+#define filledTrigonRGBA _BGFX_filledTrigonRGBA
+
+#define polygonColor _BGFX_polygonColor
+#define polygonRGBA _BGFX_polygonRGBA
+
+#define aapolygonColor _BGFX_aapolygonColor
+#define aapolygonRGBA _BGFX_aapolygonRGBA
+
+#define filledPolygonColor _BGFX_filledPolygonColor
+#define filledPolygonRGBA _BGFX_filledPolygonRGBA
+
+#define bezierColor _BGFX_bezierColor
+#define bezierRGBA _BGFX_bezierRGBA
+
+#define texturedPolygon _BGFX_texturedPolygon
 
 	/* ----- Versioning */
 
@@ -239,4 +323,6 @@ extern "C" {
 }
 #endif
 
+#undef SDL_Texture 
+#undef SDL_Renderer 
 #endif				/* _SDL2_gfxPrimitives_h */

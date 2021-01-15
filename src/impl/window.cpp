@@ -3,10 +3,10 @@
 #include "../build.hpp"
 
 #include <Btk/impl/window.hpp>
-#include <Btk/impl/render.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
+#include <Btk/render.hpp>
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
 #include <Btk/widget.hpp>
@@ -17,27 +17,20 @@
 #include <algorithm>
 
 namespace Btk{
-    
-    WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags)
-        :dispatcher(widgets_list){
-        refcount = 0;//default refcount
-        //Btk::Window doesnnot has it ownship
-        win = nullptr;
-        render = nullptr;
-        win = SDL_CreateWindow(title,x,y,w,h,flags);
+    static SDL_Window *CreateWindow(const char *title,int x,int y,int w,int h,int flags){
+        SDL_Window *win = SDL_CreateWindow(title,x,y,w,h,flags);
         if(win == nullptr){
-            //Handle err....
             throwSDLError();
         }
-        render = SDL_CreateRenderer(win,-1,SDL_RENDERER_ACCELERATED);
-        if(render == nullptr){
-            //try software render
-            render = SDL_CreateRenderer(win,-1,0);
-            if(render == nullptr){
-                throwSDLError();
-            }
-            
-        }
+        return win;
+    }
+
+    WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags)
+        :dispatcher(widgets_list),
+         win(CreateWindow(title,x,y,w,h,flags)),
+         render(win){
+        refcount = 0;//default refcount
+        //Btk::Window doesnnot has it ownship
         cursor = nullptr;
         //Set theme
         theme = &Themes::GetDefault();
@@ -45,7 +38,6 @@ namespace Btk{
         default_font.open(theme->font,theme->font_ptsize);
         //Set background color
         bg_color = theme->background_color;
-
         last_draw_ticks = 0;
     }
     WindowImpl::~WindowImpl(){
@@ -54,9 +46,10 @@ namespace Btk{
             delete widget;
         }
         SDL_FreeCursor(cursor);
-        SDL_DestroyRenderer(*render);
+        //destroy the render before destroy the window
+        render.destroy();
+
         SDL_DestroyWindow(win);
-        render = nullptr;
     }
     //Draw window
     void WindowImpl::draw(){
@@ -120,7 +113,8 @@ namespace Btk{
     }
     void WindowImpl::pixels_size(int *w,int *h){
         //SDL_GetWindowSize(win,w,h);
-        SDL_GetRendererOutputSize(*render,w,h);
+        
+        SDL_GL_GetDrawableSize(win,w,h);
     }
     //update widgets postions
     void WindowImpl::update_postion(){

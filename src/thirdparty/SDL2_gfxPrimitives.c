@@ -34,7 +34,33 @@ Andreas Schiffler -- aschiffler at ferzkopp dot net
 
 #include <Btk/thirdparty/SDL2_framerate.h>
 #include <Btk/thirdparty/SDL2_gfxPrimitives.h>
+#include <Btk/render.hpp>
+/*Using our abstruct renderer*/
+#define SDL_Texture  BtkTexture
+#define SDL_Renderer BtkRenderer
 
+#define SDL_CreateTextureFromSurface Btk_CreateTextureFromSurface
+
+
+#define SDL_SetRenderDrawColor Btk_RenderSetDrawColor
+/*Ignore the function*/
+#define SDL_SetRenderDrawBlendMode(...) 0
+#define SDL_RenderDrawPoint Btk_RenderDrawPoint
+
+#define SDL_RenderDrawLine  Btk_RenderDrawLine
+#define SDL_RenderDrawLines Btk_RenderDrawLines
+
+#define SDL_RenderDrawRect  Btk_RenderDrawRect
+#define SDL_RenderDrawRects Btk_RenderDrawRects
+
+#define SDL_RenderFillRect  Btk_RenderDrawBox
+#define SDL_RenderFillRects Btk_RenderDrawBoxs
+
+#define SDL_RenderCopy Btk_RenderCopy
+#define SDL_RenderPresent Btk_RenderPresent
+#define SDL_DestroyTexture Btk_DestroyTexture
+/*Ignore it*/
+#define SDL_SetTextureBlendMode(...)
 /* ---- Structures */
 
 /*!
@@ -69,7 +95,7 @@ typedef struct {
 
 \returns Returns 0 on success, -1 on failure.
 */
-int pixel(SDL_Renderer *renderer, Sint16 x, Sint16 y)
+static int pixel(SDL_Renderer *renderer, Sint16 x, Sint16 y)
 {
 	return SDL_RenderDrawPoint(renderer, x, y);
 }
@@ -126,7 +152,7 @@ int pixelRGBA(SDL_Renderer * renderer, Sint16 x, Sint16 y, Uint8 r, Uint8 g, Uin
 
 \returns Returns 0 on success, -1 on failure.
 */
-int pixelRGBAWeight(SDL_Renderer * renderer, Sint16 x, Sint16 y, Uint8 r, Uint8 g, Uint8 b, Uint8 a, Uint32 weight)
+static int pixelRGBAWeight(SDL_Renderer * renderer, Sint16 x, Sint16 y, Uint8 r, Uint8 g, Uint8 b, Uint8 a, Uint32 weight)
 {
 	/*
 	* Modify Alpha by weight 
@@ -154,7 +180,7 @@ int pixelRGBAWeight(SDL_Renderer * renderer, Sint16 x, Sint16 y, Uint8 r, Uint8 
 
 \returns Returns 0 on success, -1 on failure.
 */
-int hline(SDL_Renderer * renderer, Sint16 x1, Sint16 x2, Sint16 y)
+static int hline(SDL_Renderer * renderer, Sint16 x1, Sint16 x2, Sint16 y)
 {
 	return SDL_RenderDrawLine(renderer, x1, y, x2, y);;
 }
@@ -212,7 +238,7 @@ int hlineRGBA(SDL_Renderer * renderer, Sint16 x1, Sint16 x2, Sint16 y, Uint8 r, 
 
 \returns Returns 0 on success, -1 on failure.
 */
-int vline(SDL_Renderer * renderer, Sint16 x, Sint16 y1, Sint16 y2)
+static int vline(SDL_Renderer * renderer, Sint16 x, Sint16 y1, Sint16 y2)
 {
 	return SDL_RenderDrawLine(renderer, x, y1, x, y2);;
 }
@@ -797,7 +823,7 @@ int boxRGBA(SDL_Renderer * renderer, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2,
 
 \returns Returns 0 on success, -1 on failure.
 */
-int line(SDL_Renderer * renderer, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2)
+static int line(SDL_Renderer * renderer, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2)
 {
 	/*
 	* Draw
@@ -878,7 +904,7 @@ with alpha<255.
 
 \returns Returns 0 on success, -1 on failure.
 */
-int _aalineRGBA(SDL_Renderer * renderer, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Uint8 r, Uint8 g, Uint8 b, Uint8 a, int draw_endpoint)
+static int _aalineRGBA(SDL_Renderer * renderer, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Uint8 r, Uint8 g, Uint8 b, Uint8 a, int draw_endpoint)
 {
 	Sint32 xx0, yy0, xx1, yy1;
 	int result;
@@ -1471,7 +1497,7 @@ int aacircleRGBA(SDL_Renderer * renderer, Sint16 x, Sint16 y, Sint16 rad, Uint8 
 
 \returns Returns 0 on success, -1 on failure.
 */
-int _drawQuadrants(SDL_Renderer * renderer,  Sint16 x, Sint16 y, Sint16 dx, Sint16 dy, Sint32 f)
+static int _drawQuadrants(SDL_Renderer * renderer,  Sint16 x, Sint16 y, Sint16 dx, Sint16 dy, Sint32 f)
 {
 	int result = 0;
 	Sint16 xpdx, xmdx;
@@ -1526,7 +1552,7 @@ int _drawQuadrants(SDL_Renderer * renderer,  Sint16 x, Sint16 y, Sint16 dx, Sint
 \returns Returns 0 on success, -1 on failure.
 */
 #define DEFAULT_ELLIPSE_OVERSCAN	4
-int _ellipseRGBA(SDL_Renderer * renderer, Sint16 x, Sint16 y, Sint16 rx, Sint16 ry, Uint8 r, Uint8 g, Uint8 b, Uint8 a, Sint32 f)
+static int _ellipseRGBA(SDL_Renderer * renderer, Sint16 x, Sint16 y, Sint16 rx, Sint16 ry, Uint8 r, Uint8 g, Uint8 b, Uint8 a, Sint32 f)
 {
 	int result;
 	Sint32 rxi, ryi;
@@ -2071,7 +2097,7 @@ Note: Determines vertex array and uses polygon or filledPolygon drawing routines
 \returns Returns 0 on success, -1 on failure.
 */
 /* TODO: rewrite algorithm; pie is not always accurate */
-int _pieRGBA(SDL_Renderer * renderer, Sint16 x, Sint16 y, Sint16 rad, Sint16 start, Sint16 end,  Uint8 r, Uint8 g, Uint8 b, Uint8 a, Uint8 filled)
+static int _pieRGBA(SDL_Renderer * renderer, Sint16 x, Sint16 y, Sint16 rad, Sint16 start, Sint16 end,  Uint8 r, Uint8 g, Uint8 b, Uint8 a, Uint8 filled)
 {
 	int result;
 	double angle, start_angle, end_angle;
@@ -2485,7 +2511,7 @@ int polygonColor(SDL_Renderer * renderer, const Sint16 * vx, const Sint16 * vy, 
 
 \returns Returns 0 on success, -1 on failure.
 */
-int polygon(SDL_Renderer * renderer, const Sint16 * vx, const Sint16 * vy, int n)
+static int polygon(SDL_Renderer * renderer, const Sint16 * vx, const Sint16 * vy, int n)
 {
 	/*
 	* Draw 
@@ -2690,7 +2716,7 @@ int aapolygonRGBA(SDL_Renderer * renderer, const Sint16 * vx, const Sint16 * vy,
 
 \returns Returns 0 if a==b, a negative number if a<b or a positive number if a>b.
 */
-int _gfxPrimitivesCompareInt(const void *a, const void *b)
+static int _gfxPrimitivesCompareInt(const void *a, const void *b)
 {
 	return (*(const int *) a) - (*(const int *) b);
 }
@@ -2727,7 +2753,7 @@ Note: The last two parameters are optional; but are required for multithreaded o
 
 \returns Returns 0 on success, -1 on failure.
 */
-int filledPolygonRGBAMT(SDL_Renderer * renderer, const Sint16 * vx, const Sint16 * vy, int n, Uint8 r, Uint8 g, Uint8 b, Uint8 a, int **polyInts, int *polyAllocated)
+static int filledPolygonRGBAMT(SDL_Renderer * renderer, const Sint16 * vx, const Sint16 * vy, int n, Uint8 r, Uint8 g, Uint8 b, Uint8 a, int **polyInts, int *polyAllocated)
 {
 	int result;
 	int i;
@@ -2937,7 +2963,7 @@ int filledPolygonRGBA(SDL_Renderer * renderer, const Sint16 * vx, const Sint16 *
 
 \returns Returns 0 on success, -1 on failure.
 */
-int _HLineTextured(SDL_Renderer *renderer, Sint16 x1, Sint16 x2, Sint16 y, SDL_Texture *texture, int texture_w, int texture_h, int texture_dx, int texture_dy)
+static int _HLineTextured(SDL_Renderer *renderer, Sint16 x1, Sint16 x2, Sint16 y, SDL_Texture *texture, int texture_w, int texture_h, int texture_dx, int texture_dy)
 {
 	Sint16 w;
 	Sint16 xtmp;
@@ -3036,7 +3062,7 @@ to the left and want the texture to apear the same you need to increase the text
 
 \returns Returns 0 on success, -1 on failure.
 */
-int texturedPolygonMT(SDL_Renderer *renderer, const Sint16 * vx, const Sint16 * vy, int n, 
+static int texturedPolygonMT(SDL_Renderer *renderer, const Sint16 * vx, const Sint16 * vy, int n, 
 	SDL_Surface * texture, int texture_dx, int texture_dy, int **polyInts, int *polyAllocated)
 {
 	int result;
@@ -3573,7 +3599,7 @@ int stringRGBA(SDL_Renderer * renderer, Sint16 x, Sint16 y, const char *s, Uint8
 
 \returns Interpolated value at position t, value[0] when t<0, value[n-1] when t>n.
 */
-double _evaluateBezier (double *data, int ndata, double t) 
+static double _evaluateBezier (double *data, int ndata, double t) 
 {
 	double mu, result;
 	int n,k,kn,nn,nkn;

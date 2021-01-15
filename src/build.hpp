@@ -25,9 +25,9 @@
 
 //Debug Info
 #ifndef NDEBUG
-    #define BTK_LOGINFO(FMT,...) SDL_Log(FMT,__VA_ARGS__)
+    #define BTK_LOGINFO(...) SDL_Log(__VA_ARGS__)
 #else
-    #define BTK_LOGINFO(FMT,...)
+    #define BTK_LOGINFO(...)
 #endif
 //Assert
 #ifndef NDEBUG
@@ -82,7 +82,7 @@ namespace Btk{
      */
     inline std::string get_typename(const std::type_info &info){
         #ifdef __GNUC__
-        char *ret = __cxxabiv1::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
+        char *ret = abi::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
         if(ret == nullptr){
             //failed to demangle the name
             return info.name();

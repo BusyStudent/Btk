@@ -69,7 +69,7 @@ namespace Btk{
         //refcount
         int refcount;
         //BackGroud Color
-        SDL_Color bg_color;
+        Color bg_color;
         //Background cursor
         SDL_Cursor *cursor;
         //mutex
