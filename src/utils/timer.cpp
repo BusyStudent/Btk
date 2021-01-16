@@ -82,6 +82,7 @@ namespace Btk{
 
         //Rethrow the exception at main thread
         try{
+            BTK_LOGINFO("Timer %p timeout",this);
             cb();
         }
         catch(...){
@@ -106,13 +107,15 @@ namespace Btk{
     }
     Timer& Timer::start(){
         stop();
-        
+        //set running flag
+        base->running = true;
         base->timerid = SDL_AddTimer(
             base->interval,
             TimerRun,
             base
         );
         if(base->timerid == 0){
+            base->running = false;
             throwSDLError();
         }
         return *this;

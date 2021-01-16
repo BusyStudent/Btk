@@ -7,6 +7,7 @@
 #include <Btk/impl/utils.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/window.hpp>
+#include <Btk/cursor.hpp>
 #include <Btk/event.hpp>
 
 #include <algorithm>
@@ -35,6 +36,7 @@ namespace Btk{
         }
     };
     bool TextBox::handle(Event &event){
+        static Cursor cursor(SystemCursor::Ibeam);
         switch(event.type()){
             //Accept the keyboard
             case Event::KeyBoard:{
@@ -42,8 +44,7 @@ namespace Btk{
                     return false;
                 }
                 event.accept();
-                do_keyboard(event_cast<KeyEvent&>(event));
-                return true;
+                return do_keyboard(event_cast<KeyEvent&>(event));
             }
             case Event::TextInput:{
                 if(not has_focus){
@@ -81,6 +82,8 @@ namespace Btk{
                 //Enable Text input
                 event.accept();
                 has_focus = true;
+                show_line = true;
+                timer.start();
                 SDL_SetTextInputRect(&rect);
                 SDL_StartTextInput();
                 win().draw();
@@ -88,15 +91,20 @@ namespace Btk{
             }
             case Event::LostFocus:{
                 //Stop Text input
-                if(is_dragging){
-                    //Refuse to lost focus
-                    event.reject();
-                    return false;
-                }
                 event.accept();
                 has_focus = false;
+                timer.stop();
                 SDL_StopTextInput();
                 win().draw();
+                return true;
+            }
+            //Editing cursor
+            case Event::Enter:{
+                cursor.set();
+                return true;
+            }
+            case Event::Leave:{
+                cursor.reset();
                 return true;
             }
         }
@@ -109,25 +117,30 @@ namespace Btk{
         tb_font = win().impl()->default_font;
 
         //Get rendered text's h
-        ft_h = tb_font.size("T").h;
+        ft_h = tb_font.height();
         
         BTK_LOGINFO("TextBox %p's ft_h=%d",this,ft_h);
         //Set current position
         cur_txt = tb_text.begin();
 
         attr.focus = FocusPolicy::Click;
+
+        //Set timer
+        timer.set_interval(500);
+        timer.set_callback(&TextBox::timeout,this);
     }
-    TextBox::~TextBox(){}
+    TextBox::~TextBox(){
+        timer.stop();
+    }
 
     void TextBox::draw(Renderer &render){
         render.box(rect,{255,255,255,255});
         if(not tb_text.empty()){
-            if(texture.empty()){
-                if(tb_buf.empty()){
-                    tb_buf = tb_font.render_blended(tb_text,theme.text_color);
-                }
-                texture = render.create_from(tb_buf);
+            if(tb_buf.empty()){
+                tb_buf = tb_font.render_blended(tb_text,theme.text_color);
             }
+            texture = render.create_from(tb_buf);
+            
             //Render text
             auto cliprect = render.get_cliprect();
             render.set_cliprect(rect);
@@ -139,7 +152,7 @@ namespace Btk{
             txt_rect.y = CalculateYByAlign(rect,tb_buf->h,Align::Center);
             render.copy(texture,nullptr,&txt_rect);
             
-            if(has_focus){
+            if(has_focus and show_line){
                 //draw a line for editing
                 //calc the w
                 int line_x;
@@ -157,7 +170,7 @@ namespace Btk{
 
             render.set_cliprect(cliprect);
         }
-        else if(has_focus){
+        else if(has_focus and show_line){
             //render the line
             int line_y = CalculateYByAlign(rect,ft_h,Align::Center);
             render.line(rect.x + tb_boarder,
@@ -175,7 +188,7 @@ namespace Btk{
             render.rounded_rect(rect,1,theme.border_color);
         }
     }
-    void TextBox::do_keyboard(KeyEvent &event){
+    bool TextBox::do_keyboard(KeyEvent &event){
         if(event.state == KeyEvent::Pressed){
             switch(event.keycode){
                 case SDLK_BACKSPACE:{
@@ -190,49 +203,53 @@ namespace Btk{
                         BTK_LOGINFO("TextBox:text=%s",t.c_str());
                         #endif
                         tb_buf = nullptr;
-                        texture = nullptr;
+                        show_line = true;
                         win().draw();
                     }
-                    break;
+                    return true;
                 }
                 case SDLK_LEFT:{
                     if(cur_txt != --tb_text.begin()){
                         --cur_txt;
+                        show_line = true;
                         win().draw();
                     }
-                    break;
+                    return true;
                 }
                 case SDLK_RIGHT:{
                     if(cur_txt != --tb_text.end()){
                         ++cur_txt;
+                        show_line = true;
                         win().draw();
                     }
-                    break;
+                    return true;
                 }
                 case SDLK_v:{
                     //Ctrl + V
                     if(event.has_kmod(Keymode::Ctrl)){
-                        BTK_LOGINFO("Ctrl + V",0);
+                        BTK_LOGINFO("Ctrl + V");
                         char *u8str = SDL_GetClipboardText();
                         if(u8str == nullptr){
-                            return;
+                            return true;
                         }
                         SDLScopePtr ptr(u8str);
                         add_string(u8str);
                     } 
-                    break;
+                    return true;
                 }
                 case SDLK_c:{
                     //Ctrl + C
                     if(event.has_kmod(Keymode::Ctrl)){
-                        BTK_LOGINFO("Ctrl + C",0);
+                        BTK_LOGINFO("Ctrl + C");
                         SDL_SetClipboardText(u8text().c_str());
                     }
-                    break;
+                    return true;
                 }
             }
         }
-        
+        //We donnot need the key 
+        event.reject();
+        return false;
     }
     void TextBox::u8text(std::string &s) const{
         utf16to8(tb_text.begin(),tb_text.end(),back_inserter(s));
@@ -240,7 +257,6 @@ namespace Btk{
     void TextBox::set_text(std::u16string_view txt){
         tb_text = txt;
         tb_buf = nullptr;
-        texture = nullptr;
         cur_txt = tb_text.begin();
         win().draw();
     }
@@ -248,7 +264,6 @@ namespace Btk{
         tb_text.clear();
         utf8to16(txt.begin(),txt.end(),back_inserter(tb_text));
         tb_buf = nullptr;
-        texture = nullptr;
         cur_txt = tb_text.begin();
         win().draw();
     }
@@ -279,8 +294,11 @@ namespace Btk{
         BTK_LOGINFO("TextBox:text=%s",t.c_str());
         #endif
         tb_buf = nullptr;
-        texture = nullptr;
 
+        win().draw();
+    }
+    void TextBox::timeout(){
+        show_line = not show_line;
         win().draw();
     }
 }

@@ -1,6 +1,5 @@
 #if !defined(_BTKUTILS_TIMER_HPP_)
 #define _BTKUTILS_TIMER_HPP_
-#include <memory>
 #include <tuple>
 #include "../defs.hpp"
 namespace Btk{
@@ -68,6 +67,22 @@ namespace Btk{
             void set_invoker(InvokerRunFn,InvokerCleanupFn,void*);
             TimerBase *base;
     };
+    #if 0
+    //No impl yet
+    /**
+     * @brief Call an object after a time interval
+     * 
+     * @tparam Callable 
+     * @tparam Args 
+     * @param interval The time interval
+     * @param callable Callable
+     * @param args Args
+     */
+    template<class Callable,class ...Args>
+    void TimeoutCall(Uint32 interval,Callable &&callable,Args &&...args){
+
+    }
+    #endif
 }
 
 

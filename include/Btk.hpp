@@ -10,6 +10,7 @@
 #include <Btk/exception.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/textbox.hpp>
+#include <Btk/render.hpp>
 #include <Btk/layout.hpp>
 #include <Btk/cursor.hpp>
 #include <Btk/widget.hpp>

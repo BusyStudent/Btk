@@ -2,7 +2,7 @@
 #define _BTK_TEXTBOX_HPP_
 #include <string>
 #include <string_view>
-
+#include "utils/timer.hpp"
 #include "widget.hpp"
 #include "pixels.hpp"
 #include "themes.hpp"
@@ -45,8 +45,9 @@ namespace Btk{
             void set_text(std::u16string_view txt);
             void set_text(std::string_view txt);
         private:
+            void timeout();
             //Process keyboard event
-            void do_keyboard(KeyEvent &event);
+            bool do_keyboard(KeyEvent &event);
             //Add string in where the cur_text point
             void add_string(std::string_view);
             Font  tb_font;//Text Font
@@ -58,6 +59,7 @@ namespace Btk{
 
             bool has_focus = false;//Flag of has focus
             bool is_dragging = false;//< Flag of drag
+            bool show_line = true;//<Flag of show the edit line
 
             std::u16string::iterator cur_txt;//Current text
             //It will be point from tb_text.begin() - 1
@@ -65,6 +67,7 @@ namespace Btk{
             std::u16string::iterator sel_begin;//select text begin
             std::u16string::iterator sel_end;//select text end
 
+            Timer timer;//For drawing the line
             int ft_h;//Rendered Text's h
             int tb_boarder = 4;//The text boarder
         friend struct TextBoxInserter;

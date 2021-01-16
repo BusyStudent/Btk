@@ -149,7 +149,7 @@ namespace Btk{
                 return Btk_RenderSetClipRect(render,nullptr);
             }
             int  set_cliprect(const Rect &r){
-                return Btk_RenderSetClipRect(render,nullptr);
+                return Btk_RenderSetClipRect(render,&r);
             }
 
             int  copy(const Texture &t,const Rect *src,const Rect *dst){

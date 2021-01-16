@@ -83,6 +83,18 @@ namespace Btk{
         );
     }
 
+
+
+    bool Font::has_glyph(char16_t ch) const{
+        return TTF_GlyphIsProvided(pimpl->font,ch);
+    }
+    int Font::height() const{
+        return TTF_FontHeight(pimpl->font);
+    }
+    int Font::kerning_size(char16_t prev,char16_t cur) const{
+        return TTF_GetFontKerningSizeGlyphs(pimpl->font,prev,cur);
+    }
+
     int Font::ptsize() const noexcept{
         return pimpl->ptsize;
     }

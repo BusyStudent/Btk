@@ -72,6 +72,28 @@ namespace Btk{
             PixBuf render_blended(std::string_view text,Color color);
             PixBuf render_blended(std::u16string_view text,Color color);
             /**
+             * @brief Get Kerning Size in two chars
+             * 
+             * @param prev_ch The first char
+             * @param ch The next char
+             * @return The kerning
+             */
+            int kerning_size(char16_t prev_ch,char16_t ch) const;
+            /**
+             * @brief Check the font has the glyph
+             * 
+             * @param ch The utf16 char
+             * @return true 
+             * @return false 
+             */
+            bool has_glyph(char16_t ch) const;
+            /**
+             * @brief Get font height
+             * 
+             * @return int 
+             */
+            int height() const;
+            /**
              * @brief Get font ptsize
              * 
              * @return int 

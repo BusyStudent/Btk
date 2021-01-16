@@ -26,7 +26,8 @@ namespace BtkFt{
         }
         LockGuard(const LockGuard &) = delete;
         ~LockGuard(){
-            BTK_ASSERT(SDL_UnlockMutex(mutex) != -1);
+            int ret = SDL_UnlockMutex(mutex);
+            BTK_ASSERT(ret != -1);
         }
     };
 
