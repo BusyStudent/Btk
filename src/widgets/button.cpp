@@ -39,30 +39,28 @@ namespace Btk{
     }
     void AbstructButton::onenter(){
         is_entered = true;
-        win->draw();
+        parent->master().draw();
     }
     void AbstructButton::onleave(){
         is_entered = false;
         is_pressed = false;
-        win->draw();
+        parent->master().draw();
     }
 };
 namespace Btk{
-    Button::Button(Window &w){
-        BTK_ASSERT(&w != nullptr);
-        win = &w;
+    Button::Button(Container &c){
+        parent = &c;
         //Set theme
-        theme     = w.impl()->theme;
-        textfont  = w.impl()->default_font;
+        theme     = win().impl()->theme;
+        textfont  = win().impl()->default_font;
         is_entered = false;
         is_pressed = false;
     }
-    Button::Button(Window &wi,int x,int y,int w,int h){
-        BTK_ASSERT(&wi != nullptr);
-        win = &wi;
+    Button::Button(Container &c,int x,int y,int w,int h){
+        parent = &c;
         //Set theme
-        theme     = wi.impl()->theme;
-        textfont  = wi.impl()->default_font;
+        theme     = win().impl()->theme;
+        textfont  = win().impl()->default_font;
         is_entered = false;
         is_pressed = false;
 
@@ -71,12 +69,11 @@ namespace Btk{
             x,y,w,h
         };
     }
-    Button::Button(Window &w,std::string_view text):btext(text){
-        BTK_ASSERT(&w != nullptr);
-        win = &w;
+    Button::Button(Container &c,std::string_view text):btext(text){
+        parent = &c;
         //Set theme
-        theme     = w.impl()->theme;
-        textfont  = w.impl()->default_font;
+        theme     = win().impl()->theme;
+        textfont  = win().impl()->default_font;
         is_entered = false;
         is_pressed = false;
 
@@ -141,7 +138,7 @@ namespace Btk{
                 texture = nullptr;
             }
             //render text
-            win->draw();
+            win().draw();
         }
         else if(event.button.is_left() and is_pressed){
             //release the button
@@ -152,7 +149,7 @@ namespace Btk{
                 textbuf = textfont.render_blended(btext,theme->text_color);
                 texture = nullptr;
             }
-            win->draw();
+            win().draw();
             if(not clicked.empty()){
                 clicked.emit();
             }
@@ -166,10 +163,10 @@ namespace Btk{
         }
         is_entered = false;
         is_pressed = false;
-        win->draw();
+        win().draw();
     }
     void Button::set_text(std::string_view text){
         btext = text;
-        win->draw();
+        win().draw();
     }
 };

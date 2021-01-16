@@ -83,7 +83,7 @@ namespace Btk{
                 has_focus = true;
                 SDL_SetTextInputRect(&rect);
                 SDL_StartTextInput();
-                win->draw();
+                win().draw();
                 return true;
             }
             case Event::LostFocus:{
@@ -96,17 +96,17 @@ namespace Btk{
                 event.accept();
                 has_focus = false;
                 SDL_StopTextInput();
-                win->draw();
+                win().draw();
                 return true;
             }
         }
         return false;
     }
-    TextBox::TextBox(Window &w){
-        win = &w;
+    TextBox::TextBox(Container &w){
+        parent = &w;
         //Set theme
-        theme = *(w.impl()->theme);
-        tb_font = w.impl()->default_font;
+        theme = *(win().impl()->theme);
+        tb_font = win().impl()->default_font;
 
         //Get rendered text's h
         ft_h = tb_font.size("T").h;
@@ -191,22 +191,21 @@ namespace Btk{
                         #endif
                         tb_buf = nullptr;
                         texture = nullptr;
-                        win->draw();
+                        win().draw();
                     }
                     break;
                 }
                 case SDLK_LEFT:{
                     if(cur_txt != --tb_text.begin()){
                         --cur_txt;
-                        win->draw();
+                        win().draw();
                     }
                     break;
                 }
                 case SDLK_RIGHT:{
                     if(cur_txt != --tb_text.end()){
                         ++cur_txt;
-                        win->draw();
-                        ;
+                        win().draw();
                     }
                     break;
                 }
@@ -243,7 +242,7 @@ namespace Btk{
         tb_buf = nullptr;
         texture = nullptr;
         cur_txt = tb_text.begin();
-        win->draw();
+        win().draw();
     }
     void TextBox::set_text(std::string_view txt){
         tb_text.clear();
@@ -251,7 +250,7 @@ namespace Btk{
         tb_buf = nullptr;
         texture = nullptr;
         cur_txt = tb_text.begin();
-        win->draw();
+        win().draw();
     }
     void TextBox::add_string(std::string_view text){
         if(text.length() == 0){
@@ -282,6 +281,6 @@ namespace Btk{
         tb_buf = nullptr;
         texture = nullptr;
 
-        win->draw();
+        win().draw();
     }
 }

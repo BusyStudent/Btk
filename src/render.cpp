@@ -97,6 +97,12 @@ namespace SDL{
     static int QueryTexture(BtkTexture *texture,Uint32 *fmt,int *access,int *w,int *h){
         return SDL_QueryTexture(Texture(texture),fmt,access,w,h);
     }
+    static int LockTexture(BtkTexture *texture,const BtkRect *rect,void **pixels,int *pitch){
+        return SDL_LockTexture(Texture(texture),rect,pixels,pitch);
+    }
+    static void UnlockTexture(BtkTexture *texture){
+        return SDL_UnlockTexture(Texture(texture));
+    }
     static BtkTexture *CreateTextureFrom(BtkRenderer *render,SDL_Surface *surf){
         return reinterpret_cast<BtkTexture*>(SDL_CreateTextureFromSurface(Renderer(render),surf));
     }
@@ -140,9 +146,48 @@ extern "C"{
         .QueryTexture = SDL::QueryTexture,
         .UpdateTexture = SDL::UpdateTexture,
 
+        .LockTexture = SDL::LockTexture,
+        .UnlockTexture = SDL::UnlockTexture,
+
         .SetError = SDL_SetError,
         .GetError = SDL_GetError,
     };
+    void Btk_ResetRITable(){
+        btk_rtbl.CreateRenderer = SDL::CreateRenderer;
+        btk_rtbl.CreateTexture  = SDL::CreateTexture;
+        btk_rtbl.CreateTextureFrom = SDL::CreateTextureFrom;
+
+        btk_rtbl.DestroyTexture = SDL::DestroyTexture;
+        btk_rtbl.DestroyRenderer = SDL::DestroyRenderer;
+
+        btk_rtbl.RenderPresent = SDL::RenderPresent;
+        btk_rtbl.RenderDrawRect = SDL::RenderDrawRect;
+        btk_rtbl.RenderDrawRects = SDL::RenderDrawRects;
+        btk_rtbl.RenderDrawBox = SDL::RenderDrawBox;
+        btk_rtbl.RenderDrawBoxs = SDL::RenderDrawBoxs;
+        btk_rtbl.RenderDrawLine = SDL::RenderDrawLine;
+        btk_rtbl.RenderDrawLines = SDL::RenderDrawLines;
+        btk_rtbl.RenderDrawPoint = SDL::RenderDrawPoint;
+        btk_rtbl.RenderDrawPoints = SDL::RenderDrawPoints;
+
+        btk_rtbl.RenderSetDrawColor = SDL::RenderSetDrawColor;
+        btk_rtbl.RenderGetDrawColor = SDL::RenderGetDrawColor;
+
+        btk_rtbl.RenderGetClipRect = SDL::RenderGetClipRect;
+        btk_rtbl.RenderSetClipRect = SDL::RenderSetClipRect;
+
+        btk_rtbl.RenderCopy = SDL::RenderCopy;
+        btk_rtbl.RenderClear = SDL::RenderClear;
+
+        btk_rtbl.QueryTexture = SDL::QueryTexture;
+        btk_rtbl.UpdateTexture = SDL::UpdateTexture;
+
+        btk_rtbl.LockTexture = SDL::LockTexture;
+        btk_rtbl.UnlockTexture = SDL::UnlockTexture;
+
+        btk_rtbl.SetError = SDL_SetError;
+        btk_rtbl.GetError = SDL_GetError;
+    }
 }
 namespace Btk{
     Renderer::Renderer(SDL_Window *win){
@@ -154,6 +199,13 @@ namespace Btk{
     }
     Texture Renderer::create_from(const PixBuf &pixbuf){
         BtkTexture *texture = Btk_CreateTextureFrom(render,pixbuf.get());
+        if(texture == nullptr){
+            throwRendererError(Btk_RIGetError());
+        }
+        return texture;
+    }
+    Texture Renderer::create(Uint32 fmt,int access,int w,int h){
+        BtkTexture *texture = Btk_CreateTexture(render,fmt,access,w,h);
         if(texture == nullptr){
             throwRendererError(Btk_RIGetError());
         }

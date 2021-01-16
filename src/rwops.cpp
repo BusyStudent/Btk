@@ -9,6 +9,17 @@
 #include <istream>
 #include <ostream>
 #include <fstream>
+
+#ifdef _WIN32
+    #include <io.h>
+    #include <cerrno>
+    #define BTK_FDOPEN _fdopen
+#else
+    #include <cerrno>
+    #define BTK_FDOPEN fdopen
+#endif
+
+
 namespace{
     //some functions
     int close_rwops(SDL_RWops *context){
@@ -175,6 +186,17 @@ namespace Btk{
     }
     RWops RWops::FromFile(const char *fname,const char *modes){
         SDL_RWops *rw = SDL_RWFromFile(fname,modes);
+        if(rw == nullptr){
+            throwSDLError();
+        }
+        return rw;
+    }
+    RWops RWops::FromFD(int fd,const char *modes){
+        FILE *fp = BTK_FDOPEN(fd,modes);
+        if(fp == nullptr){
+            throwRuntimeError(cformat("fdopen %d:%s",fd,strerror(errno)).c_str());
+        }
+        SDL_RWops *rw = SDL_RWFromFP(fp,SDL_TRUE);
         if(rw == nullptr){
             throwSDLError();
         }

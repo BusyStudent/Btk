@@ -4,11 +4,11 @@
 #include <Btk/impl/utils.hpp>
 #include <Btk/widget.hpp>
 namespace Btk{
-    Line::Line(Window &w,Orientation orient){
-        win = &w;
+    Line::Line(Container &w,Orientation orient){
+        parent = &w;
         orientation = orient;
     }
-    Line::Line(Window &_w,int x,int y,int w,int h,Orientation orient):
+    Line::Line(Container &_w,int x,int y,int w,int h,Orientation orient):
         Line(_w,orient){
         
         rect.x = x;

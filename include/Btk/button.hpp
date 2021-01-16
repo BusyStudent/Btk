@@ -29,9 +29,9 @@ namespace Btk{
      */
     class BTKAPI Button:public AbstructButton{
         public:
-            Button(Window&);
-            Button(Window&,std::string_view text);
-            Button(Window&,int x,int y,int w,int h);
+            Button(Container&);
+            Button(Container&,std::string_view text);
+            Button(Container&,int x,int y,int w,int h);
             ~Button();
             void draw(Renderer &);
             template<class ...T>

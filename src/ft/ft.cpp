@@ -31,12 +31,18 @@ namespace BtkFt{
     };
 
     void Init(){
+        if(library != nullptr){
+            return;
+        }
         if(FT_Init_FreeType(&library) == -1){
             //Handle err
         }
         mutex = SDL_CreateMutex();
     }
     void Quit(){
+        if(library == nullptr){
+            return;
+        }
         FT_Done_FreeType(library);
         SDL_DestroyMutex(mutex);
         library = nullptr;

@@ -179,6 +179,18 @@ namespace Btk{
     };
     typedef PixFmt PixelFormat;
     typedef PixFmt PixFormat;
+    /**
+     * @brief Gif Decoding class
+     * 
+     */
+    class BTKAPI Gif{
+        public:
+            Gif():pimpl(nullptr){};
+            ~Gif();
+            static Gif FromRwops(RWops &);
+        private:
+            void *pimpl;
+    };
 };
 
 #endif // _BTK_PIXELS_HPP_

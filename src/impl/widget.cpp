@@ -25,22 +25,20 @@ namespace Btk{
         SetRectEvent ev(rect);
         handle(ev);
     }
-    Container::Container():EventDispatcher(widgets_list){
-        attr.container = true;
+    Container::Container():dispatcher(widgets_list){
+        window = nullptr;
     }
     //delete container
     Container::~Container(){
+        clear();
+    }
+    void Container::clear(){
         for(auto iter = widgets_list.begin();iter != widgets_list.end();){
             delete *iter;
             iter = widgets_list.erase(iter);
         }
     }
 };
-namespace Btk{
-    bool Container::handle(Event &event){
-        return EventDispatcher::handle(event);
-    }
-}
 namespace Btk{
     //EventDispatcher
     bool EventDispatcher::handle(Event &event){
@@ -53,6 +51,35 @@ namespace Btk{
                 return handle_motion(event_cast<MotionEvent&>(event));
             case Event::TextInput:
                 return handle_textinput(event_cast<TextInputEvent&>(event));
+            /*This three event handler is used to forward dragevent*/
+            case Event::DragBegin:{
+                auto &drag = event_cast<DragEvent&>(event);
+                //try to find a widget which has the point
+                for(auto widget:widgets){
+                    if(widget->rect.has_point(drag.x,drag.y)){
+                        bool ret = false;
+                        ret |= widget->handle(drag);
+                        ret |= drag.is_accepted();
+                        if(ret){
+                            drag_widget = widget;
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            case Event::DragEnd:{
+                //finish dragging
+                BTK_ASSERT(drag_widget != nullptr);
+                bool ret = drag_widget->handle(event);
+                drag_widget = nullptr;
+                return ret;
+            }
+            case Event::Drag:{
+                //Send it to drag widget
+                BTK_ASSERT(drag_widget != nullptr);
+                return drag_widget->handle(event);
+            }
             default:{
                 for(auto widget:widgets){
                     if(widget->handle(event)){
@@ -87,11 +114,13 @@ namespace Btk{
             mouse_pressed = false;
             drag_rejected = false;
             //Dragging is at end
-            if(drag_widget != nullptr){
+            if(drag_widget != nullptr and managed_window){
                 DragEvent ev(Event::DragEnd,x,y,-1,-1);
                 drag_widget->handle(ev);
                 BTK_LOGINFO("(%s)%p DragEnd",get_typename(drag_widget).c_str(),drag_widget);
                 drag_widget = nullptr;
+
+                SDL_CaptureMouse(SDL_FALSE);
             }
         }
 
@@ -126,35 +155,41 @@ namespace Btk{
         
         int x = event.x;
         int y = event.y;
-        
-        //Is dragging
-        if(drag_widget != nullptr){
-            DragEvent drag_ev(Event::Drag,event);
-            BTK_LOGINFO("(%s)%p Dragging x=%d y=%d",get_typename(drag_widget).c_str(),drag_widget,x,y);
-            drag_widget->handle(drag_ev);
-        }
-        else if(mouse_pressed == true and 
-                cur_widget != nullptr and 
-                not(drag_rejected)){
-            
 
-            //Send Drag Begin
-            DragEvent drag_ev(Event::DragBegin,event);
-            if(cur_widget->handle(drag_ev)){
-                if(drag_ev.is_accepted()){
-                    //The event is accepted
-                    drag_widget = cur_widget;
-                    BTK_LOGINFO("(%s)%p accepted DragBegin",get_typename(cur_widget).c_str(),cur_widget);
+        //only top window can gen DragEvent
+        if(managed_window){
+
+            //Is dragging
+            if(drag_widget != nullptr){
+                DragEvent drag_ev(Event::Drag,event);
+                BTK_LOGINFO("(%s)%p Dragging x=%d y=%d",get_typename(drag_widget).c_str(),drag_widget,x,y);
+                drag_widget->handle(drag_ev);
+            }
+            else if(mouse_pressed == true and 
+                    cur_widget != nullptr and 
+                    not(drag_rejected)){
+                
+
+                //Send Drag Begin
+                DragEvent drag_ev(Event::DragBegin,event);
+                if(cur_widget->handle(drag_ev)){
+                    if(drag_ev.is_accepted()){
+                        //The event is accepted
+                        drag_widget = cur_widget;
+                        BTK_LOGINFO("(%s)%p accepted DragBegin",get_typename(cur_widget).c_str(),cur_widget);
+                        SDL_CaptureMouse(SDL_TRUE);
+                    }
+                    else{
+                        drag_rejected = true;
+                        BTK_LOGINFO("(%s)%p rejected DragBegin",get_typename(cur_widget).c_str(),cur_widget);
+                    }
                 }
                 else{
                     drag_rejected = true;
                     BTK_LOGINFO("(%s)%p rejected DragBegin",get_typename(cur_widget).c_str(),cur_widget);
                 }
             }
-            else{
-                drag_rejected = true;
-                BTK_LOGINFO("(%s)%p rejected DragBegin",get_typename(cur_widget).c_str(),cur_widget);
-            }
+
         }
         //We didnot has the widget
         if(cur_widget != nullptr){

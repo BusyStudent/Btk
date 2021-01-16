@@ -25,8 +25,7 @@ namespace Btk{
         return win;
     }
 
-    WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags)
-        :dispatcher(widgets_list),
+    WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags):
          win(CreateWindow(title,x,y,w,h,flags)),
          render(win){
         refcount = 0;//default refcount
@@ -39,12 +38,13 @@ namespace Btk{
         //Set background color
         bg_color = theme->background_color;
         last_draw_ticks = 0;
+
+        //Managed by window
+        container.dispatcher.managed_window = true;
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
-        for(auto widget:widgets_list){
-            delete widget;
-        }
+        container.clear();
         SDL_FreeCursor(cursor);
         //destroy the render before destroy the window
         render.destroy();
@@ -68,7 +68,7 @@ namespace Btk{
         std::lock_guard<std::recursive_mutex> locker(mtx);
         render.start(bg_color);
         //Draw each widget
-        for(auto widget:widgets_list){
+        for(auto widget:container.widgets_list){
             //check widgets
             if((widget->visible()) and not(widget->rect.empty())){
                 widget->draw(render);
@@ -118,6 +118,7 @@ namespace Btk{
     }
     //update widgets postions
     void WindowImpl::update_postion(){
+        auto &widgets_list = container.widgets_list;
         if(widgets_list.empty()){
             return;
         }
@@ -153,10 +154,11 @@ namespace Btk{
     }
     //Dispatch Event
     bool WindowImpl::dispatch(Event &event){
-        if(dispatcher.handle(event)){
+        if(container.handle(event)){
             if(event.is_accepted()){
                 return true;
             }
+            return false;
         }
         else{
             //Using the EventSignal
@@ -248,6 +250,7 @@ namespace Btk{
             h,
             flags
         );
+        pimpl->container.window = this;
         SDL_SetWindowData(pimpl->win,"btk_win",this);
         SDL_SetWindowData(pimpl->win,"btk_imp",pimpl);
         winid = SDL_GetWindowID(pimpl->win);
@@ -333,15 +336,7 @@ namespace Btk{
     }
     //add widget
     bool Window::add(Widget *ptr){
-        if(ptr == nullptr){
-            return false;
-        }
-        else{
-            pimpl->widgets_list.push_back(ptr);
-            //set master
-            ptr->win = this;
-            return true;
-        }
+        return pimpl->container.add(ptr);
     }
     //Window exists
     bool Window::exists() const{
@@ -418,5 +413,8 @@ namespace Btk{
     }
     Font Window::font() const{
         return pimpl->default_font;
+    }
+    Container &Window::container() const{
+        return pimpl->container;
     }
 }

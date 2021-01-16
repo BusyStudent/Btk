@@ -13,8 +13,8 @@ namespace Btk{
      */
     class BTKAPI Lable:public Widget{
         public:
-            Lable(Window&);
-            Lable(Window&,std::string_view text);
+            Lable(Container&);
+            Lable(Container&,std::string_view text);
             /**
              * @brief Construct a new Lable object
              * 
@@ -23,7 +23,7 @@ namespace Btk{
              * @param w Lable w
              * @param h Lable h
              */
-            Lable(Window&,int x,int y,int w,int h);
+            Lable(Container&,int x,int y,int w,int h);
             ~Lable();
             std::string text() const{
                 return text_;

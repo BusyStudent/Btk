@@ -1,6 +1,9 @@
 add_rules("mode.debug", "mode.release")
 --add SDL require
 add_requires("SDL2","SDL2_image","SDL2_ttf")
+--try add extensions
+add_requires("gif",{optional = true})
+--add_requires("freetype2",{optional = true})
 
 add_cxxflags("-std=c++17","-Wall","-Wextra","-fPIC")
 add_includedirs("include")
@@ -21,6 +24,7 @@ end
 target("btk")
     on_load(function(target)
         target:add(find_packages("SDL2","SDL2_image","SDL2_ttf"))
+        target:add(find_packages("gif"))
     end)
     add_defines("BTK_USE_GFX")
     add_defines("USE_MMX")
@@ -31,6 +35,11 @@ target("btk")
     elseif is_plat("win32") or is_plat("mingw") then
         add_files("./src/platform/win32/*.cpp")
     end
+    --Add gif ext
+    if has_package("gif") then
+        add_files("./src/ext/gif.cpp")
+    end
+
     add_links("SDL2","SDL2_image","SDL2_ttf")
     set_kind("shared")
     --core

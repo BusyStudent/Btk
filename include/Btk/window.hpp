@@ -8,6 +8,7 @@
 #include "defs.hpp"
 namespace Btk{
     struct WindowImpl;
+    class Container;
     class PixBuf;
     class Widget;
     class Event;
@@ -64,7 +65,7 @@ namespace Btk{
              */
             template<class T,class ...Args>
             T &add(Args &&...args){
-                T *ptr = new T(*this,std::forward<Args>(args)...);
+                T *ptr = new T(container(),std::forward<Args>(args)...);
                 add(ptr);
                 return *ptr;
             }
@@ -204,6 +205,12 @@ namespace Btk{
             int w() const noexcept;//get w
             int h() const noexcept;//get h
             Font font() const;//get font
+            /**
+             * @brief Get Container refer
+             * 
+             * @return Container& 
+             */
+            Container &container() const;
         private:
             WindowImpl *pimpl;
             Uint32 winid;

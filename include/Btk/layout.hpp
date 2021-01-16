@@ -3,12 +3,13 @@
 #include "rect.hpp"
 #include "widget.hpp"
 namespace Btk{
-    class Layout:public Container{
+    class Layout:public Widget,Container{
         public:
             void draw(Renderer &render);
-            bool handle(Event&);
+            bool handle(Event&) override;
             //update each widgets postions
             virtual void update() = 0;
+        
     };
     class BoxLayout:public Layout{
 

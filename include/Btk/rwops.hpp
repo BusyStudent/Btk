@@ -26,6 +26,7 @@ namespace Btk{
             static RWops FromStdOstream(std::ostream &);
             static RWops FromStdFstream(std::fstream &);
             static RWops FromFile(const char *fname,const char *modes);
+            static RWops FromFD(int fd,const char *modes);
         private:
             SDL_RWops *fptr;
         friend class MemBuffer;

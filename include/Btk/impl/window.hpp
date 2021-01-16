@@ -64,8 +64,6 @@ namespace Btk{
         Signal<void(std::string_view)> sig_dropfile;//DropFile
         Signal<void(int new_w,int new_h)> sig_resize;//WindowResize
         Signal<bool(Event &)> sig_event;//Process Unhandled Event
-        //widgets
-        std::list<Widget*> widgets_list;
         //refcount
         int refcount;
         //BackGroud Color
@@ -81,8 +79,7 @@ namespace Btk{
         Font default_font;
         //Window theme
         Theme *theme;
-        EventDispatcher dispatcher;
-
+        Container container;
         //The draw callback
         //It will be called at last
         std::list<DrawCallback> draw_cbs;

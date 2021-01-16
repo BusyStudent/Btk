@@ -39,7 +39,7 @@ struct BtkTable{
      * @param flags The renderer flags
      * @return BtkRenderer* 
      */
-    BtkRenderer *(*CreateRenderer)(SDL_Window*win,int index,Uint32 flags);
+    BtkRenderer *(*CreateRenderer)(SDL_Window *win,int index,Uint32 flags);
     /**
      * @brief Create a texture in a Renderer
      * 
@@ -76,6 +76,9 @@ struct BtkTable{
     int  (*QueryTexture)(BtkTexture*,Uint32 *fmt,int *access,int *w,int *h);
     int  (*UpdateTexture)(BtkTexture*,const BtkRect *rect,const void *pixels,int pitch);
 
+    int  (*LockTexture)(BtkTexture*,const BtkRect *rect,void **pixels,int *pitch);
+    void (*UnlockTexture)(BtkTexture *);
+
     int  (*SetError)(const char *fmt,...);
     const char *(*GetError)();
 };
@@ -111,6 +114,10 @@ BTKAPI void Btk_ResetRITable();
 
 #define Btk_QueryTexture (btk_rtbl.QueryTexture)
 #define Btk_UpdateTexture (btk_rtbl.UpdateTexture)
+
+#define Btk_LockTexture (btk_rtbl.LockTexture)
+#define Btk_UnlockTexture (btk_rtbl.UnlockTexture)
+
 #define Btk_CreateTextureFromSurface (btk_rtbl.CreateTextureFrom)
 #define Btk_CreateTextureFrom (btk_rtbl.CreateTextureFrom)
 
@@ -182,6 +189,16 @@ namespace Btk{
              * @return Texture The texture
              */
             Texture create_from(const PixBuf &pixbuf);
+            /**
+             * @brief Create a Texture
+             * 
+             * @param fmt 
+             * @param access 
+             * @param w 
+             * @param h 
+             * @return Texture 
+             */
+            Texture create(Uint32 fmt,int access,int w,int h);
         public:
             BtkRenderer *render;
     };

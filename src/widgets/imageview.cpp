@@ -8,8 +8,8 @@
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
 namespace Btk{
-    ImageView::ImageView(Window& w){
-        win = &w;
+    ImageView::ImageView(Container& w){
+        parent = &w;
         image_rect.x = 0;
         image_rect.y = 0;
         image_rect.w = 0;
@@ -21,8 +21,8 @@ namespace Btk{
         rect.h = 0;
 
     }
-    ImageView::ImageView(Window&wi,int x,int y,int w,int h){
-        win = &wi;
+    ImageView::ImageView(Container&wi,int x,int y,int w,int h){
+        parent = &wi;
 
         image_rect.x = 0;
         image_rect.y = 0;
@@ -55,7 +55,7 @@ namespace Btk{
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;
-        win->draw();
+        win().draw();
     }
     void ImageView::ref_image(PixBuf &buf){
         pixelbuf = buf.ref();
@@ -63,10 +63,10 @@ namespace Btk{
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;
-        win->draw();
+        win().draw();
     }
     void ImageView::set_clip(const Rect &r){
         image_rect = r;
-        win->draw();
+        win().draw();
     }
 };

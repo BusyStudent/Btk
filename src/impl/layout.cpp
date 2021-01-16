@@ -37,12 +37,6 @@ namespace Btk{
         }
     }
     bool Layout::handle(Event &event){
-        for(auto widget:widgets_list){
-            if(widget->handle(event)){
-                //Accept this event
-                return true;
-            }
-        }
-        return false;
+        return Container::handle(event);
     }
 };
