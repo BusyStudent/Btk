@@ -88,6 +88,13 @@ namespace Btk{
             void unlock() noexcept;
             //Set RLE
             void set_rle(bool val = true);
+            /**
+             * @brief Convert a pixbuf's format
+             * 
+             * @param fmt The format
+             * @return PixBuf The pixel buf
+             */
+            PixBuf convert(Uint32 fmt) const;
             //Some static method to load image
             static PixBuf FromFile(std::string_view file);
             static PixBuf FromFile(FILE *f);
@@ -140,8 +147,28 @@ namespace Btk{
         private:
             SDL_PixelFormat *fmt;
     };
+    /**
+     * @brief TextureAccess(same def in SDL_render.h)
+     * 
+     */
+    enum class TextureAccess:int{
+        Static,
+        Streaming,
+        Target
+    };
     //RendererTexture
     class BTKAPI Texture{
+        public:
+            /**
+             * @brief Texture's information
+             * 
+             */
+            struct Information{
+                TextureAccess access;//< Texture access
+                Uint32        format;//< Pixels format
+                int w;
+                int h;
+            };
         public:
             Texture(BtkTexture *t = nullptr):texture(t){};
             Texture(const Texture &) = delete;
@@ -155,7 +182,10 @@ namespace Btk{
              * 
              * @return W and H
              */
-            Size size() const;
+            Size size() const{
+                auto inf = information();
+                return {inf.w,inf.h};   
+            }
             int w() const{
                 return size().w;
             }
@@ -173,6 +203,47 @@ namespace Btk{
             BtkTexture *get() const noexcept{
                 return texture;
             }
+            /**
+             * @brief Update a texture's pixels
+             * @note This is a very slow operation
+             * 
+             * @param r The area you want to update(nullptr to all texture)
+             * @param pixels The pixels pointer
+             * @param pitch The pixels pitch
+             */
+            void update(const Rect *r,void *pixels,int pitch);
+            /**
+             * @brief Lock a Streaming Texture
+             * 
+             * @param rect The area you want to lock(nullptr to all texture)
+             * @param pixels The pixels pointer's pointer
+             * @param pitch The texture's pixels pitch pointer
+             */
+            void lock(const Rect *rect,void **pixels,int *pitch);
+
+            void lock(const Rect &rect,void **pixels,int *pitch){
+                lock(&rect,pixels,pitch);
+            }
+            void lock(void **pixels,int *pitch){
+                lock(nullptr,pixels,pitch);
+            }
+            void update(const Rect &r,void *pixels,int pitch){
+                update(&r,pixels,pitch);
+            }
+            void update(void *pixels,int pitch){
+                update(nullptr,pixels,pitch);
+            }
+            /**
+             * @brief Unlock the texture
+             * 
+             */
+            void unlock();
+            /**
+             * @brief Get the texture's information
+             * 
+             * @return Information 
+             */
+            Information information() const;
         private:
             BtkTexture *texture;
         friend struct Renderer;
@@ -190,6 +261,43 @@ namespace Btk{
             static Gif FromRwops(RWops &);
         private:
             void *pimpl;
+    };
+    /**
+     * @brief Generic LockGuard
+     * 
+     * @tparam T 
+     */
+    template<class T>
+    struct LockGuard{
+        LockGuard(T &&m):mtx(m){
+            mtx.lock();
+        }
+        LockGuard(const LockGuard &) = delete;
+        ~LockGuard(){
+            mtx.unlock();
+        }
+        T &mtx;
+    };
+    /**
+     * @brief Lock Guard for Texture locking
+     */
+    template<>
+    struct LockGuard<Texture>{
+        LockGuard(Texture &t):texture(t){
+            texture.lock(&pixels,&pitch);
+        }
+        LockGuard(Texture &t,const Btk::Rect &rect):
+            texture(t){
+
+            texture.lock(rect,&pixels,&pitch);
+        }
+        LockGuard(const LockGuard &) = delete;
+        ~LockGuard(){
+            texture.unlock();
+        }
+        Texture &texture;
+        void *   pixels;
+        int      pitch;
     };
 };
 

@@ -12,10 +12,12 @@
 
 #ifdef _WIN32
     #include <io.h>
+    #include <fcntl.h>
     #include <cerrno>
     #define BTK_FDOPEN _fdopen
 #else
     #include <cerrno>
+    #include <unistd.h>
     #define BTK_FDOPEN fdopen
 #endif
 
@@ -212,6 +214,14 @@ namespace Btk{
         
         return false;
     }
+    RWops &RWops::operator =(RWops &&rwops){
+        if(&rwops != this){
+            close();
+            fptr = rwops.fptr;
+            rwops.fptr = nullptr;
+        }
+        return *this;
+    }
     //Function to cast 
     inline MemBuffer &GetMemBuffer(SDL_RWops *ctxt){
         return *static_cast<MemBuffer*>(
@@ -352,10 +362,25 @@ namespace Btk{
                 return -1;
         }
     }
+    void CreatePipe(RWops &r,RWops &w){
+        int fds[2];
+        int ret;
+        #ifdef _WIN32
+        ret = _pipe(fds,1024,_O_BINARY);
+        #else
+        ret = pipe(fds);
+        #endif
+        if(ret == -1){
+            throwRuntimeError(strerror(errno));
+        }
+        r = RWops::FromFD(fds[0],"rb");
+        w = RWops::FromFD(fds[1],"wb");
+    }
     std::ostream &operator <<(std::ostream &str,const MemBuffer &buf){
         if(buf.buf_base != nullptr){
             str.write((char*)buf.buf_base,buf.size());
         }
         return str;
     }
+    
 };

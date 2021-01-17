@@ -3,6 +3,8 @@
 #include <Btk/thirdparty/SDL2_gfxPrimitives.h>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
+#include <Btk/rwops.hpp>
+#include <SDL2/SDL_image.h>
 #include <SDL2/SDL.h>
 
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
@@ -18,7 +20,19 @@ namespace SDL{
 
 
     static BtkRenderer *CreateRenderer(SDL_Window *win,int index,Uint32 flags){
-        return reinterpret_cast<BtkRenderer*>(SDL_CreateRenderer(win,index,flags));        
+        SDL_Renderer *render = SDL_CreateRenderer(win,index,flags);
+        #ifndef NDEBUG
+        SDL_RendererInfo info;
+        if(SDL_GetRendererInfo(render,&info) == 0){
+            BTK_LOGINFO("CreateRenderer %p => backend:%s max_tw:%d max_th:%d",
+                render,
+                info.name,
+                info.max_texture_width,
+                info.max_texture_height
+            );
+        }
+        #endif
+        return reinterpret_cast<BtkRenderer*>(render);      
     }
     static BtkTexture  *CreateTexture(BtkRenderer *render,Uint32 fmt,int access,int w,int h){
         return reinterpret_cast<BtkTexture*>(SDL_CreateTexture(Renderer(render),fmt,access,w,h));
@@ -106,6 +120,9 @@ namespace SDL{
     static BtkTexture *CreateTextureFrom(BtkRenderer *render,SDL_Surface *surf){
         return reinterpret_cast<BtkTexture*>(SDL_CreateTextureFromSurface(Renderer(render),surf));
     }
+    static BtkTexture *LoadTextureFrom(BtkRenderer *render,SDL_RWops *rwops){
+        return reinterpret_cast<BtkTexture*>(IMG_LoadTexture_RW(Renderer(render),rwops,false));
+    }
 }
 
 
@@ -121,6 +138,7 @@ extern "C"{
         .CreateRenderer = SDL::CreateRenderer,
         .CreateTexture  = SDL::CreateTexture,
         .CreateTextureFrom = SDL::CreateTextureFrom,
+        .LoadTextureFrom   = SDL::LoadTextureFrom,
 
         .DestroyTexture = SDL::DestroyTexture,
         .DestroyRenderer = SDL::DestroyRenderer,
@@ -154,6 +172,8 @@ extern "C"{
         .GetError = SDL_GetError,
     };
     #else
+    //MSVC Unsupport It
+    //So we chose a easy way to slove it
     BTKAPI BtkTable btk_rtbl;
     struct Initer{
         Initer(){
@@ -166,6 +186,7 @@ extern "C"{
         btk_rtbl.CreateRenderer = SDL::CreateRenderer;
         btk_rtbl.CreateTexture  = SDL::CreateTexture;
         btk_rtbl.CreateTextureFrom = SDL::CreateTextureFrom;
+        btk_rtbl.LoadTextureFrom   = SDL::LoadTextureFrom;
 
         btk_rtbl.DestroyTexture = SDL::DestroyTexture;
         btk_rtbl.DestroyRenderer = SDL::DestroyRenderer;
@@ -200,6 +221,18 @@ extern "C"{
     }
 }
 namespace Btk{
+    static inline int TranslateAccess(TextureAccess access){
+        switch(access){
+            case TextureAccess::Static:
+                return SDL_TEXTUREACCESS_STATIC;
+            case TextureAccess::Streaming:
+                return SDL_TEXTUREACCESS_STREAMING;
+            case TextureAccess::Target:
+                return SDL_TEXTUREACCESS_TARGET;
+            default:
+                abort();
+        }
+    }
     Renderer::Renderer(SDL_Window *win){
         render = Btk_CreateRenderer(win,-1,SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE);
         //fail to create window
@@ -214,13 +247,28 @@ namespace Btk{
         }
         return texture;
     }
-    Texture Renderer::create(Uint32 fmt,int access,int w,int h){
-        BtkTexture *texture = Btk_CreateTexture(render,fmt,access,w,h);
+    Texture Renderer::create(Uint32 fmt,TextureAccess access,int w,int h){
+        BtkTexture *texture = Btk_CreateTexture(render,fmt,TranslateAccess(access),w,h);
         if(texture == nullptr){
             throwRendererError(Btk_RIGetError());
         }
         return texture;
     }
+    //loading texture
+
+    Texture Renderer::load(std::string_view fname){
+        auto rw = RWops::FromFile(fname.data(),"rb");
+        return load(rw);
+    }
+    Texture Renderer::load(RWops &rwops){
+        BtkTexture *texture = Btk_LoadTexture(render,rwops.get());
+        if(texture == nullptr){
+            throwRendererError(Btk_RIGetError());
+        }
+        return texture;
+    }
+    
+
     int Renderer::line(int x1,int y1,int x2,int y2,Color c){
         return lineRGBA(render,x1,y1,x2,y2,UNPACK_COLOR(c));
     }

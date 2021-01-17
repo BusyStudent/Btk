@@ -1,14 +1,19 @@
 #include "../build.hpp"
 
+#include <Btk/ft/ft.hpp>
+#include <Btk/exception.hpp>
+
 #include <SDL2/SDL_mutex.h>
+#include <SDL2/SDL_rwops.h>
+
 #include <ft2build.h>
 
 #include FT_FREETYPE_H
 #include FT_OUTLINE_H
 #include FT_STROKER_H
 #include FT_GLYPH_H
+#include FT_ERRORS_H
 #include FT_TRUETYPE_IDS_H
-
 //Btk freetype2 renderer
 namespace BtkFt{
     
@@ -35,7 +40,7 @@ namespace BtkFt{
         if(library != nullptr){
             return;
         }
-        if(FT_Init_FreeType(&library) == -1){
+        if(FT_Init_FreeType(&library) != FT_Err_Ok){
             //Handle err
         }
         mutex = SDL_CreateMutex();
@@ -49,7 +54,12 @@ namespace BtkFt{
         library = nullptr;
         mutex = nullptr;
     }
+    
 };
 namespace BtkFt{
-
+    
+    Face::~Face(){
+        LockGuard locker;
+        FT_Done_Face(face);
+    }
 };

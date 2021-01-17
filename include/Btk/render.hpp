@@ -16,6 +16,7 @@ extern "C"{
 typedef SDL_Rect  BtkRect;
 typedef SDL_Point BtkVec2;
 #endif
+struct SDL_RWops;
 /**
  * @brief Abstruct Texture,prepared for different backend
  * 
@@ -46,6 +47,11 @@ struct BtkTable{
      */
     BtkTexture  *(*CreateTexture)(BtkRenderer*,Uint32 fmt,int access,int w,int h);
     BtkTexture  *(*CreateTextureFrom)(BtkRenderer*,SDL_Surface*);
+    /**
+     * @brief Load a texture directly into renderer
+     * 
+     */
+    BtkTexture  *(*LoadTextureFrom)(BtkRenderer*,SDL_RWops*);
     /**
      * @brief Destroy a texture
      * 
@@ -78,6 +84,8 @@ struct BtkTable{
 
     int  (*LockTexture)(BtkTexture*,const BtkRect *rect,void **pixels,int *pitch);
     void (*UnlockTexture)(BtkTexture *);
+
+
 
     int  (*SetError)(const char *fmt,...);
     const char *(*GetError)();
@@ -120,6 +128,7 @@ BTKAPI void Btk_ResetRITable();
 
 #define Btk_CreateTextureFromSurface (btk_rtbl.CreateTextureFrom)
 #define Btk_CreateTextureFrom (btk_rtbl.CreateTextureFrom)
+#define Btk_LoadTexture (btk_rtbl.LoadTextureFrom)
 
 #define Btk_RISetError (btk_rtbl.SetError)
 #define Btk_RIGetError (btk_rtbl.GetError)
@@ -198,7 +207,15 @@ namespace Btk{
              * @param h 
              * @return Texture 
              */
-            Texture create(Uint32 fmt,int access,int w,int h);
+            Texture create(Uint32 fmt,TextureAccess access,int w,int h);
+            /**
+             * @brief Load a texture from a file
+             * 
+             * @param fname The filename
+             * @return Texture 
+             */
+            Texture load(std::string_view fname);
+            Texture load(RWops &);
         public:
             BtkRenderer *render;
     };

@@ -101,6 +101,13 @@ namespace Btk{
         sf.surf = nullptr;
         return *this;
     }
+    PixBuf PixBuf::convert(Uint32 fmt) const{
+        SDL_Surface *surf = SDL_ConvertSurfaceFormat(this->surf,fmt,0);
+        if(surf == nullptr){
+            throwSDLError();
+        }
+        return surf;
+    }
     //static method
     PixBuf PixBuf::FromMem(const void *mem,size_t size){
         SDL_Surface *surf = IMG_Load_RW(SDL_RWFromConstMem(mem,size),true);
@@ -173,11 +180,41 @@ namespace Btk{
         t.texture = nullptr;
         return *this;
     }
-    Size Texture::size() const{
-        Size s;
-        if(Btk_QueryTexture(texture,nullptr,nullptr,&s.w,&s.h) == -1){
-            throwRendererError(Btk_RIGetError());
+    
+    Texture::Information Texture::information() const{
+        Texture::Information inf;
+        int access;
+        if(Btk_QueryTexture(texture,&(inf.format),&(access),&(inf.w),(&inf.h)) == -1){
+            throwRendererError();
         }
-        return s;
+        //Translate the access
+        switch(access){
+            case SDL_TEXTUREACCESS_STATIC:
+                inf.access = TextureAccess::Static;
+                break;
+            case SDL_TEXTUREACCESS_STREAMING:
+                inf.access = TextureAccess::Streaming;
+                break;
+            case SDL_TEXTUREACCESS_TARGET:
+                inf.access = TextureAccess::Target;
+                break;
+            default:
+                abort();
+        }
+        return inf;
+    }
+    
+    void Texture::lock(const Rect *rect,void **pixels,int *pitch){
+        if(Btk_LockTexture(texture,rect,pixels,pitch) == -1){
+            throwRendererError();
+        }
+    }
+    void Texture::update(const Rect *rect,void *pixels,int pitch){
+        if(Btk_UpdateTexture(texture,rect,pixels,pitch) == -1){
+            throwRendererError();
+        }
+    }
+    void Texture::unlock(){
+        Btk_UnlockTexture(texture);
     }
 };
