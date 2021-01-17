@@ -20,6 +20,7 @@
 #endif
 
 #include "../exception.hpp"
+#include "../defs.hpp"
 namespace Btk{
     /**
      * @brief Pipe stream to or from a process

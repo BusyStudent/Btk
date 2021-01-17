@@ -75,10 +75,10 @@ namespace Btk{
         static int  Init();
         static void Quit();
     };
-    extern int  run();
-    extern void Init();
+    BTKAPI int  run();
+    BTKAPI void Init();
     //Exit the app
-    extern void Exit(int code);
+    BTKAPI void Exit(int code);
     inline System &Instance(){
         return *(System::instance);
     }

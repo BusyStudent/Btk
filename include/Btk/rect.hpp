@@ -1,6 +1,7 @@
 #if !defined(_BTK_RECT_HPP_)
 #define _BTK_RECT_HPP_
 #include <SDL2/SDL_rect.h>
+#include "defs.hpp"
 namespace Btk{
     /**
      * @brief a SDL_Rect with methods

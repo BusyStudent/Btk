@@ -5,7 +5,7 @@
 #include "../signal/signal.hpp"
 #include "../defs.hpp"
 namespace Btk{
-    extern void DeferCall(void(* fn)(void*),void *data);
+    BTKAPI void DeferCall(void(* fn)(void*),void *data);
     namespace Impl{
         template<bool has_signal,class RetT>
         struct AsyncSignal;

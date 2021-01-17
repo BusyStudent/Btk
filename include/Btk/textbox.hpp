@@ -10,7 +10,7 @@
 #include "font.hpp"
 namespace Btk{
     class KeyEvent;
-    class TextBox:public Widget{
+    class BTKAPI TextBox:public Widget{
         public:
             TextBox(Container&);
             TextBox(const TextBox &) = delete;

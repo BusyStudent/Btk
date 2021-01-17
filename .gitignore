@@ -39,3 +39,5 @@
 #scons
 *.os
 .sconsign.dblite
+#msvc
+/.vscode/compile_commands.json
