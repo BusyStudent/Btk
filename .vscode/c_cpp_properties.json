@@ -17,7 +17,7 @@
             "intelliSenseMode": "gcc-x64"
         },
         {
-            //GCC on Windows
+            //MSVC
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
@@ -29,8 +29,7 @@
             ],
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-x64",
-            "compilerPath": "C:/msys64/mingw64/bin/gcc.exe"
+            "intelliSenseMode": "${default}"
         }
     ],
     "version": 4

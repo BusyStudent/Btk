@@ -116,6 +116,7 @@ namespace SDL{
 
 
 extern "C"{
+    #ifndef _MSC_VER
     BTKAPI BtkTable btk_rtbl = {
         .CreateRenderer = SDL::CreateRenderer,
         .CreateTexture  = SDL::CreateTexture,
@@ -152,6 +153,15 @@ extern "C"{
         .SetError = SDL_SetError,
         .GetError = SDL_GetError,
     };
+    #else
+    BTKAPI BtkTable btk_rtbl;
+    struct Initer{
+        Initer(){
+            Btk_ResetRITable();
+        }
+    };
+    static Initer initer;
+    #endif
     void Btk_ResetRITable(){
         btk_rtbl.CreateRenderer = SDL::CreateRenderer;
         btk_rtbl.CreateTexture  = SDL::CreateTexture;

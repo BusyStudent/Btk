@@ -7,35 +7,41 @@ namespace Themes{
     static std::atomic<Theme*> current;
     //This is default themes color
     static Theme default_theme = {
-        .background_color = {
+        //background_color
+        {
             239,//R
             240,//G
             241,//B
             255//A
         },
-        .text_color = {
+        //text_color
+        {
             0,
             0,
             0,
             255
         },
         //Default font
-        .font = "NotoSansCJK",
-        .font_ptsize = 12,
-        .border_color = {
+        //font
+        "NotoSansCJK",
+        //font_ptsize
+        12,
+        //border_color
+        {
             208,
             208,
             208,
             255
         },
         //High Light color
-        .high_light = {
+        {
             61,
             174,
             233,
             255
         },
-        .high_light_text = {
+        //high_light_text
+        {
             255,
             255,
             255,

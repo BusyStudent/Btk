@@ -8,9 +8,12 @@
 #endif
 
 #ifdef _WIN32
-    #ifdef _MSV_VER_
-    #define BTKEXPORT __declspec((dllexport))
-    #define BTKIMPORT __declspec((dllimport))
+    #ifdef _MSC_VER
+    #define BTKEXPORT __declspec(dllexport)
+    #define BTKIMPORT __declspec(dllimport)
+    #define not !
+    #define and &&
+    #define or ||
     #else
     #define BTKEXPORT __attribute__((dllexport))
     #define BTKIMPORT __attribute__((dllimport))

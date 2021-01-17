@@ -54,7 +54,7 @@ namespace Btk{
         Atomic running;//Is timer running
     };
     //Timer's entry
-    SDLCALL Uint32 TimerRun(Uint32,void *timerbase){
+    Uint32 SDLCALL TimerRun(Uint32,void *timerbase){
         BTK_ASSERT(timerbase != nullptr);
         auto *timer = static_cast<TimerBase*>(timerbase);
         Uint32 ret = timer->run();

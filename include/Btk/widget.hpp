@@ -51,7 +51,7 @@ namespace Btk{
      * @brief A helper of dispatch event in widget
      * 
      */
-    class EventDispatcher{
+    class BTKAPI EventDispatcher{
         public:
             using container_type = std::list<Widget*>;
             
@@ -223,7 +223,7 @@ namespace Btk{
         friend class  EventDispatcher;
     };
 
-    class Line:public Widget{
+    class BTKAPI Line:public Widget{
         public:
             Line(Container &,Orientation);
             Line(Container &,int x,int y,int w,int h,Orientation);

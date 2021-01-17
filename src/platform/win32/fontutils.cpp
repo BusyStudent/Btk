@@ -6,6 +6,7 @@
 #include "../../build.hpp"
 
 #include <Btk/thirdparty/utf8.h>
+#include <Btk/utils/mem.hpp>
 #include <Btk/font.hpp>
 #include <Btk/Btk.hpp>
 #include <thread>
@@ -17,7 +18,7 @@ namespace FontUtils{
      * @brief The function pointer GetFontResourceInfoW
      * 
      */
-    static BOOL(*dgi_getfont)(LPCTSTR,LPDWORD,LPVOID,DWORD);
+    static BOOL (*dgi_getfont)(char16_t *,LPDWORD,LPVOID,DWORD);
     void Init(){
         HMODULE handle = GetModuleHandleA("gdi32.dll");
         BTK_ASSERT(handle != nullptr);
@@ -33,8 +34,33 @@ namespace FontUtils{
             //Was not init
             Init();
         }
+        if(dgi_getfont == nullptr){
+            //fail to get the function
+            goto err;
+        }
         //SDL_TriggerBreakpoint();
-        return "C:/Windows/Fonts/msyh.ttc";
+        std::u16string wname;
+        Utf8To16(wname,name);
+        BOOL  ret;
+        DWORD bufsize;
+
+        ret = dgi_getfont(wname.data(),&bufsize,nullptr,1);
+        std::u16string str;
+        str.resize(bufsize);
+        ret = dgi_getfont(wname.data(),&bufsize,str.data(),1);
+
+        BTK_LOGINFO("GetFontResourceInfoW:%d",int(ret));
+        if(not ret){
+            //Failed to get the font name
+            err:
+            return "C:/Windows/Fonts/msyh.ttc";
+        }
+        std::string u8;
+        Utf16To8(u8,str);
+
+        BTK_LOGINFO("Match font => %s",u8.c_str());
+
+        return u8;
     };
 };
 };

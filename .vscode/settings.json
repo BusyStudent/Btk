@@ -70,7 +70,12 @@
         "forward_list": "cpp",
         "future": "cpp",
         "cstdalign": "cpp",
-        "cerrno": "cpp"
+        "cerrno": "cpp",
+        "queue": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp",
+        "xstddef": "cpp"
     },
     "files.exclude": {
         "**/.git": true,
