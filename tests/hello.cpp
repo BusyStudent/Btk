@@ -36,7 +36,7 @@ int main(){
     auto &btn2 = win.add<Btk::Button>(400,400,100,50);
 
     btn2.set_text("FSelectBox");
-    #ifndef _WIN32
+
     btn2.sig_click().connect([&](){
         Btk::FSelectBox box("Select a file");
         box.sig_async().connect([&](std::string_view f){
@@ -46,7 +46,7 @@ int main(){
         });
         box.show();
     });
-    #endif
+
     win.add<Btk::TextBox>().set_rect(100,100,100,50);
     
     win.sig_event().connect([&win](Btk::Event &event){

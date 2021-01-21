@@ -10,6 +10,7 @@
 #include <string>
 //Is sourse
 #define _BTK_SOURCE
+#include <Btk/defs.hpp>
 
 #if defined(_MSC_VER)
     //MSVC
@@ -38,24 +39,35 @@
 #else
     #define BTK_ASSERT(EXP) 
 #endif
+
+
+
+#ifndef NDEBUG
 /**
  * @brief Show the backtrace
  * @note This function only avliabled on debug version
  */
-extern "C" void _Btk_Backtrace();
+extern "C" void BTKAPI _Btk_Backtrace();
 /**
  * @brief Report Assertion failure
  * @note This function only avliabled on debug version
  */
-extern "C" void _Btk_ReportFailure(
+extern "C" void BTKAPI _Btk_ReportFailure(
     const char *file,
     int line,
     const char *fn,
     const char *exp
 );
-#ifdef NDEBUG
+#else
 extern "C" inline void _Btk_Backtrace(){};
+extern "C" inline void _Btk_ReportFailure(
+    const char *file,
+    int line,
+    const char *fn,
+    const char *exp
+){};
 #endif
+
 namespace Btk{
     //Cast event for debugging
     template<class T,class U>

@@ -36,13 +36,13 @@ namespace FontUtils{
         }
         if(dgi_getfont == nullptr){
             //fail to get the function
-            goto err;
+            return "C:/Windows/Fonts/msyh.ttc";
         }
         //SDL_TriggerBreakpoint();
         std::u16string wname;
         Utf8To16(wname,name);
         BOOL  ret;
-        DWORD bufsize;
+        DWORD bufsize = 0;
 
         ret = dgi_getfont(wname.data(),&bufsize,nullptr,1);
         std::u16string str;
@@ -52,7 +52,6 @@ namespace FontUtils{
         BTK_LOGINFO("GetFontResourceInfoW:%d",int(ret));
         if(not ret){
             //Failed to get the font name
-            err:
             return "C:/Windows/Fonts/msyh.ttc";
         }
         std::string u8;

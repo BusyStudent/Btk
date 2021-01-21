@@ -123,6 +123,38 @@ extern "C" void _Btk_Backtrace(){
     fputs("Backtrace End\n",stderr);
     fflush(stderr);
 };
+#elif defined(_WIN32) && defined(_MSC_VER)
+//Win32 backtrace with msvc
+#include <windows.h>
+#include <DbgHelp.h>
+#include "../libs/StackWalker.h"
+#include "../libs/StackWalker.cpp"
+namespace{
+    /**
+     * @brief Output the data to stderr
+     * 
+     */
+    class WalkerToStderr:public StackWalker{
+        public:
+            virtual void OnCallstackEntry(CallstackEntryType,CallstackEntry &addr){
+                if(addr.offset == 0){
+                    return;
+                }
+                fprintf(stderr,"  at %p: %s (in %s)\n",
+                    reinterpret_cast<void*>(addr.offset),
+                    addr.name,
+                    addr.moduleName);
+            }
+    };
+}
+extern "C" void _Btk_Backtrace(){
+    static WalkerToStderr walker;
+
+    if(not walker.ShowCallstack()){
+        fprintf(stderr,"  Fail to show backtrace\n");
+    }
+}
+
 #else
     extern "C" void _Btk_Backtrace(){}
 #endif
