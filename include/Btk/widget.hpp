@@ -12,6 +12,8 @@ namespace Btk{
     class Widget;
     class Container;
 
+    struct WindowImpl;
+
     struct KeyEvent;
     struct MouseEvent;
     struct MotionEvent;
@@ -137,20 +139,34 @@ namespace Btk{
             bool handle(Event &event){
                 return dispatcher.handle(event);
             }
-            Window &master(){
-                return *window;
-            }
             /**
              * @brief Destroy all widget
              * 
              */
             void clear();
+            /**
+             * @brief Remove the widget in the container
+             * 
+             * @param widget The widget pointer
+             * @return true Successed to remove it
+             * @return false The widget pointer is invaid
+             */
+            bool remove(Widget *widget);
+            /**
+             * @brief Detach the widget in the container
+             * 
+             * @param widget The widget pointer
+             * @return true Successed to Detach it
+             * @return false The widget pointer is invaid
+             */
+            bool detach(Widget *widget);
         protected:
             //top window
-            Window *window;
+            WindowImpl *window;
             std::list<Widget*> widgets_list;
             EventDispatcher dispatcher;
         friend class  Window;
+        friend class  Widget;
         friend struct System;
         friend struct WindowImpl;
     };
@@ -163,6 +179,12 @@ namespace Btk{
             Widget():attr(),rect(
                 0,0,0,0
             ),parent(nullptr){};
+            Widget(Container *parent):Widget(){
+                this->parent = parent;
+            }
+            Widget(Container &parent):Widget(){
+                this->parent = &parent;
+            }
 
             Widget(const Widget &) = delete;
             virtual ~Widget();
@@ -183,9 +205,12 @@ namespace Btk{
                     rect.y
                 };
             };
-            Window &master() const noexcept{
-                return parent->master();
-            };
+            /**
+             * @brief Return The widget's master
+             * 
+             * @return Window ref
+             */
+            Window &master() const;
             //Set widget rect
             void set_rect(const Rect &rect);
             void set_rect(int x,int y,int w,int h){
@@ -210,17 +235,28 @@ namespace Btk{
                 return not attr.disable;
             };
         protected:
-            WidgetAttr attr;
+            /**
+             * @brief Send a redraw request to the window
+             * 
+             */
+            void redraw();
+            /**
+             * @brief Get current window
+             * 
+             * @return WindowImpl* 
+             */
+            WindowImpl *window() const noexcept{
+                return parent->window;
+            }
+        protected:
+            WidgetAttr attr;//Widget attributes
             Rect rect;//Widget rect
             Container *parent;//Parents
-
-            Window &win() const noexcept{
-                return master();
-            }
         friend class  Window;
         friend class  Layout;
         friend struct WindowImpl;
         friend class  EventDispatcher;
+        friend void   PushEvent(Event *,Widget &);
     };
 
     class BTKAPI Line:public Widget{

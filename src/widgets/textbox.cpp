@@ -86,7 +86,7 @@ namespace Btk{
                 timer.start();
                 SDL_SetTextInputRect(&rect);
                 SDL_StartTextInput();
-                win().draw();
+                redraw();
                 return true;
             }
             case Event::LostFocus:{
@@ -95,7 +95,7 @@ namespace Btk{
                 has_focus = false;
                 timer.stop();
                 SDL_StopTextInput();
-                win().draw();
+                redraw();
                 return true;
             }
             //Editing cursor
@@ -113,8 +113,8 @@ namespace Btk{
     TextBox::TextBox(Container &w){
         parent = &w;
         //Set theme
-        theme = *(win().impl()->theme);
-        tb_font = win().impl()->default_font;
+        theme = *(window()->theme);
+        tb_font = window()->default_font;
 
         //Get rendered text's h
         ft_h = tb_font.height();
@@ -204,7 +204,7 @@ namespace Btk{
                         #endif
                         tb_buf = nullptr;
                         show_line = true;
-                        win().draw();
+                        redraw();
                     }
                     return true;
                 }
@@ -212,7 +212,7 @@ namespace Btk{
                     if(cur_txt != --tb_text.begin()){
                         --cur_txt;
                         show_line = true;
-                        win().draw();
+                        redraw();
                     }
                     return true;
                 }
@@ -220,7 +220,7 @@ namespace Btk{
                     if(cur_txt != --tb_text.end()){
                         ++cur_txt;
                         show_line = true;
-                        win().draw();
+                        redraw();
                     }
                     return true;
                 }
@@ -258,14 +258,14 @@ namespace Btk{
         tb_text = txt;
         tb_buf = nullptr;
         cur_txt = tb_text.begin();
-        win().draw();
+        redraw();
     }
     void TextBox::set_text(std::string_view txt){
         tb_text.clear();
         utf8to16(txt.begin(),txt.end(),back_inserter(tb_text));
         tb_buf = nullptr;
         cur_txt = tb_text.begin();
-        win().draw();
+        redraw();
     }
     void TextBox::add_string(std::string_view text){
         if(text.length() == 0){
@@ -295,10 +295,10 @@ namespace Btk{
         #endif
         tb_buf = nullptr;
 
-        win().draw();
+        redraw();
     }
     void TextBox::timeout(){
         show_line = not show_line;
-        win().draw();
+        redraw();
     }
 }

@@ -55,7 +55,7 @@ namespace Btk{
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;
-        win().draw();
+        redraw();
     }
     void ImageView::ref_image(PixBuf &buf){
         pixelbuf = buf.ref();
@@ -63,10 +63,10 @@ namespace Btk{
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;
-        win().draw();
+        redraw();
     }
     void ImageView::set_clip(const Rect &r){
         image_rect = r;
-        win().draw();
+        redraw();
     }
 };

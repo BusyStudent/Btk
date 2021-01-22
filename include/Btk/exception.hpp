@@ -1,6 +1,8 @@
 #if !defined(_BTK_EXCEPTION_HPP_)
 #define _BTK_EXCEPTION_HPP_
 #include <stdexcept>
+#include <exception>
+#include <thread>
 #include "defs.hpp"
 namespace Btk{
     //SDLError
@@ -23,6 +25,19 @@ namespace Btk{
             RendererError(const RendererError &) = default;
             ~RendererError();
     };
+    
+    enum class ThreadType{
+        AsyncWorker,// The AsyncWorker
+        Renderer,//< The Rendering thread
+        Unknown,//< Unknown thread
+    };
+    struct ExceptionData{
+        std::exception_ptr ptr;//<The exception
+        std::thread::id whence;//<The thread id
+        ThreadType thread_type;//<The thread type
+    };
+    //typedef bool (*ExceptionHandler)(ExceptionData);
+    
     [[noreturn]] void BTKAPI throwRuntimeError(const char *);
     [[noreturn]] void BTKAPI throwSDLError(const char *);
     [[noreturn]] void BTKAPI throwSDLError();

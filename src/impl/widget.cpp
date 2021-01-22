@@ -25,6 +25,27 @@ namespace Btk{
         SetRectEvent ev(rect);
         handle(ev);
     }
+    //redraw the window
+    void Widget::redraw(){
+        SDL_Event event;
+        event.type = SDL_WINDOWEVENT;
+        event.window.timestamp = SDL_GetTicks();
+        event.window.windowID = SDL_GetWindowID(parent->window->win);
+        event.window.event = SDL_WINDOWEVENT_EXPOSED;
+
+        SDL_PushEvent(&event);
+    }
+    //Get the window
+    Window &Widget::master() const{
+        auto *pimpl = window();
+        Window *win = static_cast<Window*>(SDL_GetWindowData(pimpl->win,"btk_win"));
+        //This should not happended
+        BTK_ASSERT(win == nullptr);
+        return *win;
+    }
+
+
+    //Container
     Container::Container():dispatcher(widgets_list){
         window = nullptr;
     }
@@ -37,6 +58,25 @@ namespace Btk{
             delete *iter;
             iter = widgets_list.erase(iter);
         }
+    }
+    //detach widget
+    bool Container::detach(Widget *widget){
+        if(widget == nullptr){
+            return false;
+        }
+        auto iter = std::find(widgets_list.begin(),widgets_list.end(),widget);
+        if(iter == widgets_list.end()){
+            return false;
+        }
+        widgets_list.erase(iter);
+        return true;
+    }
+    bool Container::remove(Widget *widget){
+        if(detach(widget)){
+            delete widget;
+            return true;
+        }
+        return false;
     }
 };
 namespace Btk{

@@ -39,28 +39,30 @@ namespace Btk{
     }
     void AbstructButton::onenter(){
         is_entered = true;
-        parent->master().draw();
+
+        redraw();
     }
     void AbstructButton::onleave(){
         is_entered = false;
         is_pressed = false;
-        parent->master().draw();
+
+        redraw();
     }
 };
 namespace Btk{
     Button::Button(Container &c){
         parent = &c;
         //Set theme
-        theme     = win().impl()->theme;
-        textfont  = win().impl()->default_font;
+        theme     = window()->theme;
+        textfont  = window()->default_font;
         is_entered = false;
         is_pressed = false;
     }
     Button::Button(Container &c,int x,int y,int w,int h){
         parent = &c;
         //Set theme
-        theme     = win().impl()->theme;
-        textfont  = win().impl()->default_font;
+        theme     = window()->theme;
+        textfont  = window()->default_font;
         is_entered = false;
         is_pressed = false;
 
@@ -72,8 +74,8 @@ namespace Btk{
     Button::Button(Container &c,std::string_view text):btext(text){
         parent = &c;
         //Set theme
-        theme     = win().impl()->theme;
-        textfont  = win().impl()->default_font;
+        theme     = window()->theme;
+        textfont  = window()->default_font;
         is_entered = false;
         is_pressed = false;
 
@@ -138,7 +140,7 @@ namespace Btk{
                 texture = nullptr;
             }
             //render text
-            win().draw();
+            redraw();
         }
         else if(event.button.is_left() and is_pressed){
             //release the button
@@ -149,7 +151,7 @@ namespace Btk{
                 textbuf = textfont.render_blended(btext,theme->text_color);
                 texture = nullptr;
             }
-            win().draw();
+            redraw();
             if(not clicked.empty()){
                 clicked.emit();
             }
@@ -163,10 +165,10 @@ namespace Btk{
         }
         is_entered = false;
         is_pressed = false;
-        win().draw();
+        redraw();
     }
     void Button::set_text(std::string_view text){
         btext = text;
-        win().draw();
+        redraw();
     }
 };

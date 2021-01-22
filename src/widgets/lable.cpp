@@ -11,23 +11,23 @@ namespace Btk{
     
     Lable::Lable(Container &w){
         parent = &w;
-        font_ = win().font();
+        font_ = window()->default_font;
         //Set text color inherted at window
-        text_color = win().impl()->theme->text_color;
+        text_color = window()->theme->text_color;
     }
     Lable::Lable(Container &w,std::string_view text){
         parent = &w;
-        font_ = win().font();
+        font_ = window()->default_font;
         //Set text color inherted at window
-        text_color = win().impl()->theme->text_color;
+        text_color = window()->theme->text_color;
         text_ = text;
     }
     //Construct from posititon
     Lable::Lable(Container &wi,int x,int y,int w,int h){
         parent = &wi;
-        font_ = win().font();
+        font_ = window()->default_font;
         //Set text color inherted at window
-        text_color = win().impl()->theme->text_color;
+        text_color = window()->theme->text_color;
 
         rect = {
             x,y,w,h
@@ -68,6 +68,7 @@ namespace Btk{
         text_ = text;
         texture  = nullptr;
         text_buf = nullptr;
-        win().draw();
+        
+        redraw();
     }
 };

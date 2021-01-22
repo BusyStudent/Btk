@@ -76,6 +76,9 @@ struct BtkTable{
     void (*RenderGetClipRect)(BtkRenderer*,BtkRect *cliprect);
     int  (*RenderSetClipRect)(BtkRenderer*,const BtkRect *cliprect);
 
+    void (*RenderGetViewPort)(BtkRenderer*,BtkRect *viewport);
+    int  (*RenderSetViewPort)(BtkRenderer*,const BtkRect *viewport);
+
     int  (*RenderCopy)(BtkRenderer*,BtkTexture *t,const BtkRect *src,const BtkRect *dst);
     int  (*RenderClear)(BtkRenderer*);
 
@@ -112,6 +115,9 @@ BTKAPI void Btk_ResetRITable();
 
 #define Btk_RenderSetClipRect (btk_rtbl.RenderSetClipRect)
 #define Btk_RenderGetClipRect (btk_rtbl.RenderGetClipRect)
+
+#define Btk_RenderSetViewPort (btk_rtbl.RenderSetViewPort)
+#define Btk_RenderGetViewPort (btk_rtbl.RenderGetViewPort)
 
 #define Btk_RenderSetDrawColor (btk_rtbl.RenderSetDrawColor)
 
@@ -160,6 +166,18 @@ namespace Btk{
             int  set_cliprect(const Rect &r){
                 return Btk_RenderSetClipRect(render,&r);
             }
+
+            Rect get_viewport(){
+                Rect rect;
+                Btk_RenderGetViewPort(render,&rect);
+            }
+            int  set_viewport(){
+                return Btk_RenderSetViewPort(render,nullptr);
+            }
+            int  set_viewport(const Rect &r){
+                return Btk_RenderSetViewPort(render,&r);
+            }
+
 
             int  copy(const Texture &t,const Rect *src,const Rect *dst){
                 return Btk_RenderCopy(render,t.get(),src,dst);

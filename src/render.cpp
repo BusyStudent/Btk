@@ -90,6 +90,9 @@ namespace SDL{
     static void RenderGetClipRect(BtkRenderer *render,BtkRect *cliprect){
         return SDL_RenderGetClipRect(Renderer(render),cliprect);
     }
+    static void RenderGetViewPort(BtkRenderer *render,BtkRect *viewport){
+        return SDL_RenderGetViewport(Renderer(render),viewport);
+    }
     static int  RenderSetClipRect(BtkRenderer *render,const BtkRect *cliprect){
         const SDL_Rect *r = nullptr;
         if(cliprect != nullptr){
@@ -98,6 +101,15 @@ namespace SDL{
             }
         }
         return SDL_RenderSetClipRect(Renderer(render),r);
+    }
+    static int  RenderSetViewPort(BtkRenderer *render,const BtkRect *viewport){
+        const SDL_Rect *r = nullptr;
+        if(viewport != nullptr){
+            if(not viewport->empty()){
+                r = viewport;
+            }
+        }
+        return SDL_RenderSetViewport(Renderer(render),r);
     }
     static int RenderCopy(BtkRenderer *render,BtkTexture *t,const BtkRect *src,const BtkRect *dst){
         return SDL_RenderCopy(Renderer(render),Texture(t),src,dst);
@@ -159,6 +171,9 @@ extern "C"{
         .RenderGetClipRect = SDL::RenderGetClipRect,
         .RenderSetClipRect = SDL::RenderSetClipRect,
 
+        .RenderGetViewPort = SDL::RenderGetViewPort,
+        .RenderSetViewPort = SDL::RenderSetViewPort,
+
         .RenderCopy = SDL::RenderCopy,
         .RenderClear = SDL::RenderClear,
 
@@ -206,6 +221,9 @@ extern "C"{
 
         btk_rtbl.RenderGetClipRect = SDL::RenderGetClipRect;
         btk_rtbl.RenderSetClipRect = SDL::RenderSetClipRect;
+
+        btk_rtbl.RenderGetViewPort = SDL::RenderGetViewPort;
+        btk_rtbl.RenderSetViewPort = SDL::RenderSetViewPort;
 
         btk_rtbl.RenderCopy = SDL::RenderCopy;
         btk_rtbl.RenderClear = SDL::RenderClear;

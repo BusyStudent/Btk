@@ -18,8 +18,9 @@ namespace{
     using Btk::Window;
     using Btk::Widget;
     using Btk::System;
-    void internal_pushevent(Event *ev,Window &win,Widget *widget){
-        Uint32 winid = SDL_GetWindowID(win.impl()->win);
+    using Btk::WindowImpl;
+    void internal_pushevent(Event *ev,WindowImpl *win,Widget *widget){
+        Uint32 winid = SDL_GetWindowID(win->win);
         SDL_Event sdl_ev;
         SDL_zero(sdl_ev);
 
@@ -61,12 +62,12 @@ namespace Btk{
     //PushEvent in event queue
     void PushEvent(Event *ev,Window &receiver){
         if(ev != nullptr){
-            internal_pushevent(ev,receiver,nullptr);
+            internal_pushevent(ev,receiver.impl(),nullptr);
         }
     }
     void PushEvent(Event *ev,Widget &receiver){
         if(ev != nullptr){
-            internal_pushevent(ev,receiver.master(),&receiver);
+            internal_pushevent(ev,receiver.window(),&receiver);
         }
     }
     //Send event directly

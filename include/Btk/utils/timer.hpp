@@ -1,6 +1,7 @@
 #if !defined(_BTKUTILS_TIMER_HPP_)
 #define _BTKUTILS_TIMER_HPP_
 #include <tuple>
+#include <chrono>
 #include "../defs.hpp"
 namespace Btk{
     namespace Impl{
@@ -57,6 +58,11 @@ namespace Btk{
              * @return The interval
              */
             Uint32 interval()const;
+            
+            
+            Timer& set_interval(std::chrono::milliseconds ms){
+                return set_interval(ms.count());
+            }
         private:
             typedef void (*InvokerRunFn)(void*);
             typedef void (*InvokerCleanupFn)(void*);

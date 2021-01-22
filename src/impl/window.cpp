@@ -34,7 +34,7 @@ namespace Btk{
         //Set theme
         theme = &Themes::GetDefault();
         //Open DefaultFont
-        default_font.open(theme->font,theme->font_ptsize);
+        default_font = theme->font;
         //Set background color
         bg_color = theme->background_color;
         last_draw_ticks = 0;
@@ -250,7 +250,7 @@ namespace Btk{
             h,
             flags
         );
-        pimpl->container.window = this;
+        pimpl->container.window = pimpl;
         SDL_SetWindowData(pimpl->win,"btk_win",this);
         SDL_SetWindowData(pimpl->win,"btk_imp",pimpl);
         winid = SDL_GetWindowID(pimpl->win);

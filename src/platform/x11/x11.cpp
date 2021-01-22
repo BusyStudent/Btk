@@ -25,6 +25,9 @@ static void crash_handler(int sig){
     else if(sig == SIGABRT){
         signame = "SIGABRT";
     }
+    else if(sig == SIGILL){
+        signame = "SIGILL";
+    }
     else{
         signame = "???";
     }
@@ -77,6 +80,7 @@ namespace X11{
         //Debug crash handler
         signal(SIGSEGV,crash_handler);
         signal(SIGABRT,crash_handler);
+        signal(SIGILL,crash_handler);
         _Xdebug = 1;
         #endif
         XSetErrorHandler(XErrorHandler);

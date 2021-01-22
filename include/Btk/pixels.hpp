@@ -104,7 +104,23 @@ namespace Btk{
         private:
             SDL_Surface *surf;
     };
-    //PixelFormat
+    /**
+     * @brief Pixels format
+     * 
+     */
+    struct PixelFormat{
+        PixelFormat() = default;
+        PixelFormat(Uint32 val):fmt(val){}
+        
+        operator Uint32() const noexcept{
+            return fmt;
+        }
+        Uint32 fmt;
+    };
+    /**
+     * @brief Pixels format detail
+     * 
+     */
     class BTKAPI PixFmt{
         public:
             //Create a pixel format
@@ -165,7 +181,7 @@ namespace Btk{
              */
             struct Information{
                 TextureAccess access;//< Texture access
-                Uint32        format;//< Pixels format
+                PixelFormat   format;//< Pixels format
                 int w;
                 int h;
             };
@@ -248,8 +264,6 @@ namespace Btk{
             BtkTexture *texture;
         friend struct Renderer;
     };
-    typedef PixFmt PixelFormat;
-    typedef PixFmt PixFormat;
     /**
      * @brief Gif Decoding class
      * 
@@ -299,6 +313,9 @@ namespace Btk{
         void *   pixels;
         int      pitch;
     };
+
+    template<class T>
+    using lock_guard = LockGuard<T>;
 };
 
 #endif // _BTK_PIXELS_HPP_

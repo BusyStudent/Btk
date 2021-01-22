@@ -75,7 +75,8 @@
         "xhash": "cpp",
         "xstring": "cpp",
         "xutility": "cpp",
-        "xstddef": "cpp"
+        "xstddef": "cpp",
+        "charconv": "cpp"
     },
     "files.exclude": {
         "**/.git": true,

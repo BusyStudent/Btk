@@ -184,7 +184,7 @@ namespace Btk{
     Texture::Information Texture::information() const{
         Texture::Information inf;
         int access;
-        if(Btk_QueryTexture(texture,&(inf.format),&(access),&(inf.w),(&inf.h)) == -1){
+        if(Btk_QueryTexture(texture,&(inf.format.fmt),&(access),&(inf.w),(&inf.h)) == -1){
             throwRendererError();
         }
         //Translate the access
