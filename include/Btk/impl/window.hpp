@@ -8,6 +8,7 @@
 #include "render.hpp"
 #include "../signal/signal.hpp"
 #include "../widget.hpp"
+#include "../themes.hpp"
 #include "../event.hpp"
 #include "../font.hpp"
 #include "atomic.hpp"
@@ -35,7 +36,7 @@ namespace Btk{
             return draw_fn(render,widget,userdata);
         }
     };
-    struct WindowImpl{
+    struct BTKAPI WindowImpl{
         //Init SDL Window
         WindowImpl(const char *title,int x,int y,int w,int h,int flags);
         ~WindowImpl();
@@ -51,11 +52,9 @@ namespace Btk{
         //Dispatch Event to Widgets
         bool dispatch(Event &event);
         
-        void unref();//unref the object
-        void ref();//ref the  object
         //update wingets postions
         void update_postion();
-        SDL_Window *win;
+        SDL_Window *win = nullptr;
         Renderer    render;
         //Signals
         Signal<void()> sig_leave;//mouse leave
@@ -64,25 +63,31 @@ namespace Btk{
         Signal<void(std::string_view)> sig_dropfile;//DropFile
         Signal<void(int new_w,int new_h)> sig_resize;//WindowResize
         Signal<bool(Event &)> sig_event;//Process Unhandled Event
-        //refcount
-        int refcount;
         //BackGroud Color
         Color bg_color;
         //Background cursor
-        SDL_Cursor *cursor;
+        SDL_Cursor *cursor = nullptr;
         //mutex
         std::recursive_mutex mtx;
         Atomic visible = false;
         //Last draw ticks
-        Uint32 last_draw_ticks;
-        //Widgets Default Font
-        Font default_font;
+        Uint32 last_draw_ticks = 0;
         //Window theme
-        Theme *theme;
+        Theme theme;
         Container container;
         //The draw callback
         //It will be called at last
         std::list<DrawCallback> draw_cbs;
+
+        //Methods for Widget impl
+        /**
+         * @brief Get window's font
+         * 
+         * @return Font 
+         */
+        Font font() const{
+            return theme.font;
+        }
     };
 };
 

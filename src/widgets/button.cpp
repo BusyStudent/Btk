@@ -53,16 +53,16 @@ namespace Btk{
     Button::Button(Container &c){
         parent = &c;
         //Set theme
-        theme     = window()->theme;
-        textfont  = window()->default_font;
+        theme     = &window()->theme;
+        textfont  =  window()->font();
         is_entered = false;
         is_pressed = false;
     }
     Button::Button(Container &c,int x,int y,int w,int h){
         parent = &c;
         //Set theme
-        theme     = window()->theme;
-        textfont  = window()->default_font;
+        theme     = &window()->theme;
+        textfont  =  window()->font();
         is_entered = false;
         is_pressed = false;
 
@@ -74,8 +74,8 @@ namespace Btk{
     Button::Button(Container &c,std::string_view text):btext(text){
         parent = &c;
         //Set theme
-        theme     = window()->theme;
-        textfont  = window()->default_font;
+        theme     = &window()->theme;
+        textfont  =  window()->font();
         is_entered = false;
         is_pressed = false;
 
@@ -90,11 +90,13 @@ namespace Btk{
         Rect fixed_rect = {rect.x,rect.y + 1,rect.w - 1,rect.h - 2};
         Color bg;//< Background color
         Color boarder;//< Boarder color
+
+        
         if(is_pressed){
             bg = theme->high_light;
         }
         else{
-            bg = theme->background_color;
+            bg = theme->button_color;
         }
         
         //second draw border

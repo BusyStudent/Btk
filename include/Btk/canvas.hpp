@@ -19,6 +19,13 @@ namespace Btk{
 
             void draw(Renderer&);
             bool handle(Event &);
+
+            EventFn &handle(){
+                return event_fn;
+            }
+            DrawFn &draw(){
+                return draw_fn;
+            }
         private:
             EventFn event_fn;
             DrawFn  draw_fn;

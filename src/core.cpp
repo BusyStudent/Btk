@@ -278,7 +278,7 @@ namespace Btk{
             return;
         }
         auto motion = TranslateEvent(event.motion);
-        win->container.dispatcher.handle_motion(motion);
+        win->container.handle_motion(motion);
     }
     //MouseButton
     inline void System::on_mousebutton(const SDL_Event &event){
@@ -287,7 +287,7 @@ namespace Btk{
             return;
         }
         auto click = TranslateEvent(event.button);
-        win->container.dispatcher.handle_click(click);
+        win->container.handle_click(click);
     }
     //DropFile
     inline void System::on_dropev(const SDL_Event &event){
@@ -307,7 +307,7 @@ namespace Btk{
             return;
         }
         auto kevent = TranslateEvent(event.key);
-        if(not win->container.dispatcher.handle_keyboard(kevent)){
+        if(not win->container.handle_keyboard(kevent)){
             //No one process it
             if(not kevent.is_accepted()){
                 win->sig_event(kevent);
@@ -322,7 +322,7 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        win->container.dispatcher.handle_textinput(ev);
+        win->container.handle_textinput(ev);
     }
     void System::register_window(WindowImpl *impl){
         if(impl == nullptr){
@@ -331,9 +331,7 @@ namespace Btk{
         std::lock_guard<std::recursive_mutex> locker(map_mtx);
         Uint32 winid = SDL_GetWindowID(impl->win);
         //GetWindowId
-        wins_map[winid] = impl;
-        //add refcount
-        impl->ref();
+        wins_map.insert(std::make_pair(winid,impl));
     }
     void System::unregister_window(WindowImpl *impl){
         if(impl == nullptr){
@@ -349,7 +347,7 @@ namespace Btk{
         }
         else{
             //erase it
-            iter->second->unref();
+            delete iter->second;
             iter->second = nullptr;
             wins_map.erase(iter);
         }

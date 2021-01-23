@@ -99,6 +99,7 @@ namespace Btk{
         CountedBackInserter& operator=(Value &&value){
             inserter = std::forward<Value>(value);
             length += 1;
+            return *this;
         }
         back_insert_iterator<T> inserter;
         //The string length we inserted

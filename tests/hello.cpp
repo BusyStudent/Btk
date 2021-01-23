@@ -3,12 +3,13 @@
 #include <Btk/utils/timer.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/button.hpp>
+#include <Btk/themes.hpp>
 #include <Btk/event.hpp>
 #include <Btk/lable.hpp>
 #include <iostream>
 int main(){
-    Btk::Timer timer;
     Btk::Window win("Hello",500,500);
+    
     Btk::SetExceptionHandler([](std::exception *){
         return true;
     });

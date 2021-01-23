@@ -47,12 +47,18 @@ namespace Btk{
         }
     }
     //Lock
-    void PixBuf::lock(){
+    void PixBuf::lock() const{
+        if(not must_lock()){
+            return;
+        }
         if(SDL_LockSurface(surf) != 0){
             throwSDLError();
         }
     }
-    void PixBuf::unlock() noexcept{
+    void PixBuf::unlock() const noexcept{
+        if(not must_lock()){
+            return;
+        }
         SDL_UnlockSurface(surf);
     }
     void PixBuf::set_rle(bool val){

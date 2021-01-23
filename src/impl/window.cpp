@@ -28,19 +28,14 @@ namespace Btk{
     WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags):
          win(CreateWindow(title,x,y,w,h,flags)),
          render(win){
-        refcount = 0;//default refcount
-        //Btk::Window doesnnot has it ownship
-        cursor = nullptr;
         //Set theme
-        theme = &Themes::GetDefault();
-        //Open DefaultFont
-        default_font = theme->font;
+        theme = Themes::GetDefault();
         //Set background color
-        bg_color = theme->background_color;
+        bg_color = theme.window_color;
         last_draw_ticks = 0;
 
         //Managed by window
-        container.dispatcher.managed_window = true;
+        container.managed_window = true;
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -100,15 +95,6 @@ namespace Btk{
     void WindowImpl::on_resize(int new_w,int new_h){
         if(not sig_resize.empty()){
             sig_resize(new_w,new_h);
-        }
-    }
-    void WindowImpl::ref(){
-        refcount ++;
-    }
-    void WindowImpl::unref(){
-        refcount--;
-        if(refcount == 0){
-            delete this;
         }
     }
     void WindowImpl::pixels_size(int *w,int *h){
@@ -412,7 +398,7 @@ namespace Btk{
         SDL_ShowWindow(pimpl->win);
     }
     Font Window::font() const{
-        return pimpl->default_font;
+        return pimpl->font();
     }
     Container &Window::container() const{
         return pimpl->container;

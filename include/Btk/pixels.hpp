@@ -12,9 +12,21 @@ struct SDL_Surface;
 struct BtkTexture;
 namespace Btk{
     class RWops;
-    //Color struct
+    /**
+     * @brief Color structure
+     * 
+     */
     struct Color:public SDL_Color{
-
+        Color() = default;
+        Color(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
+            this->r = r;
+            this->g = g;
+            this->b = b;
+            this->a = a;
+        }
+        Color(const SDL_Color &c):Color(c.r,c.g,c.b,c.a){}
+        Color(const Color &) = default;
+        Color &operator =(const Color &) = default;
     };
     //PixelBuffer
     class BTKAPI PixBuf{
@@ -52,6 +64,9 @@ namespace Btk{
                 return surf == nullptr;
             }
             //Get informations
+            Size size() const noexcept{
+                return {surf->w,surf->h};
+            }
             int w() const noexcept{
                 return surf->w;
             }
@@ -65,7 +80,7 @@ namespace Btk{
                 return surf->pitch;
             }
             //return its pixels size
-            size_t size() const noexcept{
+            size_t pixels_size() const noexcept{
                 return pitch() * h();
             }
             //must lock it before access its pixels
@@ -84,8 +99,8 @@ namespace Btk{
                 return surf;
             }
             //Lock and Unlock
-            void lock();
-            void unlock() noexcept;
+            void lock() const;
+            void unlock() const noexcept;
             //Set RLE
             void set_rle(bool val = true);
             /**
@@ -283,7 +298,7 @@ namespace Btk{
      */
     template<class T>
     struct LockGuard{
-        LockGuard(T &&m):mtx(m){
+        LockGuard(T &m):mtx(m){
             mtx.lock();
         }
         LockGuard(const LockGuard &) = delete;
@@ -297,10 +312,10 @@ namespace Btk{
      */
     template<>
     struct LockGuard<Texture>{
-        LockGuard(Texture &t):texture(t){
-            texture.lock(&pixels,&pitch);
+        LockGuard(Texture &t,const Rect *rect = nullptr):texture(t){
+            texture.lock(rect,&pixels,&pitch);
         }
-        LockGuard(Texture &t,const Btk::Rect &rect):
+        LockGuard(Texture &t,const Rect &rect):
             texture(t){
 
             texture.lock(rect,&pixels,&pitch);

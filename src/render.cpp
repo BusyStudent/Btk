@@ -258,6 +258,10 @@ namespace Btk{
             throwRuntimeError(Btk_RIGetError());
         }
     }
+    Renderer::~Renderer(){
+        Btk_DestroyTexture(cache);
+        Btk_DestroyRenderer(render);
+    }
     Texture Renderer::create_from(const PixBuf &pixbuf){
         BtkTexture *texture = Btk_CreateTextureFrom(render,pixbuf.get());
         if(texture == nullptr){
@@ -350,5 +354,81 @@ namespace Btk{
                 rad,
                 UNPACK_COLOR(color)
         );
+    }
+
+    //copy pixbuf
+    int Renderer::copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst){
+        if(pixbuf.empty()){
+            return -1;
+        }
+        auto   [w,h] = pixbuf.size();
+        Uint32 fmt = pixbuf->format->format;
+        Uint32 tfmt;//Texture format
+        int tw,th;//Texture w,h
+        /*
+        if(cache == nullptr){
+            //Failed to create texture
+            create:
+            cache = Btk_CreateTexture(render,fmt,TranslateAccess(TextureAccess::Streaming),w,h);
+            if(cache == nullptr){
+                //unsupport 
+                BTK_LOGWARN("Failed to create texture:%s",Btk_RIGetError());
+                auto t = create_from(pixbuf);
+                return copy(t,src,dst);
+            }
+            tw = w;
+            th = h;
+        }
+        else{
+            if(Btk_QueryTexture(cache,&tfmt,nullptr,&tw,&th) == -1){
+                throwRendererError();
+            }
+            BTK_LOGINFO("Texture %p format %s",cache,SDL_GetPixelFormatName(tfmt));
+            if(tw <= w or th <= h){
+                
+                auto t = create_from(pixbuf);
+                return copy(t,src,dst);
+            }
+        }
+        {
+            lock_guard<BtkTexture*> tlocker(cache);
+            lock_guard<PixBuf> plocker(const_cast<PixBuf&>(pixbuf));//We have to lock it
+            size_t byte = SDL_BYTESPERPIXEL(fmt);
+            void  *pixels = tlocker.pixels;
+            int    pitch  = tlocker.pitch;
+
+            Uint8 *buf_pix = static_cast<Uint8*>(pixbuf->pixels);
+            if(src != nullptr){
+                w = src->w;
+                h = src->h;
+
+                //buf_pix =  buf_pix + src->y * pixbuf->pitch ;
+                buf_pix =  buf_pix + src->y * pixbuf->pitch;
+            }
+
+            BTK_LOGINFO("Renderer::copy pixels %p pitch %d",buf_pix,pitch);
+            //Copy the pixels to Texture{0,0,w,h}
+            int ret = SDL_ConvertPixels(
+                w * byte,
+                h * byte,
+                fmt,
+                buf_pix,
+                pixbuf->pitch,
+                tfmt,
+                pixels,
+                pitch);
+            if(ret == -1){
+                throwSDLError();
+            }
+        }
+        //Rect for texture
+        Rect trect = {0,0,w,h};
+
+
+        return Btk_RenderCopy(render,cache,&trect,dst);;
+        */
+        //It need be improved
+        auto t = create_from(pixbuf);
+        return copy(t,src,dst);
     }
 }

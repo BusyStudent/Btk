@@ -109,4 +109,8 @@ if is_mode("debug") then
         set_kind("binary")
         add_files("./tests/timer.cpp")
         add_deps("btk")
+    target("draw")
+        set_kind("binary")
+        add_files("./tests/draw.cpp")
+        add_deps("btk")
 end

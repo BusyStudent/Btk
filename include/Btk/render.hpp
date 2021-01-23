@@ -152,9 +152,7 @@ namespace Btk{
         public:
             Renderer(SDL_Window *win);
             Renderer(const Renderer &) = delete;
-            ~Renderer(){
-                Btk_DestroyRenderer(render);
-            }
+            ~Renderer();
             Rect get_cliprect(){
                 Rect rect;
                 Btk_RenderGetClipRect(render,&rect);
@@ -170,6 +168,7 @@ namespace Btk{
             Rect get_viewport(){
                 Rect rect;
                 Btk_RenderGetViewPort(render,&rect);
+                return rect;
             }
             int  set_viewport(){
                 return Btk_RenderSetViewPort(render,nullptr);
@@ -182,6 +181,16 @@ namespace Btk{
             int  copy(const Texture &t,const Rect *src,const Rect *dst){
                 return Btk_RenderCopy(render,t.get(),src,dst);
             }
+            int  copy(const Texture &t,const Rect &src,const Rect *dst){
+                return Btk_RenderCopy(render,t.get(),&src,dst);
+            }
+            int  copy(const Texture &t,const Rect *src,const Rect &dst){
+                return Btk_RenderCopy(render,t.get(),src,&dst);
+            }
+            int  copy(const Texture &t,const Rect &src,const Rect &dst){
+                return Btk_RenderCopy(render,t.get(),&src,&dst);
+            }
+
             int clear(){
                 return Btk_RenderClear(render);
             }
@@ -234,8 +243,47 @@ namespace Btk{
              */
             Texture load(std::string_view fname);
             Texture load(RWops &);
+            /**
+             * @brief Copy a pixbuf into rendering target
+             * 
+             * @note Is is slower than texture copying
+             * @param pixbuf The pixbuf
+             * @param src The pixbuf area
+             * @param dst The target area
+             * @return int 
+             */
+            int copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst);
+            int copy(const PixBuf &pixbuf,const Rect *src,const Rect &dst){
+                return copy(pixbuf,src,&dst);
+            }
+            int copy(const PixBuf &pixbuf,const Rect &src,const Rect *dst){
+                return copy(pixbuf,&src,dst);
+            }
+            int copy(const PixBuf &pixbuf,const Rect &src,const Rect &dst){
+                return copy(pixbuf,&src,&dst);
+            }
         public:
-            BtkRenderer *render;
+            BtkRenderer *render = nullptr;
+            BtkTexture  *cache = nullptr;//< Texture cache for pixbuf copying
+    };
+
+    template<>
+    struct LockGuard<BtkTexture*>{
+        LockGuard(BtkTexture *t,const Rect *r = nullptr){
+            texture = t;
+            Btk_LockTexture(texture,r,&pixels,&pitch);
+        }
+        LockGuard(BtkTexture *t,const Rect &r){
+            texture = t;
+            Btk_LockTexture(texture,&r,&pixels,&pitch);
+        }
+        LockGuard(const LockGuard &) = delete;
+        ~LockGuard(){
+            Btk_UnlockTexture(texture);
+        }
+        BtkTexture*texture;
+        void *     pixels;
+        int        pitch;
     };
 };
 #endif

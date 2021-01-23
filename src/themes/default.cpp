@@ -1,18 +1,27 @@
 #include "../build.hpp"
 
+#include <Btk/impl/thread.hpp>
 #include <Btk/themes.hpp>
 #include <atomic>
+#include <mutex>
 namespace Btk{
 namespace Themes{
-    static std::atomic<Theme*> current;
+    static SpinLock spinlock;
     //This is default themes color
-    static Theme &default_theme(){
+    Theme &DefaultTheme(){
         static Theme theme = {
-            //background_color
+            //Window background
             {
                 239,//R
                 240,//G
                 241,//B
+                255//A
+            },
+            //background_color
+            {
+                255,//R
+                255,//G
+                255,//B
                 255//A
             },
             //text_color
@@ -45,27 +54,39 @@ namespace Themes{
                 255,
                 255,
                 255
+            },
+            //Button color
+            {
+                233,
+                234,
+                235,
+                255
             }
         };
         return theme;
     }
     
-    Theme &GetDefault(){
-        Theme *theme = current.load(
-            std::memory_order::memory_order_consume
-        );
-        if(theme == nullptr){
-            return default_theme();
+    Theme GetDefault(){
+        std::lock_guard locker(spinlock);
+        #ifndef BTK_NO_THEME_PARSER
+        //Get theme file from user
+        char *conf = getenv("BTK_THEME");
+        if(conf != nullptr){
+            try{
+                BTK_LOGINFO("Try parsing theme conf => %s",conf);
+                return Theme::ParseFile(conf);
+            }
+            catch(...){
+                //error
+                //use default theme
+            }
         }
-        return *theme;
+        #endif
+        return DefaultTheme();
     }
-    void  SetDefault(Theme *theme){
-        if(theme == nullptr){
-            theme = &default_theme();
-        }
-        current.store(
-            theme,std::memory_order::memory_order_relaxed
-        );
+    void  SetDefault(const Theme &theme){
+        std::lock_guard locker(spinlock);
+        DefaultTheme() = theme;
     }
 };
 };

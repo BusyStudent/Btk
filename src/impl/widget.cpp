@@ -46,7 +46,7 @@ namespace Btk{
 
 
     //Container
-    Container::Container():dispatcher(widgets_list){
+    Container::Container(){
         window = nullptr;
     }
     //delete container
@@ -80,8 +80,17 @@ namespace Btk{
     }
 };
 namespace Btk{
-    //EventDispatcher
-    bool EventDispatcher::handle(Event &event){
+    //EventDispatcher in Container
+    bool Container::handle(Event &event){
+        //Filt the event
+        if(not ev_filter.empty()){
+            if(ev_filter(event) == false){
+                BTK_LOGINFO("Drop %s:%p",get_typename(&event).c_str(),&event);
+                event.reject();
+                return false;
+            }
+        }
+
         switch(event.type()){
             case Event::Click:
                 return handle_click(event_cast<MouseEvent&>(event));
@@ -95,7 +104,7 @@ namespace Btk{
             case Event::DragBegin:{
                 auto &drag = event_cast<DragEvent&>(event);
                 //try to find a widget which has the point
-                for(auto widget:widgets){
+                for(auto widget:widgets_list){
                     if(widget->rect.has_point(drag.x,drag.y)){
                         bool ret = false;
                         ret |= widget->handle(drag);
@@ -121,7 +130,7 @@ namespace Btk{
                 return drag_widget->handle(event);
             }
             default:{
-                for(auto widget:widgets){
+                for(auto widget:widgets_list){
                     if(widget->handle(event)){
                         return true;
                     }
@@ -130,7 +139,7 @@ namespace Btk{
             }
         }
     }
-    bool EventDispatcher::handle_click(MouseEvent &event){
+    bool Container::handle_click(MouseEvent &event){
         event.accept();
         
         int x = event.x;
@@ -166,7 +175,7 @@ namespace Btk{
 
         if(cur_widget == nullptr){
             //try to find a new_widget
-            for(auto widget:widgets){
+            for(auto widget:widgets_list){
                 if(widget->visible() and widget->rect.has_point(x,y)){
                     cur_widget = widget;
                     //It can get focus by Click
@@ -190,7 +199,7 @@ namespace Btk{
         }
         return true;
     }
-    bool EventDispatcher::handle_motion(MotionEvent &event){
+    bool Container::handle_motion(MotionEvent &event){
         event.accept();
         
         int x = event.x;
@@ -247,7 +256,7 @@ namespace Btk{
             }
         }
         //find new widget which has this point
-        for(auto widget:widgets){
+        for(auto widget:widgets_list){
             if(widget->visible() and widget->rect.has_point(x,y)){
                 cur_widget = widget;
                 //widget enter
@@ -258,7 +267,7 @@ namespace Btk{
         }
         return true;
     }
-    bool EventDispatcher::handle_keyboard(KeyEvent &event){
+    bool Container::handle_keyboard(KeyEvent &event){
         //event.accept();
 
         if(focus_widget != nullptr){
@@ -275,7 +284,7 @@ namespace Btk{
                 }
             }
         }
-        for(auto widget:widgets){
+        for(auto widget:widgets_list){
             if(widget != focus_widget and widget != cur_widget){
                 widget->handle(event);
                 if(event.is_accepted()){
@@ -286,7 +295,7 @@ namespace Btk{
 
         return false;
     }
-    bool EventDispatcher::handle_textinput(TextInputEvent &event){
+    bool Container::handle_textinput(TextInputEvent &event){
         event.accept();
         if(focus_widget != nullptr){
             //Send the event to focus event
@@ -294,7 +303,7 @@ namespace Btk{
             if(not event.is_accepted()){
                 //this event is rejected
                 //dispatch it to other widget
-                for(auto widget:widgets){
+                for(auto widget:widgets_list){
                     if(widget != focus_widget){
                         widget->handle(event);
                         if(event.is_accepted()){
@@ -306,13 +315,13 @@ namespace Btk{
         }
         return false;
     }
-    void EventDispatcher::set_focus_widget(Widget *widget){
+    void Container::set_focus_widget(Widget *widget){
         Event event(Event::LostFocus);
         //We has last widget which has focus
         if(focus_widget != nullptr){
             //Send a lose focus
             
-            BTK_LOGINFO("[EventDispatcher:%p]'%s' %p lost focus",
+            BTK_LOGINFO("[Container:%p]'%s' %p lost focus",
                         this,
                         get_typename(focus_widget).c_str(),
                         focus_widget);
@@ -324,7 +333,7 @@ namespace Btk{
         
         if(widget != nullptr){
 
-            BTK_LOGINFO("[EventDispatcher:%p]'%s' %p take focus",
+            BTK_LOGINFO("[Container:%p]'%s' %p take focus",
                 this,
                 get_typename(focus_widget).c_str(),
                 focus_widget);

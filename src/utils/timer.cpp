@@ -148,4 +148,7 @@ namespace Btk{
         std::lock_guard locker(base->mtx);
         return base->interval;
     }
+    Uint32 Timer::current(){
+        return SDL_GetTicks();
+    }
 }

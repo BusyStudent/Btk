@@ -63,6 +63,12 @@ namespace Btk{
             Timer& set_interval(std::chrono::milliseconds ms){
                 return set_interval(ms.count());
             }
+            /**
+             * @brief Get current global timer ticks from SDL
+             * 
+             * @return Uint32
+             */
+            static Uint32 current();
         private:
             typedef void (*InvokerRunFn)(void*);
             typedef void (*InvokerCleanupFn)(void*);

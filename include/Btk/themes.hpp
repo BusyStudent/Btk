@@ -7,7 +7,15 @@
 //A file of themes
 namespace Btk{
     struct BTKAPI Theme{
-        //Background Color
+        /**
+         * @brief Windows background
+         * 
+         */
+        Color window_color;
+        /**
+         * @brief TextBox
+         * 
+         */
         Color background_color;
         //Text Color
         Color text_color;
@@ -19,6 +27,8 @@ namespace Btk{
         Color high_light;
         //Hight light Text
         Color high_light_text;
+        //The color of button background
+        Color button_color;
         /**
          * @brief Generate by config
          * 
@@ -26,10 +36,11 @@ namespace Btk{
          * @return Theme 
          */
         static Theme Parse(std::string_view txt);
+        static Theme ParseFile(std::string_view txt);
     };
     namespace Themes{
-        BTKAPI void   SetDefault(Theme *);
-        BTKAPI Theme &GetDefault();
+        BTKAPI void  SetDefault(const Theme &);
+        BTKAPI Theme GetDefault();
     };
 };
 

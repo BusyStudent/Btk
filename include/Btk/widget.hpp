@@ -2,6 +2,7 @@
 #define _BTK_WIDGET_HPP_
 #include <list>
 #include "signal/signal.hpp"
+#include "signal/function.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
 namespace Btk{
@@ -49,7 +50,8 @@ namespace Btk{
         V = Vertical,
         H = Horizontal
     };
-        /**
+    #if 0
+    /**
      * @brief A helper of dispatch event in widget
      * 
      */
@@ -97,6 +99,7 @@ namespace Btk{
             bool managed_window = false;
         friend struct WindowImpl;
     };
+    #endif
     /**
      * @brief A Container of Widget
      * 
@@ -106,6 +109,12 @@ namespace Btk{
             Container();
             Container(const Container &) = delete;
             ~Container();
+            /**
+             * @brief The event filter(return false to drop the event)
+             * 
+             */
+            typedef Function<bool(Event&)> Filter;
+        public:
             /**
              * @brief Add a widget to the Container
              * 
@@ -131,15 +140,6 @@ namespace Btk{
                 return false;
             }
             /**
-             * @brief Dispatch Event to each widget
-             * 
-             * @return true 
-             * @return false 
-             */
-            bool handle(Event &event){
-                return dispatcher.handle(event);
-            }
-            /**
              * @brief Destroy all widget
              * 
              */
@@ -160,11 +160,55 @@ namespace Btk{
              * @return false The widget pointer is invaid
              */
             bool detach(Widget *widget);
+        public:
+            //Process Event
+            bool handle_click(MouseEvent   &);
+            bool handle_motion(MotionEvent &);
+            bool handle_keyboard(KeyEvent  &);
+            bool handle_textinput(TextInputEvent &);
+            /**
+             * @brief Generic to dispatch event to widgets
+             * 
+             * @return true 
+             * @return false 
+             */
+            bool handle(Event &);
+            /**
+             * @brief Get the Container EventFilter
+             * 
+             * @return Function<bool(Event&)>& 
+             */
+            Function<bool(Event&)> &filter() noexcept{
+                return ev_filter;
+            }
+        protected:
+            //A helper for set the current focus widget
+            void set_focus_widget(Widget *);
+            
+            Widget *focus_widget = nullptr;//The widget which has focus
+            Widget *drag_widget = nullptr;//The Dragging event
+            Widget *cur_widget = nullptr;//Mouse point widget
+            /**
+             * @brief The mouse is pressed
+             * 
+             * @note This value is used to check the drag status
+             */
+            bool mouse_pressed = false;
+            bool drag_rejected = false;
+            /**
+             * @brief Manager by window
+             * 
+             */
+            bool managed_window = false;
+            /**
+             * @brief Event filter
+             * 
+             */
+            Function<bool(Event&)> ev_filter;
         protected:
             //top window
             WindowImpl *window;
             std::list<Widget*> widgets_list;
-            EventDispatcher dispatcher;
         friend class  Window;
         friend class  Widget;
         friend struct System;
@@ -255,7 +299,7 @@ namespace Btk{
         friend class  Window;
         friend class  Layout;
         friend struct WindowImpl;
-        friend class  EventDispatcher;
+        friend class  Container;
         friend void   PushEvent(Event *,Widget &);
     };
 

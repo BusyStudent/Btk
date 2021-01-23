@@ -113,8 +113,8 @@ namespace Btk{
     TextBox::TextBox(Container &w){
         parent = &w;
         //Set theme
-        theme = *(window()->theme);
-        tb_font = window()->default_font;
+        theme =   window()->theme;
+        tb_font = window()->font();
 
         //Get rendered text's h
         ft_h = tb_font.height();
@@ -134,7 +134,7 @@ namespace Btk{
     }
 
     void TextBox::draw(Renderer &render){
-        render.box(rect,{255,255,255,255});
+        render.box(rect,theme.background_color);
         if(not tb_text.empty()){
             if(tb_buf.empty()){
                 tb_buf = tb_font.render_blended(tb_text,theme.text_color);
