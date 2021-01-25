@@ -1,7 +1,10 @@
 #include "../../build.hpp"
 
+#ifdef _WIN32
+
 #include <Btk/thirdparty/utf8.h>
 #include <Btk/msgbox/fselect.hpp>
+#include <Btk/msgbox/win32.hpp>
 #include <Btk/async/async.hpp>
 #include <Btk/impl/atomic.hpp>
 #include <algorithm>
@@ -11,36 +14,15 @@
 #include <ShObjIdl.h>
 
 #include "internal.hpp"
-
+//Win32 native FSelectBox impl
 namespace Btk{
-    struct FSelectBoxImpl{
-        using SignalAsync = FSelectBox::SignalAsync;
-        //< The return value of the box
-        std::string value;
-        std::string title;
-        //< The title
-        Atomic refcount = 1;
-        
-        bool multiple = false;
-        bool save = false;
-
-        SignalAsync signal;
-        //< The async signal
-        void Run();
-        void unref(){
-            --refcount;
-            if(refcount <= 0){
-                delete this;
-            }
-        }
-    };
-
     void FSelectBoxImpl::Run(){
         using utf8::unchecked::utf16to8;
         using std::back_inserter;
         using Win32::ComInstance;
         using Win32::ComMemPtr;
 
+        Impl::RefDeleter deleter(this);
 
         ComInstance<IFileOpenDialog> instance;
         HRESULT hr;
@@ -80,37 +62,11 @@ namespace Btk{
             BTK_LOGINFO("Failed to create ComInstance");
         }
     }
+    void FSelectBoxImpl::unref(){
+        --refcount;
+        if(refcount <= 0){
+            delete this;
+        }
+    }
 }
-
-namespace Btk{
-    FSelectBox::~FSelectBox(){
-        if(pimpl != nullptr){
-            pimpl->unref();
-        }
-    }
-    FSelectBox::FSelectBox(std::string_view title){
-        pimpl = new FSelectBoxImpl;
-        pimpl->title = title;
-    }
-    void FSelectBox::show(){
-        ++(pimpl->refcount);
-        Async(NoSignal(),&FSelectBoxImpl::Run,pimpl).lauch();
-    }
-    void FSelectBox::set_multi(bool val){
-        pimpl->multiple = val;
-        if(val){
-            pimpl->save = false;
-        }
-    }
-    void FSelectBox::set_save(bool val){
-        pimpl->save = val;
-        if(val){
-            //The multipie flag was conflict with it
-            pimpl->multiple = false;
-        }
-    }
-    FSelectBox::SignalAsync &FSelectBox::sig_async(){
-        return pimpl->signal;
-    }
-
-}
+#endif

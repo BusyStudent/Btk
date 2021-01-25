@@ -17,6 +17,7 @@ namespace Btk{
 
     struct KeyEvent;
     struct MouseEvent;
+    struct WheelEvent;
     struct MotionEvent;
     struct TextInputEvent;
 
@@ -24,7 +25,7 @@ namespace Btk{
         None,
         KeyBoard,
         Click,
-        Whell
+        Wheel
     };
     //Attribute for Widget
     struct WidgetAttr{
@@ -163,6 +164,7 @@ namespace Btk{
         public:
             //Process Event
             bool handle_click(MouseEvent   &);
+            bool handle_whell(WheelEvent   &);
             bool handle_motion(MotionEvent &);
             bool handle_keyboard(KeyEvent  &);
             bool handle_textinput(TextInputEvent &);

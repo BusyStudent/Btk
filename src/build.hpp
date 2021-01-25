@@ -142,6 +142,34 @@ namespace Btk{
         va_end(varg);
 
         return str;
-    };
+    }
+    /**
+     * @brief Append text to the string
+     * 
+     * @param str The container
+     * @param fmt The c-style fmt string
+     * @param ... The args you want to format
+     */
+    inline void cformat(std::string &str,const char *fmt,...){
+        int strsize;
+        //Get the size of the string
+        va_list varg;
+        va_start(varg,fmt);
+        #ifdef _WIN32
+        strsize = _vscprintf(fmt,varg);
+        #else
+        strsize = vsnprintf(nullptr,0,fmt,varg);
+        #endif
+        va_end(varg);
+        //Get the '\0'
+        size_t length = str.length();
+        
+        str.resize(strsize + str.size());
+        char *end = &str[length];
+        //start formatting
+        va_start(varg,fmt);
+        vsprintf(end,fmt,varg);
+        va_end(varg);
+    }
 };
 #endif // _BTK_BUILD_HPP_

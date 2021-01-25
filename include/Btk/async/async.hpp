@@ -304,9 +304,10 @@ namespace Btk{
      *        don't emit the signal in main thread
      * 
      */
-    struct NoSignal{
+    struct _NoSignal{
 
     };
+    constexpr _NoSignal NoSignal{};
     /**
      * @brief The AsyncTask
      * 
@@ -394,7 +395,7 @@ namespace Btk{
      * @return AsyncTask object(No signal)
      */
     template<class T,class ...Args>
-    AsyncTask<false,T,Args...> Async(NoSignal,T &&callable,Args ...args){
+    AsyncTask<false,T,Args...> Async(_NoSignal,T &&callable,Args ...args){
         return AsyncTask<false,T,Args...>(
             std::forward<T>(callable),
             std::forward<Args>(args)...

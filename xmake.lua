@@ -78,7 +78,7 @@ target("btk")
     --Utils
     add_files("./src/utils/*.cpp")
     --Msgboxs
-    --add_files("./src/msgbox/*.cpp")
+    add_files("./src/msgbox/*.cpp")
     add_packages("SDL2","SDL2_ttf","SDL2_image","gif")
 if is_mode("debug") then
     target("hello")
@@ -112,5 +112,9 @@ if is_mode("debug") then
     target("draw")
         set_kind("binary")
         add_files("./tests/draw.cpp")
+        add_deps("btk")
+    target("scroll")
+        set_kind("binary")
+        add_files("./tests/scroll.cpp")
         add_deps("btk")
 end

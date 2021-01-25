@@ -1,11 +1,14 @@
 #include "./build.hpp"
 
 #include <Btk/thirdparty/SDL2_gfxPrimitives.h>
+#include <Btk/impl/scope.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <Btk/rwops.hpp>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL.h>
+
+#include <cstdarg>
 
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
 
@@ -135,6 +138,21 @@ namespace SDL{
     static BtkTexture *LoadTextureFrom(BtkRenderer *render,SDL_RWops *rwops){
         return reinterpret_cast<BtkTexture*>(IMG_LoadTexture_RW(Renderer(render),rwops,false));
     }
+    //SDL_Control
+    static int Control(int code,...){
+        using Btk::Impl::VaListGuard;
+        va_list varg;
+        va_start(varg,code);
+        VaListGuard guard(varg);
+        switch(code){
+            case BTKRI_ISOPENGL:
+                //Is not backend opengl
+                return false;
+            default:
+                SDL_Unsupported();
+                return -1;
+        }
+    }
 }
 
 
@@ -185,6 +203,8 @@ extern "C"{
 
         .SetError = SDL_SetError,
         .GetError = SDL_GetError,
+
+        .Control = SDL::Control
     };
     #else
     //MSVC Unsupport It
@@ -236,6 +256,8 @@ extern "C"{
 
         btk_rtbl.SetError = SDL_SetError;
         btk_rtbl.GetError = SDL_GetError;
+
+        btk_rtbl.Control = SDL::Control;
     }
 }
 namespace Btk{
@@ -354,6 +376,12 @@ namespace Btk{
                 rad,
                 UNPACK_COLOR(color)
         );
+    }
+    int Renderer::pie(int x,int y,int rad,int beg,int end,Color c){
+        return pieRGBA(render,x,y,rad,beg,end,UNPACK_COLOR(c));
+    }
+    int Renderer::filled_pie(int x,int y,int rad,int beg,int end,Color c){
+        return filledPieRGBA(render,x,y,rad,beg,end,UNPACK_COLOR(c));
     }
 
     //copy pixbuf

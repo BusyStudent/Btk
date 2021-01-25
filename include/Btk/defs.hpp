@@ -11,6 +11,11 @@
     #ifdef _MSC_VER
     #define BTKEXPORT __declspec(dllexport)
     #define BTKIMPORT __declspec(dllimport)
+    
+    #undef not
+    #undef and
+    #undef or
+
     #define not !
     #define and &&
     #define or ||

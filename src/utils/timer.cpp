@@ -68,7 +68,7 @@ namespace Btk{
 
     TimerBase::~TimerBase(){
         if(timerid != 0){
-            BTK_ASSERT(SDL_RemoveTimer(timerid));
+            SDL_RemoveTimer(timerid);
         }
         //Cleanup the invoker
         invoker.cleanup();

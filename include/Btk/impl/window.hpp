@@ -41,7 +41,7 @@ namespace Btk{
         WindowImpl(const char *title,int x,int y,int w,int h,int flags);
         ~WindowImpl();
         void draw();
-        void pixels_size(int *x,int *y);//GetWindowSize
+        void pixels_size(int *w,int *h);//GetWindowSize
         //tirgger close cb
         
         bool on_close();
@@ -87,6 +87,20 @@ namespace Btk{
          */
         Font font() const{
             return theme.font;
+        }
+        /**
+         * @brief Add widget in Window
+         * 
+         * @tparam T 
+         * @tparam Args 
+         * @param args 
+         * @return T& 
+         */
+        template<class T,class ...Args>
+        T &add(Args &&...args){
+            T *ptr = new T(container,std::forward<Args>(args)...);
+            container.add(ptr);
+            return *ptr;
         }
     };
 };

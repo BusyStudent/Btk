@@ -64,6 +64,13 @@ namespace Btk{
      */
     BTKAPI bool IsMainThread();
     /**
+     * @brief Check is not the main thread 
+     *        or Main EventLoop is not running
+     * 
+     * @return true on we can do sth blcok the thread 
+     */
+    BTKAPI bool CouldBlock();
+    /**
      * @brief Enter the EventLoop
      * 
      * @return 0 if succeed

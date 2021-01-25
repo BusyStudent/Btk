@@ -27,6 +27,23 @@ typedef struct BtkTexture  BtkTexture;
  * 
  */
 typedef struct BtkRenderer BtkRenderer;
+/*Here is operations code for BtkRenderer*/
+/**
+ * @brief Backend is OpenGL?
+ * 
+ * @code
+ *  if(BtkRI_Control(render,BTKRI_ISOPENGL) == true){
+ *      //Backend is not opengl
+ *  }
+ *  else{
+ *      //Backend is not opengl
+ *  }
+ * @endcode
+ * @note It will return a bool
+ */
+#define BTKRI_ISOPENGL 1
+
+
 /**
  * @brief Renderer Interface Table
  * 
@@ -90,8 +107,24 @@ struct BtkTable{
 
 
 
+    /**
+     * @brief Set the renderer last error
+     * 
+     */
     int  (*SetError)(const char *fmt,...);
+    /**
+     * @brief Get the renderer last error
+     * 
+     */
     const char *(*GetError)();
+    /**
+     * @brief Control the Renderer or Query Impl information
+     * 
+     * @param code The operation code
+     * @param ... The args depended on opcode
+     * @return The results based on opcode
+     */
+    int  (*Control)(int code,...);
 };
 extern BTKAPI struct BtkTable btk_rtbl;
 
@@ -138,6 +171,9 @@ BTKAPI void Btk_ResetRITable();
 
 #define Btk_RISetError (btk_rtbl.SetError)
 #define Btk_RIGetError (btk_rtbl.GetError)
+
+#define Btk_RIControl  (btk_rtbl.Control)
+
 #ifdef __cplusplus
 }
 #endif
@@ -211,10 +247,16 @@ namespace Btk{
              */
             int start(Color c);
             int line(int x1,int y1,int x2,int y2,Color c);
+            int line(const Vec2 &beg,const Vec2 &end,Color c){
+                return line(beg.x,beg.y,end.x,end.y,c);
+            }
             int aaline(int x1,int y1,int x2,int y2,Color c);
             
             int rect(const Rect &r,Color c);
             int box(const Rect &r,Color c);
+
+            int pie(int x,int y,int rad,int beg,int end,Color c);
+            int filled_pie(int x,int y,int rad,int beg,int end,Color c);
 
             int rounded_box(const Rect &r,int rad,Color c);
             int rounded_rect(const Rect &r,int rad,Color c);

@@ -265,7 +265,7 @@ namespace Btk{
             return true;
         };
     }
-    MemBuffer::MemBuffer(MemBuffer &&buf):RWops(std::move(buf)){
+    MemBuffer::MemBuffer(MemBuffer &&buf):RWops(static_cast<RWops&&>(buf)){
         
         fptr->hidden.unknown.data1 = this;
     }

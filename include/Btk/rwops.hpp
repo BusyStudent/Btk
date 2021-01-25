@@ -6,11 +6,13 @@
 #include "defs.hpp"
 #include <SDL2/SDL_rwops.h>
 namespace Btk{
-    //A Simple wrapper for SDL_RWOps
+    //A Simple wrapper for SDL_RWops
+    class MemBuffer;
     class BTKAPI RWops{
         public:
             RWops(SDL_RWops *r):fptr(r){};
             RWops(const RWops &) = delete;
+            RWops(MemBuffer &&) = delete;
             RWops(RWops && rw){
                 fptr = rw.fptr;
                 rw.fptr = nullptr;
@@ -42,6 +44,7 @@ namespace Btk{
                 return SDL_RWseek(fptr,offset,whence);
             }
             RWops &operator =(RWops &&);
+            RWops &operator =(MemBuffer &&) = delete;
             static RWops FromStdIstream(std::istream &);
             static RWops FromStdOstream(std::ostream &);
             static RWops FromStdFstream(std::fstream &);

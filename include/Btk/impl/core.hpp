@@ -44,6 +44,7 @@ namespace Btk{
         inline void on_dropev(const SDL_Event &event);//Handle SDL_DropEvent
         inline void on_windowev(const SDL_Event &event);//Handle SDL_WINDOWEVENT
         inline void on_keyboardev(const SDL_Event &event);//Handle SDL_KeyboardEvent
+        inline void on_mousewheel(const SDL_Event &event);//Handle SDL_MouseWheel
         inline void on_mousemotion(const SDL_Event &event);//Handle SDL_MouseMotion
         inline void on_mousebutton(const SDL_Event &event);//Handle SDL_MouseButton
         inline void on_textinput(const SDL_Event &event);

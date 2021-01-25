@@ -26,6 +26,7 @@ namespace Btk{
             DrawFn &draw(){
                 return draw_fn;
             }
+            using Widget::redraw;
         private:
             EventFn event_fn;
             DrawFn  draw_fn;

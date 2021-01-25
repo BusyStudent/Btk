@@ -197,6 +197,8 @@ namespace Btk{
                     //set cursor
                     SDL_SetCursor(cursor);
                 }
+                Event enter(Event::WindowEnter);
+                container.handle(enter);
                 if(not sig_enter.empty()){
                     sig_enter();
                 }
@@ -208,6 +210,8 @@ namespace Btk{
                     //reset to system cursor
                     SDL_SetCursor(SDL_GetDefaultCursor());
                 }
+                Event leave(Event::WindowLeave);
+                container.handle(leave);
                 if(not sig_leave.empty()){
                     sig_leave();
                 }

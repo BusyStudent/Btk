@@ -43,6 +43,10 @@ namespace Btk{
                 Enable = 12,//The widget was enabled
                 Disable = 13,//The widget was disabled
                 
+                Wheel = 14,//The mouse Wheel
+                WindowEnter = 15,//The mouse enter the window
+                WindowLeave = 16,//The mouse leave the window
+
                 User = 1000,
                 UserMax = UINT32_MAX - 1,
                 Error = UINT32_MAX
@@ -282,6 +286,18 @@ namespace Btk{
         int xrel;//< Note It cannot be used at DragEnd
         int yrel;//< Note It cannot be used at DragEnd
     };
+    struct BTKAPI WheelEvent:public Event{
+        WheelEvent(Uint32 which,Sint64 x,Sint64 y):Event(Type::Wheel){
+            this->which = which;
+            this->x = x;
+            this->y = y;
+        }
+        WheelEvent(const WheelEvent &) = default;
+        ~WheelEvent();
+        Uint32 which;//< Which mouse
+        Sint64 x;//< Vertical scroll,postive for scroll right
+        Sint64 y;//< Horizontal scroll,postive for scroll up
+    };
     typedef MouseEvent ClickEvent;
     /**
      * @brief Push event to queue
@@ -303,6 +319,7 @@ namespace Btk{
     /**
      * @brief This function was called by System to dispatch our event
      * 
+     * @internal User should not use it
      * @param ev SDL_Event structure 
      */
     void DispatchEvent(const SDL_Event &ev,void *);

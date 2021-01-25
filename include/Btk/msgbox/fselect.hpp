@@ -16,8 +16,16 @@ namespace Btk{
             typedef Signal<void(std::string_view txt)> SignalAsync;
         public:
             FSelectBox(std::string_view title = std::string_view());
+            FSelectBox(const FSelectBox &);
             ~FSelectBox();
-            void show();
+            /**
+             * @brief Focus to use async thread although it is not in main thread
+             * 
+             * @param focus_async The flag decided should we use async thread
+             * 
+             * @return false on async,true on sync
+             */
+            bool show(bool focus_async = false);
             /**
              * @brief Get the async signal,
              *  It will be emited after closeing the box

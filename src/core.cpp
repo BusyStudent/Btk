@@ -33,7 +33,7 @@ namespace{
             SDL_Log("[System::EventDispather]call %p data = %p",fn,ev.user.data2);
         #endif
         fn(ev.user.data2);
-    };
+    }
     /**
      * @brief A wrapper to call function pointer void(*)()
      * 
@@ -44,33 +44,8 @@ namespace{
         if(f != nullptr){
             f();
         }
-    };
-    #ifndef NDEBUG
-    void debug_crash_reporter(int sig){
-        //reset to default
-        signal(sig,SIG_DFL);
-        const char *signame;
-        if(sig == SIGSEGV){
-            signame = "SIGSEGV";
-        }
-        else if(sig == SIGABRT){
-            signame = "SIGABRT";
-        }
-        else{
-            signame = "???";
-        }
-        fprintf(stderr,"Caught signal '%s'\n",signame);
-        _Btk_Backtrace();
-        
-        #ifndef _WIN32
-        //rethrow the signal
-        raise(sig);
-        #else
-        TerminateProcess(GetCurrentProcess(),0);
-        #endif
-    };
-    #endif
-};
+    }
+}
 namespace Btk{
     //< The thread id of thread which called Btk::run
     static std::thread::id main_thrd;
@@ -245,6 +220,10 @@ namespace Btk{
                     on_textinput(event);
                     break;
                 }
+                case SDL_MOUSEWHEEL:{
+                    on_mousewheel(event);
+                    break;
+                }
                 default:{
                     //get function from event callbacks map
                     auto iter = evcbs_map.find(event.type);
@@ -288,6 +267,19 @@ namespace Btk{
         }
         auto click = TranslateEvent(event.button);
         win->container.handle_click(click);
+    }
+    //MouseWheel
+    inline void System::on_mousewheel(const SDL_Event &event){
+        WindowImpl *win = get_window_s(event.button.windowID);
+        if(win == nullptr){
+            return;
+        }
+        auto wheel = TranslateEvent(event.wheel);
+        if(win->container.handle_whell(wheel)){
+            if(not wheel.is_accepted()){
+                win->sig_event(wheel);
+            }
+        }
     }
     //DropFile
     inline void System::on_dropev(const SDL_Event &event){
@@ -440,6 +432,9 @@ namespace Btk{
     }
     bool IsMainThread(){
         return main_thrd == std::this_thread::get_id();
+    }
+    bool CouldBlock(){
+        return not Instance().is_running or not IsMainThread();
     }
 };
 namespace Btk{

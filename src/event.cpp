@@ -113,7 +113,7 @@ namespace Btk{
     MouseEvent::~MouseEvent(){}
     DragEvent::~DragEvent(){}
     MotionEvent::~MotionEvent(){}
-    
+    WheelEvent::~WheelEvent(){}
     size_t TextInputEvent::length() const noexcept{
         return SDL_utf8strlen(text.data());
     }
@@ -130,6 +130,18 @@ namespace Btk{
 
         return ev;
     };
+    WheelEvent TranslateEvent(const SDL_MouseWheelEvent &event){
+        Sint64 x,y;
+        if(event.direction == SDL_MOUSEWHEEL_FLIPPED){
+            x = -event.x;
+            y = -event.y;
+        }
+        else{
+            x = event.x;
+            y = event.y;
+        }
+        return {event.which,x,y};
+    }
     MouseEvent TranslateEvent(const SDL_MouseButtonEvent &event){
         MouseEvent ev;
 

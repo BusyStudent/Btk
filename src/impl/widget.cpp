@@ -129,6 +129,27 @@ namespace Btk{
                 BTK_ASSERT(drag_widget != nullptr);
                 return drag_widget->handle(event);
             }
+            case Event::Wheel:{
+                return handle_whell(event_cast<WheelEvent&>(event));
+            }
+            case Event::WindowLeave:{
+                if(cur_widget != drag_widget and cur_widget != nullptr and managed_window){
+                    //On the window
+                    int w,h;
+                    window->pixels_size(&w,&h);
+                    if(cur_widget->rect.w >= w and cur_widget->rect.h >= h){
+                        //We should generate a leave event fot it
+                        Event leave(Event::Leave);
+                        cur_widget->handle(leave);
+                        cur_widget = nullptr;
+                    }
+                }
+                //Boardcast to all the widget
+                for(auto widget:widgets_list){
+                    widget->handle(event);
+                }
+                return true;
+            }
             default:{
                 for(auto widget:widgets_list){
                     if(widget->handle(event)){
@@ -312,6 +333,12 @@ namespace Btk{
                     }
                 }
             }
+        }
+        return false;
+    }
+    bool Container::handle_whell(WheelEvent &event){
+        if(cur_widget != nullptr){
+            return cur_widget->handle(event);
         }
         return false;
     }
