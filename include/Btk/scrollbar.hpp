@@ -28,20 +28,36 @@ namespace Btk{
             }
             void set_value(int value);
         private:
+            /*
+            *|--Widget's rect-|
+            *|                |
+            *|----bar_range---|
+            *|  ||bar_rect||  |
+            *|----------------|
+            *|                |
+            *|----------------|
+            */
             Orientation orientation;
             //<The color of the scroll bar
             Color bar_color;
             //<The color when user enter the bar's position
-            Color bar_hight_color;
+            Color bar_enter_color;
+            //<The color when user press or drag the bar
+            Color bar_pressed_color;
+            //<Bar's background
+            Color bar_bg_color;
             //< The rect of the bar
             Rect bar_rect;
+            //< The rect of the bar's range
+            Rect bar_range;
             //< The value of the var,100 on max,0 on min
             int bar_value = 0;
             //< When the flag is true,draw hight color
             bool actived = false;
             bool dragging = false;
-            //When min size of the bar
+            //When min value of the bar
             int min = 5;
+            int max = 99;
     };
 }
 

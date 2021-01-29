@@ -35,6 +35,31 @@ namespace Impl{
         }
         va_list &varg;
     };
+
+    template<class T>
+    struct ScopePtr{
+        ScopePtr(T *p):ptr(p){}
+        ScopePtr(const ScopePtr &) = delete;
+        ~ScopePtr(){
+            if(owned){
+                delete ptr;
+            }
+        }
+        void release(){
+            owned = false;
+        }
+        T *operator &() const noexcept{
+            return ptr;
+        }
+        T *operator ->() const noexcept{
+            return ptr;
+        }
+        T *get() const noexcept{
+            return ptr;
+        }
+        T *ptr;
+        bool  owned = true;
+    };
 };
     using Impl::SDLScopePtr;
 };

@@ -5,6 +5,7 @@
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <Btk/rwops.hpp>
+#include <Btk/font.hpp>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL.h>
 
@@ -148,6 +149,8 @@ namespace SDL{
             case BTKRI_ISOPENGL:
                 //Is not backend opengl
                 return false;
+            case BTKRI_ISSDL:
+                return true;
             default:
                 SDL_Unsupported();
                 return -1;
@@ -458,5 +461,25 @@ namespace Btk{
         //It need be improved
         auto t = create_from(pixbuf);
         return copy(t,src,dst);
+    }
+    int Renderer::text(Font &font,int x,int y,Color c,std::string_view u8){
+        auto pixbuf = font.render_blended(u8,c);
+        Rect dst = {
+            x,
+            y,
+            pixbuf->w,
+            pixbuf->h
+        };
+        return copy(pixbuf,nullptr,dst);
+    }
+    int Renderer::text(Font &font,int x,int y,Color c,std::u16string_view u16){
+        auto pixbuf = font.render_blended(u16,c);
+        Rect dst = {
+            x,
+            y,
+            pixbuf->w,
+            pixbuf->h
+        };
+        return copy(pixbuf,nullptr,dst);
     }
 }

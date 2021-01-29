@@ -13,6 +13,7 @@ extern "C"{
 
 #else
 #include <SDL2/SDL_rect.h>
+#include <stdbool.h>
 typedef SDL_Rect  BtkRect;
 typedef SDL_Point BtkVec2;
 #endif
@@ -42,7 +43,7 @@ typedef struct BtkRenderer BtkRenderer;
  * @note It will return a bool
  */
 #define BTKRI_ISOPENGL 1
-
+#define BTKRI_ISSDL    2
 
 /**
  * @brief Renderer Interface Table
@@ -174,12 +175,28 @@ BTKAPI void Btk_ResetRITable();
 
 #define Btk_RIControl  (btk_rtbl.Control)
 
+/*BtkRI inline functions begin*/
+
+/**
+ * @brief Check backend is opengl
+ * 
+ * @return true 
+ * @return false 
+ */
+inline bool Btk_IsBackendOpenGL(){
+    return btk_rtbl.Control(BTKRI_ISOPENGL);
+}
+
+/*BtkRI inline functions end*/
+
+
 #ifdef __cplusplus
 }
 #endif
 
 #ifdef __cplusplus
 namespace Btk{
+    class Font;
     /**
      * @brief Abstruct Renderer
      * 
@@ -304,6 +321,30 @@ namespace Btk{
             int copy(const PixBuf &pixbuf,const Rect &src,const Rect &dst){
                 return copy(pixbuf,&src,&dst);
             }
+            /**
+             * @brief Draw text
+             * 
+             * @param x The text's x
+             * @param y The text's y
+             * @param c The text's color
+             * @param u8 The utf8 text
+             * 
+             * @return 0 on success
+             */
+            int  text(Font &,int x,int y,Color c,std::string_view u8);
+            /**
+             * @brief Draw text by using c-tyle format string
+             * 
+             * @param x The text's x
+             * @param y The text's y
+             * @param c The text's color
+             * @param fmt The utf8 fmt txt
+             * @param ... The format args
+             * @return 0 on success
+             */
+            int  text(Font &,int x,int y,Color c,std::string_view fmt,...);
+            int  text(Font &,int x,int y,Color c,std::u16string_view u16);
+            int  text(Font &,int x,int y,Color c,std::u16string_view fmt,...);
         public:
             BtkRenderer *render = nullptr;
             BtkTexture  *cache = nullptr;//< Texture cache for pixbuf copying

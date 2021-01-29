@@ -29,6 +29,20 @@
     #define BTKIMPORT 
 #endif
 
+//attributes
+#if defined(__GNUC__)
+    #define BTKWEAK   __attribute__((weak))
+    #define BTKINLINE __attribute__((__always_inline__))
+#else
+    #define BTKWEAK 
+    #define BTKINLINE 
+#endif
+
+
+
+
+
+
 #ifdef _BTK_SOURCE
     //source file
     #define BTKAPI BTKEXPORT

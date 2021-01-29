@@ -21,6 +21,7 @@
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/module.hpp>
+#include <Btk/mixer.hpp>
 #include <Btk/event.hpp>
 #include <Btk/defs.hpp>
 #include <Btk/Btk.hpp>
@@ -165,6 +166,7 @@ namespace Btk{
         //Cleanup platform
         Platform::Quit();
         //Quit SDL
+        Mixer::Quit();
         IMG_Quit();
         TTF_Quit();
         SDL_Quit();

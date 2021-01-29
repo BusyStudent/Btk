@@ -80,6 +80,9 @@ target("btk")
     --Msgboxs
     add_files("./src/msgbox/*.cpp")
     add_packages("SDL2","SDL2_ttf","SDL2_image","gif")
+    --Mixer
+    add_files("./src/mixer/mixer.cpp")
+    add_files("./src/mixer/raw.cpp")
 if is_mode("debug") then
     target("hello")
         set_kind("binary")
