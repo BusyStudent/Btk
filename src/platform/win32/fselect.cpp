@@ -4,7 +4,7 @@
 
 #include <Btk/thirdparty/utf8.h>
 #include <Btk/msgbox/fselect.hpp>
-#include <Btk/msgbox/win32.hpp>
+#include <Btk/msgbox/impl.hpp>
 #include <Btk/async/async.hpp>
 #include <Btk/impl/atomic.hpp>
 #include <algorithm>

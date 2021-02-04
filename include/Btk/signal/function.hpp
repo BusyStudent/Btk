@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <utility>
 #include <type_traits>
+#include "../defs.hpp"
 namespace Btk{
     //Impl
     namespace Impl{
@@ -28,7 +29,7 @@ namespace Btk{
         };
     };
     //throw BadFunctionCall
-    [[noreturn]] void throwBadFunctionCall();
+    [[noreturn]] void BTKAPI throwBadFunctionCall();
     //Function Base
     struct FunctionBase{
         FunctionBase():
