@@ -15,9 +15,11 @@ namespace Btk{
         #ifdef BTK_WIN32
         using Win32::Init;
         using Win32::Quit;
+        using Win32::HandleSysMsg;
         #elif defined(BTK_X11)
         using X11::Init;
         using X11::Quit;
+        using X11::HandleSysMsg;
         #endif
     }
 }

@@ -180,7 +180,7 @@ namespace Btk{
                 return begin() + i;
             }
             template<class ...Args>
-            iterator index(Args &&...args) const{
+            const_iterator index(Args &&...args) const{
                 size_type i = find(std::forward<Args>(args)...);
                 if(i == nops){
                     return end();

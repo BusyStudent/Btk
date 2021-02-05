@@ -68,7 +68,7 @@ namespace Btk{
         void atexit(void (*fn)(void *),void *data);
         void atexit(void (*fn)());
 
-        void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data);
+        void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data = nullptr);
 
         std::list<Module> modules_list;
         //std::list<RendererCreateFn> render_list;

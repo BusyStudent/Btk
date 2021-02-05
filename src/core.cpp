@@ -226,6 +226,10 @@ namespace Btk{
                     on_mousewheel(event);
                     break;
                 }
+                case SDL_SYSWMEVENT:{
+                    Platform::HandleSysMsg(*(event.syswm.msg));
+                    break;
+                }
                 default:{
                     //get function from event callbacks map
                     auto iter = evcbs_map.find(event.type);

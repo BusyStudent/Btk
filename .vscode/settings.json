@@ -76,7 +76,17 @@
         "xstring": "cpp",
         "xutility": "cpp",
         "xstddef": "cpp",
-        "charconv": "cpp"
+        "charconv": "cpp",
+        "ios": "cpp",
+        "xthread": "cpp",
+        "xfacet": "cpp",
+        "xiosbase": "cpp",
+        "xlocale": "cpp",
+        "xlocinfo": "cpp",
+        "xlocnum": "cpp",
+        "xmemory": "cpp",
+        "xmemory0": "cpp",
+        "xtr1common": "cpp"
     },
     "files.exclude": {
         "**/.git": true,
