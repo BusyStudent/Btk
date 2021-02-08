@@ -5,10 +5,9 @@
 #include <cstddef>
 #include <list>
 #include "../defs.hpp"
+#if 0
 namespace Btk{
     //TODO: improve thread safety
-
-    [[noreturn]] void throwEmptySignal();
     namespace Impl{
         struct SlotBase{
             //pointer to delete
@@ -229,6 +228,6 @@ namespace Btk{
         typedef RetT result_type;
     };
 };
-
-
+#endif
+#include "../object.hpp"
 #endif // _BTKSIGNAL_HPP_

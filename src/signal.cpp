@@ -2,6 +2,7 @@
 
 #include <Btk/signal/signal.hpp>
 namespace Btk{
+    #if 0
     SignalBase::SignalBase(){
         
     }
@@ -22,4 +23,5 @@ namespace Btk{
             iter = _connections.erase(iter);
         }
     }
+    #endif
 };
