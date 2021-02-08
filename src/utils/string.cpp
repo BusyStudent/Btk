@@ -1,6 +1,7 @@
 #include "../build.hpp"
 #include <SDL2/SDL_stdinc.h>
 #include <Btk/utils/string.hpp>
+#include <Btk/impl/scope.hpp>
 #include <Btk/exception.hpp>
 #include <cctype>
 namespace Btk{
@@ -70,4 +71,54 @@ namespace Btk{
         return str;
     }
 }
+#endif
+
+#ifdef __linux
+namespace{
+    using Btk::Impl::VaListGuard;
+    void print_int(std::u16string &out,int number){
+        //todo ...
+        int n = number % 10;
+        while(n){
+
+        }
+    }
+    /**
+     * @brief process ctyle format in utf16
+     * 
+     * @param out 
+     * @param fmt 
+     * @param varg 
+     */
+    void u16sprintf(std::u16string &out,std::u16string_view fmt,va_list varg){
+        size_t prev = 0;// prev position
+        size_t cur = fmt.find(u'%');//current position
+        while(cur != fmt.npos){
+            //process formattor
+            switch(fmt[cur + 1]){
+                case u'%':{
+                    out += u'%';
+                    break;
+                }
+                case u'd':{
+                    //%d
+                    print_int(out,va_arg(varg,int));
+                    break;
+                }
+                case u's':{
+                    //%s
+                    out += va_arg(varg,const char16_t*);
+                    break;
+                }
+                default:{
+                    //what should i do
+                }
+            }
+            prev = cur + 1;
+            cur = fmt.find(u'%',prev);
+        }
+        out += fmt.substr(prev,cur - 1);
+    }
+}
+
 #endif

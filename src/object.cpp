@@ -10,7 +10,7 @@ namespace Btk{
     Object::~Object(){
         auto iter = callbacks.begin();
         while(iter != callbacks.end()){
-            CallBack *cb = *iter;
+            auto *cb = *iter;
             if(cb != nullptr){
                 //Call the callback
                 cb->run(this,cb);
@@ -28,12 +28,22 @@ namespace Btk{
     void Object::disconnect_all(){
         auto iter = callbacks.begin();
         while(iter != callbacks.end()){
-            CallBack *cb = *iter;
-            if(cb->type == CallBack::Signal){
+            auto *cb = *iter;
+            if(cb->type == ObjectCallBack::Signal){
                 //Call the callback
                 cb->run(this,cb);
             }
             iter = callbacks.erase(iter);
+        }
+    }
+    void ConnectionWrapper::Run(Object *object,ObjectCallBack *self){
+        std::unique_ptr<ConnectionWrapper> ptr(
+            static_cast<ConnectionWrapper*>(self)
+        );
+        //if object is nullptr => do nothing
+        if(object != nullptr){
+            //disconnect it
+            ptr->con.disconnect(true);
         }
     }
 }

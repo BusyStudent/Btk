@@ -28,12 +28,17 @@ namespace SDL{
         #ifndef NDEBUG
         SDL_RendererInfo info;
         if(SDL_GetRendererInfo(render,&info) == 0){
-            BTK_LOGINFO("CreateRenderer %p => backend:%s max_tw:%d max_th:%d",
+            fprintf(stderr,"CreateRenderer %p => backend:%s max_tw:%d max_th:%d\n",
                 render,
                 info.name,
                 info.max_texture_width,
                 info.max_texture_height
             );
+            for(int i = 0;i < info.num_texture_formats;i ++){
+                fprintf(stderr,"  Texture format[%d]:%s\n",
+                    i,
+                    SDL_GetPixelFormatName(info.texture_formats[i]));
+            }
         }
         #endif
         return reinterpret_cast<BtkRenderer*>(render);      
@@ -139,6 +144,22 @@ namespace SDL{
     static BtkTexture *LoadTextureFrom(BtkRenderer *render,SDL_RWops *rwops){
         return reinterpret_cast<BtkTexture*>(IMG_LoadTexture_RW(Renderer(render),rwops,false));
     }
+    
+    static BtkTexture *RenderGetTarget(BtkRenderer *render){
+        return reinterpret_cast<BtkTexture*>(SDL_GetRenderTarget(Renderer(render)));
+    }
+    static int RenderSetTarget(BtkRenderer *render,BtkTexture *t){
+        return SDL_SetRenderTarget(Renderer(render),Texture(t));
+    }
+    static int RenderReadPixels(BtkRenderer *render,
+                            const BtkRect *r,
+                            Uint32 fmt,
+                            void *pixels,
+                            int pitch){
+
+        return SDL_RenderReadPixels(Renderer(render),r,fmt,pixels,pitch);
+    }
+    
     //SDL_Control
     static int Control(int code,...){
         using Btk::Impl::VaListGuard;
@@ -204,6 +225,10 @@ extern "C"{
         .LockTexture = SDL::LockTexture,
         .UnlockTexture = SDL::UnlockTexture,
 
+        .RenderGetTarget = SDL::RenderGetTarget,
+        .RenderSetTarget = SDL::RenderSetTarget,
+        .RenderReadPixels = SDL::RenderReadPixels,
+
         .SetError = SDL_SetError,
         .GetError = SDL_GetError,
 
@@ -257,6 +282,10 @@ extern "C"{
         btk_rtbl.LockTexture = SDL::LockTexture;
         btk_rtbl.UnlockTexture = SDL::UnlockTexture;
 
+        btk_rtbl.RenderGetTarget = SDL::RenderGetTarget;
+        btk_rtbl.RenderSetTarget = SDL::RenderSetTarget;
+        btk_rtbl.RenderReadPixels = SDL::RenderReadPixels;
+
         btk_rtbl.SetError = SDL_SetError;
         btk_rtbl.GetError = SDL_GetError;
 
@@ -292,6 +321,11 @@ namespace Btk{
         if(texture == nullptr){
             throwRendererError(Btk_RIGetError());
         }
+        #ifndef NDEBUG
+        Uint32 fmt;
+        Btk_QueryTexture(texture,&fmt,nullptr,nullptr,nullptr);
+        BTK_LOGINFO("Create texture %p:fmt:%s",texture,SDL_GetPixelFormatName(fmt));
+        #endif
         return texture;
     }
     Texture Renderer::create(Uint32 fmt,TextureAccess access,int w,int h){
@@ -462,6 +496,62 @@ namespace Btk{
         auto t = create_from(pixbuf);
         return copy(t,src,dst);
     }
+
+    PixBuf Renderer::dump_texture(const Texture &texture){
+        if(texture.get()){
+            throwRuntimeError("Texture could not be empty");
+        }
+        int w,h;
+        Uint32 fmt;
+        auto inf = texture.information();
+        w = inf.w;
+        h = inf.h;
+        fmt = inf.format;
+        //Create it
+        PixBuf pixbuf(w,h,fmt);
+        //restore target
+        BtkTexture *target = Btk_RenderGetTarget(render);
+        //parpre cleanup
+        Btk_defer{
+            Btk_RenderSetTarget(render,target);
+        };
+        lock_guard<PixBuf> locker(pixbuf);
+        //set target
+        if(Btk_RenderSetTarget(render,texture.get()) == -1){
+            throwRendererError();
+        }
+        if(Btk_RenderReadPixels(render,nullptr,fmt,pixbuf->pixels,pixbuf->pitch) == -1){
+            throwRendererError();
+        }
+        return pixbuf;
+    }
+
+    Texture Renderer::clone_texture(const Texture &texture){
+        if(texture.get()){
+            throwRuntimeError("Texture could not be empty");
+        }
+        int w,h;
+        Uint32 fmt;
+        auto inf = texture.information();
+        if(inf.access == TextureAccess::Static){
+            return create_from(dump_texture(texture));
+        }
+        Texture t = create(fmt,inf.access,w,h);
+        BtkTexture *target = Btk_RenderGetTarget(render);
+        //parpre cleanup
+        Btk_defer{
+            Btk_RenderSetTarget(render,target);
+        };
+        if(Btk_RenderSetTarget(render,texture.get()) == -1){
+            throwRendererError();
+        }
+        lock_guard<Texture> locker(t);
+        if(Btk_RenderReadPixels(render,nullptr,fmt,locker.pixels,locker.pitch) == -1){
+            throwRendererError();
+        }
+        return t;
+    }
+
     int Renderer::text(Font &font,int x,int y,Color c,std::string_view u8){
         auto pixbuf = font.render_blended(u8,c);
         Rect dst = {

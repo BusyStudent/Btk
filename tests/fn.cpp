@@ -35,4 +35,13 @@ int main(){
     });
     signal.connect(&Test::fn,&test);
     signal.emit();
+    {
+        //It should auto disconnect 
+        Test t;
+        signal.connect(&Test::fn,&t);
+        t.on_destroy([&t](){
+            std::cout << "Object Test was destroyed" << std::endl; 
+        });
+    }
+    signal.emit();
 }

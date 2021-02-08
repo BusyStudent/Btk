@@ -105,8 +105,28 @@ struct BtkTable{
 
     int  (*LockTexture)(BtkTexture*,const BtkRect *rect,void **pixels,int *pitch);
     void (*UnlockTexture)(BtkTexture *);
+    /**
+     * @brief Get Renderer's target
+     * 
+     * @param render The renderer
+     * @return nullptr on default
+     */
+    BtkTexture *(*RenderGetTarget)(BtkRenderer *render);
+    /**
+     * @brief Set Renderer's target
+     * @param render The renderer
+     * @param target The target(nullptr to reset to default)
+     * 
+     * @return 0 on success
+     */
+    int (*RenderSetTarget)(BtkRenderer *render,BtkTexture *target);
 
-
+    
+    int (*RenderReadPixels)(BtkRenderer *render,
+                            const BtkRect *r,
+                            Uint32 fmt,
+                            void *pixels,
+                            int pitch);
 
     /**
      * @brief Set the renderer last error
@@ -154,6 +174,11 @@ BTKAPI void Btk_ResetRITable();
 #define Btk_RenderGetViewPort (btk_rtbl.RenderGetViewPort)
 
 #define Btk_RenderSetDrawColor (btk_rtbl.RenderSetDrawColor)
+
+#define Btk_RenderGetTarget (btk_rtbl.RenderGetTarget)
+#define Btk_RenderSetTarget (btk_rtbl.RenderSetTarget)
+#define Btk_RenderReadPixels (btk_rtbl.RenderReadPixels)
+
 
 #define Btk_RenderCopy    (btk_rtbl.RenderCopy)
 #define Btk_RenderClear    (btk_rtbl.RenderClear)
@@ -345,6 +370,14 @@ namespace Btk{
             int  text(Font &,int x,int y,Color c,std::string_view fmt,...);
             int  text(Font &,int x,int y,Color c,std::u16string_view u16);
             int  text(Font &,int x,int y,Color c,std::u16string_view fmt,...);
+            /**
+             * @brief Dump a texture into pixbuf
+             * 
+             * @param texture The texture
+             * @return Pixbuf
+             */
+            PixBuf  dump_texture(const Texture &texture);
+            Texture clone_texture(const Texture &texture);
         public:
             BtkRenderer *render = nullptr;
             BtkTexture  *cache = nullptr;//< Texture cache for pixbuf copying

@@ -88,6 +88,9 @@ namespace X11{
     void Quit(){
 
     }
+    void HandleSysMsg(const SDL_SysWMmsg &){
+
+    }
 }
 }
 

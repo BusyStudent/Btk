@@ -21,6 +21,7 @@
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/module.hpp>
+#include <Btk/gl/gl.hpp>
 #include <Btk/mixer.hpp>
 #include <Btk/event.hpp>
 #include <Btk/defs.hpp>
@@ -154,6 +155,7 @@ namespace Btk{
             std::call_once(flag,std::atexit,System::Quit);
             //Init platform
             Platform::Init();
+            GL::Init();
         }
         return 1;
     }

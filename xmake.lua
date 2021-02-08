@@ -83,6 +83,7 @@ target("btk")
     --Mixer
     add_files("./src/mixer/mixer.cpp")
     add_files("./src/mixer/raw.cpp")
+    add_files("./src/gl/*.cpp")
 if is_mode("debug") then
     target("hello")
         set_kind("binary")

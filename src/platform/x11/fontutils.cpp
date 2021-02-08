@@ -42,7 +42,7 @@ namespace FontUtils{
                 Btk::AtExit(FontUtils::Quit);
             });
         }
-    };
+    }
     void Quit(){
         if(was_init){
             //Destroy config
@@ -53,8 +53,8 @@ namespace FontUtils{
             mutex = nullptr;
             was_init = false;
         }
-    };
-};
+    }
+}
 namespace FontUtils{
     //Get font file
     std::string GetFileByName(std::string_view fontname){
@@ -105,7 +105,7 @@ namespace FontUtils{
         //FcFontSetPrint(fontset);
         return {pat,objset,fontset};
     }
-};
+}
     FontSet::~FontSet(){
         FcPatternDestroy(static_cast<FcPattern*>(fc_pat));
         FcObjectSetDestroy(static_cast<FcObjectSet*>(fc_objset));
@@ -212,5 +212,13 @@ namespace FontUtils{
             return {{nullptr},this,0};
         }
         return {{nullptr},this,static_cast<size_t>(fset->nfont)};
+    }
+
+    //FontMatcher
+    FontMatcher::FontMatcher(){
+        pat = FcPatternCreate();
+    }
+    FontMatcher::~FontMatcher(){
+        FcPatternDestroy(static_cast<FcPattern*>(pat));
     }
 };

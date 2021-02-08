@@ -11,6 +11,24 @@ namespace Btk{
     class SignalBase;
     template<class RetT>
     class Signal;
+    class Object;
+    /**
+     * @brief Callbacks on destroy
+     * 
+     */
+    struct ObjectCallBack{
+        enum {
+            Unknown,//< Unkonw callback
+            Timer,//< Callback for removeing timer
+            Signal//< Callback for removeing signal
+        }type;
+        /**
+         * @brief Call the callback
+         * 
+         * @note Donot forget to delete self in function run
+         */
+        void (*run)(Object *object,ObjectCallBack *self);
+    };
     /**
      * @brief Basic slot
      * 
@@ -34,6 +52,7 @@ namespace Btk{
         template<class RetT>
         friend class Signal;
         friend class SignalBase;
+        friend class Connection;
     };
     /**
      * @brief Slot interface for emit
@@ -58,8 +77,9 @@ namespace Btk{
             Slot(CleanupFn c,InvokeFn i):SlotBase(c){
                 invoke_ptr = i;
             }
-        template<class RetT>
+        template<class T>
         friend class Signal;
+        friend class Connection;
     };
     /**
      * @brief Slot for callable object
@@ -68,7 +88,7 @@ namespace Btk{
      * @tparam Args 
      */
     template<class Callable,class RetT,class ...Args>
-    class MemSlot:public SlotBase{
+    class MemSlot:public Slot<RetT,Args...>{
         protected:
             mutable Callable callable;
             /**
@@ -79,7 +99,7 @@ namespace Btk{
                 delete static_cast<MemSlot*>(self);
             }
             static RetT Invoke(const void *self,Args ...args){
-                return static_cast<MemSlot*>(self)->invoke(
+                return static_cast<const MemSlot*>(self)->invoke(
                     std::forward<Args>(args)...
                 );
             }
@@ -88,49 +108,59 @@ namespace Btk{
             }
 
             MemSlot(Callable &&callable):
-                Slot(Delete,Invoke),
+                Slot<RetT,Args...>(Delete,Invoke),
                 callable(std::forward<Callable>(callable)){
 
             }
-        template<class RetT>
+        template<class T>
         friend class Signal;
         friend class Object;
     };
     /**
-     * @brief Slot for Object's member function 
+     * @brief Slot for Btk::HasSlots's member function
      * 
+     * @tparam Callable 
+     * @tparam Method
+     * @tparam RetT 
+     * @tparam Args 
      */
-    template<class Function,class RetT,class ...Args>
-    class ObjectSlot:public SlotBase{
+    template<class Class,class Method,class RetT,class ...Args>
+    class ClassSlot:public Slot<RetT,Args...>{
+        protected:
+            Class *object;
+            Method method;
+            std::list<ObjectCallBack*>::iterator iter;//< iter from 
+            static void Delete(void *self,bool from_object){
+                std::unique_ptr<ClassSlot > ptr(
+                    static_cast<ClassSlot*>(self)
+                );
+                //Call from object
+                if(not from_object){
+                    //< delete it
+                    auto p = (*ptr->iter);
+                    p->run(nullptr,p);
+                    
+                    ptr->object->Object::callbacks.erase(ptr->iter);
+                }
+            }
+            static RetT Invoke(const void *self,Args ...args){
+                return static_cast<const ClassSlot*>(self)->invoke(
+                    std::forward<Args>(args)...
+                );
+            }
+            RetT invoke(Args ...args) const{
+                return (object->*method)(std::forward<Args>(args)...);
+            }
+            ClassSlot(Class *o,Method m):
+                Slot<RetT,Args...>(Delete,Invoke),
+                object(o),
+                method(m){
 
-
-        template<class RetT>
+            }
+        template<class T>
         friend class Signal;
         friend class Object;
     };
-    class Connection{
-        public:
-            Connection() = default;
-            Connection(const Connection &) = default;
-
-
-            SignalBase *signal() const noexcept{
-                return current;
-            }
-        private:
-            typedef std::list<SlotBase*>::iterator Iterator;
-            SignalBase *current;//< current signal
-            Iterator iter;//<The iterator of the slot ptr
-            Connection(SignalBase *c,Iterator i):
-                current(c),
-                iter(i){
-
-            }
-        template<class RetT>
-        friend class Signal;
-        friend class Object;
-    };
-
     /**
      * @brief Basic signal
      * 
@@ -185,6 +215,56 @@ namespace Btk{
             mutable int spinlock = 0;//< SDL_spinlock for multithreading
         template<class RetT>
         friend class Signal;
+        friend class Connection;
+    };
+        /**
+     * @brief Signal's connection
+     * 
+     */
+    class Connection{
+        public:
+            Connection() = default;
+            Connection(const Connection &) = default;
+
+
+            SignalBase *signal() const noexcept{
+                return current;
+            }
+            void disconnect(bool from_object = false){
+                (*iter)->cleanup(from_object);
+                current->slots.erase(iter);
+            }
+        protected:
+            typedef std::list<SlotBase*>::iterator Iterator;
+            SignalBase *current;//< current signal
+            Iterator iter;//<The iterator of the slot ptr
+            Connection(SignalBase *c,Iterator i):
+                current(c),
+                iter(i){
+
+            }
+        template<class RetT>
+        friend class Signal;
+        friend class Object;
+    };
+    /**
+     * @brief Remove connection in Object callback
+     * 
+     */
+    struct BTKAPI ConnectionWrapper:public ObjectCallBack{
+        ConnectionWrapper(Connection c):
+            con(c){
+            
+            type = ObjectCallBack::Signal;
+            run = Run;
+
+        }
+        Connection con;
+        /**
+         * @brief pass nullptr is just delete self
+         * 
+         */
+        static void Run(Object *,ObjectCallBack*);
     };
     /**
      * @brief Generic object provide signals/slots timer etc...
@@ -201,68 +281,56 @@ namespace Btk{
                 using Invoker = CallBackInvoker<Callable,Args...>;
                 callbacks.push_back(
                     new Invoker{
-                        callable,
+                        std::forward<Callable>(callable),
                         std::forward<Args>(args)...
                     }
                 );
             }
+            
             /**
              * @brief Disconnect all signal
              * 
              */
             void disconnect_all();
         public:
-            /**
-             * @brief Callbacks on destroy
-             * 
-             */
-            struct CallBack{
-                enum {
-                    Unknown,//< Unkonw callback
-                    Timer,//< Callback for removeing timer
-                    Signal//< Callback for removeing signal
-                }type;
-                /**
-                 * @brief Call the callback
-                 * 
-                 * @note Donot forget to delete self in function run
-                 */
-                void (*run)(Object *object,CallBack *self);
-            };
+            using CallBack = ObjectCallBack;
             /**
              * @brief Invoker for callable
              * 
-             * @tparam Object 
+             * @tparam Callable 
              * @tparam Args 
              */
-            template<class Object,class ...Args>
+            template<class Callable,class ...Args>
             struct CallBackInvoker:
-                public CallBack,
+                public ObjectCallBack,
                        std::tuple<Args...>{
 
-                Object callable;
-                CallBackInvoker(Object &&object,Args &&...args):
+                Callable callable;
+                CallBackInvoker(Callable &&object,Args &&...args):
                     CallBack{CallBack::Unknown,&Run},
                     std::tuple<Args...>{std::forward<Args>(args)...},
-                    callable{std::forward<Object>(object)}{
+                    callable{std::forward<Callable>(object)}{
 
                 }
                 static void Run(Object*,CallBack *self){
-                    std::unique_ptr<CallBackInvoker*> ptr(
+                    std::unique_ptr<CallBackInvoker > ptr(
                         static_cast<CallBackInvoker*>(self)
                     );
-                    std::apply(ptr->callable,static_cast<std::tuple<Args>...>&&>(*ptr));
+                    std::apply(ptr->callable,static_cast<std::tuple<Args...>&&>(*ptr));
                 }
             };
         private:
             void lock() const;
             void unlock() const;
 
-            std::list<CallBack*> callbacks;
+            std::list<ObjectCallBack*> callbacks;
             mutable int spinlock = 0;//<SDL_spinlock for multithreading
         
         template<class RetT>
         friend class Signal;
+        template<class Class,class Method,class RetT,class ...Args>
+        friend class ClassSlot;
+        friend class ConnectionWrapper;
     };
     
     /**
@@ -275,6 +343,7 @@ namespace Btk{
     class Signal<RetT(Args...)>:public SignalBase{
         public:
             using SignalBase::SignalBase;
+            using result_type = RetT;
             /**
              * @brief Emit the signal
              * 
@@ -285,7 +354,7 @@ namespace Btk{
                 //lock the signalbase
                 lock_guard locker(this);
 
-                if(std::is_same<void,RetT>()){
+                if constexpr(std::is_same<void,RetT>()){
                     for(auto slot:slots){
                         static_cast<Slot<RetT,Args...>*>(slot)->invoke(
                             std::forward<Args>(args)...
@@ -324,10 +393,23 @@ namespace Btk{
                     --slots.end()
                 };
             }
-            template<class Callable,class TObject>
-            void connect(Callable &&callable,TObject *object){
+            template<class Method,class TObject>
+            void connect(Method &&method,TObject *object){
                 static_assert(std::is_base_of<Object,TObject>(),"Object must inherit HasSlots");
+                lock_guard guard(this);
 
+                using Slot = ClassSlot<TObject,Method,RetT,Args...>;
+                Slot *slot = new Slot(object,method);
+                slots.push_back(
+                    slot
+                );
+                //make connection
+                Connection con = {this,--slots.end()};
+                object->Object::callbacks.push_back(
+                    new ConnectionWrapper(con)
+                );
+
+                slot->iter = --object->Object::callbacks.end();
             }
     };
     using HasSlots = Object;

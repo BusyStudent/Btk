@@ -188,7 +188,7 @@ namespace Btk{
             Font(FontImpl *i):pimpl(i){};
             FontImpl *pimpl;
     };
-    class FontSet{
+    class BTKAPI FontSet{
         #ifdef __gnu_linux__
         public:
             /**
@@ -214,7 +214,7 @@ namespace Btk{
              * @brief Font in FontSet
              * 
              */
-            struct Font{
+            struct BTKAPI Font{
                 /**
                  * @note The return of the methods are all reference,
                  *       If you want to use it after destroying the fontset,
@@ -297,6 +297,17 @@ namespace Btk{
              */
             Iterator end();
         friend struct Iterator;
+    };
+    class BTKAPI FontMatcher{
+        public:
+            FontMatcher();
+            FontMatcher(const FontMatcher &) = delete;
+            ~FontMatcher();
+        private:
+            //Impls
+            #ifdef __gnu_linux__
+            void *pat;
+            #endif
     };
     /**
      * @brief Some useful function about font

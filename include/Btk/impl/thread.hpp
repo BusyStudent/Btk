@@ -109,6 +109,40 @@ namespace Btk{
         private:
             SDL_SpinLock slock = 0;
     };
+    class Semaphore{
+        public:
+            /**
+             * @brief Construct a new Semaphore object
+             * 
+             * @param value The initial value(default to 0)
+             */
+            Semaphore(Uint32 value = 0){
+                sem = SDL_CreateSemaphore(value);
+                if(sem == nullptr){
+                    throwSDLError();
+                }
+            }
+            Semaphore(const Semaphore &) = delete;
+            Semaphore(Semaphore &&s){
+                sem = s.sem;
+                s.sem = nullptr;
+            }
+            ~Semaphore(){
+                SDL_DestroySemaphore(sem);
+            }
+            /**
+             * @brief Get current value
+             * 
+             * @return Uint32 
+             */
+            Uint32 value() const{
+                return SDL_SemValue(sem);
+            }
+            
+        private:
+            SDL_sem *sem;
+    };
+    using Sem = Semaphore;
 };
 
 
