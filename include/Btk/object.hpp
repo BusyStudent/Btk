@@ -32,6 +32,22 @@ namespace Btk{
         void (*run)(Object *object,ObjectCallBack *self);
     };
     /**
+     * @brief Lockguard for SlotBase and Object
+     * 
+     * @tparam T 
+     */
+    template<class T>
+    struct _LockGuard_{
+        _LockGuard_(T *b):base(b){
+            base->lock();
+        }
+        _LockGuard_(const _LockGuard_ &) = delete;
+        ~_LockGuard_(){
+            base->unlock();
+        }
+        T *base;
+    };
+    /**
      * @brief Basic slot
      * 
      */
@@ -141,7 +157,7 @@ namespace Btk{
                     //< delete it
                     auto p = (*ptr->iter);
                     //< lock the object
-                    Object::lock_guard locker(ptr->object);
+                    _LockGuard_<Class> locker(ptr->object);
                     p->run(nullptr,p);
                     
                     ptr->object->Object::callbacks.erase(ptr->iter);
@@ -220,6 +236,9 @@ namespace Btk{
         template<class RetT>
         friend class Signal;
         friend class Connection;
+
+        template<class T>
+        friend struct _LockGuard_;
     };
         /**
      * @brief Signal's connection
@@ -369,6 +388,9 @@ namespace Btk{
         template<class Class,class Method,class RetT,class ...Args>
         friend class ClassSlot;
         friend class ConnectionWrapper;
+
+        template<class T>
+        friend struct _LockGuard_;
     };
     
     /**
