@@ -17,7 +17,7 @@ namespace Btk{
     using utf8::unchecked::utf16to8;
     //A inserter
     struct TextBoxInserter{
-        TextBoxInserter() = default;
+        TextBoxInserter(TextBox &t,std::u16string::iterator i):tb(t),cur(i){};
         TextBox &tb;//TextBox
         std::u16string::iterator cur;//Current iter
         TextBoxInserter &operator *(){

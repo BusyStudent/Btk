@@ -9,21 +9,24 @@ if not is_plat("windows") then
     add_cxxflags("-std=c++17","-Wall","-Wextra","-fPIC")
 else
     --VCPKG
-    add_requires("vcpkg::SDL2",{alias = "SDL2"})
-    add_requires("vcpkg::SDL2-image",{alias = "SDL2_image"})
-    add_requires("vcpkg::SDL2-ttf",{alias = "SDL2_ttf"})
-    add_requires("vcpkg::gif",{optional = true,alias = "gif"})
-    
-    add_includedirs("E:/VisualStudio/VCPKG/vcpkg-master/installed/x86-windows/include")
-    add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2_x64-windows-static/lib")
-    add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2-image_x64-windows-static/lib")
-    add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2-ttf_x64-windows-static/lib")
-    add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/freetype_x64-windows-static/lib")
-    add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/libpng_x64-windows-static/lib")
-    add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/zlib_x64-windows-static/lib")
-    add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/bzip2_x64-windows-static/lib")
-    add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/brotli_x64-windows-static/lib")
+    --add_requires("vcpkg::SDL2",{alias = "SDL2"})
+    --add_requires("vcpkg::SDL2-image",{alias = "SDL2_image"})
+    --add_requires("vcpkg::SDL2-ttf",{alias = "SDL2_ttf"})
+    --add_requires("vcpkg::gif",{optional = true,alias = "gif"})
+    --using xmake repo
+    add_requires("libsdl","libsdl_ttf","libsdl_image")
+    --add_packages("SDL2","SDL2-image","SDL2-ttf")
+    --add_includedirs("E:/VisualStudio/VCPKG/vcpkg-master/installed/x86-windows/include")
+    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2_x64-windows-static/lib")
+    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2-image_x64-windows-static/lib")
+    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2-ttf_x64-windows-static/lib")
+    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/freetype_x64-windows-static/lib")
+    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/libpng_x64-windows-static/lib")
+    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/zlib_x64-windows-static/lib")
+    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/bzip2_x64-windows-static/lib")
+    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/brotli_x64-windows-static/lib")
     add_cxxflags("/std:c++latest")
+    --add_requires("SDL2","SDL2_ttf","SDL2_image")
 end
 
 add_includedirs("./include")
@@ -48,11 +51,14 @@ target("btk")
         add_files("./src/platform/x11/*.cpp")
         add_links("fontconfig")
     elseif is_plat("windows") or is_plat("mingw") then
+        --xmake repo
+        add_packages("libsdl","libsdl_ttf","libsdl_image")
+
         add_files("./src/platform/win32/*.cpp")
         add_links("user32","shell32","advapi32","ole32","oleaut32")
         add_links("gdi32","winmm","imm32","setupapi","version")
-        add_links("freetype","bz2","brotlidec-static","brotlicommon-static")
-        add_links("libpng16","zlib")
+        --add_links("freetype","bz2","brotlidec-static","brotlicommon-static")
+        --add_links("libpng16","zlib")
     end
     --Add gif ext
     if has_package("gif") then
@@ -122,3 +128,6 @@ if is_mode("debug") then
         add_files("./tests/scroll.cpp")
         add_deps("btk")
 end
+target("btk-rcc")
+    set_kind("binary")
+    add_files("./tools/btk-rcc.cpp")

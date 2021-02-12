@@ -8,6 +8,8 @@
 #include <tuple>
 #include <list>
 namespace Btk{
+    //TODO:The SpinLock is not safe to lock recursively
+    //So we are better to write our own recursive spinlock
     class SignalBase;
     template<class RetT>
     class Signal;
@@ -138,6 +140,8 @@ namespace Btk{
                 if(not from_object){
                     //< delete it
                     auto p = (*ptr->iter);
+                    //< lock the object
+                    Object::lock_guard locker(ptr->object);
                     p->run(nullptr,p);
                     
                     ptr->object->Object::callbacks.erase(ptr->iter);
@@ -292,6 +296,11 @@ namespace Btk{
              * 
              */
             void disconnect_all();
+            /**
+             * @brief Disconnect all signal and remove all timer
+             * 
+             */
+            void cleanup();
         public:
             using CallBack = ObjectCallBack;
             /**
@@ -319,7 +328,36 @@ namespace Btk{
                     std::apply(ptr->callable,static_cast<std::tuple<Args...>&&>(*ptr));
                 }
             };
+            /**
+             * @brief Connect signal
+             * 
+             * @tparam Signal 
+             * @tparam Callable 
+             * @param signal 
+             * @param callable 
+             * @return decltype(auto) 
+             */
+            template<class Signal,class Callable>
+            decltype(auto) connect(Signal &&signal,Callable &&callable){
+                if constexpr(std::is_member_function_pointer<Callable>::value){
+                    return signal.connect(std::forward<Callable>,this);
+                }
+                else{
+                    return signal.connect(std::forward<Callable>(callable));
+                }
+            }
         private:
+            struct lock_guard{
+                lock_guard(const Object *o){
+                    object = o;
+                    o->lock();
+                }
+                lock_guard(const lock_guard &) = delete;
+                ~lock_guard(){
+                    object->unlock();
+                }
+                const Object *object;
+            };
             void lock() const;
             void unlock() const;
 
@@ -353,8 +391,9 @@ namespace Btk{
             RetT emit(Args ...args) const{
                 //lock the signalbase
                 lock_guard locker(this);
-
-                if constexpr(std::is_same<void,RetT>()){
+                //why it has complie error on msvc
+                //std::is_same<void,RetT>()
+                if constexpr(std::is_same<void,RetT>::value){
                     for(auto slot:slots){
                         static_cast<Slot<RetT,Args...>*>(slot)->invoke(
                             std::forward<Args>(args)...

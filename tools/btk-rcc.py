@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-import os,sys,json
+#%%
+import os,sys,json,argparse
 #Btk resource complie
 
-
+#Check file is exists
+def fexists(f:str) -> bool:
+    return os.access(f,os.F_OK)
 #Process file
 def process(fin,fout):
     pass
-def trim_string(s):
+def trim_string(s : str) -> str:
     return s
-def make_task(item,res_file):
+def make_task(item:dict,res_file:str) -> dict:
     task = {}
     task['input'] = item['input']
 
@@ -18,7 +21,7 @@ def make_task(item,res_file):
     else:
         pass
     return task
-def main(table,res_file):
+def main(table:dict,res_file:str) -> None:
     print(table)
     for item in table:
         if item == 'comment':
@@ -37,9 +40,9 @@ def main(table,res_file):
     pass
 
 if __name__ == '__main__':
-    if len(sys.argv) <= 1:
-        print('useage btk-rcc [resource_list.json]')
-    else:
-        res_file = sys.argv[0]
+    parser = argparse.ArgumentParser(description = "btk-rcc")
 
-        main(json.load(open(res_file)),res_file)
+    parser.add_argument("-f",help="Target source file")
+
+    args = parser.parse_args()
+    print(args.values)

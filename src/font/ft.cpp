@@ -1,6 +1,6 @@
 #include "../build.hpp"
 
-#include <Btk/ft/ft.hpp>
+#include <Btk/font/ft.hpp>
 #include <Btk/exception.hpp>
 
 #include <SDL2/SDL_mutex.h>
@@ -58,7 +58,7 @@ namespace BtkFt{
 };
 namespace BtkFt{
     
-    Face::~Face(){
+    Ft2Face::~Ft2Face(){
         LockGuard locker;
         FT_Done_Face(face);
     }

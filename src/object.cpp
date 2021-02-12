@@ -1,6 +1,7 @@
 #include "build.hpp"
 
 #include <SDL2/SDL_atomic.h>
+#include <SDL2/SDL_timer.h>
 #include <Btk/object.hpp>
 
 namespace Btk{
@@ -8,15 +9,7 @@ namespace Btk{
 
     }
     Object::~Object(){
-        auto iter = callbacks.begin();
-        while(iter != callbacks.end()){
-            auto *cb = *iter;
-            if(cb != nullptr){
-                //Call the callback
-                cb->run(this,cb);
-            }
-            iter = callbacks.erase(iter);
-        }
+        cleanup();
     }
     //multithreading
     void Object::lock() const{
@@ -26,10 +19,25 @@ namespace Btk{
         SDL_AtomicUnlock(&spinlock);
     }
     void Object::disconnect_all(){
+        lock_guard locker(this);
+
         auto iter = callbacks.begin();
         while(iter != callbacks.end()){
             auto *cb = *iter;
             if(cb->type == ObjectCallBack::Signal){
+                //Call the callback
+                cb->run(this,cb);
+            }
+            iter = callbacks.erase(iter);
+        }
+    }
+    void Object::cleanup(){
+        lock_guard locker(this);
+
+        auto iter = callbacks.begin();
+        while(iter != callbacks.end()){
+            auto *cb = *iter;
+            if(cb != nullptr){
                 //Call the callback
                 cb->run(this,cb);
             }

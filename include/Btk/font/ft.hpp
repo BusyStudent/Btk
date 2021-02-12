@@ -12,8 +12,8 @@
 #include FT_TRUETYPE_IDS_H
 struct SDL_RWops;
 namespace BtkFt{
-    struct BTKAPI Face{
-        ~Face();
+    struct BTKAPI Ft2Face{
+        ~Ft2Face();
         FT_Face face = nullptr;
     };
 }

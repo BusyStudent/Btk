@@ -86,7 +86,8 @@
         "xlocnum": "cpp",
         "xmemory": "cpp",
         "xmemory0": "cpp",
-        "xtr1common": "cpp"
+        "xtr1common": "cpp",
+        "ini.c": "cpp"
     },
     "files.exclude": {
         "**/.git": true,
