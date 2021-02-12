@@ -15,6 +15,8 @@ else
     --add_requires("vcpkg::gif",{optional = true,alias = "gif"})
     --using xmake repo
     add_requires("libsdl","libsdl_ttf","libsdl_image")
+    add_packages("libsdl","libsdl_ttf","libsdl_image")
+
     --add_packages("SDL2","SDL2-image","SDL2-ttf")
     --add_includedirs("E:/VisualStudio/VCPKG/vcpkg-master/installed/x86-windows/include")
     --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2_x64-windows-static/lib")
