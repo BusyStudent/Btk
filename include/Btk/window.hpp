@@ -3,7 +3,7 @@
 #include <string_view>
 #include <functional>
 #include <string>
-#include "signal/signal.hpp"
+#include "signal.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
 namespace Btk{

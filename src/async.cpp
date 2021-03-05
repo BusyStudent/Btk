@@ -1,8 +1,8 @@
-#include "../build.hpp"
+#include "./build.hpp"
 
-#include <Btk/async/async.hpp>
 #include <Btk/impl/thread.hpp>
 #include <Btk/impl/atomic.hpp>
+#include <Btk/async.hpp>
 #include <Btk/Btk.hpp>
 
 #include <condition_variable>

@@ -3,7 +3,7 @@
 //File select box
 #include <string>
 #include "../defs.hpp"
-#include "../signal/signal.hpp"
+#include "../signal.hpp"
 namespace Btk{
     //The impl of the box
     struct FSelectBoxImpl;

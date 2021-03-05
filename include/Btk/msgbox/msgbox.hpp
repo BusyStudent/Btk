@@ -1,7 +1,7 @@
 #if !defined(_BTK_MESSAGEBOX_HPP_)
 #define _BTK_MESSAGEBOX_HPP_
 #include "../defs.hpp"
-#include "../signal/signal.hpp"
+#include "../signal.hpp"
 #include "../window.hpp"
 #include <string_view>
 namespace Btk{

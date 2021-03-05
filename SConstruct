@@ -12,7 +12,6 @@ src.extend(Glob("./src/thirdparty/*.c"))
 #Impl files
 src.extend(Glob("./src/impl/*.cpp"))
 src.extend(Glob("./src/themes/*.cpp"))
-src.extend(Glob("./src/thread/*.cpp"))
 src.extend(Glob("./src/utils/*.cpp"))
 src.extend(Glob("./src/widgets/*.cpp"))
 src.extend(Glob("./src/msgbox/*.cpp"))

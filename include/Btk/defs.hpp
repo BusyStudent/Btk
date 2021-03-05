@@ -69,6 +69,9 @@ namespace Btk{
     using Sint32 = int32_t;
     using Sint64 = int64_t;
     //end
+    //Btk u16string
+    class String;
+    using u16string = String;
 };
 #endif
 

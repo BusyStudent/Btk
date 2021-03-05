@@ -6,6 +6,7 @@
 #include "../event.hpp"
 #include "../rect.hpp"
 #include "window.hpp"
+#include <string>
 namespace Btk{
     /**
      * @brief Calcaute a area's X in a Rect by alignment
@@ -78,6 +79,18 @@ namespace Btk{
     KeyEvent    TranslateEvent(const SDL_KeyboardEvent &event);
     
     TextInputEvent TranslateEvent(const SDL_TextInputEvent &event);
+    /**
+     * @brief Internal Utf8 string buffer(thread_local)
+     * 
+     * @return BTKAPI& 
+     */
+    BTKAPI std::string&    InternalU8Buffer();
+    /**
+     * @brief Internal Utf16 string buffer(thread_local)
+     * 
+     * @return BTKAPI& 
+     */
+    BTKAPI std::u16string& InternalU16Buffer();
 };
 
 #endif // _BTKIMPL_UTILS_HPP_

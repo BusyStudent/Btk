@@ -2,8 +2,8 @@
 #define BTK_ASYNC_HPP_
 #include <tuple>
 #include <memory>
-#include "../signal/signal.hpp"
-#include "../defs.hpp"
+#include "object.hpp"
+#include "defs.hpp"
 namespace Btk{
     BTKAPI void DeferCall(void(* fn)(void*),void *data);
     namespace Impl{

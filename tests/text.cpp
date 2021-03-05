@@ -1,4 +1,5 @@
 #include <Btk/utils/textbuf.hpp>
+#include <Btk/utils/string.hpp>
 #include <Btk/utils/mem.hpp>
 #include <iostream>
 int main(){
@@ -19,4 +20,6 @@ int main(){
 
     std::cout << Btk::ParseInt("1545450") << std::endl;
     std::cout << Btk::ParseHex("-0xFFFFFF") << std::endl;
+
+    std::cout << Btk::u16string::format(u"HelloWorld%sHe",u"fff").to_utf8() << std::endl;
 }

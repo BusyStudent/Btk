@@ -13,7 +13,6 @@
 #include "build.hpp"
 
 #include <Btk/platform/platform.hpp>
-#include <Btk/async/async.hpp>
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/thread.hpp>
 #include <Btk/impl/scope.hpp>
@@ -21,6 +20,7 @@
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/module.hpp>
+#include <Btk/async.hpp>
 #include <Btk/gl/gl.hpp>
 #include <Btk/mixer.hpp>
 #include <Btk/event.hpp>
@@ -491,9 +491,15 @@ namespace Btk{
         }
         return false;
     }
-};
+}
 namespace Btk{
-namespace Impl{
-    
-};
-};
+    static thread_local std::string u8buf; 
+    static thread_local std::u16string u16buf;
+
+    std::string&    InternalU8Buffer(){
+        return u8buf;
+    }
+    std::u16string& InternalU16Buffer(){
+        return u16buf;
+    }
+}

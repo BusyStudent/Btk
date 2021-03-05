@@ -3,7 +3,7 @@
 #include <string_view>
 #include <stdexcept>
 #include "defs.hpp"
-#include "signal/signal.hpp"
+#include "signal.hpp"
 namespace Btk{
 namespace Mixer{
     struct MusicImpl;

@@ -322,6 +322,13 @@ namespace Btk{
          */
         BTKAPI std::string GetFileByName(std::string_view name);
         /**
+         * @brief Get the File By font face name
+         * 
+         * @param name font name
+         * @return utf16 encoded filename string
+         */
+        BTKAPI   u16string GetFileByName(std::u16string_view name);
+        /**
          * @brief Init font utils
          * 
          */

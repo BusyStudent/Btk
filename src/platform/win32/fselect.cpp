@@ -5,8 +5,8 @@
 #include <Btk/thirdparty/utf8.h>
 #include <Btk/msgbox/fselect.hpp>
 #include <Btk/msgbox/impl.hpp>
-#include <Btk/async/async.hpp>
 #include <Btk/impl/atomic.hpp>
+#include <Btk/async.hpp>
 #include <algorithm>
 #include <string>
 

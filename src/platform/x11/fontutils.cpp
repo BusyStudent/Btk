@@ -3,6 +3,9 @@
 
 #include "../../build.hpp"
 #include <Btk/platform/x11.hpp>
+#include <Btk/utils/string.hpp>
+#include <Btk/utils/mem.hpp>
+#include <Btk/impl/utils.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/font.hpp>
 #include <Btk/Btk.hpp>
@@ -90,6 +93,15 @@ namespace FontUtils{
         FcPatternDestroy(pat);
         return s;
     }
+    //Utf16 get font name
+    u16string  GetFileByName(std::u16string_view name){
+        auto &u8buf = InternalU8Buffer();
+        u8buf.clear();//clear the buffer
+        Utf16To8(u8buf,name);
+
+        return GetFileByName(u8buf);
+    }
+
     FontSet GetFontList(){
         if(not was_init){
             Init();

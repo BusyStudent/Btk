@@ -81,8 +81,6 @@ target("btk")
     add_files("./src/themes/*.cpp")
     --Platform
     add_files("./src/platform/*.cpp")
-    --Threading
-    add_files("./src/thread/*.cpp")
     --Utils
     add_files("./src/utils/*.cpp")
     --Msgboxs

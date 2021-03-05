@@ -3,7 +3,6 @@
 #include "defs.hpp"
 #include "render.hpp"
 #include "widget.hpp"
-#include "signal/function.hpp"
 
 namespace Btk{
     class BTKAPI Canvas:public Widget{

@@ -6,6 +6,8 @@ A library for developing Gui based on SDL2
 
 ![C/C++ CI on Linux](https://github.com/BusyStudent/Btk/workflows/C/C++%20CI%20on%20Linux/badge.svg)
 
+[![C/C++ CI on Windows](https://github.com/BusyStudent/Btk/actions/workflows/windows.yml/badge.svg)](https://github.com/BusyStudent/Btk/actions/workflows/windows.yml)
+
 ----
 
 ## Building prerequisites

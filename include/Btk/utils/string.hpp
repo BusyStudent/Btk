@@ -1,5 +1,6 @@
 #if !defined(_BTK_UTILS_STRING)
 #define _BTK_UTILS_STRING
+#include <vector>
 #include <string>
 #include <string_view>
 #include "mem.hpp"
@@ -20,7 +21,10 @@ namespace Btk{
              * @param u8str The utf8 encoded string
              */
             String(std::string_view u8str);
+            String(std::string &&);
             String(std::u16string_view utf16);
+            String(const std::string &u8str);
+            String(const char *);
             String(const String &) = default;
             String(String &&) = default;
             ~String() = default;
@@ -221,24 +225,40 @@ namespace Btk{
              * @return std::string 
              */
             std::string encode(const char *to = "") const;
+            /**
+             * @brief Split string
+             * 
+             * @param delim
+             * @return std::vector<String> 
+             */
+            std::vector<String> split(std::u16string_view delim) const;
         public:
             //static methods
-            static String Format(const char16_t *fmt,...);
+            static String Format(std::u16string_view fmt,...);
             template<class ...Args>
-            static String format(const char16_t *fmt,Args &&...args){
+            static String format(std::u16string_view fmt,Args &&...args){
                 return Format(fmt,std::forward<Args>(args)...);
             }
         private:
             std::u16string str;
     };
-
-
+    //Inline construct begin
     inline String::String(std::string_view utf8):String(){
         Utf8To16(str,utf8);
     }
     inline String::String(std::u16string_view u16):str(u16){
 
     }
+    inline String::String(const std::string &utf8):String(){
+        Utf8To16(str,utf8);
+    }
+    inline String::String(std::string && utf8):String(){
+        Utf8To16(str,utf8);
+    }
+    inline String::String(const char *utf8):String(){
+        Utf8To16(str,utf8);
+    }
+    //Inline construct end
     
     using u16string = String;
 }

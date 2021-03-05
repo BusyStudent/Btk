@@ -6,7 +6,7 @@
 #include <mutex>
 #include <list>
 #include "render.hpp"
-#include "../signal/signal.hpp"
+#include "../signal.hpp"
 #include "../widget.hpp"
 #include "../themes.hpp"
 #include "../event.hpp"

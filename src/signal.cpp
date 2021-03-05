@@ -1,6 +1,6 @@
 #include "build.hpp"
 
-#include <Btk/signal/signal.hpp>
+#include <Btk/signal.hpp>
 namespace Btk{
     #if 0
     SignalBase::SignalBase(){

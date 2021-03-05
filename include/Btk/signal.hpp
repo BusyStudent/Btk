@@ -4,7 +4,7 @@
 #include <utility>
 #include <cstddef>
 #include <list>
-#include "../defs.hpp"
+#include "defs.hpp"
 #if 0
 namespace Btk{
     //TODO: improve thread safety
@@ -229,5 +229,5 @@ namespace Btk{
     };
 };
 #endif
-#include "../object.hpp"
+#include "object.hpp"
 #endif // _BTKSIGNAL_HPP_

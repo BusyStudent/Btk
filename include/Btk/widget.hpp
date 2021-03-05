@@ -1,8 +1,8 @@
 #if !defined(_BTK_WIDGET_HPP_)
 #define _BTK_WIDGET_HPP_
 #include <list>
-#include "signal/signal.hpp"
-#include "signal/function.hpp"
+#include "function.hpp"
+#include "signal.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
 namespace Btk{

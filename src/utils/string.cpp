@@ -40,8 +40,30 @@ namespace Btk{
         SDL_free(result);
         return ret;
     }
+
+    std::vector<String> String::split(std::u16string_view delim) const{
+        std::vector<String> vec;
+        size_t delim_len = delim.length();
+
+
+        size_type pos = 0;
+        size_type next;
+        while(pos < length()){
+            next = str.find_first_of(delim,pos);
+            if(next == str.npos){
+                vec.emplace_back(&str[pos],length() - pos);
+                break;
+            }
+            else{
+                vec.emplace_back(&str[pos],next - pos);
+            }
+            pos = next + 1;
+        }
+
+        return vec;
+    }
 }
-#ifdef _WIN32
+#if 0
 //Win32 impl
 #include <windows.h>
 #include <cwchar>
@@ -73,9 +95,8 @@ namespace Btk{
 }
 #endif
 
-#ifdef __linux
+#if 1
 namespace{
-    using Btk::Impl::VaListGuard;
     void print_int(std::u16string &out,int number){
         //todo ...
         int n = number % 10;
@@ -95,6 +116,7 @@ namespace{
         size_t cur = fmt.find(u'%');//current position
         while(cur != fmt.npos){
             //process formattor
+            out += fmt.substr(prev,cur - prev);
             switch(fmt[cur + 1]){
                 case u'%':{
                     out += u'%';
@@ -110,6 +132,13 @@ namespace{
                     out += va_arg(varg,const char16_t*);
                     break;
                 }
+                /*
+                case u'c':{
+                    //%c
+                    out += (va_arg(varg,char16_t) + u'0');
+                    break;
+                }
+                */
                 default:{
                     //what should i do
                 }
@@ -117,8 +146,17 @@ namespace{
             prev = cur + 1;
             cur = fmt.find(u'%',prev);
         }
-        out += fmt.substr(prev,cur - 1);
+        out += fmt.substr(prev + 1);
     }
 }
-
+namespace Btk{
+    String String::Format(std::u16string_view fmt,...){
+        String s;
+        va_list varg;
+        va_start(varg,fmt);
+        Impl::VaListGuard guard(varg);
+        u16sprintf(s.str,fmt,varg);
+        return s;
+    }
+}
 #endif
