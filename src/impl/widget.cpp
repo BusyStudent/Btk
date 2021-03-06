@@ -43,6 +43,21 @@ namespace Btk{
         BTK_ASSERT(win == nullptr);
         return *win;
     }
+    //Get the top container
+    Container &Widget::top_container() const{
+        BTK_ASSERT(parent != nullptr);
+        return window()->container;
+    }
+    Container &Widget::container() const{
+        BTK_ASSERT(parent != nullptr);
+        return *parent;
+    }
+    //Get the default font
+    //TODO create a global default font
+    Font Widget::default_font() const{
+        BTK_ASSERT(parent != nullptr);
+        return window()->font();
+    }
 
 
     //Container

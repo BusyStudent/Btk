@@ -7,6 +7,7 @@
 namespace Btk{
 namespace Mixer{
     struct MusicImpl;
+    struct AudioPlayerImpl;
     /**
      * @brief Music
      * 
@@ -17,6 +18,14 @@ namespace Mixer{
             static Music FromFile(std::string_view fname);
         private:
             MusicImpl *pimpl;
+    };
+    class BTKAPI AudioPlayer{
+        public:
+            AudioPlayer();
+            AudioPlayer(const AudioPlayer &) = delete;
+            ~AudioPlayer();
+        private:
+            AudioPlayerImpl *pimpl;
     };
     BTKAPI void Init();
     BTKAPI void Quit();
@@ -39,12 +48,39 @@ namespace Btk{
     };
     class AudioDevice{
         public:
-            AudioDevice();
+            /**
+             * @brief SDL Device Index
+             * 
+             */
+            struct Index{
+                int index;
+            };
+            /**
+             * @brief Construct a new empty Audio Device object
+             * 
+             */
+            AudioDevice():dev(0){};
             AudioDevice(const AudioDevice &) = delete;
             ~AudioDevice();
-            void play(Mixer::Music &music);
+
+            Uint32 get() const noexcept{
+                return dev;
+            }
+            /**
+             * @brief Open audio device
+             * 
+             * @param dev_index 
+             */
+            void open(Index dev_index);
+            /**
+             * 
+             * @brief Close audio device
+             * 
+             */
+            void close();
+
         private:
-            AudioDeviceImpl *pimpl;
+            Uint32 dev;//< SDL_DeviceID
         friend Mixer::Music;
     };
     #if 0
@@ -53,6 +89,7 @@ namespace Btk{
     using MixerChunk = Mixer::Chunk;
     using MixerChannal = Mixer::Channal;
     #endif
+    using Mixer::AudioPlayer;
     [[noreturn]] void BTKAPI throwMixerError(const char *msg);
     [[noreturn]] void BTKAPI throwMixerError();
 }

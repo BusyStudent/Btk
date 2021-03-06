@@ -6,8 +6,9 @@
 #include "rect.hpp"
 #include "defs.hpp"
 namespace Btk{
-    class Renderer;
+    class Font;
     class Window;
+    class Renderer;
     //Event forward decl
     class Event;
     class Widget;
@@ -280,6 +281,19 @@ namespace Btk{
             bool is_enable() const noexcept{
                 return not attr.disable;
             };
+            /**
+             * @brief Get the container of the widget
+             * 
+             * @return Container& 
+             */
+            Container& container() const;
+            /**
+             * @brief Get the top container
+             * 
+             * @return Container& 
+             */
+            Container& top_container() const;
+
         protected:
             /**
              * @brief Send a redraw request to the window
@@ -294,6 +308,12 @@ namespace Btk{
             WindowImpl *window() const noexcept{
                 return parent->window;
             }
+            /**
+             * @brief Get the default font
+             * 
+             * @return Font 
+             */
+            Font default_font() const;
         protected:
             WidgetAttr attr;//Widget attributes
             Rect rect;//Widget rect

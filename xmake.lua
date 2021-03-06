@@ -6,7 +6,7 @@ if not is_plat("windows") then
     --try add extensions
     add_requires("gif",{optional = true})
     --add_requires("freetype2",{optional = true})
-    add_cxxflags("-std=c++17","-Wall","-Wextra","-fPIC")
+    add_cxxflags("-Wall","-Wextra","-fPIC")
 else
     --VCPKG
     --add_requires("vcpkg::SDL2",{alias = "SDL2"})
@@ -27,24 +27,18 @@ else
     --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/zlib_x64-windows-static/lib")
     --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/bzip2_x64-windows-static/lib")
     --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/brotli_x64-windows-static/lib")
-    add_cxxflags("/std:c++latest")
     --add_requires("SDL2","SDL2_ttf","SDL2_image")
 end
-
+set_languages("c++17")
 add_includedirs("./include")
 
 if is_plat("linux") then
-    -- linux has fontconfig
+    -- linux has fontconfig freetype2
+    add_requires("freetype2")
+    add_packages("freetype2")
+    add_links("freetype")
+    add_defines("BTK_HAS_FREETYPE")
     add_defines("BTK_USE_FONTCONFIG")
-end
-if is_mode("release") then
-    add_cxxflags("-march=native")
-    add_cflags("-march=native")
-    add_cxxflags("NDEBUG")
-    add_cflags("NDEBUG")
-else
-    add_cxxflags("-rdynamic")
-    add_cflags("-rdynamic")
 end
 target("btk")
     add_defines("BTK_USE_GFX")
@@ -90,6 +84,7 @@ target("btk")
     add_files("./src/mixer/mixer.cpp")
     add_files("./src/mixer/raw.cpp")
     add_files("./src/gl/*.cpp")
+    add_files("./src/gl/glad.c")
 if is_mode("debug") then
     target("hello")
         set_kind("binary")
