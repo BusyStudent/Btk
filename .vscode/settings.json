@@ -88,7 +88,8 @@
         "xmemory0": "cpp",
         "xtr1common": "cpp",
         "ini.c": "cpp",
-        "fontstash.h": "c"
+        "fontstash.h": "c",
+        "glad.c": "cpp"
     },
     "files.exclude": {
         "**/.git": true,

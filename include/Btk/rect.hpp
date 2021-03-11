@@ -50,6 +50,12 @@ namespace Btk{
     struct FRect{
         FRect() = default;
         FRect(const FRect &) = default;
+        FRect(const Rect &r){
+            x = r.x;
+            y = r.y;
+            w = r.w;
+            h = r.h;
+        }
         FRect(float x,float y,float w,float h){
             this->x = x;
             this->y = y;
@@ -60,7 +66,7 @@ namespace Btk{
         float w, h;
         
         bool empty() const noexcept{
-            return w <= 0 or h <= 0;
+            return w <= 0 or h <= 0 or x < 0 or y < 0;
         }
         operator Rect() const noexcept{
             return Rect{

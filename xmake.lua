@@ -37,6 +37,7 @@ if is_plat("linux") then
     add_requires("freetype2")
     add_packages("freetype2")
     add_links("freetype")
+    add_links("GL")
     add_defines("BTK_HAS_FREETYPE")
     add_defines("BTK_USE_FONTCONFIG")
 end
@@ -83,8 +84,10 @@ target("btk")
     --Mixer
     add_files("./src/mixer/mixer.cpp")
     add_files("./src/mixer/raw.cpp")
+    --GL
     add_files("./src/gl/*.cpp")
-    add_files("./src/gl/glad.c")
+    --Render
+    add_files("./src/render/render_gles2.cpp")
 if is_mode("debug") then
     target("hello")
         set_kind("binary")

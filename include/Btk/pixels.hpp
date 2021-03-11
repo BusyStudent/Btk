@@ -9,9 +9,9 @@
 #include "defs.hpp"
 #include "rect.hpp"
 struct SDL_Surface;
-struct BtkTexture;
 namespace Btk{
     class RWops;
+    class Renderer;
     /**
      * @brief Color structure
      * 
@@ -201,22 +201,27 @@ namespace Btk{
                 int h;
             };
         public:
-            Texture(BtkTexture *t = nullptr):texture(t){};
+            /**
+             * @brief Construct a new Texture object
+             * 
+             * @param id 
+             * @param r 
+             */
+            Texture(int id,Renderer *r):image(id),render(r){}
+            /**
+             * @brief Construct a new empty Texture object
+             * 
+             */
+            Texture():image(0),render(nullptr){};
             Texture(const Texture &) = delete;
-            Texture(Texture &&t){
-                texture = t.texture;
-                t.texture = nullptr;
-            }
+            Texture(Texture &&t);
             ~Texture();
             /**
              * @brief Get the size(w and h)
              * 
              * @return W and H
              */
-            Size size() const{
-                auto inf = information();
-                return {inf.w,inf.h};   
-            }
+            Size size() const;
             int w() const{
                 return size().w;
             }
@@ -225,14 +230,22 @@ namespace Btk{
             }
             //check is empty
             bool empty() const noexcept{
-                return texture == nullptr;
+                return image == 0;
             }
             //assign
-            Texture &operator =(BtkTexture*);
+            //Texture &operator =(BtkTexture*);
             Texture &operator =(Texture &&);
-            //Get pointer
-            BtkTexture *get() const noexcept{
-                return texture;
+            /**
+             * @brief clear the texture
+             * 
+             * @return Texture& 
+             */
+            Texture &operator =(std::nullptr_t){
+                clear();
+                return *this;
+            }
+            int get() const noexcept{
+                return image;
             }
             /**
              * @brief Update a texture's pixels
@@ -264,6 +277,7 @@ namespace Btk{
             void update(void *pixels,int pitch){
                 update(nullptr,pixels,pitch);
             }
+            void clear();
             /**
              * @brief Unlock the texture
              * 
@@ -276,7 +290,8 @@ namespace Btk{
              */
             Information information() const;
         private:
-            BtkTexture *texture;
+            int image = 0;//< NVG Image ID
+            Renderer *render = nullptr;//Renderer
         friend struct Renderer;
     };
     /**

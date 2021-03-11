@@ -1,6 +1,5 @@
 #include "./build.hpp"
 
-#include <Btk/thirdparty/SDL2_gfxPrimitives.h>
 #include <Btk/impl/scope.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
@@ -11,565 +10,183 @@
 
 #include <cstdarg>
 
+#include "libs/nanovg.h"
+
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
+#define BTK_NULLCHECK(VAL) if(VAL == nullptr){return;}
 
-namespace SDL{
-    //Function forward
-    inline SDL_Texture *Texture(BtkTexture *texture){
-        return reinterpret_cast<SDL_Texture*>(texture);
+namespace Btk{
+    void Renderer::done(){
+        nvgEndFrame(nvg_ctxt);
+        swap_buffer();
     }
-    inline SDL_Renderer *Renderer(BtkRenderer *renderer){
-        return reinterpret_cast<SDL_Renderer*>(renderer);
-    }
-
-
-    static BtkRenderer *CreateRenderer(SDL_Window *win,int index,Uint32 flags){
-        SDL_Renderer *render = SDL_CreateRenderer(win,index,flags);
-        #ifndef NDEBUG
-        SDL_RendererInfo info;
-        if(SDL_GetRendererInfo(render,&info) == 0){
-            fprintf(stderr,"CreateRenderer %p => backend:%s max_tw:%d max_th:%d\n",
-                render,
-                info.name,
-                info.max_texture_width,
-                info.max_texture_height
-            );
-            for(int i = 0;i < info.num_texture_formats;i ++){
-                fprintf(stderr,"  Texture format[%d]:%s\n",
-                    i,
-                    SDL_GetPixelFormatName(info.texture_formats[i]));
-            }
+    //create texture from pixbuf
+    Texture Renderer::create_from(const PixBuf &pixbuf){
+        if(pixbuf.empty()){
+            throw RuntimeError("The pixbuf is empty");
         }
-        #endif
-        return reinterpret_cast<BtkRenderer*>(render);      
+        //Convert the pixels
+        if(pixbuf->format->format != SDL_PIXELFORMAT_RGBA32){
+            return create_from(pixbuf.convert(SDL_PIXELFORMAT_RGBA32));
+        }
+        if(SDL_MUSTLOCK(pixbuf.get())){
+            SDL_LockSurface(pixbuf.get());
+        }
+        int t = nvgCreateImageRGBA(
+            nvg_ctxt,
+            pixbuf->w,
+            pixbuf->h,
+            0,
+            static_cast<const Uint8*>(pixbuf->pixels)
+        );
+        if(SDL_MUSTLOCK(pixbuf.get())){
+            SDL_UnlockSurface(pixbuf.get());
+        }
+        return Texture(t,this);
     }
-    static BtkTexture  *CreateTexture(BtkRenderer *render,Uint32 fmt,int access,int w,int h){
-        return reinterpret_cast<BtkTexture*>(SDL_CreateTexture(Renderer(render),fmt,access,w,h));
-    }
-    static void DestroyRenderer(BtkRenderer *renderer){
-        SDL_DestroyRenderer(Renderer(renderer));
-    }
-    static void DestroyTexture(BtkTexture *texture){
-        SDL_DestroyTexture(Texture(texture));
-    }
-    static void RenderPresent(BtkRenderer *renderer){
-        SDL_RenderPresent(Renderer(renderer));
-    }
-
-    static int RenderDrawRect(BtkRenderer *render,const BtkRect *rect){
-        return SDL_RenderDrawRect(Renderer(render),rect);
-    }
-    static int RenderDrawRects(BtkRenderer *render,const BtkRect *rect,int n){
-        return SDL_RenderDrawRects(Renderer(render),rect,n);
-    }
-    static int RenderDrawBox(BtkRenderer *render,const BtkRect *rect){
-        return SDL_RenderFillRect(Renderer(render),rect);
-    }
-    static int RenderDrawBoxs(BtkRenderer *render,const BtkRect *rect,int n){
-        return SDL_RenderFillRects(Renderer(render),rect,n);
-    }
-    static int RenderDrawLine(BtkRenderer *render,int x1,int y1,int x2,int y2){
-        return SDL_RenderDrawLine(Renderer(render),x1,y1,x2,y2);
-    }
-    static int RenderDrawLines(BtkRenderer *render,const BtkVec2 *points,int n){
-        return SDL_RenderDrawLines(Renderer(render),points,n);
-    }
-
-    static int RenderDrawPoint(BtkRenderer *render,int x1,int y1){
-        return SDL_RenderDrawPoint(Renderer(render),x1,y1);
-    }
-    static int RenderDrawPoints(BtkRenderer *render,const BtkVec2 *points,int n){
-        return SDL_RenderDrawPoints(Renderer(render),points,n);
-    }
-
-    static int RenderSetDrawColor(BtkRenderer *render,Uint8 r,Uint8 g,Uint8 b,Uint8 a){
-        int ret = 0;
-        if(a == 255){
-            ret |= SDL_SetRenderDrawBlendMode(Renderer(render),SDL_BLENDMODE_NONE);
+    int  Renderer::copy(const Texture &texture,const Rect *_src,const Rect *_dst){
+        //make pattern
+        SDL_Rect dst;//Dst
+        SDL_Rect src;//Dst
+        int w,h;
+        if(_dst == nullptr){
+            SDL_GetWindowSize(window,&dst.w,&dst.h);
+            dst.x = 0;
+            dst.y = 0;
         }
         else{
-            ret |= SDL_SetRenderDrawBlendMode(Renderer(render),SDL_BLENDMODE_BLEND);
+            dst = *_dst;
         }
-        ret |= SDL_SetRenderDrawColor(Renderer(render),r,g,b,a);
-        return ret;
-    }
-    static int RenderGetDrawColor(BtkRenderer *render,Uint8 *r,Uint8 *g,Uint8 *b,Uint8 *a){
-        return SDL_GetRenderDrawColor(Renderer(render),r,g,b,a);
-    }
-    static void RenderGetClipRect(BtkRenderer *render,BtkRect *cliprect){
-        return SDL_RenderGetClipRect(Renderer(render),cliprect);
-    }
-    static void RenderGetViewPort(BtkRenderer *render,BtkRect *viewport){
-        return SDL_RenderGetViewport(Renderer(render),viewport);
-    }
-    static int  RenderSetClipRect(BtkRenderer *render,const BtkRect *cliprect){
-        const SDL_Rect *r = nullptr;
-        if(cliprect != nullptr){
-            if(not cliprect->empty()){
-                r = cliprect;
-            }
+        if(_src == nullptr){
+            src.x = 0;
+            src.y = 0;
+            auto size = texture.size();
+            src.w = size.w;
+            src.h = size.h;
         }
-        return SDL_RenderSetClipRect(Renderer(render),r);
-    }
-    static int  RenderSetViewPort(BtkRenderer *render,const BtkRect *viewport){
-        const SDL_Rect *r = nullptr;
-        if(viewport != nullptr){
-            if(not viewport->empty()){
-                r = viewport;
-            }
+        else{
+            src = *_src;
         }
-        return SDL_RenderSetViewport(Renderer(render),r);
+        //Check what is the max
+        //float radio = 0;
+
+        w = std::max(src.w,dst.w);
+        h = std::max(src.h,dst.h);
+
+        auto paint = nvgImagePattern(
+            nvg_ctxt,
+            src.x + dst.x,
+            src.y + dst.y,
+            w,
+            h,
+            0.0f/180.0f*NVG_PI,
+            texture.get(),
+            1.0f
+        );
+        nvgBeginPath(nvg_ctxt);
+        nvgRect(nvg_ctxt,dst.x,dst.y,w,h);
+        nvgFillPaint(nvg_ctxt,paint);
+        nvgFill(nvg_ctxt);
+        return 0;
     }
-    static int RenderCopy(BtkRenderer *render,BtkTexture *t,const BtkRect *src,const BtkRect *dst){
-        return SDL_RenderCopy(Renderer(render),Texture(t),src,dst);
-    }
-    static int RenderClear(BtkRenderer *render){
-        return SDL_RenderClear(Renderer(render));
-    }
-    static int UpdateTexture(BtkTexture *texture,const BtkRect *rect,const void *pixels,int pitch){
-        return SDL_UpdateTexture(Texture(texture),rect,pixels,pitch);
-    }
-    static int QueryTexture(BtkTexture *texture,Uint32 *fmt,int *access,int *w,int *h){
-        return SDL_QueryTexture(Texture(texture),fmt,access,w,h);
-    }
-    static int LockTexture(BtkTexture *texture,const BtkRect *rect,void **pixels,int *pitch){
-        return SDL_LockTexture(Texture(texture),rect,pixels,pitch);
-    }
-    static void UnlockTexture(BtkTexture *texture){
-        return SDL_UnlockTexture(Texture(texture));
-    }
-    static BtkTexture *CreateTextureFrom(BtkRenderer *render,SDL_Surface *surf){
-        return reinterpret_cast<BtkTexture*>(SDL_CreateTextureFromSurface(Renderer(render),surf));
-    }
-    static BtkTexture *LoadTextureFrom(BtkRenderer *render,SDL_RWops *rwops){
-        return reinterpret_cast<BtkTexture*>(IMG_LoadTexture_RW(Renderer(render),rwops,false));
-    }
-    
-    static BtkTexture *RenderGetTarget(BtkRenderer *render){
-        return reinterpret_cast<BtkTexture*>(SDL_GetRenderTarget(Renderer(render)));
-    }
-    static int RenderSetTarget(BtkRenderer *render,BtkTexture *t){
-        return SDL_SetRenderTarget(Renderer(render),Texture(t));
-    }
-    static int RenderReadPixels(BtkRenderer *render,
-                            const BtkRect *r,
-                            Uint32 fmt,
-                            void *pixels,
-                            int pitch){
-
-        return SDL_RenderReadPixels(Renderer(render),r,fmt,pixels,pitch);
-    }
-    
-    //SDL_Control
-    static int Control(int code,...){
-        using Btk::Impl::VaListGuard;
-        va_list varg;
-        va_start(varg,code);
-        VaListGuard guard(varg);
-        switch(code){
-            case BTKRI_ISOPENGL:
-                //Is not backend opengl
-                return false;
-            case BTKRI_ISSDL:
-                return true;
-            default:
-                SDL_Unsupported();
-                return -1;
-        }
-    }
-}
-
-
-
-
-
-
-
-
-extern "C"{
-    #ifndef _MSC_VER
-    BTKAPI BtkTable btk_rtbl = {
-        .CreateRenderer = SDL::CreateRenderer,
-        .CreateTexture  = SDL::CreateTexture,
-        .CreateTextureFrom = SDL::CreateTextureFrom,
-        .LoadTextureFrom   = SDL::LoadTextureFrom,
-
-        .DestroyTexture = SDL::DestroyTexture,
-        .DestroyRenderer = SDL::DestroyRenderer,
-
-        .RenderPresent = SDL::RenderPresent,
-        .RenderDrawRect = SDL::RenderDrawRect,
-        .RenderDrawRects = SDL::RenderDrawRects,
-        .RenderDrawBox = SDL::RenderDrawBox,
-        .RenderDrawBoxs = SDL::RenderDrawBoxs,
-        .RenderDrawLine = SDL::RenderDrawLine,
-        .RenderDrawLines = SDL::RenderDrawLines,
-        .RenderDrawPoint = SDL::RenderDrawPoint,
-        .RenderDrawPoints = SDL::RenderDrawPoints,
-
-        .RenderSetDrawColor = SDL::RenderSetDrawColor,
-        .RenderGetDrawColor = SDL::RenderGetDrawColor,
-
-        .RenderGetClipRect = SDL::RenderGetClipRect,
-        .RenderSetClipRect = SDL::RenderSetClipRect,
-
-        .RenderGetViewPort = SDL::RenderGetViewPort,
-        .RenderSetViewPort = SDL::RenderSetViewPort,
-
-        .RenderCopy = SDL::RenderCopy,
-        .RenderClear = SDL::RenderClear,
-
-        .QueryTexture = SDL::QueryTexture,
-        .UpdateTexture = SDL::UpdateTexture,
-
-        .LockTexture = SDL::LockTexture,
-        .UnlockTexture = SDL::UnlockTexture,
-
-        .RenderGetTarget = SDL::RenderGetTarget,
-        .RenderSetTarget = SDL::RenderSetTarget,
-        .RenderReadPixels = SDL::RenderReadPixels,
-
-        .SetError = SDL_SetError,
-        .GetError = SDL_GetError,
-
-        .Control = SDL::Control
-    };
-    #else
-    //MSVC Unsupport It
-    //So we chose a easy way to slove it
-    BTKAPI BtkTable btk_rtbl;
-    struct Initer{
-        Initer(){
-            Btk_ResetRITable();
-        }
-    };
-    static Initer initer;
-    #endif
-    void Btk_ResetRITable(){
-        btk_rtbl.CreateRenderer = SDL::CreateRenderer;
-        btk_rtbl.CreateTexture  = SDL::CreateTexture;
-        btk_rtbl.CreateTextureFrom = SDL::CreateTextureFrom;
-        btk_rtbl.LoadTextureFrom   = SDL::LoadTextureFrom;
-
-        btk_rtbl.DestroyTexture = SDL::DestroyTexture;
-        btk_rtbl.DestroyRenderer = SDL::DestroyRenderer;
-
-        btk_rtbl.RenderPresent = SDL::RenderPresent;
-        btk_rtbl.RenderDrawRect = SDL::RenderDrawRect;
-        btk_rtbl.RenderDrawRects = SDL::RenderDrawRects;
-        btk_rtbl.RenderDrawBox = SDL::RenderDrawBox;
-        btk_rtbl.RenderDrawBoxs = SDL::RenderDrawBoxs;
-        btk_rtbl.RenderDrawLine = SDL::RenderDrawLine;
-        btk_rtbl.RenderDrawLines = SDL::RenderDrawLines;
-        btk_rtbl.RenderDrawPoint = SDL::RenderDrawPoint;
-        btk_rtbl.RenderDrawPoints = SDL::RenderDrawPoints;
-
-        btk_rtbl.RenderSetDrawColor = SDL::RenderSetDrawColor;
-        btk_rtbl.RenderGetDrawColor = SDL::RenderGetDrawColor;
-
-        btk_rtbl.RenderGetClipRect = SDL::RenderGetClipRect;
-        btk_rtbl.RenderSetClipRect = SDL::RenderSetClipRect;
-
-        btk_rtbl.RenderGetViewPort = SDL::RenderGetViewPort;
-        btk_rtbl.RenderSetViewPort = SDL::RenderSetViewPort;
-
-        btk_rtbl.RenderCopy = SDL::RenderCopy;
-        btk_rtbl.RenderClear = SDL::RenderClear;
-
-        btk_rtbl.QueryTexture = SDL::QueryTexture;
-        btk_rtbl.UpdateTexture = SDL::UpdateTexture;
-
-        btk_rtbl.LockTexture = SDL::LockTexture;
-        btk_rtbl.UnlockTexture = SDL::UnlockTexture;
-
-        btk_rtbl.RenderGetTarget = SDL::RenderGetTarget;
-        btk_rtbl.RenderSetTarget = SDL::RenderSetTarget;
-        btk_rtbl.RenderReadPixels = SDL::RenderReadPixels;
-
-        btk_rtbl.SetError = SDL_SetError;
-        btk_rtbl.GetError = SDL_GetError;
-
-        btk_rtbl.Control = SDL::Control;
+    int  Renderer::copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst){
+        auto texture = create_from(pixbuf);
+        return copy(texture,src,dst);
     }
 }
 namespace Btk{
-    static inline int TranslateAccess(TextureAccess access){
-        switch(access){
-            case TextureAccess::Static:
-                return SDL_TEXTUREACCESS_STATIC;
-            case TextureAccess::Streaming:
-                return SDL_TEXTUREACCESS_STREAMING;
-            case TextureAccess::Target:
-                return SDL_TEXTUREACCESS_TARGET;
-            default:
-                abort();
+    Texture::~Texture(){
+        clear();
+    }
+    Size Texture::size() const{
+        Size size;
+        nvgImageSize(render->nvg_ctxt,image,&size.w,&size.h);
+        return size;
+    }
+    //delete texture
+    void Texture::clear(){
+        if(empty()){
+            return;
         }
+        render->free_texture(image);
+        image = 0;
+        render = nullptr;        
     }
-    Renderer::Renderer(SDL_Window *win){
-        render = Btk_CreateRenderer(win,-1,SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_TARGETTEXTURE);
-        //fail to create window
-        if(render == nullptr){
-            throwRuntimeError(Btk_RIGetError());
+    Texture &Texture::operator =(Texture &&t){
+        if(&t == this){
+            return *this;
         }
-    }
-    Renderer::~Renderer(){
-        Btk_DestroyTexture(cache);
-        Btk_DestroyRenderer(render);
-    }
-    Texture Renderer::create_from(const PixBuf &pixbuf){
-        BtkTexture *texture = Btk_CreateTextureFrom(render,pixbuf.get());
-        if(texture == nullptr){
-            throwRendererError(Btk_RIGetError());
-        }
-        #ifndef NDEBUG
-        Uint32 fmt;
-        Btk_QueryTexture(texture,&fmt,nullptr,nullptr,nullptr);
-        BTK_LOGINFO("Create texture %p:fmt:%s",texture,SDL_GetPixelFormatName(fmt));
-        #endif
-        return texture;
-    }
-    Texture Renderer::create(Uint32 fmt,TextureAccess access,int w,int h){
-        BtkTexture *texture = Btk_CreateTexture(render,fmt,TranslateAccess(access),w,h);
-        if(texture == nullptr){
-            throwRendererError(Btk_RIGetError());
-        }
-        return texture;
-    }
-    //loading texture
+        clear();
+        render = t.render;
+        image  = t.image;
 
-    Texture Renderer::load(std::string_view fname){
-        auto rw = RWops::FromFile(fname.data(),"rb");
-        return load(rw);
+        t.render = nullptr;
+        t.image = 0;
+        return *this;
     }
-    Texture Renderer::load(RWops &rwops){
-        BtkTexture *texture = Btk_LoadTexture(render,rwops.get());
-        if(texture == nullptr){
-            throwRendererError(Btk_RIGetError());
-        }
-        return texture;
+}
+//Dreaptched functions
+namespace Btk{
+    //Draw a rounded box directly
+    int Renderer::rounded_box(const Rect &r,int rad,Color c){
+        nvgBeginPath(nvg_ctxt);
+        nvgRoundedRect(nvg_ctxt,r.x,r.y,r.w,r.h,rad);
+        nvgFillColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
+        nvgFill(nvg_ctxt);
+        return 0;
     }
-    
+    int Renderer::rounded_rect(const Rect &r,int rad,Color c){
+        nvgBeginPath(nvg_ctxt);
+        nvgRoundedRect(nvg_ctxt,r.x,r.y,r.w,r.h,rad);
+        nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
+        nvgStroke(nvg_ctxt);
+        return 0;
+    }
+    int Renderer::box(const Rect &r,Color c){
+        nvgBeginPath(nvg_ctxt);
 
-    int Renderer::line(int x1,int y1,int x2,int y2,Color c){
-        return lineRGBA(render,x1,y1,x2,y2,UNPACK_COLOR(c));
+        nvgRect(nvg_ctxt,r.x,r.y,r.w,r.h);
+        nvgFillColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
+        nvgFill(nvg_ctxt);
+        return 0;
     }
-    int Renderer::start(Color c){
-        int i = 0;
-        i |= Btk_RenderSetDrawColor(render,UNPACK_COLOR(c));
-        i |= Btk_RenderClear(render);
-        return i;
+    int Renderer::rect(const Rect &r,Color c){
+        nvgBeginPath(nvg_ctxt);
+
+        nvgRect(nvg_ctxt,r.x,r.y,r.w,r.h);
+        nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
+        nvgStroke(nvg_ctxt);
+        return 0;
     }
-    int Renderer::box(const Rect &rect,Color color){
-        if(rect.empty()){
-            return -1;
+    int  Renderer::line(int x,int y,int x2,int y2,Color c){
+        nvgBeginPath(nvg_ctxt);
+        nvgMoveTo(nvg_ctxt,x,y);
+        nvgLineTo(nvg_ctxt,x2,y2);
+        nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
+        nvgStroke(nvg_ctxt);
+        return 0;
+    }
+    //cliprect
+    int  Renderer::set_cliprect(const Rect *rect){
+        if(rect == nullptr){
+            nvgResetScissor(nvg_ctxt);
+            return 0;
         }
-        return boxRGBA(
-                render,
-                rect.x,
-                rect.y,
-                rect.x + rect.w,
-                rect.y + rect.h,
-                UNPACK_COLOR(color)
+        if(rect->empty()){
+            nvgResetScissor(nvg_ctxt);
+            return 0;
+        }
+        cliprect = *rect;
+        nvgScissor(
+            nvg_ctxt,
+            cliprect.x,
+            cliprect.y,
+            cliprect.w,
+            cliprect.h
         );
+        return 0;
     }
-    int Renderer::rect(const Rect &rect,Color color){
-        if(rect.empty()){
-            return -1;
-        }
-        return rectangleRGBA(
-                render,
-                rect.x,
-                rect.y,
-                rect.x + rect.w,
-                rect.y + rect.h,
-                UNPACK_COLOR(color)
-        );
-    }
-
-    int Renderer::rounded_box(const Rect &rect,int rad,Color color){
-        if(rect.empty()){
-            return -1;
-        }
-        return roundedBoxRGBA(
-                render,
-                rect.x,
-                rect.y,
-                rect.x + rect.w,
-                rect.y + rect.h,
-                rad,
-                UNPACK_COLOR(color)
-        );
-    }
-    int Renderer::rounded_rect(const Rect &rect,int rad,Color color){
-        if(rect.empty()){
-            return -1;
-        }
-        return roundedRectangleRGBA(
-                render,
-                rect.x,
-                rect.y,
-                rect.x + rect.w,
-                rect.y + rect.h,
-                rad,
-                UNPACK_COLOR(color)
-        );
-    }
-    int Renderer::pie(int x,int y,int rad,int beg,int end,Color c){
-        return pieRGBA(render,x,y,rad,beg,end,UNPACK_COLOR(c));
-    }
-    int Renderer::filled_pie(int x,int y,int rad,int beg,int end,Color c){
-        return filledPieRGBA(render,x,y,rad,beg,end,UNPACK_COLOR(c));
-    }
-
-    //copy pixbuf
-    int Renderer::copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst){
-        if(pixbuf.empty()){
-            return -1;
-        }
-        auto   [w,h] = pixbuf.size();
-        Uint32 fmt = pixbuf->format->format;
-        Uint32 tfmt;//Texture format
-        int tw,th;//Texture w,h
-        /*
-        if(cache == nullptr){
-            //Failed to create texture
-            create:
-            cache = Btk_CreateTexture(render,fmt,TranslateAccess(TextureAccess::Streaming),w,h);
-            if(cache == nullptr){
-                //unsupport 
-                BTK_LOGWARN("Failed to create texture:%s",Btk_RIGetError());
-                auto t = create_from(pixbuf);
-                return copy(t,src,dst);
-            }
-            tw = w;
-            th = h;
-        }
-        else{
-            if(Btk_QueryTexture(cache,&tfmt,nullptr,&tw,&th) == -1){
-                throwRendererError();
-            }
-            BTK_LOGINFO("Texture %p format %s",cache,SDL_GetPixelFormatName(tfmt));
-            if(tw <= w or th <= h){
-                
-                auto t = create_from(pixbuf);
-                return copy(t,src,dst);
-            }
-        }
-        {
-            lock_guard<BtkTexture*> tlocker(cache);
-            lock_guard<PixBuf> plocker(const_cast<PixBuf&>(pixbuf));//We have to lock it
-            size_t byte = SDL_BYTESPERPIXEL(fmt);
-            void  *pixels = tlocker.pixels;
-            int    pitch  = tlocker.pitch;
-
-            Uint8 *buf_pix = static_cast<Uint8*>(pixbuf->pixels);
-            if(src != nullptr){
-                w = src->w;
-                h = src->h;
-
-                //buf_pix =  buf_pix + src->y * pixbuf->pitch ;
-                buf_pix =  buf_pix + src->y * pixbuf->pitch;
-            }
-
-            BTK_LOGINFO("Renderer::copy pixels %p pitch %d",buf_pix,pitch);
-            //Copy the pixels to Texture{0,0,w,h}
-            int ret = SDL_ConvertPixels(
-                w * byte,
-                h * byte,
-                fmt,
-                buf_pix,
-                pixbuf->pitch,
-                tfmt,
-                pixels,
-                pitch);
-            if(ret == -1){
-                throwSDLError();
-            }
-        }
-        //Rect for texture
-        Rect trect = {0,0,w,h};
-
-
-        return Btk_RenderCopy(render,cache,&trect,dst);;
-        */
-        //It need be improved
-        auto t = create_from(pixbuf);
-        return copy(t,src,dst);
-    }
-
-    PixBuf Renderer::dump_texture(const Texture &texture){
-        if(texture.get()){
-            throwRuntimeError("Texture could not be empty");
-        }
-        int w,h;
-        Uint32 fmt;
-        auto inf = texture.information();
-        w = inf.w;
-        h = inf.h;
-        fmt = inf.format;
-        //Create it
-        PixBuf pixbuf(w,h,fmt);
-        //restore target
-        BtkTexture *target = Btk_RenderGetTarget(render);
-        //parpre cleanup
-        Btk_defer{
-            Btk_RenderSetTarget(render,target);
-        };
-        lock_guard<PixBuf> locker(pixbuf);
-        //set target
-        if(Btk_RenderSetTarget(render,texture.get()) == -1){
-            throwRendererError();
-        }
-        if(Btk_RenderReadPixels(render,nullptr,fmt,pixbuf->pixels,pixbuf->pitch) == -1){
-            throwRendererError();
-        }
-        return pixbuf;
-    }
-
-    Texture Renderer::clone_texture(const Texture &texture){
-        if(texture.get()){
-            throwRuntimeError("Texture could not be empty");
-        }
-        int w,h;
-        Uint32 fmt;
-        auto inf = texture.information();
-        if(inf.access == TextureAccess::Static){
-            return create_from(dump_texture(texture));
-        }
-        Texture t = create(fmt,inf.access,w,h);
-        BtkTexture *target = Btk_RenderGetTarget(render);
-        //parpre cleanup
-        Btk_defer{
-            Btk_RenderSetTarget(render,target);
-        };
-        if(Btk_RenderSetTarget(render,texture.get()) == -1){
-            throwRendererError();
-        }
-        lock_guard<Texture> locker(t);
-        if(Btk_RenderReadPixels(render,nullptr,fmt,locker.pixels,locker.pitch) == -1){
-            throwRendererError();
-        }
-        return t;
-    }
-
-    int Renderer::text(Font &font,int x,int y,Color c,std::string_view u8){
-        auto pixbuf = font.render_blended(u8,c);
-        Rect dst = {
-            x,
-            y,
-            pixbuf->w,
-            pixbuf->h
-        };
-        return copy(pixbuf,nullptr,dst);
-    }
-    int Renderer::text(Font &font,int x,int y,Color c,std::u16string_view u16){
-        auto pixbuf = font.render_blended(u16,c);
-        Rect dst = {
-            x,
-            y,
-            pixbuf->w,
-            pixbuf->h
-        };
-        return copy(pixbuf,nullptr,dst);
+    Rect Renderer::get_cliprect(){
+        return cliprect;
     }
 }

@@ -464,14 +464,14 @@ static void find_coreGLES2(void) {
 int BtkLoadGLES2Loader(GLADloadproc load) {
 	//FIXME Why in glGetString(GL_VERSION) == NULLPTR
 	//When we load glad before GL_CreateContext
-	load_GL_ES_VERSION_2_0(load);
+	//load_GL_ES_VERSION_2_0(load);
 
 	GLVersion.major = 0; GLVersion.minor = 0;
 	glGetString = (PFNGLGETSTRINGPROC)load("glGetString");
 	if(glGetString == NULL) return 0;
 	if(glGetString(GL_VERSION) == NULL) return 0;
 	find_coreGLES2();
-	//load_GL_ES_VERSION_2_0(load);
+	load_GL_ES_VERSION_2_0(load);
 
 	if (!find_extensionsGLES2()) return 0;
 	return GLVersion.major != 0 || GLVersion.minor != 0;

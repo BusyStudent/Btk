@@ -35,6 +35,6 @@ namespace Btk{
         throw RendererError(msg);
     }
     [[noreturn]] void throwRendererError(){
-        throw RendererError(Btk_RIGetError());
+        throw RendererError(SDL_GetError());
     }
 }
