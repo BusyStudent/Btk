@@ -44,6 +44,12 @@ namespace Btk{
         }
         return Texture(t,this);
     }
+    Texture Renderer::load(std::string_view fname){
+        return create_from(PixBuf::FromFile(fname));
+    }
+    Texture Renderer::load(RWops &rwops){
+        return create_from(PixBuf::FromRWops(rwops));
+    }
     int  Renderer::copy(const Texture &texture,const Rect *_src,const Rect *_dst){
         //make pattern
         SDL_Rect dst;//Dst
@@ -92,6 +98,33 @@ namespace Btk{
     int  Renderer::copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst){
         auto texture = create_from(pixbuf);
         return copy(texture,src,dst);
+    }
+}
+namespace Btk{
+    //NVG Method
+    void Renderer::stroke(){
+        nvgStroke(nvg_ctxt);
+    }
+    void Renderer::stroke_width(float size){
+        nvgStrokeWidth(nvg_ctxt,size);
+    }
+    void Renderer::stroke_color(Color c){
+        nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
+    }
+    void Renderer::show_path_caches(){
+        nvgDebugDumpPathCache(nvg_ctxt);
+    }
+    void Renderer::move_to(float x,float y){
+        nvgMoveTo(nvg_ctxt,x,y);
+    }
+    void Renderer::line_to(float x,float y){
+        nvgLineTo(nvg_ctxt,x,y);
+    }
+    void Renderer::begin_path(){
+        nvgBeginPath(nvg_ctxt);
+    }
+    void Renderer::close_path(){
+        nvgClosePath(nvg_ctxt);
     }
 }
 namespace Btk{

@@ -214,7 +214,13 @@ namespace Btk{
              */
             Texture():image(0),render(nullptr){};
             Texture(const Texture &) = delete;
-            Texture(Texture &&t);
+            Texture(Texture &&t){
+                image = t.image;
+                render = t.render;
+
+                t.image = 0;
+                t.render = nullptr;
+            }
             ~Texture();
             /**
              * @brief Get the size(w and h)

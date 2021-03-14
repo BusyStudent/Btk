@@ -58,6 +58,7 @@ namespace Btk{
     //Clear the buffer
     int  Renderer::clear(){
         glClear(GL_COLOR_BUFFER_BIT);
+        glClearStencil(0);
         return glGetError() == GL_NO_ERROR ? 0 : 1;
     }
     //...

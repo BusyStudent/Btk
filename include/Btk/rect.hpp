@@ -45,6 +45,11 @@ namespace Btk{
         }
     };
     struct FPoint{
+        FPoint() = default;
+        FPoint(float x,float y){
+            this->x = x;
+            this->y = y;
+        }
         float x,y;
     };
     struct FRect{
@@ -68,6 +73,15 @@ namespace Btk{
         bool empty() const noexcept{
             return w <= 0 or h <= 0 or x < 0 or y < 0;
         }
+        bool has_point(const FPoint &fp){
+            return has_point(fp.x,fp.y);
+        }
+        bool has_point(float px,float py) const noexcept{
+            if(px > x and px < (x + w) and py > y and py < (y + h)){
+                return true;
+            }
+            return false;
+        }
         operator Rect() const noexcept{
             return Rect{
                 static_cast<int>(x),
@@ -89,16 +103,23 @@ namespace Btk{
         Point(int x,int y){
             this->x = x;
             this->y = y;
-        };
+        }
         Point(const SDL_Point &p){
             x = p.x;
             y = p.y;
+        }
+        Point(const FPoint &fp){
+            x = float(fp.x);
+            y = float(fp.y);
         }
         bool operator ==(const SDL_Point &p) const noexcept{
             return x == p.x and y == p.y;
         }
         bool operator !=(const SDL_Point &p) const noexcept{
             return x != p.x or y != p.y;
+        }
+        operator FPoint() const noexcept{
+            return {x,y};
         }
     };
     typedef Point  Vec2;

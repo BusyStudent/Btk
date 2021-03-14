@@ -157,6 +157,27 @@ namespace Btk{
              * 
              */
             void begin();
+
+            void begin_path();
+            void close_path();
+
+            void restore();
+            void reset();
+            void save();
+
+
+
+            void fill();
+            void fill_color(Color c);
+
+            void stroke();
+            void stroke_color(Color c);
+            void stroke_width(float size);
+
+            void move_to(float x,float y);
+            void line_to(float x,float y);
+
+            void show_path_caches();
             /**
              * @brief End the frame
              * 
