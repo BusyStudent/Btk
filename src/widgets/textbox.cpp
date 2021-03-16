@@ -142,6 +142,7 @@ namespace Btk{
             texture = render.create_from(tb_buf);
             
             //Render text
+            render.save();
             auto cliprect = render.get_cliprect();
             render.set_cliprect(rect);
 
@@ -169,6 +170,7 @@ namespace Btk{
             }
 
             render.set_cliprect(cliprect);
+            render.restore();
         }
         else if(has_focus and show_line){
             //render the line
@@ -187,6 +189,7 @@ namespace Btk{
         else{
             render.rounded_rect(rect,1,theme.border_color);
         }
+        render.restore();
     }
     bool TextBox::do_keyboard(KeyEvent &event){
         if(event.state == KeyEvent::Pressed){

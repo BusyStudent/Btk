@@ -7,7 +7,7 @@
 using namespace Btk;
 int main(){
     Window win("Drawing test",500,500);
-    #if 0
+    #if 1
     //Create a canvas
     auto &canvas = win.add<Canvas>(0,0,500,500);
     //load image
@@ -17,11 +17,24 @@ int main(){
     Vec2 pos = {0,0};//Image position
 
     canvas.draw() = [&](Renderer &render){
-        render.box({0,0,500,500},{1,1,1});
+        //render.box({0,0,500,500},{1,1,1});
         render.copy(image,nullptr,{pos.x,pos.y,500,500});
         if(vec2 != Vec2{0,0}){
             render.line({0,0},vec2,{0,0,0,255});
         }
+        render.begin_path();
+        render.text_align(Align::Center,Align::Center);
+        render.text_size(12);
+        render.text(vec2.x,vec2.y,"HelloWorld");
+        render.fill_color(255,255,255,255);
+        render.fill();
+
+        render.begin_path();
+        render.stroke_color(208,208,208,255);
+        render.rounded_rect(0,0,vec2.x,vec2.y,2);
+        render.rounded_rect(50,50,50,50,5);
+        render.stroke();
+        render.show_path_caches();
     };
     canvas.handle() = [&](Event &event){
         if(event.type() == Event::Wheel){
@@ -56,7 +69,7 @@ int main(){
         image = PixBuf::FromFile(fname);
     });
     #endif
-    
+    #if 0
     struct Test:public Widget{
         Test(Container&){
 
@@ -74,5 +87,6 @@ int main(){
         }
     };
     win.add<Test>();
+    #endif
     win.mainloop();
 }

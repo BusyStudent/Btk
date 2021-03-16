@@ -3,6 +3,7 @@
 #include "pixels.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
+#include <list>
 struct SDL_Window;
 
 struct NVGcontext;//<NanoVG Context
@@ -17,6 +18,11 @@ namespace Btk{
             Renderer(SDL_Window *win);
             Renderer(const Renderer &) = delete;
             ~Renderer();
+
+            //FIXME :Cliprect will cause render error
+            //If you want to use it
+            //Use render.save() and render.restore to protect
+            //  the global context
             Rect get_cliprect();
             int  set_cliprect(){
                 return set_cliprect(nullptr);
@@ -26,6 +32,7 @@ namespace Btk{
             }
             int  set_cliprect(const Rect *r);
 
+           
             Rect get_viewport();
             int  set_viewport(){
                 return set_viewport(nullptr);
@@ -41,18 +48,11 @@ namespace Btk{
             int  copy(const Texture &t,const Rect *src,const Rect &dst);
             int  copy(const Texture &t,const Rect &src,const Rect &dst);
 
-            int clear();
-            void done();
             /**
              * @brief Destroy the renderer
              * 
              */
             void destroy();
-            /**
-             * @brief Start drawing
-             * 
-             */
-            int start(Color c);
             int line(int x1,int y1,int x2,int y2,Color c);
             int line(const Vec2 &beg,const Vec2 &end,Color c){
                 return line(beg.x,beg.y,end.x,end.y,c);
@@ -151,12 +151,24 @@ namespace Btk{
              */
             void draw_image(const Texture&,const FRect *dst,const FRect *src);
         public:
-            //NanoVG Functions
             /**
-             * @brief Begin the frame
+             * @brief Begin the frame,Init the device
              * 
              */
             void begin();
+            /**
+             * @brief End the frame,swap the buffer
+             * 
+             */
+            void end();
+            /**
+             * @brief Clear the screen
+             * 
+             * @param c 
+             */
+            void clear(Color c);
+        public:
+            //NanoVG Functions
 
             void begin_path();
             void close_path();
@@ -169,20 +181,62 @@ namespace Btk{
 
             void fill();
             void fill_color(Color c);
+            void fill_color(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
+                fill_color({r,g,b,a});
+            }
+
 
             void stroke();
             void stroke_color(Color c);
+            void stroke_color(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
+                stroke_color({r,g,b,a});
+            }
             void stroke_width(float size);
 
             void move_to(float x,float y);
             void line_to(float x,float y);
 
+            //NVG Graphics Path
+            /**
+             * @brief Create a rect subpath
+             * 
+             * @param x 
+             * @param y 
+             * @param w 
+             * @param h 
+             */
+            void rect(float x,float y,float w,float h);
+            void rect(const FRect &rect){
+                this->rect(rect.x,rect.y,rect.w,rect.h);
+            }
+            void rounded_rect(float x,float y,float w,float h,float rad);
+            void rounded_rect(const FRect &rect,float rad){
+                this->rounded_rect(rect.x,rect.y,rect.w,rect.h,rad);
+            }
+
             void show_path_caches();
             /**
-             * @brief End the frame
+             * @brief Draw text
              * 
+             * @param x The Text Begin's x
+             * @param y The Text's buttom
+             * @param text 
              */
-            void end();
+            void text(float x,float y,std::string_view text);
+            void text(float x,float y,std::u16string_view text);
+            /**
+             * @brief Set the text's size
+             * 
+             * @param ptsize 
+             */
+            void text_size(float ptsize);
+            /**
+             * @brief Set Text Alignment
+             * 
+             * @param v_align Vertical Alignment(default Left)
+             * @param h_align Horizontal Alignment(default Baseline)
+             */
+            void text_align(Align v_align = Align::Left,Align h_align = Align::Baseline);
         public:
             /**
              * @brief Flush the data
@@ -208,6 +262,9 @@ namespace Btk{
 
             Rect  viewport = {0,0,0,0};//< cached viewport
             FRect cliprect = {0,0,0,0};//< cached cliprect
+
+            std::list<Texture> t_caches;//< Texture cache
+            int max_caches = 20;//< Max cache
         friend class Texture;
     };
 }

@@ -33,10 +33,11 @@ namespace Btk{
             void draw(Renderer&);
         private:
             std::string text_;//text
-            Font font_;//font
+            //Font font_;//font
+            float ptsize;
             
-            PixBuf text_buf;//text pixels buf
-            Texture texture;//text texture
+            //PixBuf text_buf;//text pixels buf
+            //Texture texture;//text texture
             Color text_color;//text color
 
             Align v_align = Align::Left;

@@ -61,7 +61,8 @@ namespace Btk{
         SDL_Log("[System::Renderer]Draw Window %p",win);
         #endif
         std::lock_guard<std::recursive_mutex> locker(mtx);
-        render.start(bg_color);
+        render.begin();
+        render.clear(bg_color);
         //Draw each widget
         for(auto widget:container.widgets_list){
             //check widgets
@@ -77,7 +78,7 @@ namespace Btk{
                 iter = draw_cbs.erase(iter);
             }
         }
-        render.done();
+        render.end();
     }
     //TryCloseWIndow
     bool WindowImpl::on_close(){

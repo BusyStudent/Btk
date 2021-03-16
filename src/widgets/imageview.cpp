@@ -41,12 +41,14 @@ namespace Btk{
     }
     void ImageView::draw(Renderer &render){
         if(not pixelbuf.empty()){
+            render.save();
             if(texture.empty()){
                 //create texture
                 texture = render.create_from(pixelbuf);
             }
             //render image
             render.copy(texture,&image_rect,&rect);
+            render.restore();
         }
     }
     void ImageView::set_image(const PixBuf &buf){

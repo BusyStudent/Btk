@@ -72,7 +72,26 @@ namespace Btk{
     //Btk u16string
     class String;
     using u16string = String;
-};
+    //Generic Align
+    
+    //Alignment
+    enum class Align:unsigned int{
+        Center,//<V and H
+        //Vertical Alignment
+        Top,
+        Bottom,
+        Baseline,//< Only for TextAlign
+        //Horizontal Alignment
+        Right,
+        Left
+    };
+    enum class Orientation:unsigned int{
+        Vertical = 0,
+        Horizontal = 1,
+        V = Vertical,
+        H = Horizontal
+    };
+}
 #endif
 
 #endif // _BTK_DEFS_HPP_

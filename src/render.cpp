@@ -1,6 +1,8 @@
 #include "./build.hpp"
 
 #include <Btk/impl/scope.hpp>
+#include <Btk/impl/utils.hpp>
+#include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <Btk/rwops.hpp>
@@ -16,9 +18,17 @@
 #define BTK_NULLCHECK(VAL) if(VAL == nullptr){return;}
 
 namespace Btk{
-    void Renderer::done(){
+    void Renderer::end(){
         nvgEndFrame(nvg_ctxt);
         swap_buffer();
+        //Too many caches
+        if(t_caches.size() > max_caches){
+            int n = t_caches.size() - max_caches;
+            BTK_LOGINFO("Clear %d textures",n);
+            for(int i = 0;i < n;i++){
+                t_caches.pop_front();
+            }
+        }
     }
     //create texture from pixbuf
     Texture Renderer::create_from(const PixBuf &pixbuf){
@@ -76,8 +86,10 @@ namespace Btk{
         //Check what is the max
         //float radio = 0;
 
-        w = std::max(src.w,dst.w);
-        h = std::max(src.h,dst.h);
+        //w = std::max(src.w,dst.w);
+        //h = std::max(src.h,dst.h);
+        w = dst.w;
+        h = dst.h;
 
         auto paint = nvgImagePattern(
             nvg_ctxt,
@@ -93,15 +105,54 @@ namespace Btk{
         nvgRect(nvg_ctxt,dst.x,dst.y,w,h);
         nvgFillPaint(nvg_ctxt,paint);
         nvgFill(nvg_ctxt);
+        
         return 0;
     }
     int  Renderer::copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst){
         auto texture = create_from(pixbuf);
-        return copy(texture,src,dst);
+        int val = copy(texture,src,dst);
+        t_caches.emplace_back(std::move(texture));
+        return val;
     }
 }
 namespace Btk{
+    static int TranslateAlign(Align v_align,Align h_align){
+        int val = 0;
+        switch(h_align){
+            case Align::Baseline:
+                val |= NVG_ALIGN_BASELINE;
+                break;
+            case Align::Center:
+                val |= NVG_ALIGN_MIDDLE;
+                break;
+            case Align::Top:
+                val |= NVG_ALIGN_TOP;
+                break;
+            case Align::Bottom:
+                val |= NVG_ALIGN_BOTTOM;
+                break;
+            default:
+                throwRuntimeError("Invaid Align");
+        }
+        switch(v_align){
+            case Align::Right:
+                val |= NVG_ALIGN_RIGHT;
+                break;
+            case Align::Left:
+                val |= NVG_ALIGN_LEFT;
+                break;
+            case Align::Center:
+                val |= NVG_ALIGN_CENTER;
+                break;
+            default:
+                throwRuntimeError("Invaid Align");
+        }
+        return val;
+    }
     //NVG Method
+    void Renderer::fill(){
+        nvgFill(nvg_ctxt);
+    }
     void Renderer::stroke(){
         nvgStroke(nvg_ctxt);
     }
@@ -110,6 +161,9 @@ namespace Btk{
     }
     void Renderer::stroke_color(Color c){
         nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
+    }
+    void Renderer::fill_color(Color c){
+        nvgFillColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
     }
     void Renderer::show_path_caches(){
         nvgDebugDumpPathCache(nvg_ctxt);
@@ -125,6 +179,35 @@ namespace Btk{
     }
     void Renderer::close_path(){
         nvgClosePath(nvg_ctxt);
+    }
+    //Text
+    void Renderer::text(float x,float y,std::string_view text){
+        nvgText(nvg_ctxt,x,y,text.begin(),text.end());
+    }
+    void Renderer::text(float x,float y,std::u16string_view text){
+        auto &buf = FillInternalU8Buffer(text);
+        
+        nvgText(nvg_ctxt,x,y,&buf[0],nullptr);
+    }
+    void Renderer::text_align(Align v_align,Align h_align){
+        nvgTextAlign(nvg_ctxt,TranslateAlign(v_align,h_align));
+    }
+    void Renderer::text_size(float ptsize){
+        nvgFontSize(nvg_ctxt,ptsize);
+    }
+    //Path
+    void Renderer::rect(float x,float y,float w,float h){
+        nvgRect(nvg_ctxt,x,y,w,h);
+    }
+    void Renderer::rounded_rect(float x,float y,float w,float h,float rad){
+        nvgRoundedRect(nvg_ctxt,x,y,w,h,rad);
+    }
+    //R/S
+    void Renderer::save(){
+        nvgSave(nvg_ctxt);
+    }
+    void Renderer::restore(){
+        nvgRestore(nvg_ctxt);
     }
 }
 namespace Btk{

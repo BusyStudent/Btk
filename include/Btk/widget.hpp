@@ -36,22 +36,6 @@ namespace Btk{
         bool disable = false;//<The widget is disabled?
         FocusPolicy focus = FocusPolicy::None;//<Default the widget couldnot get focus
     };
-    //Alignment
-    enum class Align:unsigned int{
-        Center,
-        //Vertical Alignment
-        Top,
-        Buttom,
-        //Horizontal Alignment
-        Right,
-        Left
-    };
-    enum class Orientation:unsigned int{
-        Vertical = 0,
-        Horizontal = 1,
-        V = Vertical,
-        H = Horizontal
-    };
     #if 0
     /**
      * @brief A helper of dispatch event in widget

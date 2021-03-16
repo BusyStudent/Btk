@@ -84,6 +84,7 @@ namespace Btk{
     Button::~Button(){}
     //draw button
     void Button::draw(Renderer &render){
+        render.save();
         //Fist draw backgroud
         //Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 1}
         //It makes button look better
@@ -107,10 +108,15 @@ namespace Btk{
             boarder = theme->border_color;
         }
         //Draw box
-        render.rounded_box(fixed_rect,2,bg);
+        render.begin_path();
+        render.fill_color(bg);
+        render.rounded_rect(fixed_rect,2);
+        render.fill();
         //Render text
         if(btext.size() != 0){
             //has text
+            render.save();
+            
             if(texture.empty()){
                 if(textbuf.empty()){
                     //render text
@@ -128,9 +134,16 @@ namespace Btk{
             render.set_cliprect(rect);
             render.copy(texture,nullptr,&pos);
             render.set_cliprect(cliprect);
+            
+            render.restore();
         }
         //draw the boarder
-        render.rounded_rect(fixed_rect,2,boarder);
+        render.begin_path();
+        render.stroke_color(boarder);
+        render.rounded_rect(fixed_rect,2);
+        render.stroke();
+        
+        render.restore();
     }
     void Button::onclick(const MouseEvent &event){
         if(event.is_pressed() and event.button.is_left()){

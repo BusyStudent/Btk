@@ -5,6 +5,9 @@
 #include <Btk/window.hpp>
 #include <Btk/render.hpp>
 #include <Btk/gl/gl.hpp>
+
+#include <Btk/font.hpp>
+
 extern "C"{
     #define NANOVG_GLES2_IMPLEMENTATION
     #include "../libs/nanovg.h"
@@ -31,6 +34,10 @@ namespace Btk{
         nvg_ctxt = nvgCreateGLES2(
             NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG
         );
+        //Add default font
+        int face_id = nvgCreateFont(nvg_ctxt,"",FontUtils::GetFileByName("").c_str());
+        nvgFontFaceId(nvg_ctxt,face_id);
+
     }
     Renderer::~Renderer(){
         destroy();
@@ -49,6 +56,8 @@ namespace Btk{
         nvgBeginFrame(nvg_ctxt,w,h,float(pix_w) / float(w));
     }
     void Renderer::destroy(){
+        t_caches.clear();
+        
         nvgDeleteGLES2(nvg_ctxt);
         SDL_GL_DeleteContext(device);
 
@@ -56,32 +65,17 @@ namespace Btk{
         device   = nullptr;
     }
     //Clear the buffer
-    int  Renderer::clear(){
-        glClear(GL_COLOR_BUFFER_BIT);
+    void Renderer::clear(Color c){
+        
         glClearStencil(0);
-        return glGetError() == GL_NO_ERROR ? 0 : 1;
-    }
-    //...
-    int  Renderer::start(Color c){
-
-        SDL_GL_MakeCurrent(window,device);
-        int w,h;
-        int pix_w,pix_h;
-
-        SDL_GetWindowSize(window,&w,&h);
-        SDL_GL_GetDrawableSize(window,&pix_w,&pix_h);
-
-        glViewport(0,0,w,h);
         glClearColor(
             1.0f / 255 * c.r,
             1.0f / 255 * c.g,
             1.0f / 255 * c.b,
             1.0f / 255 * c.a
         );
-        glClear(GL_COLOR_BUFFER_BIT);
-        nvgBeginFrame(nvg_ctxt,w,h,float(pix_w) / float(w));
 
-        return 0;
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     }
     void Renderer::swap_buffer(){
         SDL_GL_SwapWindow(window);
@@ -103,6 +97,30 @@ namespace Btk{
             SDL_GL_MakeCurrent(cur_win,cur);
         }
     }
+    #if 0
+    //DumpTexture
+    PixBuf Renderer::dump_texture(const Texture &texture){
+        //Check the opengl context is actived
+        bool is_actived;
+        SDL_GLContext cur = SDL_GL_GetCurrentContext();
+        SDL_Window *cur_win;
+        if(cur == device){
+            is_actived = true;
+        }
+        else{
+            is_actived = false;
+            SDL_GL_MakeCurrent(window,device);
+            cur_win = SDL_GL_GetCurrentWindow();
+        }
+        //do our 
+
+
+        if(not is_actived){
+            //Reset to prev context
+            SDL_GL_MakeCurrent(cur_win,cur);
+        }
+    }
+    #endif
     int  Renderer::set_viewport(const Rect *r){
         Rect rect;
         if(r == nullptr){

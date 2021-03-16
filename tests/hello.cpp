@@ -10,9 +10,9 @@
 int main(){
     Btk::Window win("Hello",500,500);
     
-    Btk::SetExceptionHandler([](std::exception *){
-        return true;
-    });
+    //Btk::SetExceptionHandler([](std::exception *){
+    //    return true;
+    //});
     //Btk::Window win2("Hello2",200,100);
     win.on_close([](){
         std::cout << "Window is on closed" << std::endl;
@@ -26,6 +26,8 @@ int main(){
         0,0,100,100
     );
     #endif
+
+    #if 1
     auto &button = win.add<Btk::Button>("Close the window");
     button.set_rect(
         200,200,100,30
@@ -64,7 +66,10 @@ int main(){
         }
         return false;
     });
+    #endif
+    //win.add<Btk::TextBox>().set_rect(100,100,100,50);
     win.add<Btk::Line>(0,0,100,100,Btk::Orientation::H);
+   
     #ifndef _WIN32
     win.set_transparent(0);
     #endif

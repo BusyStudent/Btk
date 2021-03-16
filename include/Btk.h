@@ -33,14 +33,20 @@
 #else
     #define BTK_CAPI BTK_CLINKAGE BTK_C_IMPORT
     //Define Widget and function
-    #ifndef __cplusplus
+    #ifdef __cplusplus
         #define BTK_DEF_WIDGET(NAME,SUPER) \
-            typedef struct Btk##NAME{}Btk##NAME;\
+        typedef struct Btk##NAME:public Btk##SUPER{}Btk##NAME;\
+        BTK_CAPI bool Btk_Is##NAME(BtkWidget *);
+
+    //strict modes
+    #elif defined(BTK_STRICT)
+        #define BTK_DEF_WIDGET(NAME,SUPER) \
+            typedef struct Btk##NAME Btk##NAME;\
             BTK_CAPI bool Btk_Is##NAME(BtkWidget *);
     #else
         #define BTK_DEF_WIDGET(NAME,SUPER) \
-            typedef struct Btk##NAME:public Btk##SUPER{}Btk##NAME;\
-            BTK_CAPI bool Btk_Is##NAME(BtkWidget *);
+        typedef BtkWidget Btk##NAME;\
+        BTK_CAPI bool Btk_Is##NAME(BtkWidget *);
     #endif
 #endif
 //name begin
@@ -57,10 +63,12 @@ typedef Btk::Widget BtkWidget;
 struct BtkWindow{};
 struct BtkWidget{};
 #endif
-
+//name casttinh macro
+#define BTK_WIDGET(PTR) ((BtkWidget*)PTR)
+//name alias
 #define Btk_delete Btk_Delete
 #define Btk_run    Btk_Run
-
+#define Btk_SetWidgetRect Btk_UpdateRect
 //Buttons
 BTK_DEF_WIDGET(AbstructButton,Widget);
 BTK_DEF_WIDGET(Button,AbstructButton);
@@ -73,9 +81,28 @@ BTK_CAPI bool Btk_Init();
 BTK_CAPI int  Btk_Run();
 //widgets
 BTK_CAPI void Btk_SetWidgetPosition(BtkWidget *,int x,int y);
+/**
+ * @brief Update Widget's rect
+ * 
+ * @param widget
+ * @param x 
+ * @param y 
+ * @param w 
+ * @param h 
+ * @return BTK_CAPI 
+ */
+BTK_CAPI void Btk_UpdateRect(BtkWidget *,int x,int y,int w,int h);
+/**
+ * @brief Register callback at widget's destruction
+ * 
+ * @return BTK_CAPI 
+ */
 BTK_CAPI void Btk_AtDelete(BtkWidget *,void(*)(void*),void*);
 BTK_CAPI void Btk_Delete(BtkWidget *widget);
+
 //window
 BTK_CAPI BtkWindow *Btk_NewWindow(const char *title,int w,int h);
+//Error
+BTK_CAPI const char *Btk_GetError();
 //function end
 #endif // _BTK_CAPI_H_

@@ -21,19 +21,22 @@ namespace Btk{
     Line::~Line(){}
 
     void Line::draw(Renderer &render){
-        auto cliprect = render.get_cliprect();
-        render.set_cliprect(rect);
+        render.begin_path();
+        render.stroke_color(0,0,0,255);
+
         if(orientation == Orientation::H){
             //H
-            int y = rect.y + rect.h / 2;
+            float y = rect.y + rect.h / 2;
             //render.line();
-            render.line(rect.x,y,rect.x + rect.w,y,{0,0,0,255});
+            render.move_to(rect.x,y);
+            render.line_to(rect.x + rect.w,y);
         }
         else{
             //V
-            int x = rect.x + rect.w / 2;
-            render.line(x,rect.y,x,rect.y + rect.h,{0,0,0,255});
+            float x = rect.x + rect.w / 2;
+            render.move_to(x,rect.y);
+            render.line_to(x,rect.y + rect.h);
         }
-        render.set_cliprect(cliprect);
+        render.stroke();
     }
 };

@@ -2,6 +2,7 @@
 #define _BTKIMPL_UTILS_HPP_
 //This headers provide some utils
 #include <SDL2/SDL_events.h>
+#include "../utils/mem.hpp"
 #include "../widget.hpp"
 #include "../event.hpp"
 #include "../rect.hpp"
@@ -40,7 +41,7 @@ namespace Btk{
         switch(h_align){
             case Align::Top:
                 return rect.y;
-            case Align::Buttom:
+            case Align::Bottom:
                 return rect.y + rect.h - h;
             case Align::Center:
                 return rect.y + ((rect.h - h) / 2);
@@ -91,6 +92,29 @@ namespace Btk{
      * @return BTKAPI& 
      */
     BTKAPI std::u16string& InternalU16Buffer();
+    /**
+     * @brief Fill the internal u8buffer(thread_local)
+     * 
+     * @param view 
+     * @return std::string& 
+     */
+    inline std::string& FillInternalU8Buffer(std::string_view view){
+        auto &buf = InternalU8Buffer();
+        buf = view;
+        return buf;
+    }
+    /**
+     * @brief Fill the internal u8buffer(thread_local)
+     * 
+     * @param view 
+     * @return std::string& 
+     */
+    inline std::string& FillInternalU8Buffer(std::u16string_view view){
+        auto &buf = InternalU8Buffer();
+        buf.clear();
+        Utf16To8(buf,view);
+        return buf;
+    }
 };
 
 #endif // _BTKIMPL_UTILS_HPP_
