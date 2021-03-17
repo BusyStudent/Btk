@@ -9,35 +9,34 @@
 namespace Btk{
     //Label Impl
     
-    Label::Label(Container &w){
-        parent = &w;
+    Label::Label(){
+        //parent = &w;
         //font_ = window()->font();
         //Set text color inherted at window
-        text_color = window()->theme.text_color;
 
-        ptsize = window()->theme.font.ptsize();
     }
-    Label::Label(Container &w,std::string_view text){
-        parent = &w;
+    Label::Label(std::string_view text){
+        //parent = &w;
         //font_ = window()->font();
         //Set text color inherted at window
-        text_color = window()->theme.text_color;
+        //text_color = window()->theme.text_color;
         text_ = text;
 
-        ptsize = window()->theme.font.ptsize();
+        //ptsize = window()->theme.font.ptsize();
     }
     //Construct from posititon
-    Label::Label(Container &wi,int x,int y,int w,int h){
-        parent = &wi;
+    Label::Label(int x,int y,int w,int h){
+        //parent = &wi;
         //font_ = window()->font();
         //Set text color inherted at window
-        text_color = window()->theme.text_color;
+        //text_color = window()->theme.text_color;
 
         rect = {
             x,y,w,h
         };
+        attr.user_rect = true;
 
-        ptsize = window()->theme.font.ptsize();
+        //ptsize = window()->theme.font.ptsize();
     }
     Label::~Label(){
 
@@ -96,5 +95,20 @@ namespace Btk{
         //text_buf = nullptr;
         
         redraw();
+    }
+    bool Label::handle(Event &event){
+        event.accept();
+        if(event.type() == Event::SetRect){
+            rect = event_cast<SetRectEvent&>(event).rect();
+            return true;
+        }
+        else if(event.type() == Event::SetContainer){
+            parent = event_cast<SetRectEvent&>(event).container();
+            text_color = window()->theme.text_color;
+            ptsize = window()->theme.font.ptsize();
+            return true;
+        }
+        event.reject();
+        return false;
     }
 };

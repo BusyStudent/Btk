@@ -56,7 +56,10 @@ namespace Btk{
         nvgBeginFrame(nvg_ctxt,w,h,float(pix_w) / float(w));
     }
     void Renderer::destroy(){
-        t_caches.clear();
+        for(auto iter = t_caches.begin();iter != t_caches.end();){
+            nvgDeleteImage(nvg_ctxt,*iter);
+            iter = t_caches.erase(iter);
+        }
         
         nvgDeleteGLES2(nvg_ctxt);
         SDL_GL_DeleteContext(device);

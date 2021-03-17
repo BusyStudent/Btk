@@ -1,47 +1,107 @@
 #include "../build.hpp"
 
-#include <Btk.hpp>
-#include <Btk.h>
 
 #define BTK_CAPI_BEGIN extern "C"{
 #define BTK_CAPI_END }
 //Enable/Disable TypeChecking
 #ifdef BTK_UNSAFE
     #define BTK_TYPE_CHK(WIDGET,TYPE) 
+    #define BTK_TYPE_CHK2(WIDGET,TYPE,ERR_RET)
+
     #define BTK_NUL_CHK(VAL)
+    #define BTK_NUL_CHK2(VAL,RET)
+    /**
+     * @brief Begin the catch
+     * 
+     */
+    #define BTK_BEGIN_CATCH()
+    /**
+     * @brief End the catch
+     * 
+     */
+    #define BTK_END_CATCH()
+    /**
+     * @brief End the catch
+     * @param ERR_RET The return value if the exception happended
+     */
+    #define BTK_END_CATCH2(ERR_RET)
+
+
 #else
     #define BTK_NUL_CHK(VAL) \
         if(VAL == nullptr){\
             Btk_SetError("nullptr");\
             return;\
         }
+    #define BTK_NUL_CHK2(VAL,RET) \
+        if(VAL == nullptr){\
+            Btk_SetError("nullptr");\
+            return RET;\
+        }
 
     #define BTK_TYPE_CHK(WIDGET,TYPE) \
         if(!Btk_Is##TYPE(BTK_WIDGET(WIDGET)))\
         {   Btk_SetError("TypeError:(%s,%s)",#TYPE,Btk::get_typename(WIDGET).c_str());\
             return;}
+    #define BTK_TYPE_CHK2(WIDGET,TYPE,ERR_RET) \
+        if(!Btk_Is##TYPE(BTK_WIDGET(WIDGET)))\
+        {   Btk_SetError("TypeError:(%s,%s)",#TYPE,Btk::get_typename(WIDGET).c_str());\
+            return ERR_RET;}
+
+    /**
+     * @brief Begin the catch
+     * 
+     */
+    #define BTK_BEGIN_CATCH() try{
+    /**
+     * @brief End the catch
+     * 
+     */
+    #define BTK_END_CATCH() } \
+        catch(std::exception &exp){\
+            Btk_SetError("%s",exp.what());\
+        }\
+        catch(...){\
+            Btk_SetError("Unknown Exception");\
+        }
+    /**
+     * @brief End the catch
+     * @param ERR_RET The return value if the exception happended
+     */
+    #define BTK_END_CATCH2(ERR_RET) } \
+        catch(std::exception &exp){\
+            Btk_SetError("%s",exp.what());\
+            return ERR_RET;\
+        }\
+        catch(...){\
+            Btk_SetError("Unknown Exception");\
+            return ERR_RET;\
+        }
 #endif
+
+#include <Btk.hpp>
+#include <Btk.h>
 
 static thread_local std::string global_error;
 BTK_CAPI_BEGIN
+
 //Global Init/Quit
 bool Btk_Init(){
-    try{
-        Btk::Init();
-        return true;
-    }
-    catch(std::exception &exp){
-        global_error = exp.what();
-        return false;
-    }
-    catch(...){
-        global_error.clear();
-        return false;
-    }
+    BTK_BEGIN_CATCH();
+
+    Btk::Init();
+    return true;
+
+    BTK_END_CATCH2(false);
 }
 int  Btk_Run(){
     return Btk::run();
 }
+void Btk_AtExit(Btk_callback_t callback,void *param){
+    Btk::AtExit(callback,param);
+}
+
+
 //Widget
 
 void Btk_UpdateRect(BtkWidget *widget,int x,int y,int w,int h){
@@ -55,19 +115,66 @@ void Btk_AtDelete(BtkWidget *widget,Btk_callback_t fn,void*param){
 void Btk_Delete(BtkWidget *widget){
     delete widget;
 }
+
+
+
+
 //Button
 void Btk_AtButtonClicked(BtkButton *button,Btk_callback_t fn,void *param){
     BTK_NUL_CHK(button);
     BTK_NUL_CHK(fn);
     BTK_TYPE_CHK(button,Button);
 
-    button->sig_click().connect([&fn,param](){
+    button->sig_click().connect([fn,param](){
         fn(param);
     });
 }
+BtkButton *Btk_NewButton(){
+    return new BtkButton();
+}
+const char *Btk_SetButtonText(BtkButton *btn,const char *text){
+    BTK_NUL_CHK2(btn,nullptr);
+    BTK_TYPE_CHK2(btn,Button,nullptr);
+    
+    if(text != nullptr){
+        btn->set_text(text);
+    }
+    return btn->text().data();
+}
+
+//TextBox
+BtkTextBox *Btk_NewTextBox(){
+    return new BtkTextBox();
+}
+
+
 //Window
 BtkWindow *Btk_NewWindow(const char *title,int w,int h){
     return new Btk::Window(title,w,h);
+}
+void Btk_ShowWindow(BtkWindow *win){
+    BTK_NUL_CHK(win);
+    win->done();
+}
+void Btk_SetWindowTitle(BtkWindow *win,const char *title){
+    BTK_NUL_CHK(win);
+    win->set_title(title);
+}
+bool Btk_SetWindowIconFromFile(BtkWindow *win,const char *filename){
+    BTK_NUL_CHK2(win,false);
+    BTK_NUL_CHK2(filename,false);
+
+    BTK_BEGIN_CATCH();
+
+    win->set_icon(Btk::PixBuf::FromFile(filename));
+    return true;
+    BTK_END_CATCH2(false);
+}
+bool Btk_WindowAdd(BtkWindow*win,BtkWidget*widget){
+    BTK_NUL_CHK2(win,false);
+    BTK_NUL_CHK2(widget,false);
+
+    return win->container().add(widget);
 }
 //Error
 const char *Btk_GetError(){
@@ -95,5 +202,7 @@ void Btk_SetError(const char *fmt,...){
     vsprintf(&global_error[0],fmt,varg);
     va_end(varg);
 }
-
+void Btk_Backtrace(){
+    _Btk_Backtrace();
+}
 BTK_CAPI_END

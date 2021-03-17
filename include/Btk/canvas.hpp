@@ -11,8 +11,8 @@ namespace Btk{
             typedef Function<void(Renderer&)> DrawFn;
             typedef Function<bool(Event&)>    EventFn;
         public:
-            Canvas(Container&);
-            Canvas(Container&,int x,int y,int w,int h);
+            Canvas();
+            Canvas(int x,int y,int w,int h);
             Canvas(const Canvas &) = delete;
             ~Canvas();
 

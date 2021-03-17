@@ -2,17 +2,14 @@
 
 #include <Btk/canvas.hpp>
 #include <Btk/render.hpp>
+#include <Btk/event.hpp>
 namespace Btk{
-    Canvas::Canvas(Container &parent):Widget(parent){
-
-    }
-    Canvas::Canvas(Container &parent,int x,int y,int w,int h):
-        Canvas(parent){
-            
+    Canvas::Canvas() = default;
+    Canvas::Canvas(int x,int y,int w,int h){
         rect = {x,y,w,h};
         attr.user_rect = true;
     }
-    Canvas::~Canvas(){}
+    Canvas::~Canvas() = default;
     void Canvas::draw(Renderer &renderer){
         if(not draw_fn.empty()){
             auto viewport = renderer.get_viewport();
@@ -24,6 +21,11 @@ namespace Btk{
         }
     }
     bool Canvas::handle(Event &event){
+        if(event.type() == Event::SetContainer){
+            event.accept();
+            parent = event_cast<SetContainerEvent&>(event).container();
+            return true;
+        }
         if(event_fn.empty()){
             return false;
         }

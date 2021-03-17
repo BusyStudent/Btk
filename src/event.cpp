@@ -108,7 +108,7 @@ namespace Btk{
 namespace Btk{
     //Another Event
     
-    SetRectEvent::~SetRectEvent(){}
+    UpdateEvent::~UpdateEvent(){}
     KeyEvent::~KeyEvent(){}
     MouseEvent::~MouseEvent(){}
     DragEvent::~DragEvent(){}

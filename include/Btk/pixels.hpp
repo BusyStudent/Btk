@@ -253,6 +253,12 @@ namespace Btk{
             int get() const noexcept{
                 return image;
             }
+            int detach() noexcept{
+                int i = image;
+                image = 0;
+                render = nullptr;
+                return i;
+            }
             /**
              * @brief Update a texture's pixels
              * @note This is a very slow operation

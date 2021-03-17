@@ -14,11 +14,18 @@ namespace Btk{
     }
     bool Widget::handle(Event& ev){
         //Default Process event
-        if(ev.type() == Event::Type::SetRect){
-            rect = event_cast<SetRectEvent&>(ev).rect;
-            return true;
+        ev.accept();
+        switch(ev.type()){
+            case Event::SetRect:
+                rect = event_cast<SetRectEvent&>(ev).rect();
+                return true;
+            case Event::SetContainer:
+                parent = event_cast<SetContainerEvent&>(ev).container();
+                return true;
+            default:
+                ev.reject();
+                return false;
         }
-        return false;
     }
     void Widget::set_rect(const Rect &rect){
         attr.user_rect = true;
@@ -27,6 +34,10 @@ namespace Btk{
     }
     //redraw the window
     void Widget::redraw(){
+        if(parent == nullptr){
+            //We couldnot find the window
+            return;
+        }
         SDL_Event event;
         event.type = SDL_WINDOWEVENT;
         event.window.timestamp = SDL_GetTicks();
@@ -68,6 +79,16 @@ namespace Btk{
     Container::~Container(){
         clear();
     }
+    bool Container::add(Widget *w){
+        if(w == nullptr){
+            return false;
+        }
+        widgets_list.push_back(w);
+        //Tell the widget
+        SetContainerEvent event(this);
+        w->handle(event);
+        return true;
+    }
     void Container::clear(){
         for(auto iter = widgets_list.begin();iter != widgets_list.end();){
             delete *iter;
@@ -84,6 +105,10 @@ namespace Btk{
             return false;
         }
         widgets_list.erase(iter);
+        //Tell the widget
+        SetContainerEvent event(nullptr);
+        widget->handle(event);
+
         return true;
     }
     bool Container::remove(Widget *widget){

@@ -9,10 +9,9 @@ namespace Btk{
             /**
              * @brief Construct a new Scroll Bar object
              * 
-             * @param parent The scrollbar's master
              * @param orientation The scrollbar's orientation
              */
-            ScrollBar(Container &,Orientation orientation);
+            ScrollBar(Orientation orientation);
             ScrollBar(const ScrollBar &) = delete;
             ~ScrollBar();
 

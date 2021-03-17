@@ -13,8 +13,8 @@ namespace Btk{
      */
     class BTKAPI Label:public Widget{
         public:
-            Label(Container&);
-            Label(Container&,std::string_view text);
+            Label();
+            Label(std::string_view text);
             /**
              * @brief Construct a new Label object
              * 
@@ -23,7 +23,7 @@ namespace Btk{
              * @param w Label w
              * @param h Label h
              */
-            Label(Container&,int x,int y,int w,int h);
+            Label(int x,int y,int w,int h);
             ~Label();
             std::string text() const{
                 return text_;
@@ -31,14 +31,15 @@ namespace Btk{
             //Set Label text
             void set_text(std::string_view text);
             void draw(Renderer&);
+            bool handle(Event &);
         private:
             std::string text_;//text
             //Font font_;//font
-            float ptsize;
+            float ptsize = 0;
             
             //PixBuf text_buf;//text pixels buf
             //Texture texture;//text texture
-            Color text_color;//text color
+            Color text_color = {0,0,0,255};//text color
 
             Align v_align = Align::Left;
             Align h_align = Align::Center;

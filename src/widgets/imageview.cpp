@@ -8,8 +8,7 @@
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
 namespace Btk{
-    ImageView::ImageView(Container& w){
-        parent = &w;
+    ImageView::ImageView(){
         image_rect.x = 0;
         image_rect.y = 0;
         image_rect.w = 0;
@@ -21,9 +20,7 @@ namespace Btk{
         rect.h = 0;
 
     }
-    ImageView::ImageView(Container&wi,int x,int y,int w,int h){
-        parent = &wi;
-
+    ImageView::ImageView(int x,int y,int w,int h){
         image_rect.x = 0;
         image_rect.y = 0;
         image_rect.w = 0;

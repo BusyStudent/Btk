@@ -89,7 +89,8 @@
         "xtr1common": "cpp",
         "ini.c": "cpp",
         "fontstash.h": "c",
-        "glad.c": "cpp"
+        "glad.c": "cpp",
+        "nanovg.h": "c"
     },
     "files.exclude": {
         "**/.git": true,

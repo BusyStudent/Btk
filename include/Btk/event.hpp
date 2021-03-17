@@ -10,6 +10,7 @@ struct SDL_MouseButtonEvent;
 namespace Btk{
     class Window;
     class Widget;
+    class Container;
     /**
      * @brief A base event of all events
      * 
@@ -47,7 +48,9 @@ namespace Btk{
                 WindowEnter = 15,//The mouse enter the window
                 WindowLeave = 16,//The mouse leave the window
 
-                User = 1000,
+                SetContainer = 17,//< The container has be changed
+
+                User = 10000,
                 UserMax = UINT32_MAX - 1,
                 Error = UINT32_MAX
             };
@@ -195,23 +198,6 @@ namespace Btk{
         }
     };
     /**
-     * @brief A event about set Widget rect
-     * 
-     */
-    struct SetRectEvent:public Event{
-        SetRectEvent(const Rect n):
-            Event(Type::SetRect),
-            rect(n){};
-        SetRectEvent(const SetRectEvent &ev) = default;
-        ~SetRectEvent();
-
-        Vec2 position() const noexcept{
-            return {rect.x,rect.y};
-        };
-
-        Rect rect;
-    };
-    /**
      * @brief A event about mouse motion
      * 
      */
@@ -298,7 +284,46 @@ namespace Btk{
         Sint64 x;//< Vertical scroll,postive for scroll right
         Sint64 y;//< Horizontal scroll,postive for scroll up
     };
+    /**
+     * @brief a generic struct for updating data
+     * 
+     */
+    struct BTKAPI UpdateEvent:public Event{
+        UpdateEvent(Type t):Event(t){};
+        UpdateEvent(const UpdateEvent &) = default;
+        /**
+         * @brief Construct a new Update Rect Event object
+         * 
+         * @param r The Widget's rect
+         */
+        UpdateEvent(const Rect &r):Event(SetRect){
+            data.rect = r;
+        }
+        UpdateEvent(Container *c):Event(SetContainer){
+            data.container = c;
+        }
+        ~UpdateEvent();
+        union {
+            Rect rect;//< Widget's rect(type SetRect)
+            Container *container;
+        }data;
+        //UpdateRect
+        Rect rect() const noexcept{
+            return data.rect;
+        }
+        Vec2 position() const noexcept{
+            return {rect().x,rect().y};
+        }
+
+
+
+        Container* container() const noexcept{
+            return data.container;
+        }
+    };
     typedef MouseEvent ClickEvent;
+    typedef UpdateEvent SetRectEvent;
+    typedef UpdateEvent SetContainerEvent;
     /**
      * @brief Push event to queue
      * 

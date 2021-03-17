@@ -19,9 +19,10 @@ namespace Btk{
             virtual void onclick(const MouseEvent &) = 0;
             virtual void onenter();
             virtual void onleave();
-            bool is_entered;//< Is mouse on the button?
-            bool is_pressed;//< Is mouse pressed the button?
-            Theme *theme;//< current theme
+            bool is_entered = false;//< Is mouse on the button?
+            bool is_pressed = false;//< Is mouse pressed the button?
+            Theme *theme = nullptr;//< current theme
+            float ptsize = 0;//< fontsize
     };
     /**
      * @brief A simple pushbutton
@@ -29,9 +30,9 @@ namespace Btk{
      */
     class BTKAPI Button:public AbstructButton{
         public:
-            Button(Container&);
-            Button(Container&,std::string_view text);
-            Button(Container&,int x,int y,int w,int h);
+            Button();
+            Button(std::string_view text);
+            Button(int x,int y,int w,int h);
             ~Button();
             void draw(Renderer &);
             template<class ...T>
@@ -42,6 +43,14 @@ namespace Btk{
                 return clicked;
             };
             void set_text(std::string_view text);
+            /**
+             * @brief Get the button text
+             * 
+             * @return std::string_view 
+             */
+            std::string_view text() const{
+                return btext;
+            }
         protected:
             void onclick(const MouseEvent &);
             void onleave();
@@ -50,7 +59,6 @@ namespace Btk{
 
             //Button text
             std::string btext;
-            float ptsize;//< fontsize
             //PixBuf  textbuf;
             //Texture texture;
             //Font    textfont;

@@ -26,6 +26,7 @@ namespace Btk{
             int n = t_caches.size() - max_caches;
             BTK_LOGINFO("Clear %d textures",n);
             for(int i = 0;i < n;i++){
+                nvgDeleteImage(nvg_ctxt,t_caches.front());
                 t_caches.pop_front();
             }
         }
@@ -46,7 +47,7 @@ namespace Btk{
             nvg_ctxt,
             pixbuf->w,
             pixbuf->h,
-            0,
+            NVG_IMAGE_NEAREST,
             static_cast<const Uint8*>(pixbuf->pixels)
         );
         if(SDL_MUSTLOCK(pixbuf.get())){
@@ -108,10 +109,11 @@ namespace Btk{
         
         return 0;
     }
+    //Temp copy
     int  Renderer::copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst){
         auto texture = create_from(pixbuf);
         int val = copy(texture,src,dst);
-        t_caches.emplace_back(std::move(texture));
+        t_caches.emplace_back(texture.detach());
         return val;
     }
 }

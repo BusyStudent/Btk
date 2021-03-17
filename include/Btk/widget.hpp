@@ -124,19 +124,12 @@ namespace Btk{
             template<class T,class ...Args>
             T& add(Args &&...args){
                 T *ptr = new T(
-                    *this,
                     std::forward<Args>(args)...
                 );
-                widgets_list.push_back(ptr);
+                add(static_cast<Widget*>(ptr));
                 return *ptr;
             }
-            bool add(Widget *w){
-                if(w != nullptr){
-                    widgets_list.push_back(w);
-                    return true;
-                }
-                return false;
-            }
+            bool add(Widget *w);
             /**
              * @brief Destroy all widget
              * 
@@ -323,8 +316,8 @@ namespace Btk{
 
     class BTKAPI Line:public Widget{
         public:
-            Line(Container &,Orientation);
-            Line(Container &,int x,int y,int w,int h,Orientation);
+            Line(Orientation);
+            Line(int x,int y,int w,int h,Orientation);
             ~Line();
             
             void draw(Renderer &);

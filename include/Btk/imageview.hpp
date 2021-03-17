@@ -8,8 +8,8 @@
 namespace Btk{
     class BTKAPI ImageView:public Widget{
         public:
-            ImageView(Container&);
-            ImageView(Container&,int x,int y,int w,int h);
+            ImageView();
+            ImageView(int x,int y,int w,int h);
             ~ImageView();
             //set image
             void set_image(const PixBuf &buf);

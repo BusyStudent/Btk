@@ -12,7 +12,7 @@ namespace Btk{
     class KeyEvent;
     class BTKAPI TextBox:public Widget{
         public:
-            TextBox(Container&);
+            TextBox();
             TextBox(const TextBox &) = delete;
             ~TextBox();
 

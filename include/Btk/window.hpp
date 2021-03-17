@@ -65,7 +65,7 @@ namespace Btk{
              */
             template<class T,class ...Args>
             T &add(Args &&...args){
-                T *ptr = new T(container(),std::forward<Args>(args)...);
+                T *ptr = new T(std::forward<Args>(args)...);
                 add(ptr);
                 return *ptr;
             }

@@ -75,7 +75,19 @@ namespace Btk{
             }
             case Event::SetRect:{
                 event.accept();
-                rect = event_cast<SetRectEvent&>(event).rect;
+                rect = event_cast<SetRectEvent&>(event).rect();
+                return true;
+            }
+            case Event::SetContainer:{
+                event.accept();
+                parent = event_cast<SetContainerEvent&>(event).container();
+                //Set theme
+                theme =   window()->theme;
+                tb_font = window()->font();
+
+                //Get rendered text's h
+                ft_h = tb_font.height();
+
                 return true;
             }
             case Event::TakeFocus:{
@@ -110,16 +122,15 @@ namespace Btk{
         }
         return false;
     }
-    TextBox::TextBox(Container &w){
-        parent = &w;
+    TextBox::TextBox(){
         //Set theme
-        theme =   window()->theme;
-        tb_font = window()->font();
+        //theme =   window()->theme;
+        //tb_font = window()->font();
 
         //Get rendered text's h
-        ft_h = tb_font.height();
+        //ft_h = tb_font.height();
         
-        BTK_LOGINFO("TextBox %p's ft_h=%d",this,ft_h);
+        //BTK_LOGINFO("TextBox %p's ft_h=%d",this,ft_h);
         //Set current position
         cur_txt = tb_text.begin();
 

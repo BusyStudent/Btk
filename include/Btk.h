@@ -36,17 +36,20 @@
     #ifdef __cplusplus
         #define BTK_DEF_WIDGET(NAME,SUPER) \
         typedef struct Btk##NAME:public Btk##SUPER{}Btk##NAME;\
-        BTK_CAPI bool Btk_Is##NAME(BtkWidget *);
+        BTK_CAPI bool Btk_Is##NAME(BtkWidget *);\
+        BTK_CAPI Btk##NAME* Btk_New##NAME();
 
     //strict modes
     #elif defined(BTK_STRICT)
         #define BTK_DEF_WIDGET(NAME,SUPER) \
             typedef struct Btk##NAME Btk##NAME;\
-            BTK_CAPI bool Btk_Is##NAME(BtkWidget *);
+            BTK_CAPI bool Btk_Is##NAME(BtkWidget *);\
+            BTK_CAPI Btk##NAME* Btk_New##NAME();
     #else
         #define BTK_DEF_WIDGET(NAME,SUPER) \
         typedef BtkWidget Btk##NAME;\
-        BTK_CAPI bool Btk_Is##NAME(BtkWidget *);
+        BTK_CAPI bool Btk_Is##NAME(BtkWidget *);\
+        BTK_CAPI Btk##NAME* Btk_New##NAME();
     #endif
 #endif
 //name begin
@@ -69,11 +72,13 @@ struct BtkWidget{};
 #define Btk_delete Btk_Delete
 #define Btk_run    Btk_Run
 #define Btk_SetWidgetRect Btk_UpdateRect
+#define Btk_SetRect Btk_UpdateRect
 /**
  * @brief Generic callback
  * 
  */
 typedef void(*Btk_callback_t)(void*);
+typedef void(*Btk_ccallback_t)();
 
 //Buttons
 BTK_DEF_WIDGET(AbstructButton,Widget);
@@ -86,6 +91,8 @@ BTK_DEF_WIDGET(Label,Widget);
 //function begin
 BTK_CAPI bool Btk_Init();
 BTK_CAPI int  Btk_Run();
+BTK_CAPI void Btk_AtExit(Btk_callback_t,void *param);
+BTK_CAPI void Btk_Async(Btk_callback_t,void *param);
 //widgets
 BTK_CAPI void Btk_SetWidgetPosition(BtkWidget *,int x,int y);
 /**
@@ -108,6 +115,20 @@ BTK_CAPI void Btk_AtDelete(BtkWidget *,Btk_callback_t,void*);
 BTK_CAPI void Btk_Delete(BtkWidget *widget);
 //Button
 BTK_CAPI void Btk_AtButtonClicked(BtkButton *btn,Btk_callback_t,void*);
+/**
+ * @brief Set button text
+ * 
+ * @param btn The button pointer
+ * @param text The new text(nullptr on no-op)
+ * @return The current Button's text  
+ */
+BTK_CAPI const char *Btk_SetButtonText(BtkButton *btn,const char *text);
+#define Btk_GetButtonText(BTN) Btk_SetButtonText(BTN,NULL)
+
+//TextBox
+BTK_CAPI const char *Btk_SetTextBoxText(BtkTextBox *textbox,const char *text);
+#define Btk_GetTextBoxText(TBX) Btk_SetTextBoxText(TBX,NULL);
+
 //Signal
 /**
  * @brief Connect signal
@@ -119,8 +140,25 @@ BTK_CAPI void Btk_AtButtonClicked(BtkButton *btn,Btk_callback_t,void*);
 BTK_CAPI void Btk_SignConnect(BtkWidget*,const char *signal,...);
 //window
 BTK_CAPI BtkWindow *Btk_NewWindow(const char *title,int w,int h);
+BTK_CAPI void Btk_ShowWindow(BtkWindow *);
+BTK_CAPI void Btk_SetWindowTitle(BtkWindow*,const char *title);
+/**
+ * @brief Add a widget into a window
+ * 
+ * @return BTK_CAPI 
+ */
+BTK_CAPI bool Btk_WindowAdd(BtkWindow*,BtkWidget*);
+/**
+ * @brief Set the window icon from filename
+ * 
+ * @param filename 
+ * @return BTK_CAPI 
+ */
+BTK_CAPI bool Btk_SetWindowIconFromFile(BtkWindow*,const char *filename);
 //Error
 BTK_CAPI const char *Btk_GetError();
 BTK_CAPI void        Btk_SetError(const char *fmt,...);
+//Debug
+BTK_CAPI void Btk_Backtrace();
 //function end
 #endif // _BTK_CAPI_H_

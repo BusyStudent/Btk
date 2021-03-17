@@ -13,8 +13,7 @@ namespace Btk{
      */
     constexpr int BarWidth = 6;
     constexpr int SingleStep = 4;
-    ScrollBar::ScrollBar(Container &parent,Orientation orient):
-        Widget(parent){
+    ScrollBar::ScrollBar(Orientation orient){
 
         orientation = orient;
         bar_color = {193,193,193};
@@ -25,7 +24,7 @@ namespace Btk{
     bool ScrollBar::handle(Event &event){
         switch(event.type()){
             case Event::SetRect:
-                rect = event_cast<SetRectEvent&>(event).rect;
+                rect = event_cast<SetRectEvent&>(event).rect();
                 //Set bar range
                 if(orientation == Orientation::H){
                     int y = CalculateYByAlign(rect,BarWidth,Align::Center);
@@ -77,6 +76,11 @@ namespace Btk{
                 else{
                     set_value(bar_value - SingleStep);
                 }
+                return true;
+            }
+            case Event::SetContainer:{
+                event.accept();
+                parent = event_cast<SetContainerEvent&>(event).container();
                 return true;
             }
             default:

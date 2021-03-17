@@ -309,7 +309,7 @@ namespace Btk{
             Rect  viewport = {0,0,0,0};//< cached viewport
             FRect cliprect = {0,0,0,0};//< cached cliprect
 
-            std::list<Texture> t_caches;//< Texture cache
+            std::list<int> t_caches;//< Texture cache
             int max_caches = 20;//< Max cache
         friend class Texture;
     };

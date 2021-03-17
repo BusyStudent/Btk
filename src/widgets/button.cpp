@@ -10,25 +10,32 @@
 #include <Btk/font.hpp>
 namespace Btk{
     bool AbstructButton::handle(Event &event){
-        using Type = Event::Type;
         switch(event.type()){
-            case Type::Enter:{
+            case Event::Enter:{
                 onenter();
                 break;
             }
-            case Type::Leave:{
+            case Event::Leave:{
                 onleave();
                 break;
             }
-            case Type::SetRect:{
+            case Event::SetRect:{
                 //SetPositions
-                rect = event_cast<SetRectEvent&>(event).rect;
+                rect = event_cast<SetRectEvent&>(event).rect();
                 break;
             }
-            case Type::Click:{
+            case Event::Click:{
                 //Click button
                 auto &ev = event_cast<MouseEvent&>(event);
                 onclick(ev);
+                break;
+            }
+            case Event::SetContainer:{
+                auto &ev = event_cast<SetContainerEvent&>(event);
+                parent = ev.container();
+
+                theme = &window()->theme;
+                ptsize = window()->font().ptsize();
                 break;
             }
             default:
@@ -50,37 +57,15 @@ namespace Btk{
     }
 };
 namespace Btk{
-    Button::Button(Container &c){
-        parent = &c;
-        //Set theme
-        theme     = &window()->theme;
-        ptsize    =  theme->font.ptsize();
-        is_entered = false;
-        is_pressed = false;
-    }
-    Button::Button(Container &c,int x,int y,int w,int h){
-        parent = &c;
-        //Set theme
-        theme     = &window()->theme;
-        ptsize    =  theme->font.ptsize();
-        is_entered = false;
-        is_pressed = false;
-
+    Button::Button() = default;
+    Button::Button(int x,int y,int w,int h){
         attr.user_rect = true;
         rect = {
             x,y,w,h
         };
     }
-    Button::Button(Container &c,std::string_view text):btext(text){
-        parent = &c;
-        //Set theme
-        theme     = &window()->theme;
-        ptsize    =  theme->font.ptsize();
-        is_entered = false;
-        is_pressed = false;
-
-    }
-    Button::~Button(){}
+    Button::Button(std::string_view text):btext(text){}
+    Button::~Button() = default;
     //draw button
     void Button::draw(Renderer &render){
         //Fist draw backgroud
