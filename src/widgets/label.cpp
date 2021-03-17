@@ -5,11 +5,11 @@
 #include <Btk/impl/utils.hpp>
 #include <Btk/window.hpp>
 #include <Btk/themes.hpp>
-#include <Btk/lable.hpp>
+#include <Btk/label.hpp>
 namespace Btk{
-    //Lable Impl
+    //Label Impl
     
-    Lable::Lable(Container &w){
+    Label::Label(Container &w){
         parent = &w;
         //font_ = window()->font();
         //Set text color inherted at window
@@ -17,7 +17,7 @@ namespace Btk{
 
         ptsize = window()->theme.font.ptsize();
     }
-    Lable::Lable(Container &w,std::string_view text){
+    Label::Label(Container &w,std::string_view text){
         parent = &w;
         //font_ = window()->font();
         //Set text color inherted at window
@@ -27,7 +27,7 @@ namespace Btk{
         ptsize = window()->theme.font.ptsize();
     }
     //Construct from posititon
-    Lable::Lable(Container &wi,int x,int y,int w,int h){
+    Label::Label(Container &wi,int x,int y,int w,int h){
         parent = &wi;
         //font_ = window()->font();
         //Set text color inherted at window
@@ -39,10 +39,10 @@ namespace Btk{
 
         ptsize = window()->theme.font.ptsize();
     }
-    Lable::~Lable(){
+    Label::~Label(){
 
     }
-    void Lable::draw(Renderer &render){
+    void Label::draw(Renderer &render){
         if(text_.empty()){
             return;
         }
@@ -80,7 +80,7 @@ namespace Btk{
         render.text_size(ptsize);
         render.text(
             float(rect.x),
-            float(rect.y + rect.h) / 2,
+            rect.y + float(rect.h) / 2,
             text_);
         
         render.fill_color(text_color);
@@ -90,7 +90,7 @@ namespace Btk{
 
         render.restore();
     }
-    void Lable::set_text(std::string_view text){
+    void Label::set_text(std::string_view text){
         text_ = text;
         //texture  = nullptr;
         //text_buf = nullptr;

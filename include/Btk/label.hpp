@@ -1,5 +1,5 @@
-#if !defined(_BTK_LABLE_HPP_)
-#define _BTK_LABLE_HPP_
+#if !defined(_BTK_LABEL_HPP_)
+#define _BTK_LABEL_HPP_
 #include <string>
 #include <string_view>
 #include "widget.hpp"
@@ -8,27 +8,27 @@
 #include "font.hpp"
 namespace Btk{
     /**
-     * @brief Lable widget
+     * @brief Label widget
      * 
      */
-    class BTKAPI Lable:public Widget{
+    class BTKAPI Label:public Widget{
         public:
-            Lable(Container&);
-            Lable(Container&,std::string_view text);
+            Label(Container&);
+            Label(Container&,std::string_view text);
             /**
-             * @brief Construct a new Lable object
+             * @brief Construct a new Label object
              * 
-             * @param x Lable x
-             * @param y Lable y
-             * @param w Lable w
-             * @param h Lable h
+             * @param x Label x
+             * @param y Label y
+             * @param w Label w
+             * @param h Label h
              */
-            Lable(Container&,int x,int y,int w,int h);
-            ~Lable();
+            Label(Container&,int x,int y,int w,int h);
+            ~Label();
             std::string text() const{
                 return text_;
             };
-            //Set Lable text
+            //Set Label text
             void set_text(std::string_view text);
             void draw(Renderer&);
         private:
@@ -45,4 +45,4 @@ namespace Btk{
     };
 };
 
-#endif // _BTK_LABLE_HPP_
+#endif // _BTK_LABEL_HPP_

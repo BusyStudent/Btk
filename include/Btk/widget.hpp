@@ -28,6 +28,18 @@ namespace Btk{
         Click,
         Wheel
     };
+    //Alignment
+    enum class Align:unsigned int{
+        Center,//<V and H
+        //Vertical Alignment
+        Top,
+        Bottom,
+        Baseline,//< Only for TextAlign
+        //Horizontal Alignment
+        Right,
+        Left
+    };
+
     //Attribute for Widget
     struct WidgetAttr{
         bool hide = false;//<Is hide

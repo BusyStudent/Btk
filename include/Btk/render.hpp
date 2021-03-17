@@ -9,6 +9,35 @@ struct SDL_Window;
 struct NVGcontext;//<NanoVG Context
 namespace Btk{
     class Font;
+
+    struct TextMetrics{
+        float ascender;
+        float descender;
+        float h;//< The text's h
+    };
+    enum class Align:unsigned int;
+    /**
+     * @brief TextAlign from nanovg
+     * 
+     */
+    enum class TextAlign:int{
+        // Horizontal align
+        Left     = 1<<0,	// Default, align text horizontally to left.
+        Center 	 = 1<<1,	// Align text horizontally to center.
+        Right 	 = 1<<2,	// Align text horizontally to right.
+        // Vertical align
+        Top 	 = 1<<3,	// Align text vertically to top.
+        Middle	 = 1<<4,	// Align text vertically to middle.
+        Bottom	 = 1<<5,	// Align text vertically to bottom.
+        Baseline = 1<<6, // Default, align text vertically to baseline.
+    };
+    //TextAlign operator
+    inline TextAlign operator |(TextAlign a,TextAlign b){
+        return static_cast<TextAlign>(int(a) | int(b));
+    }
+    inline TextAlign operator +(TextAlign a,TextAlign b){
+        return static_cast<TextAlign>(int(a) | int(b));
+    }
     /**
      * @brief Abstruct Renderer
      * 
@@ -230,13 +259,23 @@ namespace Btk{
              * @param ptsize 
              */
             void text_size(float ptsize);
+
+            TextMetrics font_metrics();
             /**
              * @brief Set Text Alignment
              * 
-             * @param v_align Vertical Alignment(default Left)
-             * @param h_align Horizontal Alignment(default Baseline)
+             * @param v_align Vertical Alignment(default Baseline)
+             * @param h_align Horizontal Alignment(default Left)
              */
-            void text_align(Align v_align = Align::Left,Align h_align = Align::Baseline);
+            void text_align(TextAlign align = TextAlign::Left | TextAlign::Baseline);
+            void text_align(Align v_align,Align h_align);
+            //Scissor
+            void scissor(float x,float y,float w,float h);
+            void scissor(const FRect &rect){
+                scissor(rect.x,rect.y,rect.w,rect.h);
+            }
+
+            void reset_scissor();
         public:
             /**
              * @brief Flush the data
@@ -250,6 +289,13 @@ namespace Btk{
              * @param texture_id 
              */
             void free_texture(int texture_id);
+            /**
+             * @brief Update a texture pixels
+             * 
+             * @param texture_id 
+             * @param pixels 
+             */
+            void update_texture(int texture_id,const void *pixels);
             /**
              * @brief Active the render context
              * 
@@ -267,6 +313,7 @@ namespace Btk{
             int max_caches = 20;//< Max cache
         friend class Texture;
     };
+
 }
 
 #endif // _BTK_RENDERER_HPP_

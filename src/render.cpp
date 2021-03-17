@@ -119,9 +119,6 @@ namespace Btk{
     static int TranslateAlign(Align v_align,Align h_align){
         int val = 0;
         switch(h_align){
-            case Align::Baseline:
-                val |= NVG_ALIGN_BASELINE;
-                break;
             case Align::Center:
                 val |= NVG_ALIGN_MIDDLE;
                 break;
@@ -130,6 +127,9 @@ namespace Btk{
                 break;
             case Align::Bottom:
                 val |= NVG_ALIGN_BOTTOM;
+                break;
+            case Align::Baseline:
+                val |= NVG_ALIGN_BASELINE;
                 break;
             default:
                 throwRuntimeError("Invaid Align");
@@ -189,11 +189,19 @@ namespace Btk{
         
         nvgText(nvg_ctxt,x,y,&buf[0],nullptr);
     }
+    void Renderer::text_align(TextAlign align){
+        nvgTextAlign(nvg_ctxt,int(align));
+    }
     void Renderer::text_align(Align v_align,Align h_align){
         nvgTextAlign(nvg_ctxt,TranslateAlign(v_align,h_align));
     }
     void Renderer::text_size(float ptsize){
         nvgFontSize(nvg_ctxt,ptsize);
+    }
+    TextMetrics Renderer::font_metrics(){
+        TextMetrics m;
+        nvgTextMetrics(nvg_ctxt,&m.ascender,&m.descender,&m.h);
+        return m;
     }
     //Path
     void Renderer::rect(float x,float y,float w,float h){
@@ -208,6 +216,13 @@ namespace Btk{
     }
     void Renderer::restore(){
         nvgRestore(nvg_ctxt);
+    }
+    //Scissor
+    void Renderer::scissor(float x,float y,float w,float h){
+        nvgScissor(nvg_ctxt,x,y,w,h);
+    }
+    void Renderer::reset_scissor(){
+        nvgResetScissor(nvg_ctxt);
     }
 }
 namespace Btk{
@@ -293,6 +308,7 @@ namespace Btk{
             return 0;
         }
         cliprect = *rect;
+        nvgResetScissor(nvg_ctxt);
         nvgScissor(
             nvg_ctxt,
             cliprect.x,

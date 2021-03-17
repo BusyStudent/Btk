@@ -5,7 +5,7 @@
 #include <Btk/button.hpp>
 #include <Btk/themes.hpp>
 #include <Btk/event.hpp>
-#include <Btk/lable.hpp>
+#include <Btk/label.hpp>
 #include <iostream>
 int main(){
     Btk::Window win("Hello",500,500);
@@ -22,7 +22,7 @@ int main(){
         win.set_icon(file);
     });
     #if 1
-    win.add<Btk::Lable>("Hello World").set_rect(
+    win.add<Btk::Label>("Hello World").set_rect(
         0,0,100,100
     );
     #endif

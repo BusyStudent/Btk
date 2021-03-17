@@ -15,7 +15,7 @@
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
 #include <Btk/button.hpp>
-#include <Btk/lable.hpp>
+#include <Btk/label.hpp>
 #include <Btk/event.hpp>
 #include <Btk/rwops.hpp>
 #include <Btk/async.hpp>

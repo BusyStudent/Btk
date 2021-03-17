@@ -50,9 +50,10 @@ namespace Btk{
 
             //Button text
             std::string btext;
-            PixBuf  textbuf;
-            Texture texture;
-            Font    textfont;
+            float ptsize;//< fontsize
+            //PixBuf  textbuf;
+            //Texture texture;
+            //Font    textfont;
     };
 };
 

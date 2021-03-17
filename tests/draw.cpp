@@ -18,6 +18,11 @@ int main(){
 
     canvas.draw() = [&](Renderer &render){
         //render.box({0,0,500,500},{1,1,1});
+        render.begin_path();
+        render.rect(0,0,500,500);
+        render.fill_color(0,0,0,255);
+        render.fill();
+        
         render.copy(image,nullptr,{pos.x,pos.y,500,500});
         if(vec2 != Vec2{0,0}){
             render.line({0,0},vec2,{0,0,0,255});

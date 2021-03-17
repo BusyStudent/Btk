@@ -69,11 +69,18 @@ struct BtkWidget{};
 #define Btk_delete Btk_Delete
 #define Btk_run    Btk_Run
 #define Btk_SetWidgetRect Btk_UpdateRect
+/**
+ * @brief Generic callback
+ * 
+ */
+typedef void(*Btk_callback_t)(void*);
+
 //Buttons
 BTK_DEF_WIDGET(AbstructButton,Widget);
 BTK_DEF_WIDGET(Button,AbstructButton);
 //TextBox
 BTK_DEF_WIDGET(TextBox,Widget);
+BTK_DEF_WIDGET(Label,Widget);
 //name end
 
 //function begin
@@ -97,12 +104,23 @@ BTK_CAPI void Btk_UpdateRect(BtkWidget *,int x,int y,int w,int h);
  * 
  * @return BTK_CAPI 
  */
-BTK_CAPI void Btk_AtDelete(BtkWidget *,void(*)(void*),void*);
+BTK_CAPI void Btk_AtDelete(BtkWidget *,Btk_callback_t,void*);
 BTK_CAPI void Btk_Delete(BtkWidget *widget);
-
+//Button
+BTK_CAPI void Btk_AtButtonClicked(BtkButton *btn,Btk_callback_t,void*);
+//Signal
+/**
+ * @brief Connect signal
+ * 
+ * @param signal The signal name
+ * @param ... 
+ * @return BTK_CAPI 
+ */
+BTK_CAPI void Btk_SignConnect(BtkWidget*,const char *signal,...);
 //window
 BTK_CAPI BtkWindow *Btk_NewWindow(const char *title,int w,int h);
 //Error
 BTK_CAPI const char *Btk_GetError();
+BTK_CAPI void        Btk_SetError(const char *fmt,...);
 //function end
 #endif // _BTK_CAPI_H_

@@ -119,7 +119,7 @@ namespace Btk{
             return x != p.x or y != p.y;
         }
         operator FPoint() const noexcept{
-            return {x,y};
+            return {float(x),float(y)};
         }
     };
     typedef Point  Vec2;

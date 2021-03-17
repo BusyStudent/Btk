@@ -54,7 +54,7 @@ namespace Btk{
         parent = &c;
         //Set theme
         theme     = &window()->theme;
-        textfont  =  window()->font();
+        ptsize    =  theme->font.ptsize();
         is_entered = false;
         is_pressed = false;
     }
@@ -62,7 +62,7 @@ namespace Btk{
         parent = &c;
         //Set theme
         theme     = &window()->theme;
-        textfont  =  window()->font();
+        ptsize    =  theme->font.ptsize();
         is_entered = false;
         is_pressed = false;
 
@@ -75,16 +75,14 @@ namespace Btk{
         parent = &c;
         //Set theme
         theme     = &window()->theme;
-        textfont  =  window()->font();
+        ptsize    =  theme->font.ptsize();
         is_entered = false;
         is_pressed = false;
 
-        textbuf = textfont.render_blended(text,theme->text_color);
     }
     Button::~Button(){}
     //draw button
     void Button::draw(Renderer &render){
-        render.save();
         //Fist draw backgroud
         //Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 1}
         //It makes button look better
@@ -117,6 +115,7 @@ namespace Btk{
             //has text
             render.save();
             
+            #if 0
             if(texture.empty()){
                 if(textbuf.empty()){
                     //render text
@@ -130,9 +129,35 @@ namespace Btk{
                 texture = render.create_from(textbuf);
             }
             auto pos = CalculateRectByAlign(rect,textbuf->w,textbuf->h,Align::Center,Align::Center);
+            #endif
             auto cliprect = render.get_cliprect();
             render.set_cliprect(rect);
-            render.copy(texture,nullptr,&pos);
+            // render.copy(texture,nullptr,&pos);
+            render.begin_path();
+            render.text_size(ptsize);
+            render.text_align(TextAlign::Center | TextAlign::Middle);
+
+            if(is_pressed){
+                render.fill_color(theme->high_light_text);
+            }
+            else{
+                render.fill_color(theme->text_color);
+            }
+            //NOTE plus 2 to make it look better
+            float x = float(fixed_rect.x) + float(fixed_rect.w) / 2 + 2;
+            float y = float(fixed_rect.y) + float(fixed_rect.h) / 2 + 2;
+
+            BTK_LOGINFO("Text's x=%f y=%f",x,y);
+
+            render.text(
+                x,
+                y,
+                btext
+            );
+
+
+            render.fill();
+
             render.set_cliprect(cliprect);
             
             render.restore();
@@ -143,17 +168,12 @@ namespace Btk{
         render.rounded_rect(fixed_rect,2);
         render.stroke();
         
-        render.restore();
     }
     void Button::onclick(const MouseEvent &event){
         if(event.is_pressed() and event.button.is_left()){
             BTK_LOGINFO("This button is clicked %p",this);
             is_pressed = true;
             //has text 
-            if(btext.size() != 0){
-                textbuf = textfont.render_blended(btext,theme->high_light_text);
-                texture = nullptr;
-            }
             //render text
             redraw();
         }
@@ -162,10 +182,6 @@ namespace Btk{
             //The button was clicked 
             is_pressed = false;
             //render text
-            if(btext.size() != 0){
-                textbuf = textfont.render_blended(btext,theme->text_color);
-                texture = nullptr;
-            }
             redraw();
             if(not clicked.empty()){
                 clicked.emit();
@@ -173,11 +189,6 @@ namespace Btk{
         }
     }
     void Button::onleave(){
-        if(btext.size() != 0){
-            //reset text color
-            textbuf = textfont.render_blended(btext,theme->text_color);
-            texture = nullptr;
-        }
         is_entered = false;
         is_pressed = false;
         redraw();
@@ -186,4 +197,4 @@ namespace Btk{
         btext = text;
         redraw();
     }
-};
+}
