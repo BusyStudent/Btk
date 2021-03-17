@@ -184,7 +184,11 @@ namespace Btk{
     }
     //Text
     void Renderer::text(float x,float y,std::string_view text){
+        #ifdef _MSC_VER
+        nvgText(nvg_ctxt,x,y,&*text.begin(),&*text.end());
+        #else
         nvgText(nvg_ctxt,x,y,text.begin(),text.end());
+        #endif
     }
     void Renderer::text(float x,float y,std::u16string_view text){
         auto &buf = FillInternalU8Buffer(text);

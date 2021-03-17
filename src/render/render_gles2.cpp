@@ -37,7 +37,7 @@ namespace Btk{
         //Add default font
         int face_id = nvgCreateFont(nvg_ctxt,"",FontUtils::GetFileByName("").c_str());
         nvgFontFaceId(nvg_ctxt,face_id);
-
+        nvgFontBlur(nvg_ctxt,0);
     }
     Renderer::~Renderer(){
         destroy();
@@ -99,6 +99,9 @@ namespace Btk{
             //Reset it
             SDL_GL_MakeCurrent(cur_win,cur);
         }
+    }
+    RendererBackend Renderer::backend() const{
+        return RendererBackend::OpenGL;
     }
     #if 0
     //DumpTexture

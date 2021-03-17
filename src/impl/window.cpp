@@ -20,7 +20,9 @@ namespace Btk{
     static SDL_Window *CreateWindow(const char *title,int x,int y,int w,int h,int flags){
         SDL_Window *win = SDL_CreateWindow(title,x,y,w,h,flags);
         if(win == nullptr){
-            throwSDLError();
+            const char *err = SDL_GetError();
+            BTK_LOGINFO("%s",err);
+            throwSDLError(err);
         }
         return win;
     }

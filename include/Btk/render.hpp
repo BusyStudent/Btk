@@ -39,6 +39,15 @@ namespace Btk{
         return static_cast<TextAlign>(int(a) | int(b));
     }
     /**
+     * @brief The renderer backend
+     * 
+     */
+    enum class RendererBackend{
+        OpenGL,
+        Dx11,
+        Software
+    };
+    /**
      * @brief Abstruct Renderer
      * 
      */
@@ -196,6 +205,12 @@ namespace Btk{
              * @param c 
              */
             void clear(Color c);
+            /**
+             * @brief Get the backend
+             * 
+             * @return RendererBackend 
+             */
+            RendererBackend backend() const;
         public:
             //NanoVG Functions
 

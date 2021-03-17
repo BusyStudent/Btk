@@ -259,6 +259,7 @@ namespace Btk{
                 render = nullptr;
                 return i;
             }
+            #if 0
             /**
              * @brief Update a texture's pixels
              * @note This is a very slow operation
@@ -289,7 +290,6 @@ namespace Btk{
             void update(void *pixels,int pitch){
                 update(nullptr,pixels,pitch);
             }
-            void clear();
             /**
              * @brief Unlock the texture
              * 
@@ -301,6 +301,8 @@ namespace Btk{
              * @return Information 
              */
             Information information() const;
+            #endif
+            void clear();
         private:
             int image = 0;//< NVG Image ID
             Renderer *render = nullptr;//Renderer
@@ -318,46 +320,6 @@ namespace Btk{
         private:
             void *pimpl;
     };
-    /**
-     * @brief Generic LockGuard
-     * 
-     * @tparam T 
-     */
-    template<class T>
-    struct LockGuard{
-        LockGuard(T &m):mtx(m){
-            mtx.lock();
-        }
-        LockGuard(const LockGuard &) = delete;
-        ~LockGuard(){
-            mtx.unlock();
-        }
-        T &mtx;
-    };
-    /**
-     * @brief Lock Guard for Texture locking
-     */
-    template<>
-    struct LockGuard<Texture>{
-        LockGuard(Texture &t,const Rect *rect = nullptr):texture(t){
-            texture.lock(rect,&pixels,&pitch);
-        }
-        LockGuard(Texture &t,const Rect &rect):
-            texture(t){
-
-            texture.lock(rect,&pixels,&pitch);
-        }
-        LockGuard(const LockGuard &) = delete;
-        ~LockGuard(){
-            texture.unlock();
-        }
-        Texture &texture;
-        void *   pixels;
-        int      pitch;
-    };
-
-    template<class T>
-    using lock_guard = LockGuard<T>;
 };
 
 #endif // _BTK_PIXELS_HPP_

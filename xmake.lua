@@ -129,3 +129,11 @@ end
 target("btk-rcc")
     set_kind("binary")
     add_files("./tools/btk-rcc.cpp")
+--Do you need CAPI
+--If not,omit it
+if true then 
+    target("btk_capi")
+        set_kind("shared")
+        add_files("./src/ext/capi.cpp")
+        add_deps("btk")
+end
