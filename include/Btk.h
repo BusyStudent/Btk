@@ -66,6 +66,11 @@ typedef Btk::Widget BtkWidget;
 struct BtkWindow{};
 struct BtkWidget{};
 #endif
+
+//headers
+#include <stddef.h>
+#include <stdint.h>
+
 //name casttinh macro
 #define BTK_WIDGET(PTR) ((BtkWidget*)PTR)
 //name alias
@@ -85,7 +90,10 @@ BTK_DEF_WIDGET(AbstructButton,Widget);
 BTK_DEF_WIDGET(Button,AbstructButton);
 //TextBox
 BTK_DEF_WIDGET(TextBox,Widget);
+//Label
 BTK_DEF_WIDGET(Label,Widget);
+//ImageView
+BTK_DEF_WIDGET(ImageView,Widget);
 //name end
 
 //function begin
@@ -93,6 +101,12 @@ BTK_CAPI bool Btk_Init();
 BTK_CAPI int  Btk_Run();
 BTK_CAPI void Btk_AtExit(Btk_callback_t,void *param);
 BTK_CAPI void Btk_Async(Btk_callback_t,void *param);
+BTK_CAPI void Btk_DeferCall(Btk_callback_t,void *param);
+//Memory
+BTK_CAPI void *Btk_malloc(size_t byte);
+BTK_CAPI void *Btk_realloc(void *ptr,size_t byte);
+BTK_CAPI void  Btk_free(void *ptr);
+BTK_CAPI char *Btk_strdup(const char *str);
 //widgets
 BTK_CAPI void Btk_SetWidgetPosition(BtkWidget *,int x,int y);
 /**

@@ -1,6 +1,7 @@
 #if !defined(_BTK_WIN32_INTERNAL_HPP_)
 #define _BTK_WIN32_INTERNAL_HPP_
 #include <ShlObj.h>
+#include <wingdi.h>
 namespace Btk{
 namespace Win32{
     /**
@@ -50,6 +51,25 @@ namespace Win32{
             return ptr;
         }
         T *ptr;
+    };
+    /**
+     * @brief RAII for HDC
+     * 
+     */
+    struct HandleDC{
+        HandleDC(HWND win){
+            window = win;
+            dc = GetDC(win);
+        }
+        HandleDC(const HandleDC &) = delete;
+        ~HandleDC(){
+            ReleaseDC(window,dc);
+        }
+        operator HDC() const noexcept{
+            return dc;
+        }
+        HWND window;
+        HDC dc;
     };
 }
 }

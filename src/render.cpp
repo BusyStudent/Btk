@@ -11,7 +11,10 @@
 #include <SDL2/SDL.h>
 
 #include <cstdarg>
+#include <limits>
+#include <vector>
 
+#include "libs/fontstash.h"
 #include "libs/nanovg.h"
 
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
@@ -195,6 +198,46 @@ namespace Btk{
         
         nvgText(nvg_ctxt,x,y,&buf[0],nullptr);
     }
+    //TextBox
+    void Renderer::textbox(float x,float y,float width,std::string_view text){
+        #ifdef _MSC_VER
+        nvgTextBox(nvg_ctxt,x,y,width,&*text.begin(),&*text.end());
+        #else
+        nvgTextBox(nvg_ctxt,x,y,width,text.begin(),text.end());
+        #endif
+    }
+    void Renderer::textbox(float x,float y,float width,std::u16string_view text){
+        auto &buf = FillInternalU8Buffer(text);
+
+        nvgTextBox(nvg_ctxt,x,y,width,&buf[0],nullptr);
+    }
+    //Sizeof
+    FSize Renderer::glyph_size(char16_t ch){
+        auto &buf = FillInternalU8Buffer(std::u16string_view(&ch,1));
+        NVGtextRow  row;
+        nvgTextBreakLines(nvg_ctxt,&buf[0],nullptr,std::numeric_limits<float>::max(),&row,1);
+        return FSize{
+            (row.width),
+            font_height()
+            
+        };
+    }
+    //Get the font height
+    float Renderer::font_height(){
+        float lineh;
+        nvgTextMetrics(nvg_ctxt,nullptr,nullptr,&lineh);
+        return lineh;
+    }
+    //Get the rendered text size
+    FSize Renderer::text_size(std::u16string_view view){
+        auto &buf = FillInternalU8Buffer(view);
+        NVGtextRow  row;
+        nvgTextBreakLines(nvg_ctxt,&buf[0],nullptr,std::numeric_limits<float>::max(),&row,1);
+        return FSize{
+            row.width,
+            font_height()
+        };
+    }
     void Renderer::text_align(TextAlign align){
         nvgTextAlign(nvg_ctxt,int(align));
     }
@@ -237,7 +280,7 @@ namespace Btk{
     }
     Size Texture::size() const{
         Size size;
-        nvgImageSize(render->nvg_ctxt,image,&size.w,&size.h);
+        nvgImageSize(render->nvg_ctxt,texture,&size.w,&size.h);
         return size;
     }
     //delete texture
@@ -245,20 +288,64 @@ namespace Btk{
         if(empty()){
             return;
         }
-        render->free_texture(image);
-        image = 0;
+        render->free_texture(texture);
+        texture = 0;
         render = nullptr;        
+    }
+
+    //Update...
+
+    void Texture::update(const void *pixels){
+        if(empty() or pixels == nullptr){
+            return;
+        }
+        render->update_texture(texture,pixels);
+    }
+    void Texture::update(const PixBuf &pixbuf){
+        if(empty()){
+            return;
+        }
+        if(pixbuf.empty()){
+            throw RuntimeError("The pixbuf is empty");
+        }
+        if(pixbuf.size() != size()){
+            throw RuntimeError("Pibuf.size() != size()");
+        }
+        //Check end
+        if(pixbuf->format->format != SDL_PIXELFORMAT_RGBA32){
+            //Convert it
+            //Should we check lock here?
+            render->update_texture(
+                texture,
+                pixbuf.convert(SDL_PIXELFORMAT_RGBA32)->pixels
+            );
+        }
+        else{
+            if(pixbuf.must_lock()){
+                pixbuf.lock();
+            }
+            render->update_texture(texture,pixbuf->pixels);
+            if(pixbuf.must_lock()){
+                pixbuf.unlock();
+            }
+        }
+    }
+    void Texture::update(const Rect &rect,const void *pixels){
+        if(pixels == nullptr or empty()){
+            return;
+        }
+        render->update_texture(texture,rect,pixels);
     }
     Texture &Texture::operator =(Texture &&t){
         if(&t == this){
             return *this;
         }
         clear();
-        render = t.render;
-        image  = t.image;
+        render   = t.render;
+        texture  = t.texture;
 
         t.render = nullptr;
-        t.image = 0;
+        t.texture = 0;
         return *this;
     }
 }

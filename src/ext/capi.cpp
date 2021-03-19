@@ -100,6 +100,9 @@ int  Btk_Run(){
 void Btk_AtExit(Btk_callback_t callback,void *param){
     Btk::AtExit(callback,param);
 }
+void Btk_DeferCall(Btk_callback_t callback,void *param){
+    Btk::DeferCall(callback,param);
+}
 
 
 //Widget
@@ -176,6 +179,10 @@ bool Btk_WindowAdd(BtkWindow*win,BtkWidget*widget){
 
     return win->container().add(widget);
 }
+//ImageView
+BtkImageView *Btk_NewImageView(){
+    return new BtkImageView();
+}
 //Error
 const char *Btk_GetError(){
     return global_error.c_str();
@@ -204,5 +211,36 @@ void Btk_SetError(const char *fmt,...){
 }
 void Btk_Backtrace(){
     _Btk_Backtrace();
+}
+//Memory
+void *Btk_malloc(size_t byte){
+    void *ptr = malloc(byte);
+    if(ptr == nullptr){
+        Btk_SetError("malloc(%zu) failed",byte);
+        return nullptr;
+    }
+    return ptr;
+}
+void *Btk_realloc(void *p,size_t byte){
+    void *ptr = realloc(p,byte);
+    if(ptr == nullptr){
+        Btk_SetError("realloc(%p,%zu) failed",p,byte);
+        return nullptr;
+    }
+    return ptr;
+}
+void  Btk_free(void *ptr){
+    BTK_NUL_CHK(ptr);
+    free(ptr);
+}
+char *Btk_strdup(const char *str){
+    BTK_NUL_CHK2(str,nullptr);
+    size_t len = strlen(str);
+    char *ptr = static_cast<char*>(Btk_malloc((len + 1) * sizeof(char)));
+    
+    BTK_NUL_CHK2(ptr,nullptr);
+
+    memcpy(ptr,str,(len + 1) * sizeof(char));
+    return ptr;
 }
 BTK_CAPI_END

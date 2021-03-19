@@ -103,6 +103,11 @@ namespace Btk{
         buf = view;
         return buf;
     }
+    inline std::string& FillInternalU8Buffer(std::string &&text){
+        auto &buf = InternalU8Buffer();
+        buf = std::move(text);
+        return buf;
+    }
     /**
      * @brief Fill the internal u8buffer(thread_local)
      * 

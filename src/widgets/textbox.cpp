@@ -83,10 +83,10 @@ namespace Btk{
                 parent = event_cast<SetContainerEvent&>(event).container();
                 //Set theme
                 theme =   window()->theme;
-                tb_font = window()->font();
+                ptsize = window()->font().ptsize();
 
                 //Get rendered text's h
-                ft_h = tb_font.height();
+                //ft_h = tb_font.height();
 
                 return true;
             }
@@ -146,24 +146,44 @@ namespace Btk{
 
     void TextBox::draw(Renderer &render){
         render.box(rect,theme.background_color);
+        
+        BTK_LOGINFO("RendererLineH %f,ft_h %d",render.font_height(),ft_h);
+        ft_h = render.font_height();
         if(not tb_text.empty()){
+            /*
             if(tb_buf.empty()){
                 tb_buf = tb_font.render_blended(tb_text,theme.text_color);
             }
             texture = render.create_from(tb_buf);
-            
+            */
             //Render text
             render.save();
             auto cliprect = render.get_cliprect();
             render.set_cliprect(rect);
 
             Rect txt_rect = rect;
+            FSize text_size = render.text_size(tb_text);
             txt_rect.x += tb_boarder;
-            txt_rect.w = tb_buf->w;
-            txt_rect.h = tb_buf->h;
-            txt_rect.y = CalculateYByAlign(rect,tb_buf->h,Align::Center);
-            render.copy(texture,nullptr,&txt_rect);
+            //txt_rect.w = tb_buf->w;
+            //txt_rect.h = tb_buf->h;
+            txt_rect.y = CalculateYByAlign(rect,ft_h,Align::Center);
+
+            render.begin_path();
+
+            render.text_size(ptsize);
+            render.text_align(TextAlign::Center | TextAlign::Left);
+            render.fill_color(theme.text_color);
             
+            //plus 2 make it look better
+            render.text(
+                float(rect.x + tb_boarder),
+                float(rect.y + float(rect.h) / 2) + ft_h / 2 - 2,
+                tb_text
+            );
+
+            render.fill();
+
+
             if(has_focus and show_line){
                 //draw a line for editing
                 //calc the w
@@ -174,10 +194,11 @@ namespace Btk{
                     line_x = txt_rect.x;
                 }
                 else{
-                    line_x = txt_rect.x + tb_font.size(std::u16string(tb_text.begin(),cur_txt + 1)).w;
+                    std::u16string view(tb_text.begin(),cur_txt + 1);
+                    line_x = txt_rect.x + render.text_size(view).w;
                 }
                 
-                render.line(line_x,txt_rect.y,line_x,txt_rect.y + tb_buf->h,theme.text_color);
+                render.line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme.text_color);
             }
 
             render.set_cliprect(cliprect);
@@ -216,7 +237,7 @@ namespace Btk{
                         utf16to8(tb_text.begin(),tb_text.end(),back_inserter(t));
                         BTK_LOGINFO("TextBox:text=%s",t.c_str());
                         #endif
-                        tb_buf = nullptr;
+                        //tb_buf = nullptr;
                         show_line = true;
                         redraw();
                     }
@@ -270,14 +291,14 @@ namespace Btk{
     }
     void TextBox::set_text(std::u16string_view txt){
         tb_text = txt;
-        tb_buf = nullptr;
+        //tb_buf = nullptr;
         cur_txt = tb_text.begin();
         redraw();
     }
     void TextBox::set_text(std::string_view txt){
         tb_text.clear();
         utf8to16(txt.begin(),txt.end(),back_inserter(tb_text));
-        tb_buf = nullptr;
+        //tb_buf = nullptr;
         cur_txt = tb_text.begin();
         redraw();
     }
@@ -307,7 +328,7 @@ namespace Btk{
         utf16to8(tb_text.begin(),tb_text.end(),back_inserter(t));
         BTK_LOGINFO("TextBox:text=%s",t.c_str());
         #endif
-        tb_buf = nullptr;
+        //tb_buf = nullptr;
 
         redraw();
     }

@@ -340,6 +340,12 @@ namespace Btk{
         BTKAPI void Quit();
 
         BTKAPI FontSet GetFontList();
+        /**
+         * @brief Get the Default Font filename
+         * 
+         * @return Utf encoded font name
+         */
+        BTKAPI std::string GetDefaultFont();
     };
     //operators for FontStyle
     inline FontStyle operator |(FontStyle s1,FontStyle s2) noexcept{

@@ -9,4 +9,7 @@ int main(){
         std::cout << font.file() << std::endl;
     }
     #endif
+    #ifdef _WIN32
+    std::cout << Btk::FontUtils::GetDefaultFont();
+    #endif
 }

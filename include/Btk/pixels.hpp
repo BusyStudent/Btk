@@ -207,18 +207,18 @@ namespace Btk{
              * @param id 
              * @param r 
              */
-            Texture(int id,Renderer *r):image(id),render(r){}
+            Texture(int id,Renderer *r):texture(id),render(r){}
             /**
              * @brief Construct a new empty Texture object
              * 
              */
-            Texture():image(0),render(nullptr){};
+            Texture():texture(0),render(nullptr){};
             Texture(const Texture &) = delete;
             Texture(Texture &&t){
-                image = t.image;
+                texture = t.texture;
                 render = t.render;
 
-                t.image = 0;
+                t.texture = 0;
                 t.render = nullptr;
             }
             ~Texture();
@@ -236,7 +236,7 @@ namespace Btk{
             }
             //check is empty
             bool empty() const noexcept{
-                return image == 0;
+                return texture == 0;
             }
             //assign
             //Texture &operator =(BtkTexture*);
@@ -251,11 +251,11 @@ namespace Btk{
                 return *this;
             }
             int get() const noexcept{
-                return image;
+                return texture;
             }
             int detach() noexcept{
-                int i = image;
-                image = 0;
+                int i = texture;
+                texture = 0;
                 render = nullptr;
                 return i;
             }
@@ -302,9 +302,29 @@ namespace Btk{
              */
             Information information() const;
             #endif
+            /**
+             * @brief Update whole texture
+             * 
+             * @param pixels The RGBA32 formated pixels(nullptr on no-op)
+             */
+            void update(const void *pixels);
+            /**
+             * @brief Update texture
+             * 
+             * @param rect The area you want to update
+             * @param pixels The RGBA32 formated pixels(nullptr on no-op)
+             */
+            void update(const Rect &rect,const void *pixels);
+            /**
+             * @brief Update texture by pixbuf
+             * 
+             * @note The pixbuf's size() must be equal to the texture
+             * @param pixbuf 
+             */
+            void update(const PixBuf &pixbuf);
             void clear();
         private:
-            int image = 0;//< NVG Image ID
+            int texture = 0;//< NVG Image ID
             Renderer *render = nullptr;//Renderer
         friend struct Renderer;
     };

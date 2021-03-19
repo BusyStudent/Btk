@@ -1,6 +1,7 @@
 #include "../../build.hpp"
 
 #include <Btk/platform/win32.hpp>
+#include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL.h>
@@ -120,6 +121,16 @@ namespace Btk{
     }
     Win32Error::~Win32Error(){
 
+    }
+    //GetErrorCode
+    const char *Win32Error::what() const noexcept{
+        try{
+            return FillInternalU8Buffer(Win32::StrMessageA(errcode)).c_str();
+        }
+        catch(...){
+            //Formatting error or etc....
+            return "<Unknown>";
+        }
     }
     [[noreturn]] void throwWin32Error(DWORD errcode){
         throw Win32Error(errcode);

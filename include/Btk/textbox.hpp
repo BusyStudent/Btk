@@ -50,12 +50,13 @@ namespace Btk{
             bool do_keyboard(KeyEvent &event);
             //Add string in where the cur_text point
             void add_string(std::string_view);
-            Font  tb_font;//Text Font
+            //Font  tb_font;//Text Font
+            float ptsize;//< Font ptsize
             Theme theme;
             
             std::u16string tb_text;//Text
-            PixBuf  tb_buf;//Rendered text
-            Texture texture;
+            //PixBuf  tb_buf;//Rendered text
+            //Texture texture;
 
             bool has_focus = false;//Flag of has focus
             bool is_dragging = false;//< Flag of drag
@@ -68,8 +69,8 @@ namespace Btk{
             std::u16string::iterator sel_end;//select text end
 
             Timer timer;//For drawing the line
-            int ft_h;//Rendered Text's h
-            int tb_boarder = 4;//The text boarder
+            float ft_h;//Rendered Text's h
+            float tb_boarder = 4;//The text boarder
         friend struct TextBoxInserter;
     };
 };

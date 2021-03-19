@@ -131,6 +131,34 @@ namespace Btk{
     struct Size{
         int w;
         int h;
+
+        bool operator ==(const Size &s) const noexcept{
+            return w == s.w and h == s.h;
+        }
+        bool operator !=(const Size &s) const noexcept{
+            return not operator ==(s);
+        }
     };
-};
+    /**
+     * @brief Float size
+     * 
+     */
+    struct FSize{
+        float w;
+        float h;
+
+        bool operator ==(const FSize &s) const noexcept{
+            return w == s.w and h == s.h; 
+        }
+        bool operator !=(const FSize &s) const noexcept{
+            return not operator ==(s);
+        }
+        operator Size() const noexcept{
+            return {
+                int(w),
+                int(h)
+            };
+        }
+    };
+}
 #endif // _BTK_RECT_HPP_

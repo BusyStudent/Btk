@@ -13,6 +13,27 @@ extern "C"{
     #include "../libs/nanovg.h"
     #include "../libs/nanovg_gl.h"
 }
+
+//Active OpenGL Macro
+//Active it
+#define BTK_GL_BEGIN() \
+    SDL_GLContext _cur = SDL_GL_GetCurrentContext();\
+    SDL_Window *_cur_window;\
+    bool _need_reset;\
+    if(_cur == device){\
+        _need_reset = false;\
+    }\
+    else{\
+        _need_reset = true; \
+        _cur_window = SDL_GL_GetCurrentWindow();\
+        SDL_GL_MakeCurrent(window,device);\
+    }
+//Reset to prev context
+#define BTK_GL_END() \
+    if(_need_reset){ \
+      SDL_GL_MakeCurrent(_cur_window,_cur);\
+    }
+
 namespace Btk{
     //Create OpenGLES2 NanoVG Context
     Renderer::Renderer(SDL_Window *win){
@@ -84,21 +105,44 @@ namespace Btk{
         SDL_GL_SwapWindow(window);
     }
     //Delete texture
-    void Renderer::free_texture(int image){
+    void Renderer::free_texture(int texture){
         SDL_GLContext cur = SDL_GL_GetCurrentContext();
         if(cur == device){
             //Is current context we use
-            nvgDeleteImage(nvg_ctxt,image);
+            nvgDeleteImage(nvg_ctxt,texture);
             return;
         }
         else{
             //Get current active Window
             SDL_Window *cur_win = SDL_GL_GetCurrentWindow();
             SDL_GL_MakeCurrent(window,device);
-            nvgDeleteImage(nvg_ctxt,image);
+            nvgDeleteImage(nvg_ctxt,texture);
             //Reset it
             SDL_GL_MakeCurrent(cur_win,cur);
         }
+    }
+    void Renderer::update_texture(int texture,const void *pixels){
+        BTK_GL_BEGIN();
+        nvgUpdateImage(nvg_ctxt,texture,static_cast<const Uint8*>(pixels));
+        BTK_GL_END();
+    }
+    void Renderer::update_texture(int texture,const Rect &rect,const void *pixels){
+        BTK_GL_BEGIN();
+        //Could we use it
+        auto *params = nvgInternalParams(nvg_ctxt);
+
+        BTK_ASSERT(params != nullptr);
+
+        params->renderUpdateTexture(
+            params->userPtr,
+            texture,
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
+            static_cast<const Uint8*>(pixels)
+        );
+        BTK_GL_END();
     }
     RendererBackend Renderer::backend() const{
         return RendererBackend::OpenGL;

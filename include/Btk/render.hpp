@@ -269,12 +269,41 @@ namespace Btk{
             void text(float x,float y,std::string_view text);
             void text(float x,float y,std::u16string_view text);
             /**
+             * @brief Draw text(if the text's width > width)
+             *        it will be drawed in next line
+             * 
+             * @param x 
+             * @param y 
+             * @param width 
+             * @param text 
+             */
+            void textbox(float x,float y,float width,std::string_view text);
+            void textbox(float x,float y,float width,std::u16string_view text);
+            /**
+             * @brief Get the size of the rendered string
+             * 
+             * @return FSize 
+             */
+            FSize text_size(std::string_view);
+            FSize text_size(std::u16string_view);
+            /**
              * @brief Set the text's size
              * 
              * @param ptsize 
              */
             void text_size(float ptsize);
-
+            /**
+             * @brief Get the sizeof the glyph
+             * 
+             * @return Size 
+             */
+            FSize glyph_size(char16_t );
+            /**
+             * @brief Get the height of the current font
+             * 
+             * @return float 
+             */
+            float font_height();
             TextMetrics font_metrics();
             /**
              * @brief Set Text Alignment
@@ -311,6 +340,7 @@ namespace Btk{
              * @param pixels 
              */
             void update_texture(int texture_id,const void *pixels);
+            void update_texture(int texture_id,const Rect &dst,const void *pixels);
             /**
              * @brief Active the render context
              * 

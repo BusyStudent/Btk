@@ -44,6 +44,11 @@ namespace Mixer{
         Music *master;//The master of the impl
         AudioDeviceImpl *dev;//The device belong to
     };
+    struct AudioPlayerImpl{
+        SDL_AudioStream *stream;//<AudioStream
+        Uint32 device;//< Device ID
+        MusicImpl *current;//< current play music
+    };
     
     /**
      * @brief Mixer private librarys and audio workers
