@@ -2,11 +2,16 @@
 
 #include <windows.h>
 #include <wingdi.h>
+#include <winreg.h>
+
+//for SDL_strncasecmp
+#include <SDL2/SDL_stdinc.h>
 
 #include "../../build.hpp"
 #include "internal.hpp"
 
-#include <Btk/thirdparty/utf8.h>
+#include <Btk/platform/win32.hpp>
+#include <Btk/impl/utils.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/font.hpp>
 #include <Btk/Btk.hpp>
@@ -14,100 +19,126 @@
 #include <mutex>
 namespace Btk{
 namespace FontUtils{
-    using utf8::unchecked::utf16to8;
-    /**
-     * @brief The function pointer GetFontResourceInfoW
-     * 
-     */
-    static BOOL (*dgi_getfont)(const char16_t *,LPDWORD,LPVOID,DWORD);
-    /**
-     * @brief Internal function wrapper for GetFontResourceInfoW
-     * 
-     * @param wname The font face name
-     * @return The font filename(empty on failure) 
-     */
-    static std::u16string sys_getfont(const std::u16string &wname){
-        if(dgi_getfont == nullptr){
-            //Was not init
-            Init();
-        }
-        if(dgi_getfont == nullptr){
-            //error
-            return std::u16string();
-        }
-        BOOL  ret;
-        DWORD bufsize = 0;
-
-        ret = dgi_getfont(wname.data(),&bufsize,nullptr,1);
-        std::u16string str;
-        str.resize(bufsize);
-        ret = dgi_getfont(wname.data(),&bufsize,str.data(),1);
-        BTK_LOGINFO("GetFontResourceInfoW:%d",int(ret));
-        if(ret == 0){
-            //failed
-            return std::u16string();
-        }
-        else{
-            return str;
-        }
-    }
     void Init(){
-        HMODULE handle = GetModuleHandleA("gdi32.dll");
-        BTK_ASSERT(handle != nullptr);
-        //Get the function ptr
-        dgi_getfont = (decltype(dgi_getfont)) GetProcAddress(handle,"GetFontResourceInfoW");
-        BTK_ASSERT(dgi_getfont != nullptr);
+    
     }
     void Quit(){
 
     }
+    static std::string get_font_from_name(Win32::RegKey &regkey,const char *name){
+        char buffer[MAX_PATH];
+        DWORD length = MAX_PATH;
+        LSTATUS ret;
+        ret = RegQueryValueExA(
+            regkey,
+            name,
+            nullptr,
+            nullptr,
+            reinterpret_cast<LPBYTE>(buffer),
+            &length
+        );
+        if(ret == ERROR_SUCCESS){
+            //Succeed to find the name
+            BTK_LOGINFO("Match font => %s",buffer);
+            std::string ret("C:/Windows/Fonts/");
+            ret += buffer;
+            return ret;
+        }
+        else{
+            //It should not happened
+            throwWin32Error(GetLastError());
+        }
+    }
+    //It need impove if the value is 'MS Gothic & MS UI Gothic & MS PGothic (TrueType)'
     std::string GetFileByName(std::string_view name){
-        std::string u8 = Utf16To8(sys_getfont(Utf8To16(name)));
-        BTK_LOGINFO("Match font => %s",u8.c_str());
-        if(u8.empty()){
+        using Win32::StrMessageA;
+        using Win32::RegKey;
+
+        if(name == ""){
+            //GetDefaultFont
             return "C:/Windows/Fonts/msyh.ttc";
         }
-        return u8;
+        
+        char buffer[MAX_PATH + 1];//Return value buffer
+        buffer[MAX_PATH] = '\0';
+
+        //Copy into buffer
+        auto &u8buf = FillInternalU8Buffer(name);
+        RegKey regkey(HKEY_LOCAL_MACHINE,"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts");
+        //Could not open
+        if(not regkey.ok()){
+            throw Win32Error(GetLastError());
+        }
+        LSTATUS ret;
+
+        DWORD index = 0;
+        DWORD buflen = MAX_PATH;
+
+        do{
+            ret = RegEnumValueA(
+                regkey,
+                index,
+                buffer,
+                &buflen,
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr
+            );
+            if(ret == ERROR_SUCCESS){
+                if(SDL_strncasecmp(name.data(),buffer,name.length()) == 0){
+                    return get_font_from_name(regkey,buffer);
+                }
+                else{
+                    //Reset the buffer
+                    memset(buffer,'\0',buflen * sizeof(char));
+                    buflen = MAX_PATH;
+                }
+            }
+            else{
+                BTK_LOGINFO("RegEnumKeyExA => %s",StrMessageA(GetLastError()).c_str());
+            }
+            index ++;
+        }
+        while(ret == ERROR_SUCCESS);
+        //Failed
+        return "C:/Windows/Fonts/msyh.ttc";
     }
+    //Callback for enum font
+    static int CALLBACK font_cb(const LOGFONTA *font,const TEXTMETRICA*,DWORD type,LPARAM data){
+        if(type == TRUETYPE_FONTTYPE){
+            //Is truetype
+            BTK_LOGINFO(font->lfFaceName);
+            ((std::string*)data)->assign(font->lfFaceName);
+            return 0;
+        }
+        return 1;
+    };
     std::string GetDefaultFont(){
         using Win32::HandleDC;
 
+
         HandleDC hdc(nullptr);
+        //Get the charset
+        int charset = GetTextCharset(hdc);
+        
+        BTK_LOGINFO("HDC charset %d",charset);
 
-        //Select the font
-        HGDIOBJ font = GetStockObject(SYSTEM_FONT);
-        SelectObject(hdc,font);
-
-        std::string buffer;
-        buffer.resize(256);
-        //Get the font face
-        GetTextFaceA(hdc,256,buffer.data());
-        buffer.shrink_to_fit();
-
-        auto ret = GetFileByName(buffer);
-
-        return ret;
+        std::string facename;//Get the facename
+        LOGFONTA font_data;
+        SDL_zero(font_data);
+        font_data.lfCharSet = charset;
+        EnumFontFamiliesExA(
+            hdc,
+            &font_data,
+            font_cb,
+            (LPARAM)&facename,
+            0
+        );
+        return GetFileByName(facename);
     }
 }
 }
 
-namespace Btk{
-namespace Win32{
-    bool GetFountResourceInfo(const char16_t *name,std::u16string &buffer){
-        DWORD bufsize;
-        BOOL ret = FontUtils::dgi_getfont(name,&bufsize,nullptr,1);
-        if(ret == FALSE){
-            return false;
-        }
-        buffer.resize(bufsize);
-        ret = FontUtils::dgi_getfont(name,&bufsize,buffer.data(),1);
-        if(ret == FALSE){
-            return false;
-        }
-        BTK_LOGINFO("GetFontResourceInfoW:%d",int(ret));
-        return true;
-    }
-}
-}
 
 #endif

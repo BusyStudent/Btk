@@ -64,7 +64,7 @@ namespace Btk{
     Texture Renderer::load(RWops &rwops){
         return create_from(PixBuf::FromRWops(rwops));
     }
-    int  Renderer::copy(const Texture &texture,const Rect *_src,const Rect *_dst){
+    void Renderer::copy(const Texture &texture,const Rect *_src,const Rect *_dst,float angle){
         //make pattern
         SDL_Rect dst;//Dst
         SDL_Rect src;//Dst
@@ -101,7 +101,7 @@ namespace Btk{
             src.y + dst.y,
             w,
             h,
-            0.0f/180.0f*NVG_PI,
+            angle,
             texture.get(),
             1.0f
         );
@@ -110,14 +110,12 @@ namespace Btk{
         nvgFillPaint(nvg_ctxt,paint);
         nvgFill(nvg_ctxt);
         
-        return 0;
     }
     //Temp copy
-    int  Renderer::copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst){
+    void Renderer::copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst,float angle){
         auto texture = create_from(pixbuf);
-        int val = copy(texture,src,dst);
+        copy(texture,src,dst,angle);
         t_caches.emplace_back(texture.detach());
-        return val;
     }
 }
 namespace Btk{
@@ -244,8 +242,19 @@ namespace Btk{
     void Renderer::text_align(Align v_align,Align h_align){
         nvgTextAlign(nvg_ctxt,TranslateAlign(v_align,h_align));
     }
+    //Set font ptsize
     void Renderer::text_size(float ptsize){
         nvgFontSize(nvg_ctxt,ptsize);
+    }
+    //Set font
+    bool Renderer::use_font(std::string_view fontname) noexcept{
+        auto &buf = FillInternalU8Buffer(fontname);
+        int font_id = nvgFindFont(nvg_ctxt,buf.c_str());
+        if(font_id == -1){
+            return false;
+        }
+        nvgFontFaceId(nvg_ctxt,font_id);
+        return true;
     }
     TextMetrics Renderer::font_metrics(){
         TextMetrics m;
@@ -258,6 +267,12 @@ namespace Btk{
     }
     void Renderer::rounded_rect(float x,float y,float w,float h,float rad){
         nvgRoundedRect(nvg_ctxt,x,y,w,h,rad);
+    }
+    void Renderer::circle(float center_x,float center_y,float r){
+        nvgCircle(nvg_ctxt,center_x,center_y,r);
+    }
+    void Renderer::ellipse(float center_x,float center_y,float rx,float ry){
+        nvgEllipse(nvg_ctxt,center_x,center_y,rx,ry);
     }
     //R/S
     void Renderer::save(){

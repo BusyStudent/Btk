@@ -2,6 +2,7 @@
 #define _BTK_WIN32_INTERNAL_HPP_
 #include <ShlObj.h>
 #include <wingdi.h>
+#include <winreg.h>
 namespace Btk{
 namespace Win32{
     /**
@@ -70,6 +71,41 @@ namespace Win32{
         }
         HWND window;
         HDC dc;
+    };
+    /**
+     * @brief RAII for reading reg
+     * 
+     */
+    struct RegKey{
+        RegKey(HKEY hkey,const char *subkey){
+            //Open the key
+            if(RegOpenKeyA(hkey,subkey,&key) == ERROR_SUCCESS){
+                opened = true;
+            }
+            else{
+                opened = false;
+            }
+        }
+        RegKey(const RegKey &) = delete;
+        ~RegKey(){
+            if(opened){
+                RegCloseKey(key);
+            }
+        }
+        /**
+         * @brief Is succeed to open?
+         * 
+         * @return true 
+         * @return false 
+         */
+        bool ok() const noexcept{
+            return opened;
+        }
+        operator HKEY() const noexcept{
+            return key;
+        }
+        HKEY key;
+        bool opened;
     };
 }
 }

@@ -25,15 +25,6 @@ namespace Win32{
      * @return std::u16string
      */
     BTKAPI std::u16string StrMessageW(DWORD errcode);
-    /**
-     * @brief Get the Font Resource Info object
-     * 
-     * @param name The font name
-     * @param output The output buffer
-     * @return true on success
-     * @return false on failure
-     */
-    BTKAPI bool GetFontResourceInfo(const char16_t *name,std::u16string &output);
 }
 }
 namespace Btk{

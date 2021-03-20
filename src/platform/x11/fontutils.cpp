@@ -101,6 +101,9 @@ namespace FontUtils{
 
         return GetFileByName(u8buf);
     }
+    std::string GetDefaultFont(){
+        return GetFileByName("");
+    }
 
     FontSet GetFontList(){
         if(not was_init){

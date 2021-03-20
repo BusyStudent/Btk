@@ -28,6 +28,9 @@ else
     --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/bzip2_x64-windows-static/lib")
     --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/brotli_x64-windows-static/lib")
     --add_requires("SDL2","SDL2_ttf","SDL2_image")
+    --VS UTF8
+    add_cxxflags("/utf-8")
+    add_cflags("/utf-8")
 end
 set_languages("c++17")
 add_includedirs("./include")

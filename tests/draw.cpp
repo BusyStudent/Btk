@@ -40,6 +40,10 @@ int main(){
         render.rounded_rect(50,50,50,50,5);
         render.stroke();
         render.show_path_caches();
+
+        render.begin_path();
+        render.circle(vec2,100);
+        render.stroke();
     };
     canvas.handle() = [&](Event &event){
         if(event.type() == Event::Wheel){

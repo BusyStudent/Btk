@@ -56,6 +56,56 @@ static void crash_handler(int sig){
         TerminateProcess(GetCurrentProcess(),EXIT_FAILURE);
     }
 }
+/**
+ * @brief Get the thread name object
+ * 
+ * @return wchar_t* (use Locale Free)
+ */
+static wchar_t *get_thread_name(){
+    wchar_t *buf = nullptr;
+
+    HRESULT (*WINAPI get_th_name)(HANDLE thread,PWSTR *);
+
+    HMODULE hmodule = GetModuleHandleA("kernel32.dll");
+    get_th_name = (decltype(get_th_name))GetProcAddress(hmodule,"GetThreadDescription");
+    if(get_th_name == nullptr){
+        return nullptr;
+    }
+    HRESULT hr = get_th_name(GetCurrentThread(),&buf);
+    if(not SUCCEEDED(hr)){
+        return nullptr;
+    }
+    return buf;
+}
+static LONG CALLBACK seh_exception_handler(_EXCEPTION_POINTERS *exp){
+    fprintf(stderr,"Exception at address %p\n",exp->ExceptionRecord->ExceptionAddress);
+
+    wchar_t *th_name = get_thread_name();
+    fwprintf(stderr,L"ThreadID:%d name:%s\n",int(GetCurrentThreadId()),th_name);
+    LocalFree(th_name);
+    
+    _Btk_Backtrace();
+
+    fflush(stderr);
+    
+    std::string msg = Btk::cformat("Exception at address %p\n",exp->ExceptionRecord->ExceptionAddress);
+
+    #ifdef _MSC_VER
+    msg += "\nCurrent CallStack =>\n";
+    static WalkerToString ws(msg);
+    ws.ShowCallstack();
+    #endif
+    int box_ret = MessageBoxA(nullptr,msg.c_str(),"Exception",MB_ABORTRETRYIGNORE | MB_ICONERROR);
+    if(box_ret == IDABORT){
+        //abort it
+        TerminateProcess(GetCurrentProcess(),EXIT_FAILURE);
+    }
+    else if(box_ret == IDIGNORE){
+        //ignore it
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
 #endif
 
 namespace Btk{
@@ -65,6 +115,9 @@ namespace Win32{
         signal(SIGABRT,crash_handler);
         signal(SIGSEGV,crash_handler);
         signal(SIGTERM,crash_handler);
+        //Debug show the error
+        SetUnhandledExceptionFilter(seh_exception_handler);
+
         #endif
 
         CoInitializeEx(nullptr,COINIT_MULTITHREADED);

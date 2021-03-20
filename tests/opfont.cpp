@@ -10,6 +10,7 @@ int main(){
     }
     #endif
     #ifdef _WIN32
+    std::cout << Btk::FontUtils::GetFileByName("Ebrima") << std::endl;
     std::cout << Btk::FontUtils::GetDefaultFont();
     #endif
 }

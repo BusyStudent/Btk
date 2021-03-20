@@ -6,6 +6,7 @@
 #include <SDL2/SDL_rwops.h>
 #include "../mixer.hpp"
 #include "../rwops.hpp"
+#include "atomic.hpp"
 #include <vector>
 #include <mutex>
 #include <list>
@@ -38,18 +39,22 @@ namespace Btk{
 namespace Btk{
 namespace Mixer{
     class  Music;
+    struct MusicImpl;
+    struct AudioPlayerImpl{
+        ~AudioPlayerImpl();
+        SDL_AudioStream *stream;//<AudioStream
+        Uint32 device;//< Device ID
+        MusicImpl *current;//< current play music
+
+        int volume;
+    };
     struct MusicImpl{
         virtual ~MusicImpl(){};
         SDL_AudioSpec spec;//pcm formated data
         Music *master;//The master of the impl
         AudioDeviceImpl *dev;//The device belong to
+        Atomic refcount;
     };
-    struct AudioPlayerImpl{
-        SDL_AudioStream *stream;//<AudioStream
-        Uint32 device;//< Device ID
-        MusicImpl *current;//< current play music
-    };
-    
     /**
      * @brief Mixer private librarys and audio workers
      * 

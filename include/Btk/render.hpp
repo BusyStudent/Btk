@@ -81,10 +81,10 @@ namespace Btk{
             int  set_viewport(const Rect *r);
 
 
-            int  copy(const Texture &t,const Rect *src,const Rect *dst);
-            int  copy(const Texture &t,const Rect &src,const Rect *dst);
-            int  copy(const Texture &t,const Rect *src,const Rect &dst);
-            int  copy(const Texture &t,const Rect &src,const Rect &dst);
+            void copy(const Texture &t,const Rect *src,const Rect *dst,float angle = 0.0f);
+            void copy(const Texture &t,const Rect &src,const Rect *dst,float angle);
+            void copy(const Texture &t,const Rect *src,const Rect &dst,float angle);
+            void copy(const Texture &t,const Rect &src,const Rect &dst,float angle);
 
             /**
              * @brief Destroy the renderer
@@ -137,17 +137,16 @@ namespace Btk{
              * @param pixbuf The pixbuf
              * @param src The pixbuf area
              * @param dst The target area
-             * @return int 
              */
-            int copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst);
-            int copy(const PixBuf &pixbuf,const Rect *src,const Rect &dst){
-                return copy(pixbuf,src,&dst);
+            void copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst,float angle = 0.0f);
+            void copy(const PixBuf &pixbuf,const Rect *src,const Rect &dst,float angle = 0.0f){
+                return copy(pixbuf,src,&dst,angle);
             }
-            int copy(const PixBuf &pixbuf,const Rect &src,const Rect *dst){
-                return copy(pixbuf,&src,dst);
+            void copy(const PixBuf &pixbuf,const Rect &src,const Rect *dst,float angle = 0.0f){
+                return copy(pixbuf,&src,dst,angle);
             }
-            int copy(const PixBuf &pixbuf,const Rect &src,const Rect &dst){
-                return copy(pixbuf,&src,&dst);
+            void copy(const PixBuf &pixbuf,const Rect &src,const Rect &dst,float angle = 0.0f){
+                return copy(pixbuf,&src,&dst,angle);
             }
             /**
              * @brief Draw text
@@ -240,6 +239,13 @@ namespace Btk{
             void move_to(float x,float y);
             void line_to(float x,float y);
 
+            void move_to(const FVec2 &vec){
+                move_to(vec.x,vec.y);
+            }
+            void line_to(const FVec2 &vec){
+                line_to(vec.x,vec.y);
+            }
+
             //NVG Graphics Path
             /**
              * @brief Create a rect subpath
@@ -256,6 +262,29 @@ namespace Btk{
             void rounded_rect(float x,float y,float w,float h,float rad);
             void rounded_rect(const FRect &rect,float rad){
                 this->rounded_rect(rect.x,rect.y,rect.w,rect.h,rad);
+            }
+            /**
+             * @brief Create a circle subpath
+             * 
+             * @param center_x 
+             * @param center_y 
+             * @param r 
+             */
+            void circle(float center_x,float center_y,float r);
+            void circle(const FVec2 &vec,float r){
+                circle(vec.x,vec.y,r);
+            }
+            /**
+             * @brief Create a ellipse subpath
+             * 
+             * @param center_x 
+             * @param center_y 
+             * @param rx 
+             * @param ry 
+             */
+            void ellipse(float center_x,float center_y,float rx,float ry);
+            void ellipse(const FVec2 &vec,float rx,float ry){
+                ellipse(vec.x,vec.y,rx,ry);
             }
 
             void show_path_caches();
@@ -305,6 +334,19 @@ namespace Btk{
              */
             float font_height();
             TextMetrics font_metrics();
+            /**
+             * @brief Using the font
+             * 
+             * @param fontname The fontname
+             * @return true On the font is exist
+             * @return false On the font is not exist
+             */
+            bool use_font(std::string_view fontname) noexcept;
+            /**
+             * @brief Add font
+             * 
+             */
+            void add_font(const char *fontname,const char *filename);
             /**
              * @brief Set Text Alignment
              * 
