@@ -323,6 +323,13 @@ namespace Btk{
              */
             void update(const PixBuf &pixbuf);
             void clear();
+            /**
+             * @brief Get the texture's native handler,
+             *        It is based on the backend impl
+             * 
+             * @param p_handle The pointer to the handle
+             */
+            void native_handle(void *p_handle);
         private:
             int texture = 0;//< NVG Image ID
             Renderer *render = nullptr;//Renderer

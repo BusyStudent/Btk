@@ -64,41 +64,12 @@ namespace Btk{
     Texture Renderer::load(RWops &rwops){
         return create_from(PixBuf::FromRWops(rwops));
     }
-    void Renderer::copy(const Texture &texture,const Rect *_src,const Rect *_dst,float angle){
+    void Renderer::draw_image(const Texture &texture,float x,float y,float w,float h,float angle){
         //make pattern
-        SDL_Rect dst;//Dst
-        SDL_Rect src;//Dst
-        int w,h;
-        if(_dst == nullptr){
-            SDL_GetWindowSize(window,&dst.w,&dst.h);
-            dst.x = 0;
-            dst.y = 0;
-        }
-        else{
-            dst = *_dst;
-        }
-        if(_src == nullptr){
-            src.x = 0;
-            src.y = 0;
-            auto size = texture.size();
-            src.w = size.w;
-            src.h = size.h;
-        }
-        else{
-            src = *_src;
-        }
-        //Check what is the max
-        //float radio = 0;
-
-        //w = std::max(src.w,dst.w);
-        //h = std::max(src.h,dst.h);
-        w = dst.w;
-        h = dst.h;
-
         auto paint = nvgImagePattern(
             nvg_ctxt,
-            src.x + dst.x,
-            src.y + dst.y,
+            x,
+            y,
             w,
             h,
             angle,
@@ -106,15 +77,15 @@ namespace Btk{
             1.0f
         );
         nvgBeginPath(nvg_ctxt);
-        nvgRect(nvg_ctxt,dst.x,dst.y,w,h);
+        nvgRect(nvg_ctxt,x,y,w,h);
         nvgFillPaint(nvg_ctxt,paint);
         nvgFill(nvg_ctxt);
         
     }
     //Temp copy
-    void Renderer::copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst,float angle){
+    void Renderer::draw_image(const PixBuf &pixbuf,float x,float y,float w,float h,float angle){
         auto texture = create_from(pixbuf);
-        copy(texture,src,dst,angle);
+        draw_image(texture,x,y,w,h,angle);
         t_caches.emplace_back(texture.detach());
     }
 }
@@ -346,10 +317,14 @@ namespace Btk{
         }
     }
     void Texture::update(const Rect &rect,const void *pixels){
-        if(pixels == nullptr or empty()){
-            return;
+        SDL_Unsupported();
+        throwRuntimeError(SDL_GetError());
+    }
+    void Texture::native_handle(void *p_handle){
+        if(empty()){
+            throwRuntimeError("empty texture");
         }
-        render->update_texture(texture,rect,pixels);
+        render->get_texture_handle(texture,p_handle);
     }
     Texture &Texture::operator =(Texture &&t){
         if(&t == this){

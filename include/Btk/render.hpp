@@ -79,13 +79,6 @@ namespace Btk{
                 return set_viewport(&r);
             }
             int  set_viewport(const Rect *r);
-
-
-            void copy(const Texture &t,const Rect *src,const Rect *dst,float angle = 0.0f);
-            void copy(const Texture &t,const Rect &src,const Rect *dst,float angle);
-            void copy(const Texture &t,const Rect *src,const Rect &dst,float angle);
-            void copy(const Texture &t,const Rect &src,const Rect &dst,float angle);
-
             /**
              * @brief Destroy the renderer
              * 
@@ -100,8 +93,6 @@ namespace Btk{
             int rect(const Rect &r,Color c);
             int box(const Rect &r,Color c);
 
-            int pie(int x,int y,int rad,int beg,int end,Color c);
-            int filled_pie(int x,int y,int rad,int beg,int end,Color c);
 
             int rounded_box(const Rect &r,int rad,Color c);
             int rounded_rect(const Rect &r,int rad,Color c);
@@ -130,24 +121,6 @@ namespace Btk{
              */
             Texture load(std::string_view fname);
             Texture load(RWops &);
-            /**
-             * @brief Copy a pixbuf into rendering target
-             * 
-             * @note Is is slower than texture copying
-             * @param pixbuf The pixbuf
-             * @param src The pixbuf area
-             * @param dst The target area
-             */
-            void copy(const PixBuf &pixbuf,const Rect *src,const Rect *dst,float angle = 0.0f);
-            void copy(const PixBuf &pixbuf,const Rect *src,const Rect &dst,float angle = 0.0f){
-                return copy(pixbuf,src,&dst,angle);
-            }
-            void copy(const PixBuf &pixbuf,const Rect &src,const Rect *dst,float angle = 0.0f){
-                return copy(pixbuf,&src,dst,angle);
-            }
-            void copy(const PixBuf &pixbuf,const Rect &src,const Rect &dst,float angle = 0.0f){
-                return copy(pixbuf,&src,&dst,angle);
-            }
             /**
              * @brief Draw text
              * 
@@ -183,10 +156,20 @@ namespace Btk{
             /**
              * @brief Draw a image
              * 
-             * @param dst The 
-             * @param src 
+             * @param x 
+             * @param y
+             * @param w
+             * @param h
+             * @param angle
              */
-            void draw_image(const Texture&,const FRect *dst,const FRect *src);
+            void draw_image(const Texture&,float x,float y,float w,float h,float angle = 0);
+            void draw_image(const PixBuf& ,float x,float y,float w,float h,float angle = 0);
+            void draw_image(const Texture& texture,const FRect &rect,float angle = 0){
+                draw_image(texture,rect.x,rect.y,rect.w,rect.h,angle);
+            }
+            void draw_image(const PixBuf& pixbuf,const FRect &rect,float angle){
+                draw_image(pixbuf,rect.x,rect.y,rect.w,rect.h,angle);
+            }
         public:
             /**
              * @brief Begin the frame,Init the device
@@ -370,6 +353,15 @@ namespace Btk{
             void swap_buffer();
         private:
             /**
+             * @brief Item for Texture
+             * 
+             */
+            struct CachedItem{
+                int texture;
+                int w,h;
+                bool used;
+            };
+            /**
              * @brief Free a texture
              * 
              * @param texture_id 
@@ -382,7 +374,13 @@ namespace Btk{
              * @param pixels 
              */
             void update_texture(int texture_id,const void *pixels);
-            void update_texture(int texture_id,const Rect &dst,const void *pixels);
+            /**
+             * @brief Get the texture's native handler
+             * 
+             * @param texture_id 
+             * @param native_handle_ptr
+             */
+            void get_texture_handle(int texture_id,void *native_handle_ptr);
             /**
              * @brief Active the render context
              * 

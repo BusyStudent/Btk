@@ -113,7 +113,7 @@ void Btk_UpdateRect(BtkWidget *widget,int x,int y,int w,int h){
 }
 void Btk_AtDelete(BtkWidget *widget,Btk_callback_t fn,void*param){
     BTK_NUL_CHK(widget);
-    widget->on_destroy(fn,param);
+    widget->add_callback(fn,param);
 }
 void Btk_Delete(BtkWidget *widget){
     delete widget;
@@ -242,5 +242,32 @@ char *Btk_strdup(const char *str){
 
     memcpy(ptr,str,(len + 1) * sizeof(char));
     return ptr;
+}
+//Format
+size_t _Btk_impl_fmtargs(const char *fmt,...){
+    if(fmt == nullptr){
+        return 0;
+    }
+    size_t strsize;
+    va_list varg;
+    va_start(varg,fmt);
+    #ifdef _WIN32
+    strsize = _vscprintf(fmt,varg);
+    #else
+    strsize = vsnprintf(nullptr,0,fmt,varg);
+    #endif
+    va_end(varg);
+
+    return (strsize + 1) * sizeof(char);
+}
+char* _Btk_impl_sprintf(char *buf,const char *fmt,...){
+    if(buf == nullptr or fmt == nullptr){
+        return nullptr;
+    }
+    va_list varg;
+    va_start(varg,fmt);
+    vsprintf(buf,fmt,varg);
+    va_end(varg);
+    return buf;
 }
 BTK_CAPI_END

@@ -67,6 +67,25 @@ struct BtkWindow{};
 struct BtkWidget{};
 #endif
 
+//stack alloc
+#ifdef _WIN32
+    #include <malloc.h>
+    #define Btk_alloca(S) _alloca(S)
+#elif defined(__linux)
+    #include <alloca.h>
+    #define Btk_alloca(S) alloca(S)
+#elif defined(__GNUC__)
+    #define Btk_alloca(S) __builtin_alloca(S)
+#else
+    #define Btk_alloca(S) NULL
+#endif
+
+//format string at stack memory
+#define Btk_format(...) _Btk_impl_sprintf(\
+    (char*)Btk_alloca(_Btk_impl_fmtargs(__VA_ARGS__)),\
+    __VA_ARGS__)
+
+
 //headers
 #include <stddef.h>
 #include <stdint.h>
@@ -175,4 +194,24 @@ BTK_CAPI void        Btk_SetError(const char *fmt,...);
 //Debug
 BTK_CAPI void Btk_Backtrace();
 //function end
+
+//hidden api begin
+/**
+ * @brief Return the size of the buffer
+ * 
+ * @param fmt 
+ * @param ... 
+ * @return BTK_CAPI 
+ */
+BTK_CAPI size_t _Btk_impl_fmtargs(const char *fmt,...);
+/**
+ * @brief format the string into buffer
+ * 
+ * @param buf 
+ * @param fmt 
+ * @param ... 
+ * @return The buf ptr
+ */
+BTK_CAPI char*  _Btk_impl_sprintf(char *buf,const char *fmt,...);
+//hidden api end
 #endif // _BTK_CAPI_H_

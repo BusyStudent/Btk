@@ -23,7 +23,7 @@ int main(){
         render.fill_color(0,0,0,255);
         render.fill();
         
-        render.copy(image,nullptr,{pos.x,pos.y,500,500});
+        render.draw_image(image,pos.x,pos.y,500,500);
         if(vec2 != Vec2{0,0}){
             render.line({0,0},vec2,{0,0,0,255});
         }

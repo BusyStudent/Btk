@@ -33,7 +33,20 @@ extern "C"{
     if(_need_reset){ \
       SDL_GL_MakeCurrent(_cur_window,_cur);\
     }
-
+namespace Btk{
+    void Renderer::get_texture_handle(int texture_id,void *p_handle){
+        //Get GLuint from nanovg-GLES2
+        auto *gl = static_cast<GLNVGcontext*>(nvgInternalParams(nvg_ctxt)->userPtr);
+        //Get GLContext
+        GLNVGtexture *texture = glnvg__findTexture(gl,texture_id);
+        if(texture == nullptr){
+            throwRendererError("Invaid texture");
+        }
+        if(p_handle != nullptr){
+            *static_cast<GLuint*>(p_handle) = texture->tex;
+        }
+    }
+}
 namespace Btk{
     //Create OpenGLES2 NanoVG Context
     Renderer::Renderer(SDL_Window *win){
@@ -124,24 +137,6 @@ namespace Btk{
     void Renderer::update_texture(int texture,const void *pixels){
         BTK_GL_BEGIN();
         nvgUpdateImage(nvg_ctxt,texture,static_cast<const Uint8*>(pixels));
-        BTK_GL_END();
-    }
-    void Renderer::update_texture(int texture,const Rect &rect,const void *pixels){
-        BTK_GL_BEGIN();
-        //Could we use it
-        auto *params = nvgInternalParams(nvg_ctxt);
-
-        BTK_ASSERT(params != nullptr);
-
-        params->renderUpdateTexture(
-            params->userPtr,
-            texture,
-            rect.x,
-            rect.y,
-            rect.w,
-            rect.h,
-            static_cast<const Uint8*>(pixels)
-        );
         BTK_GL_END();
     }
     RendererBackend Renderer::backend() const{

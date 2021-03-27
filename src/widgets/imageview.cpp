@@ -44,7 +44,7 @@ namespace Btk{
                 texture = render.create_from(pixelbuf);
             }
             //render image
-            render.copy(texture,&image_rect,&rect);
+            render.draw_image(texture,rect);
             //render.restore();
         }
     }

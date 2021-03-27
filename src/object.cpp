@@ -18,41 +18,73 @@ namespace Btk{
     void Object::unlock() const{
         SDL_AtomicUnlock(&spinlock);
     }
-    void Object::disconnect_all(){
-        lock_guard locker(this);
-
-        auto iter = callbacks.begin();
-        while(iter != callbacks.end()){
-            auto *cb = *iter;
-            if(cb->type == ObjectCallBack::Signal){
-                //Call the callback
-                cb->run(this,cb);
-            }
-            iter = callbacks.erase(iter);
-        }
-    }
     void Object::cleanup(){
-        lock_guard locker(this);
-
-        auto iter = callbacks.begin();
-        while(iter != callbacks.end()){
-            auto *cb = *iter;
-            if(cb != nullptr){
-                //Call the callback
-                cb->run(this,cb);
-            }
-            iter = callbacks.erase(iter);
+        std::lock_guard<Object> locker(*this);
+        //cleanup all
+        for(auto i = functors_cb.begin();i != functors_cb.end();){
+            //Call the functor
+            i->_call();
+            i = functors_cb.erase(i);
         }
     }
-    void ConnectionWrapper::Run(Object *object,ObjectCallBack *self){
-        std::unique_ptr<ConnectionWrapper> ptr(
-            static_cast<ConnectionWrapper*>(self)
-        );
-        //if object is nullptr => do nothing
-        if(object != nullptr){
-            //disconnect it
-            ptr->con.disconnect(true);
+    void Object::disconnect_all(){
+        std::lock_guard<Object> locker(*this);
+        //disconnect the timer
+        for(auto i = functors_cb.begin();i != functors_cb.end();){
+            //Call the functor
+            if(i->magic == Functor::Signal){
+                i->_call();
+                i = functors_cb.erase(i);
+            }
+            else{
+                ++i;
+            }
         }
+    }
+    _FunctorLocation Object::add_callback(void(*fn)(void*),void*param){
+        if(fn == nullptr){
+            return {functors_cb.end()};
+        }
+        Functor functor;
+        functor.user1 = reinterpret_cast<void*>(fn);
+        functor.user2 = param;
+        functor.call = [](Functor&self) -> void{
+            reinterpret_cast<void(*)(void*)>(self.user1)(self.user2);
+        };
+
+        functors_cb.push_back(functor);
+        return {--functors_cb.end()};
+    }
+    _FunctorLocation Object::add_functor(const Functor &functor){
+        functors_cb.push_back(functor);
+        return {--functors_cb.end()};
+    }
+    _FunctorLocation Object::remove_callback(FunctorLocation location){
+        //Remove this callback
+        if(location.iter != functors_cb.end()){
+            location->_cleanup();
+            functors_cb.erase(location.iter);
+        }
+        return {--functors_cb.end()};
+    }
+}
+namespace Btk{
+    //Remove the 
+    _ConnectionFunctor::_ConnectionFunctor(Connection con){
+        //Execute the functor
+        call = [](_Functor &self){
+            auto *con = static_cast<Connection*>(self.user1);
+            con->disconnect(true);
+            delete con;
+        };
+        //Just cleanup
+        cleanup = [](_Functor &self){
+            auto *con = static_cast<Connection*>(self.user1);
+            delete con;
+        };
+
+        user1 = new Connection(con);
+        magic = Signal;
     }
 }
 namespace Btk{
