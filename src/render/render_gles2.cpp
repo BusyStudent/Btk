@@ -3,6 +3,7 @@
 #include <Btk/impl/window.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
+#include <Btk/canvas.hpp>
 #include <Btk/render.hpp>
 #include <Btk/gl/gl.hpp>
 
@@ -139,8 +140,56 @@ namespace Btk{
         nvgUpdateImage(nvg_ctxt,texture,static_cast<const Uint8*>(pixels));
         BTK_GL_END();
     }
+    //create texture from pixbuf
+    Texture Renderer::create_from(const PixBuf &pixbuf){
+        if(pixbuf.empty()){
+            throw RuntimeError("The pixbuf is empty");
+        }
+        //Convert the pixels
+        if(pixbuf->format->format != SDL_PIXELFORMAT_RGBA32){
+            return create_from(pixbuf.convert(SDL_PIXELFORMAT_RGBA32));
+        }
+        if(SDL_MUSTLOCK(pixbuf.get())){
+            SDL_LockSurface(pixbuf.get());
+        }
+        
+        BTK_GL_BEGIN();
+        int t = nvgCreateImageRGBA(
+            nvg_ctxt,
+            pixbuf->w,
+            pixbuf->h,
+            NVG_IMAGE_NEAREST,
+            static_cast<const Uint8*>(pixbuf->pixels)
+        );
+        BTK_GL_END();
+        
+        if(SDL_MUSTLOCK(pixbuf.get())){
+            SDL_UnlockSurface(pixbuf.get());
+        }
+        return Texture(t,this);
+    }
+    Texture Renderer::create(int w,int h){
+        BTK_GL_BEGIN();
+        int texture = nvgCreateImageRGBA(
+            nvg_ctxt,
+            w,
+            h,
+            NVG_IMAGE_NEAREST,
+            nullptr
+        );
+        BTK_GL_END();
+        return Texture(texture,this);
+    }
     RendererBackend Renderer::backend() const{
         return RendererBackend::OpenGL;
+    }
+    Size Renderer::output_size(){
+        Size size;
+
+        BTK_GL_BEGIN();
+        SDL_GL_GetDrawableSize(window,&size.w,&size.h);
+        BTK_GL_END();
+        return size;
     }
     #if 0
     //DumpTexture
@@ -186,5 +235,31 @@ namespace Btk{
     }
     Rect Renderer::get_viewport(){
         return viewport;
+    }
+}
+//GLCanvas
+namespace Btk{
+    void GLCanvas::draw(Renderer &render){
+        //OpenGL Draw
+        NVGcontext *ctxt = render.get();
+        //End the frame
+        nvgEndFrame(ctxt);
+        //Restore prev ViewPort
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT,viewport);
+        //Set the viewport
+        glViewport(rect.x,rect.y,rect.w,rect.h);
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(rect.x,rect.y,rect.w,rect.h);
+
+
+        gl_draw();
+
+        //Reset the context
+        glDisable(GL_SCISSOR_TEST);
+        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+
+        auto drawable = render.output_size();
+        nvgBeginFrame(ctxt,drawable.w,drawable.h,render.pixels_radio());
     }
 }

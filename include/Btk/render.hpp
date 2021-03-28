@@ -114,6 +114,14 @@ namespace Btk{
              */
             Texture create(Uint32 fmt,TextureAccess access,int w,int h);
             /**
+             * @brief Create a RGBA32 formatted texture
+             * 
+             * @param w 
+             * @param h 
+             * @return Texture 
+             */
+            Texture create(int w,int h);
+            /**
              * @brief Load a texture from a file
              * 
              * @param fname The filename
@@ -193,8 +201,38 @@ namespace Btk{
              * @return RendererBackend 
              */
             RendererBackend backend() const;
+            /**
+             * @brief Get the logical drawable size
+             * 
+             * @return Size 
+             */
+            Size screen_size();
+            /**
+             * @brief Get the physical drawable size
+             * 
+             * @return Size 
+             */
+            Size output_size();
+            /**
+             * @brief For HDPI Device 
+             * 
+             * @return float 
+             */
+            float pixels_radio(){
+                auto screen = screen_size();
+                auto output = output_size();
+                return float(output.w) / float(screen.w);
+            }
         public:
             //NanoVG Functions
+            /**
+             * @brief Get nanovg context
+             * 
+             * @return NVGcontext* 
+             */
+            NVGcontext *get() const noexcept{
+                return nvg_ctxt;
+            }
 
             void begin_path();
             void close_path();

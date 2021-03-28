@@ -132,7 +132,7 @@ namespace Btk{
             float x = float(fixed_rect.x) + float(fixed_rect.w) / 2 + 2;
             float y = float(fixed_rect.y) + float(fixed_rect.h) / 2 + 2;
 
-            BTK_LOGINFO("Text's x=%f y=%f",x,y);
+            //BTK_LOGINFO("Text's x=%f y=%f",x,y);
 
             render.text(
                 x,

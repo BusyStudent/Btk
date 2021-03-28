@@ -172,6 +172,9 @@ namespace Btk{
             SDL_PixelFormat *operator ->() const noexcept{
                 return fmt;
             }
+            SDL_PixelFormat *get() const noexcept{
+                return fmt;
+            }
             operator Uint32() const noexcept{
                 return fmt->format;
             };
@@ -339,11 +342,48 @@ namespace Btk{
      * @brief Gif Decoding class
      * 
      */
-    class BTKAPI Gif{
+    class BTKAPI GifImage{
         public:
-            Gif():pimpl(nullptr){};
-            ~Gif();
-            static Gif FromRwops(RWops &);
+            explicit GifImage(void *p = nullptr):pimpl(p){};
+            GifImage(const GifImage &) = delete;
+            GifImage(GifImage &&g){
+                pimpl = g.pimpl;
+                g.pimpl = nullptr;
+            }
+            ~GifImage();
+            /**
+             * @brief Get the size of the image
+             * 
+             * @return Size 
+             */
+            Size size() const;
+            bool empty() const{
+                return pimpl == nullptr;
+            }
+            /**
+             * @brief How much frame do we have?
+             * 
+             * @return size_t 
+             */
+            size_t image_count() const;
+            /**
+             * @brief Get the PixBuf by index
+             * 
+             * @param index 
+             * @return PixBuf 
+             */
+            PixBuf get_image(size_t index) const;
+            /**
+             * @brief Get the Image and write it info the buffer
+             * 
+             * @param index the image index
+             * @param buf The pixel buf(buf.size() should equal to the gif.size())
+             */
+            void   update_frame(size_t index,PixBuf &buf) const;
+
+            GifImage &operator =(GifImage &&);
+            static GifImage FromRwops(RWops &);
+            static GifImage FromFile(std::string_view fname);
         private:
             void *pimpl;
     };

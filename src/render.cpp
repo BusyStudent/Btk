@@ -34,29 +34,10 @@ namespace Btk{
             }
         }
     }
-    //create texture from pixbuf
-    Texture Renderer::create_from(const PixBuf &pixbuf){
-        if(pixbuf.empty()){
-            throw RuntimeError("The pixbuf is empty");
-        }
-        //Convert the pixels
-        if(pixbuf->format->format != SDL_PIXELFORMAT_RGBA32){
-            return create_from(pixbuf.convert(SDL_PIXELFORMAT_RGBA32));
-        }
-        if(SDL_MUSTLOCK(pixbuf.get())){
-            SDL_LockSurface(pixbuf.get());
-        }
-        int t = nvgCreateImageRGBA(
-            nvg_ctxt,
-            pixbuf->w,
-            pixbuf->h,
-            NVG_IMAGE_NEAREST,
-            static_cast<const Uint8*>(pixbuf->pixels)
-        );
-        if(SDL_MUSTLOCK(pixbuf.get())){
-            SDL_UnlockSurface(pixbuf.get());
-        }
-        return Texture(t,this);
+    Size Renderer::screen_size(){
+        Size size;
+        SDL_GetWindowSize(window,&size.w,&size.h);
+        return size;
     }
     Texture Renderer::load(std::string_view fname){
         return create_from(PixBuf::FromFile(fname));

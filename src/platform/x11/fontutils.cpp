@@ -1,5 +1,5 @@
-#include <SDL2/SDL_ttf.h>
 #include <fontconfig/fontconfig.h>
+#include <langinfo.h>
 
 #include "../../build.hpp"
 #include <Btk/platform/x11.hpp>
@@ -102,6 +102,7 @@ namespace FontUtils{
         return GetFileByName(u8buf);
     }
     std::string GetDefaultFont(){
+        char *lan = nl_langinfo(_NL_IDENTIFICATION_LANGUAGE);
         return GetFileByName("");
     }
 

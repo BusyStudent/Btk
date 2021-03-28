@@ -147,7 +147,7 @@ namespace Btk{
     void TextBox::draw(Renderer &render){
         render.box(rect,theme.background_color);
         
-        BTK_LOGINFO("RendererLineH %f,ft_h %d",render.font_height(),ft_h);
+        //BTK_LOGINFO("RendererLineH %f,ft_h %d",render.font_height(),ft_h);
         ft_h = render.font_height();
         if(not tb_text.empty()){
             /*
@@ -171,13 +171,13 @@ namespace Btk{
             render.begin_path();
 
             render.text_size(ptsize);
-            render.text_align(TextAlign::Center | TextAlign::Left);
+            render.text_align(TextAlign::Middle | TextAlign::Left);
             render.fill_color(theme.text_color);
             
             //plus 2 make it look better
             render.text(
                 float(rect.x + tb_boarder),
-                float(rect.y + float(rect.h) / 2) + ft_h / 2 - 2,
+                float(rect.y + float(rect.h) / 2) + 2,
                 tb_text
             );
 

@@ -30,6 +30,19 @@ namespace Btk{
             EventFn event_fn;
             DrawFn  draw_fn;
     };
+    /**
+     * @brief Basic class for using OpenGL
+     * 
+     */
+    class BTKAPI GLCanvas:public Widget{
+        public:
+            virtual void draw(Renderer&) final;
+            /**
+             * @brief Virtual method for OpenGL Drawing
+             * 
+             */
+            virtual void gl_draw() = 0;
+    };
 }
 
 #endif // _BTK_CANVAS_HPP_

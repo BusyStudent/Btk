@@ -1,6 +1,7 @@
 #if !defined(_BTK_GLOBAL_HPP_)
 #define _BTK_GLOBAL_HPP_
 #include <Btk/msgbox/fselect.hpp>
+#include <Btk/msgbox/msgbox.hpp>
 #include <Btk/utils/textbuf.hpp>
 #include <Btk/utils/timer.hpp>
 #include <Btk/utils/mem.hpp>

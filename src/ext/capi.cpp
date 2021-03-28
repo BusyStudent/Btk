@@ -41,11 +41,11 @@
 
     #define BTK_TYPE_CHK(WIDGET,TYPE) \
         if(!Btk_Is##TYPE(BTK_WIDGET(WIDGET)))\
-        {   Btk_SetError("TypeError:(%s,%s)",#TYPE,Btk::get_typename(WIDGET).c_str());\
+        {   set_typeerror(#TYPE,WIDGET);\
             return;}
     #define BTK_TYPE_CHK2(WIDGET,TYPE,ERR_RET) \
         if(!Btk_Is##TYPE(BTK_WIDGET(WIDGET)))\
-        {   Btk_SetError("TypeError:(%s,%s)",#TYPE,Btk::get_typename(WIDGET).c_str());\
+        {   set_typeerror(#TYPE,WIDGET);\
             return ERR_RET;}
 
     /**
@@ -79,10 +79,20 @@
         }
 #endif
 
+#include <Btk/impl/scope.hpp>
+#include <Btk/impl/core.hpp>
 #include <Btk.hpp>
 #include <Btk.h>
 
 static thread_local std::string global_error;
+static bool show_typerrror = true;//< default show typerrror
+static void set_typeerror(const char *req,BtkWidget *widget){
+    Btk_SetError("TypeError:(%s,%s)",req,Btk::get_typename(widget).c_str());
+    if(show_typerrror){
+        fputs(Btk_GetError(),stderr);
+        fputc('\n',stderr);
+    }
+}
 BTK_CAPI_BEGIN
 
 //Global Init/Quit
@@ -149,8 +159,25 @@ const char *Btk_SetButtonText(BtkButton *btn,const char *text){
 BtkTextBox *Btk_NewTextBox(){
     return new BtkTextBox();
 }
-
-
+void Btk_SetTextBoxText(BtkTextBox *textbox,const char *text){
+    BTK_NUL_CHK(textbox);
+    BTK_NUL_CHK(text);
+    BTK_TYPE_CHK(textbox,TextBox);
+    textbox->set_text(text);
+}
+char* Btk_GetTextBoxText(BtkTextBox *textbox){
+    BTK_NUL_CHK2(textbox,nullptr);
+    BTK_TYPE_CHK2(textbox,TextBox,nullptr);
+    return Btk_strdup(textbox->u8text().c_str());
+}
+//Label
+const char *Btk_SetLableText(BtkLabel *label,const char *text){
+    BTK_NUL_CHK2(label,nullptr);
+    if(text != nullptr){
+        label->set_text(text);
+    }
+    return label->text().c_str();
+}
 //Window
 BtkWindow *Btk_NewWindow(const char *title,int w,int h){
     return new Btk::Window(title,w,h);
@@ -163,6 +190,10 @@ void Btk_SetWindowTitle(BtkWindow *win,const char *title){
     BTK_NUL_CHK(win);
     win->set_title(title);
 }
+void Btk_SetWindowResizeable(BtkWindow *win,bool val){
+    BTK_NUL_CHK(win);
+    win->set_resizeable(val);
+}
 bool Btk_SetWindowIconFromFile(BtkWindow *win,const char *filename){
     BTK_NUL_CHK2(win,false);
     BTK_NUL_CHK2(filename,false);
@@ -170,6 +201,16 @@ bool Btk_SetWindowIconFromFile(BtkWindow *win,const char *filename){
     BTK_BEGIN_CATCH();
 
     win->set_icon(Btk::PixBuf::FromFile(filename));
+    return true;
+    BTK_END_CATCH2(false);
+}
+bool Btk_SetWindowCursorFromFile(BtkWindow *win,const char *filename){
+    BTK_NUL_CHK2(win,false);
+    BTK_NUL_CHK2(filename,false);
+
+    BTK_BEGIN_CATCH();
+
+    win->set_cursor(Btk::PixBuf::FromFile(filename));
     return true;
     BTK_END_CATCH2(false);
 }
@@ -242,6 +283,23 @@ char *Btk_strdup(const char *str){
 
     memcpy(ptr,str,(len + 1) * sizeof(char));
     return ptr;
+}
+//MessageBox
+void Btk_MessageBox(const char *title,const char *message){
+    Btk::MessageBox msgbox;
+    msgbox.set_title(title);
+    msgbox.set_message(message);
+    msgbox.show();
+}
+//Signal
+void Btk_SignConnect(BtkWidget *widget,const char *signal,...){
+    BTK_NUL_CHK(widget);
+    BTK_NUL_CHK(signal);
+    va_list varg;
+    va_start(varg,signal);
+    Btk::Impl::VaListGuard vguard(varg);
+
+    Btk_SetError("Unsupported");
 }
 //Format
 size_t _Btk_impl_fmtargs(const char *fmt,...){

@@ -84,7 +84,7 @@ struct BtkWidget{};
 #define Btk_format(...) _Btk_impl_sprintf(\
     (char*)Btk_alloca(_Btk_impl_fmtargs(__VA_ARGS__)),\
     __VA_ARGS__)
-
+#define Btk_UNUSED(P) (void)P
 
 //headers
 #include <stddef.h>
@@ -159,9 +159,17 @@ BTK_CAPI const char *Btk_SetButtonText(BtkButton *btn,const char *text);
 #define Btk_GetButtonText(BTN) Btk_SetButtonText(BTN,NULL)
 
 //TextBox
-BTK_CAPI const char *Btk_SetTextBoxText(BtkTextBox *textbox,const char *text);
-#define Btk_GetTextBoxText(TBX) Btk_SetTextBoxText(TBX,NULL);
-
+BTK_CAPI void  Btk_SetTextBoxText(BtkTextBox *textbox,const char *text);
+/**
+ * @brief Get the text Your shoud free the string by Btk_free
+ * 
+ * @param textbox 
+ * @return char *
+ */
+BTK_CAPI char *Btk_GetTextBoxText(BtkTextBox *textbox);
+//Label
+BTK_CAPI const char *Btk_SetLableText(BtkLabel*,const char *text);
+#define Btk_GetLableText(L) Btk_SetLableText(L,NULL)
 //Signal
 /**
  * @brief Connect signal
@@ -175,6 +183,7 @@ BTK_CAPI void Btk_SignConnect(BtkWidget*,const char *signal,...);
 BTK_CAPI BtkWindow *Btk_NewWindow(const char *title,int w,int h);
 BTK_CAPI void Btk_ShowWindow(BtkWindow *);
 BTK_CAPI void Btk_SetWindowTitle(BtkWindow*,const char *title);
+BTK_CAPI void Btk_SetWindowResizeable(BtkWindow*,bool resizeable);
 /**
  * @brief Add a widget into a window
  * 
@@ -188,9 +197,12 @@ BTK_CAPI bool Btk_WindowAdd(BtkWindow*,BtkWidget*);
  * @return BTK_CAPI 
  */
 BTK_CAPI bool Btk_SetWindowIconFromFile(BtkWindow*,const char *filename);
+BTK_CAPI bool Btk_SetWindowCursorFromFile(BtkWindow*,const char *filename);
 //Error
 BTK_CAPI const char *Btk_GetError();
 BTK_CAPI void        Btk_SetError(const char *fmt,...);
+//MessageBox
+BTK_CAPI void Btk_MessageBox(const char *title,const char *message);
 //Debug
 BTK_CAPI void Btk_Backtrace();
 //function end
