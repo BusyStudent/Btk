@@ -18,6 +18,9 @@ namespace Btk{
     void Object::unlock() const{
         SDL_AtomicUnlock(&spinlock);
     }
+    bool Object::try_lock() const{
+        return SDL_AtomicTryLock(&spinlock);
+    }
     void Object::cleanup(){
         std::lock_guard<Object> locker(*this);
         //cleanup all
@@ -85,6 +88,14 @@ namespace Btk{
 
         user1 = new Connection(con);
         magic = Signal;
+    }
+    _DeferCallFunctor::_DeferCallFunctor(_DeferCallBase *base){
+        call = [](_Functor &self){
+            static_cast<_DeferCallBase*>(self.user1)->deleted = true;
+        };
+        cleanup = nullptr;
+        user1 = base;
+        magic = Unknown;
     }
 }
 namespace Btk{

@@ -27,7 +27,7 @@ namespace Btk{
             MessageBox(const MessageBox &);
             ~MessageBox();
 
-            SignalAsync &sig_async();
+            SignalAsync &signal_async();
             void set_title(std::string_view title);
             void set_message(std::string_view message);
             void set_flag(Flag flag);

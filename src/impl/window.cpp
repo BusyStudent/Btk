@@ -253,16 +253,16 @@ namespace Btk{
         done();
         return Btk::run() == 0;
     }
-    Window::SignalClose &Window::sig_close(){
+    Window::SignalClose &Window::signal_close(){
         return pimpl->sig_close;
     }
-    Window::SignalEvent &Window::sig_event(){
+    Window::SignalEvent &Window::signal_event(){
         return pimpl->sig_event;
     }
-    Window::SignalResize &Window::sig_resize(){
+    Window::SignalResize &Window::signal_resize(){
         return pimpl->sig_resize;
     }
-    Window::SignalDropFile& Window::sig_dropfile(){
+    Window::SignalDropFile& Window::signal_dropfile(){
         return pimpl->sig_dropfile;
     }
     void Window::set_title(std::string_view title){

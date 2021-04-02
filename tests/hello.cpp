@@ -1,5 +1,6 @@
 #include <Btk/Btk.hpp>
 #include <Btk/msgbox/fselect.hpp>
+#include <Btk/msgbox/msgbox.hpp>
 #include <Btk/utils/timer.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/button.hpp>
@@ -7,72 +8,64 @@
 #include <Btk/event.hpp>
 #include <Btk/label.hpp>
 #include <iostream>
+struct Hello:public Btk::Window{
+    using Button = Btk::Button;
+    using Label =  Btk::Label;
+    using TextBox = Btk::TextBox;
+    /**
+     * @brief Construct a new Hello object
+     * 
+     */
+    Hello();
+    
+    void onclose();
+    void on_set_icon();
+    void on_select(std::string_view fname);
+    void show_text();
+
+    Button *close_btn;
+    Button *seticon_btn;
+    Button *show_btn;
+    TextBox *tbox;
+};
+Hello::Hello():Window("Hello",500,500){
+    set_resizeable();
+
+    close_btn = new Button("Close the window");
+    seticon_btn = new Button("Set the icon");
+    show_btn = new Button("Show the text");
+    tbox = new TextBox();
+
+    add(close_btn);
+    add(seticon_btn);
+    add(show_btn);
+    add(tbox);
+    //Set the position
+    close_btn->set_rect(0,0,100,40);
+    seticon_btn->set_rect(100,100,300,40);
+    tbox->set_rect(100,0,300,40);
+    show_btn->set_rect(400,0,100,40);
+    //Connect this signal
+    close_btn->signal_clicked().connect(&Hello::onclose,this);
+    seticon_btn->signal_clicked().connect(&Hello::on_set_icon,this);
+    show_btn->signal_clicked().connect(&Hello::show_text,this);
+}
+void Hello::onclose(){
+    Window::close();
+}
+void Hello::on_set_icon(){
+    Btk::FSelectBox box;
+    box.signal_async().connect(&Hello::on_select,this);
+    box.show();
+}
+void Hello::on_select(std::string_view fname){
+    set_icon(fname);
+}
+void Hello::show_text(){
+    Btk::MessageBox msgbox("Show text",tbox->u8text());
+    msgbox.show();
+}
 int main(){
-    Btk::Window win("Hello",500,500);
-    
-    //Btk::SetExceptionHandler([](std::exception *){
-    //    return true;
-    //});
-    //Btk::Window win2("Hello2",200,100);
-    win.on_close([](){
-        std::cout << "Window is on closed" << std::endl;
-        return true;
-    });
-    win.on_dropfile([&win](std::string_view file){
-        win.set_icon(file);
-    });
-    #if 1
-    win.add<Btk::Label>("Hello World").set_rect(
-        0,0,100,100
-    );
-    #endif
-
-    #if 1
-    auto &button = win.add<Btk::Button>("Close the window");
-    button.set_rect(
-        200,200,100,30
-    );
-    button.sig_click().connect(
-        &Btk::Window::close,
-        &win
-    );
-    auto &btn2 = win.add<Btk::Button>(400,400,100,50);
-
-    btn2.set_text("FSelectBox");
-
-    btn2.sig_click().connect([&](){
-        Btk::FSelectBox box("Select a file");
-        box.sig_async().connect([&](std::string_view f){
-            if(not f.empty()){
-                win.set_icon(f);
-            }
-        });
-        box.show();
-    });
-
-    win.add<Btk::TextBox>().set_rect(100,100,100,50);
-    
-    win.sig_event().connect([&win](Btk::Event &event){
-        if(event.type() == Btk::Event::KeyBoard){
-            auto &kevent = static_cast<Btk::KeyEvent&>(event);
-            if(kevent.keycode == SDLK_F11 and kevent.state == Btk::KeyEvent::Pressed){
-                //switch to fullscreen
-                event.accept();
-                static bool val = true;
-                win.set_fullscreen(val);
-                val = not val;
-                return true;
-            }
-        }
-        return false;
-    });
-    #endif
-    //win.add<Btk::TextBox>().set_rect(100,100,100,50);
-    win.add<Btk::Line>(0,0,100,100,Btk::Orientation::H);
-   
-    #ifndef _WIN32
-    win.set_transparent(0);
-    #endif
-    win.done();
-    win.mainloop();
+    Hello app;
+    app.mainloop();
 }

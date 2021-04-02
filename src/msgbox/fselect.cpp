@@ -42,7 +42,7 @@ namespace Btk{
             pimpl->multiple = false;
         }
     }
-    FSelectBox::SignalAsync &FSelectBox::sig_async(){
+    FSelectBox::SignalAsync &FSelectBox::signal_async(){
         return pimpl->signal;
     }
 

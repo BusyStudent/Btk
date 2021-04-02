@@ -173,21 +173,21 @@ namespace Btk{
             //Set Callbacks
             template<class ...T>
             Connection on_close(T &&...args){
-                return sig_close().connect(std::forward<T>(args)...);
+                return signal_close().connect(std::forward<T>(args)...);
             }
             template<class ...T>
             Connection on_resize(T &&...args){
-                return sig_resize().connect(std::forward<T>(args)...);
+                return signal_resize().connect(std::forward<T>(args)...);
             }
             template<class ...T>
             Connection on_dropfile(T &&...args){
-                return sig_dropfile().connect(std::forward<T>(args)...);
+                return signal_dropfile().connect(std::forward<T>(args)...);
             }
             //Connect Signals
-            SignalClose&    sig_close();
-            SignalEvent&    sig_event();
-            SignalResize&   sig_resize();
-            SignalDropFile& sig_dropfile();
+            SignalClose&    signal_close();
+            SignalEvent&    signal_event();
+            SignalResize&   signal_resize();
+            SignalDropFile& signal_dropfile();
             /**
              * @brief Set the cursor to default
              * 

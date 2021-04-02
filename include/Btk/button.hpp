@@ -39,7 +39,7 @@ namespace Btk{
             void on_click(T &&...args){
                 clicked.connect(std::forward<T>(args)...);
             };
-            Signal<void()> &sig_click(){
+            Signal<void()> &signal_clicked(){
                 return clicked;
             };
             void set_text(std::string_view text);

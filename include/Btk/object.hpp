@@ -12,6 +12,8 @@
 namespace Btk{
     //TODO:The SpinLock is not safe to lock recursively
     //So we are better to write our own recursive spinlock
+    BTKAPI void DeferCall(void(* fn)(void*),void *data);
+
     class SignalBase;
     template<class RetT>
     class Signal;
@@ -208,6 +210,64 @@ namespace Btk{
         friend class Signal;
         friend class Object;
     };
+    class _DeferCallBase{
+        protected:
+            bool deleted = false;
+        friend struct _DeferCallFunctor;
+    };
+    /**
+     * @brief A class for DeferCall
+     * 
+     * @tparam Class 
+     * @tparam Method 
+     * @tparam Args 
+     */
+    template<class Class,class Method,class ...Args>
+    class _DeferCallInvoker:public std::tuple<Method,Args...>,_DeferCallBase{
+        Class *object;
+        /**
+         * @brief Construct a new defercallinvoker object
+         * 
+         * @param object 
+         * @param method 
+         */
+        _DeferCallInvoker(Class *object,Method method,Args ...args):
+            std::tuple<Method,Args...>(method,std::forward<Args>(args)...){
+
+            this->object = object;
+        }
+        void invoke(){
+            if(deleted){
+                return;
+            }
+            if(not object->try_lock()){
+                //< Failed to lock,The object is cleanuping
+                return;
+            }
+            std::lock_guard locker<Object> locker(*object,std::adopt_lock);
+            //< Call self
+            std::apply(object,static_cast<std::tuple<Method,Args...>&&>(*this));
+        }
+        /**
+         * @brief Main entry for DeferCall
+         * 
+         * @param self 
+         */
+        static void Run(void *self){
+            std::unique_ptr<_DeferCallInvoker> ptr(
+                static_cast<_DeferCallInvoker*>(self)
+            );
+            ptr->invoke();
+        }
+        friend class Object;
+    };
+    /**
+     * @brief Helper class for defercall's invoker
+     * 
+     */
+    struct BTKAPI _DeferCallFunctor:public _Functor{
+        _DeferCallFunctor(_DeferCallBase *defercall);
+    };
     /**
      * @brief Basic signal
      * 
@@ -264,7 +324,7 @@ namespace Btk{
         friend class Signal;
         friend class Connection;
     };
-        /**
+    /**
      * @brief Signal's connection
      * 
      */
@@ -354,7 +414,20 @@ namespace Btk{
                     return signal.connect(std::forward<Callable>(callable));
                 }
             }
+            template<class RetT,class Class,class ...Args>
+            void defer_call(RetT (Class::*method)(Args...),Args &&...args){
+                using Method = std::remove_pointer_t<decltype(method)>;
+                using Invoker = _DeferCallInvoker<Class,Method,Args...>;
+                Invoker *invoker = new Invoker(
+                    reinterpret_cast<Class>(this),
+                    method,
+                    std::forward<Args>(args)...
+                );
+                _DeferCallFunctor functor(*invoker);
+                DeferCall(Invoker::Run,static_cast<void*>(invoker));
+            }
         public:
+            bool try_lock() const;
             void lock() const;
             void unlock() const;
         protected:

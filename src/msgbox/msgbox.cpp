@@ -35,7 +35,7 @@ namespace Btk{
     void MessageBox::set_flag(Flag flag){
         pimpl->flag = flag;
     }
-    MessageBox::SignalAsync &MessageBox::sig_async(){
+    MessageBox::SignalAsync &MessageBox::signal_async(){
         return pimpl->signal;
     }
 }

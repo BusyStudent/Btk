@@ -138,7 +138,7 @@ void Btk_AtButtonClicked(BtkButton *button,Btk_callback_t fn,void *param){
     BTK_NUL_CHK(fn);
     BTK_TYPE_CHK(button,Button);
 
-    button->sig_click().connect([fn,param](){
+    button->signal_clicked().connect([fn,param](){
         fn(param);
     });
 }

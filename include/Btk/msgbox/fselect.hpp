@@ -32,7 +32,7 @@ namespace Btk{
              * 
              * @return SignalAsync& 
              */
-            SignalAsync &sig_async();
+            SignalAsync &signal_async();
             /**
              * @brief Allow to select multi files
              * 
