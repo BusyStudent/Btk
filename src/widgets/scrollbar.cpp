@@ -13,11 +13,14 @@ namespace Btk{
      */
     constexpr int BarWidth = 6;
     constexpr int SingleStep = 4;
+    int _x,_y;
     ScrollBar::ScrollBar(Orientation orient){
-
+        bar_value = 0;
+        window()->pixels_size(&_x,&_y);
         orientation = orient;
-        bar_color = {193,193,193};
+        bar_color = {200,200,200};
         bar_bg_color = {173,175,178};
+        slider_color = {190,190,190};
     }
     ScrollBar::~ScrollBar(){}
 
@@ -70,6 +73,7 @@ namespace Btk{
             }
             case Event::Wheel:{
                 auto wheel = event_cast<WheelEvent&>(event);
+                
                 if(wheel.x > 0){
                     set_value(bar_value + SingleStep);
                 }
@@ -82,6 +86,29 @@ namespace Btk{
                 event.accept();
                 parent = event_cast<SetContainerEvent&>(event).container();
                 return true;
+            }
+
+            case Event::Drag :{
+                DragEvent& e = event_cast<DragEvent&>(event);
+                int x = e.xrel;
+                int y = e.yrel;
+                if(orientation == Orientation::H){
+                //Is Horizontal
+                bar_range.x += x;
+            }
+            else{
+                /**
+                 * ----
+                 * |  |
+                 * |  |
+                 * |  |
+                 * |  |
+                 * ----
+                 */
+               bar_range.y += y;
+            }
+                BTK_LOGINFO("The Bar_value={%d}\nThe rel={%d,%d}",this->bar_value,x,y);
+                redraw();
             }
             default:
                 return false;

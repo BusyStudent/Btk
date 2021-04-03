@@ -26,6 +26,12 @@ namespace Btk{
                 return bar_value;
             }
             void set_value(int value);
+
+            template<class Method,class TObject>
+            void set_move_signal(Method&& method,TObject* object)
+            {
+                signal.connect(method,object);
+            }
         private:
             /*
             *|--Widget's rect-|
@@ -57,6 +63,11 @@ namespace Btk{
             //When min value of the bar
             int min = 5;
             int max = 99;
+            //qt信号槽
+            Signal<void()> signal;
+            //滑块
+            Rect slider_rect;
+            Color slider_color;
     };
 }
 
