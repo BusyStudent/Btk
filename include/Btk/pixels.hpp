@@ -378,8 +378,9 @@ namespace Btk{
              * 
              * @param index the image index
              * @param buf The pixel buf(buf.size() should equal to the gif.size())
+             * @param delay How much ms should we delay to the next frame
              */
-            void   update_frame(size_t index,PixBuf &buf) const;
+            void   update_frame(size_t index,PixBuf &buf,int *delay = nullptr) const;
 
             GifImage &operator =(GifImage &&);
             static GifImage FromRwops(RWops &);

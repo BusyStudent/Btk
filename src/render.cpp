@@ -63,10 +63,68 @@ namespace Btk{
         nvgFill(nvg_ctxt);
         
     }
+    void Renderer::draw_image(const Texture &texture,const FRect *src,const FRect *dst){
+        FRect _dst;
+        if(dst != nullptr){
+            _dst = *dst;
+        }
+        else{
+            int w,h;
+            SDL_GetWindowSize(window,&w,&h);
+            _dst.x = 0;
+            _dst.y = 0;
+            _dst.w = w;
+            _dst.h = h;
+        }
+        if(src == nullptr){
+            //We donnot need clipping
+            return draw_image(texture,_dst);
+        }
+        if(_dst.empty() or src->empty()){
+            return;
+        }
+        auto [tex_w,tex_h] = texture.size();
+
+        if(src->w == tex_w and src->h == tex_h){
+            //We donnot need clipping
+            return draw_image(texture,_dst);
+        }
+
+        FRect _src;
+        _src.x = std::clamp(src->x,0.0f,std::numeric_limits<float>::max());
+        _src.y = std::clamp(src->y,0.0f,std::numeric_limits<float>::max());
+        _src.w = std::clamp(src->w,0.0f,float(tex_w));
+        _src.h = std::clamp(src->h,0.0f,float(tex_h));
+
+        //Save the status
+        save();
+        nvgIntersectScissor(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
+
+        float w_ratio = float(tex_w) / _src.w;
+        float h_ratio = float(tex_h) / _src.h;
+
+        FRect target;
+
+        target.w = _dst.w * w_ratio;
+        target.h = _dst.h * h_ratio;
+
+        target.x = _dst.x - (src->x / src->w) * _dst.w;
+        target.y = _dst.y - (src->y / src->h) * _dst.h;
+
+
+        draw_image(texture,target);
+        nvgResetScissor(nvg_ctxt);
+        restore();
+    }
     //Temp copy
     void Renderer::draw_image(const PixBuf &pixbuf,float x,float y,float w,float h,float angle){
         auto texture = create_from(pixbuf);
         draw_image(texture,x,y,w,h,angle);
+        t_caches.emplace_back(texture.detach());
+    }
+    void Renderer::draw_image(const PixBuf &pixbuf,const FRect *src,const FRect *dst){
+        auto texture = create_from(pixbuf);
+        draw_image(texture,src,dst);
         t_caches.emplace_back(texture.detach());
     }
 }

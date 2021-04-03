@@ -178,6 +178,8 @@ namespace Btk{
             void draw_image(const PixBuf& pixbuf,const FRect &rect,float angle){
                 draw_image(pixbuf,rect.x,rect.y,rect.w,rect.h,angle);
             }
+            void draw_image(const Texture &,const FRect *src = nullptr,const FRect *dst = nullptr);
+            void draw_image(const PixBuf  &,const FRect *src = nullptr,const FRect *dst = nullptr);
         public:
             /**
              * @brief Begin the frame,Init the device
@@ -223,6 +225,9 @@ namespace Btk{
                 auto output = output_size();
                 return float(output.w) / float(screen.w);
             }
+
+            void set_target(const Texture &texture);
+            
         public:
             //NanoVG Functions
             /**

@@ -71,7 +71,7 @@ namespace Btk{
         float w, h;
         
         bool empty() const noexcept{
-            return w <= 0 or h <= 0 or x < 0 or y < 0;
+            return w <= 0 or h <= 0;
         }
         bool has_point(const FPoint &fp){
             return has_point(fp.x,fp.y);
