@@ -18,22 +18,44 @@ extern "C"{
 //Active OpenGL Macro
 //Active it
 #define BTK_GL_BEGIN() \
-    SDL_GLContext _cur = SDL_GL_GetCurrentContext();\
-    SDL_Window *_cur_window;\
-    bool _need_reset;\
-    if(_cur == device){\
-        _need_reset = false;\
-    }\
-    else{\
-        _need_reset = true; \
-        _cur_window = SDL_GL_GetCurrentWindow();\
-        SDL_GL_MakeCurrent(window,device);\
-    }
+    Btk::GL::GLGuard _glguard(device->glctxt,window);
 //Reset to prev context
-#define BTK_GL_END() \
-    if(_need_reset){ \
-      SDL_GL_MakeCurrent(_cur_window,_cur);\
-    }
+#define BTK_GL_END() 
+namespace Btk::GL{
+    /**
+     * @brief Helper for restore the device data
+     * 
+     */
+    struct GLGuard{
+        GLGuard(SDL_GLContext ctxt,SDL_Window *win){
+            this->ctxt = ctxt;
+            this->win = win;
+
+            //Get current ctxt
+            cur_ctxt = SDL_GL_GetCurrentContext();
+
+            if(cur_ctxt == ctxt){
+                //We donnot need set the ctxt
+                cur_win = nullptr;
+            }
+            else{
+                cur_win = SDL_GL_GetCurrentWindow();
+                SDL_GL_MakeCurrent(win,ctxt);
+            }
+        }
+        GLGuard(const GLGuard &) = delete;
+        ~GLGuard(){
+            if(cur_win != nullptr){
+                SDL_GL_MakeCurrent(cur_win,cur_ctxt);
+            }
+        }
+        SDL_GLContext cur_ctxt;//< Current context
+        SDL_GLContext ctxt;//<Context
+
+        SDL_Window *cur_win;//< Current Window
+        SDL_Window *win;//Window
+    };
+}
 namespace Btk{
     void Renderer::get_texture_handle(int texture_id,void *p_handle){
         //Get GLuint from nanovg-GLES2
@@ -49,23 +71,27 @@ namespace Btk{
     }
 }
 namespace Btk{
+    struct RendererDevice{
+        RendererDevice(SDL_Window *win);
+        RendererDevice(const RendererDevice &) = delete;
+        ~RendererDevice();
+        SDL_GLContext glctxt;//< OpenGL Context
+        SDL_Window *window;
+        
+        GLuint screen_fbo;//< The fbo to the screen
+        GLuint screen_rbo;//< The rbo to the screen    
+        //TODO:Add a cache in there
+        GL::FrameBuffer *buffer = nullptr;
+    };
     //Create OpenGLES2 NanoVG Context
     Renderer::Renderer(SDL_Window *win){
         window = win;
-        device = SDL_GL_CreateContext(win);
-        if(device == nullptr){
-            throw RendererError(SDL_GetError());
-        }
-        SDL_GL_MakeCurrent(win,device);
-        #ifdef BTK_NEED_GLAD
-        //Init glad
-        static bool glad_wasinit = false;
-        if(not glad_wasinit){
-            if(BtkLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress))){
-                glad_wasinit = true;
-            }
-        }
-        #endif
+        device = new RendererDevice(win);
+
+        //SDL_GL_MakeCurrent(win,device->glctxt);
+
+        SDL_GL_SetSwapInterval(1);
+
         nvg_ctxt = nvgCreateGLES2(
             NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG
         );
@@ -79,16 +105,20 @@ namespace Btk{
     }
     //Begin rendering
     void Renderer::begin(){
-        SDL_GL_MakeCurrent(window,device);
-        int w,h;
-        int pix_w,pix_h;
+        if(not is_drawing){
+            SDL_GL_MakeCurrent(window,device->glctxt);
+            
+            int w,h;
+            int pix_w,pix_h;
 
-        SDL_GetWindowSize(window,&w,&h);
-        SDL_GL_GetDrawableSize(window,&pix_w,&pix_h);
+            SDL_GetWindowSize(window,&w,&h);
+            SDL_GL_GetDrawableSize(window,&pix_w,&pix_h);
 
-        glViewport(0,0,w,h);
+            glViewport(0,0,w,h);
 
-        nvgBeginFrame(nvg_ctxt,w,h,float(pix_w) / float(w));
+            nvgBeginFrame(nvg_ctxt,w,h,float(pix_w) / float(w));
+            is_drawing = true;
+        }
     }
     void Renderer::destroy(){
         for(auto iter = t_caches.begin();iter != t_caches.end();){
@@ -97,7 +127,8 @@ namespace Btk{
         }
         
         nvgDeleteGLES2(nvg_ctxt);
-        SDL_GL_DeleteContext(device);
+        
+        delete device;
 
         nvg_ctxt = nullptr;
         device   = nullptr;
@@ -120,20 +151,11 @@ namespace Btk{
     }
     //Delete texture
     void Renderer::free_texture(int texture){
-        SDL_GLContext cur = SDL_GL_GetCurrentContext();
-        if(cur == device){
-            //Is current context we use
-            nvgDeleteImage(nvg_ctxt,texture);
-            return;
-        }
-        else{
-            //Get current active Window
-            SDL_Window *cur_win = SDL_GL_GetCurrentWindow();
-            SDL_GL_MakeCurrent(window,device);
-            nvgDeleteImage(nvg_ctxt,texture);
-            //Reset it
-            SDL_GL_MakeCurrent(cur_win,cur);
-        }
+        BTK_GL_BEGIN();
+
+        nvgDeleteImage(nvg_ctxt,texture);
+
+        BTK_GL_END();
     }
     void Renderer::update_texture(int texture,const void *pixels){
         BTK_GL_BEGIN();
@@ -191,6 +213,52 @@ namespace Btk{
         BTK_GL_END();
         return size;
     }
+    //Target
+    void Renderer::set_target(Texture &texture){
+        GLuint tex;
+        texture.native_handle(&tex);
+        auto size = texture.size();
+
+        BTK_GL_BEGIN();
+        //Flush it
+        end_frame();
+        //Make a framebuffer
+        device->buffer = new GL::FrameBuffer(size.w,size.h,tex);
+        //Bind it
+        device->buffer->bind();
+        //Drawing at the texture
+        glViewport(0,0,size.w,size.h);
+        begin_frame(size.w,size.h,1);
+        //Make it flip
+        //Because opengl framebuffer's x,y begin at
+        //|
+        //|
+        //.here
+        
+        save();
+        
+        nvgTranslate(nvg_ctxt,0,size.h);
+        nvgScale(nvg_ctxt,1,-1);
+
+        BTK_GL_END();
+    }
+    void Renderer::reset_target(){
+        BTK_GL_BEGIN();
+        //Flsuh the nanovg stack
+        restore();
+        end_frame();
+        //Bind the the screen
+        device->buffer->unbind();
+        delete device->buffer;
+        device->buffer = nullptr;
+        //Begin the new frame
+        begin();
+
+        BTK_GL_END();
+    }
+    void Renderer::make_current(){
+        SDL_GL_MakeCurrent(window,device->glctxt);
+    }
     #if 0
     //DumpTexture
     PixBuf Renderer::dump_texture(const Texture &texture){
@@ -237,14 +305,56 @@ namespace Btk{
         return viewport;
     }
 }
+//RendererDevice
+namespace Btk{
+    RendererDevice::RendererDevice(SDL_Window *win){
+        glctxt = SDL_GL_CreateContext(win);
+        window = win;
+        
+        //Failed to create
+        if(glctxt == nullptr){
+            throwSDLError();
+        }
+        SDL_GL_MakeCurrent(window,glctxt);
+
+        #ifdef BTK_NEED_GLAD
+        //Init glad
+        static bool glad_wasinit = false;
+        if(not glad_wasinit){
+            if(BtkLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress))){
+                glad_wasinit = true;
+            }
+        }
+        #endif
+
+        //Get fbo and rbo
+
+        GLint fbo,rbo;
+
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING,&fbo);
+        glGetIntegerv(GL_RENDERBUFFER_BINDING,&rbo);
+
+        screen_fbo = fbo;
+        screen_rbo = rbo;
+
+        //Makeframebuffer
+    }
+    RendererDevice::~RendererDevice(){
+        if(glctxt != nullptr){
+            delete buffer;
+            SDL_GL_DeleteContext(glctxt);
+        }
+    }
+}
 //GLCanvas
 namespace Btk{
     void GLCanvas::draw(Renderer &render){
         //OpenGL Draw
-        NVGcontext *ctxt = render.get();
+        //NVGcontext *ctxt = render.get();
         //End the frame
-        nvgEndFrame(ctxt);
+        //nvgEndFrame(ctxt);
         //Restore prev ViewPort
+        render.end_frame();
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT,viewport);
         //Set the viewport
@@ -260,6 +370,7 @@ namespace Btk{
         glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 
         auto drawable = render.output_size();
-        nvgBeginFrame(ctxt,drawable.w,drawable.h,render.pixels_radio());
+        //nvgBeginFrame(ctxt,drawable.w,drawable.h,render.pixels_ratio());
+        render.begin_frame(drawable.w,drawable.h,render.pixels_ratio());
     }
 }

@@ -47,12 +47,15 @@ namespace Btk{
         Dx11,
         Software
     };
+    struct RendererDevice;
     /**
      * @brief Abstruct Renderer
      * 
      */
     class BTKAPI Renderer{
         public:
+            using Device = RendererDevice;
+            
             Renderer(SDL_Window *win);
             Renderer(const Renderer &) = delete;
             ~Renderer();
@@ -180,6 +183,32 @@ namespace Btk{
             }
             void draw_image(const Texture &,const FRect *src = nullptr,const FRect *dst = nullptr);
             void draw_image(const PixBuf  &,const FRect *src = nullptr,const FRect *dst = nullptr);
+            /**
+             * @brief Draw a circle
+             * 
+             * @param vec 
+             * @param r 
+             * @param c 
+             */
+            void draw_circle(const FVec2 &vec,float r,Color c){
+                begin_path();
+                circle(vec,r);
+                stroke_color(c);
+                stroke();
+            }
+            /**
+             * @brief Fill a circle
+             * 
+             * @param vec 
+             * @param r 
+             * @param c 
+             */
+            void fill_circle(const FVec2 &vec,float r,Color c){
+                begin_path();
+                circle(vec,r);
+                fill_color(c);
+                fill();
+            }
         public:
             /**
              * @brief Begin the frame,Init the device
@@ -220,14 +249,27 @@ namespace Btk{
              * 
              * @return float 
              */
-            float pixels_radio(){
+            float pixels_ratio(){
                 auto screen = screen_size();
                 auto output = output_size();
                 return float(output.w) / float(screen.w);
             }
-
-            void set_target(const Texture &texture);
-            
+            /**
+             * @brief Set the target object
+             * 
+             * @param texture The texture you want to draw
+             */
+            void set_target(Texture &texture);
+            /**
+             * @brief Reset it back to the screen
+             * 
+             */
+            void reset_target();
+            /**
+             * @brief Make the Context current
+             * 
+             */
+            void make_current();
         public:
             //NanoVG Functions
             /**
@@ -238,6 +280,8 @@ namespace Btk{
             NVGcontext *get() const noexcept{
                 return nvg_ctxt;
             }
+            void begin_frame(float w,float h,float ratio);
+            void end_frame();
 
             void begin_path();
             void close_path();
@@ -432,13 +476,15 @@ namespace Btk{
 
             NVGcontext *nvg_ctxt = nullptr;//<NanoVG Context
             SDL_Window *window = nullptr;
-            void *device = nullptr;//<Render device data
-
+            Device     *device = nullptr;//<Render device data
+            
             Rect  viewport = {0,0,0,0};//< cached viewport
             FRect cliprect = {0,0,0,0};//< cached cliprect
 
             std::list<int> t_caches;//< Texture cache
             int max_caches = 20;//< Max cache
+
+            bool is_drawing;//< Is nanovg Has BeginFrame
         friend class Texture;
     };
 

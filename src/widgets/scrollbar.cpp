@@ -14,7 +14,6 @@ namespace Btk{
     constexpr int BarWidth = 6;
     constexpr int SingleStep = 4;
     ScrollBar::ScrollBar(Orientation orient){
-
         orientation = orient;
         bar_color = {193,193,193};
         bar_bg_color = {173,175,178};

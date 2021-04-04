@@ -1,6 +1,8 @@
 #if !defined(_BTK_GL_HPP_)
 #define _BTK_GL_HPP_
 
+#include "../defs.hpp"
+
 #ifndef __linux
     #define BTK_NEED_GLAD
 #endif
@@ -13,6 +15,39 @@
 namespace Btk{
 namespace GL{
     void Init();
+    void Quit();
+    /**
+     * @brief Create a framebuffer
+     * 
+     */
+    struct BTKAPI FrameBuffer{
+        /**
+         * @brief Construct a new Frame Buffer object by texture
+         * 
+         * @param w The texture w
+         * @param h The texture h
+         * @param tex The texture
+         * @param need_free Should we delete it ourself
+         */
+        FrameBuffer(int w,int h,GLuint tex,bool need_free = false);
+        FrameBuffer(const FrameBuffer &) = delete;
+        ~FrameBuffer();
+        int w;
+        int h;
+
+        GLuint fbo;
+        GLuint rbo;
+        GLuint tex;
+
+        GLuint screen_fbo;
+        GLuint screen_rbo;
+
+        bool need_free;//< Is the texture need free?
+        bool ok;//< If we succeed to create it
+
+        void bind();
+        void unbind();
+    };
 }
 }
 

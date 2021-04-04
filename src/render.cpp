@@ -10,6 +10,7 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL.h>
 
+#include <algorithm>
 #include <cstdarg>
 #include <limits>
 #include <vector>
@@ -22,16 +23,19 @@
 
 namespace Btk{
     void Renderer::end(){
-        nvgEndFrame(nvg_ctxt);
-        swap_buffer();
-        //Too many caches
-        if(t_caches.size() > max_caches){
-            int n = t_caches.size() - max_caches;
-            BTK_LOGINFO("Clear %d textures",n);
-            for(int i = 0;i < n;i++){
-                nvgDeleteImage(nvg_ctxt,t_caches.front());
-                t_caches.pop_front();
+        if(is_drawing){
+            nvgEndFrame(nvg_ctxt);
+            swap_buffer();
+            //Too many caches
+            if(t_caches.size() > max_caches){
+                int n = t_caches.size() - max_caches;
+                BTK_LOGINFO("Clear %d textures",n);
+                for(int i = 0;i < n;i++){
+                    nvgDeleteImage(nvg_ctxt,t_caches.front());
+                    t_caches.pop_front();
+                }
             }
+            is_drawing = false;
         }
     }
     Size Renderer::screen_size(){
@@ -91,8 +95,9 @@ namespace Btk{
         }
 
         FRect _src;
-        _src.x = std::clamp(src->x,0.0f,std::numeric_limits<float>::max());
-        _src.y = std::clamp(src->y,0.0f,std::numeric_limits<float>::max());
+        float max_float = std::numeric_limits<float>::max();
+        _src.x = std::clamp(src->x,0.0f,max_float);
+        _src.y = std::clamp(src->y,0.0f,max_float);
         _src.w = std::clamp(src->w,0.0f,float(tex_w));
         _src.h = std::clamp(src->h,0.0f,float(tex_h));
 
@@ -297,6 +302,19 @@ namespace Btk{
     }
     void Renderer::reset_scissor(){
         nvgResetScissor(nvg_ctxt);
+    }
+    //Begin or end Frame
+    void Renderer::begin_frame(float w,float h,float ratio){
+        if(not is_drawing){
+            nvgBeginFrame(nvg_ctxt,w,h,ratio);
+            is_drawing = true;
+        }
+    }
+    void Renderer::end_frame(){
+        if(is_drawing){
+            nvgEndFrame(nvg_ctxt);
+            is_drawing = false;
+        }
     }
 }
 namespace Btk{

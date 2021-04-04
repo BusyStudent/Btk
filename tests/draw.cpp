@@ -7,7 +7,7 @@
 using namespace Btk;
 int main(){
     Window win("Drawing test",500,500);
-    #if 1
+    #if 0
     //Create a canvas
     auto &canvas = win.add<Canvas>(0,0,500,500);
     //load image
@@ -81,21 +81,34 @@ int main(){
         image = PixBuf::FromFile(fname);
     });
     #endif
-    #if 0
+    #if 1
     struct Test:public Widget{
-        Test(Container&){
+        Test(){
 
         }
+        Texture texture;
         void draw(Renderer &render){
             auto  image = PixBuf::FromXPMArray(icon);
-            render.begin_path();
-            render.move_to(0,0);
-            render.line_to(500,500);
-            render.line_to(500,0);
-            render.close_path();
-            render.stroke();
-            //render.rounded_rect({0,0,200,200},2,{0,0,0,255});
-            render.copy(image,nullptr,nullptr);
+            if(texture.empty()){
+                texture = render.create(500,500);
+                render.set_target(texture);
+                render.begin_path();
+                render.move_to(0,0);
+                render.line_to(500,500);
+                render.move_to(0,500);
+                render.line_to(500,0);
+                render.close_path();
+                render.stroke();
+                //render.rounded_rect({0,0,200,200},2,{0,0,0,255});
+                render.begin_path();
+                render.rect(50,50,30,30);
+                render.fill_color(50,20,40,55);
+                render.fill();
+                render.reset_target();
+            }
+            
+            
+            render.draw_image(texture,nullptr,nullptr);
         }
     };
     win.add<Test>();
