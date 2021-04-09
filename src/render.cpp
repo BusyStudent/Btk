@@ -383,6 +383,18 @@ namespace Btk{
         }
         render->get_texture_handle(texture,p_handle);
     }
+    Texture Texture::clone() const{
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        return Texture(render->clone_texture(texture),render);
+    }
+    PixBuf  Texture::dump() const{
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        return render->dump_texture(texture);
+    }
     Texture &Texture::operator =(Texture &&t){
         if(&t == this){
             return *this;

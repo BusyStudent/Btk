@@ -21,6 +21,31 @@ extern "C"{
     Btk::GL::GLGuard _glguard(device->glctxt,window);
 //Reset to prev context
 #define BTK_GL_END() 
+
+#ifndef NDEBUG
+
+#define BTK_GL_CHECK() _btk_glcheck(__FILE__,__LINE__,BTK_FUNCTION);
+static void _btk_glcheck(const char *f,int line,const char *fn){
+    GLenum code = glGetError();
+    if(code == GL_NO_ERROR){
+        return;
+    }
+    const char *errstring;
+    switch(code){
+        case GL_INVALID_ENUM:                  errstring = "INVALID_ENUM"; break;
+        case GL_INVALID_VALUE:                 errstring = "INVALID_VALUE"; break;
+        case GL_INVALID_OPERATION:             errstring = "INVALID_OPERATION"; break;
+        case GL_OUT_OF_MEMORY:                 errstring = "OUT_OF_MEMORY"; break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION: errstring = "INVALID_FRAMEBUFFER_OPERATION"; break;
+        default:                               errstring = "UNKNOWN"; break;
+    }
+    _Btk_Backtrace();
+    fprintf(stderr,"GLError at %s:%d '%s'=> %s\n",f,line,fn,errstring);
+}
+
+#else
+#define BTK_GL_CHECK()
+#endif
 namespace Btk::GL{
     /**
      * @brief Helper for restore the device data
@@ -57,18 +82,30 @@ namespace Btk::GL{
     };
 }
 namespace Btk{
-    void Renderer::get_texture_handle(int texture_id,void *p_handle){
-        //Get GLuint from nanovg-GLES2
-        auto *gl = static_cast<GLNVGcontext*>(nvgInternalParams(nvg_ctxt)->userPtr);
+    /**
+     * @brief Get Texture from nanovg
+     * 
+     * @param ctxt 
+     * @param texture_id 
+     * @return GLNVGtexture* 
+     */
+    static GLNVGtexture *glnvgFindTexture(NVGcontext *ctxt,int texture_id){
+        auto *gl = static_cast<GLNVGcontext*>(nvgInternalParams(ctxt)->userPtr);
         //Get GLContext
         GLNVGtexture *texture = glnvg__findTexture(gl,texture_id);
         if(texture == nullptr){
             throwRendererError("Invaid texture");
         }
+        return texture;
+    }
+    void Renderer::get_texture_handle(int texture_id,void *p_handle){
+        //Get GLuint from nanovg-GLES2
+        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
         if(p_handle != nullptr){
             *static_cast<GLuint*>(p_handle) = texture->tex;
         }
     }
+
 }
 namespace Btk{
     struct RendererDevice{
@@ -157,6 +194,82 @@ namespace Btk{
 
         BTK_GL_END();
     }
+    //CloneTexture
+    int Renderer::clone_texture(int texture_id){
+        BTK_GL_BEGIN();
+        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
+
+        int w = texture->width;
+        int h = texture->height;
+        
+        int dst_tex = nvgCreateImageRGBA(nvg_ctxt,w,h,texture->flags,nullptr);
+        BTK_GL_CHECK();
+
+        auto *dst_texture = glnvgFindTexture(nvg_ctxt,dst_tex);
+        //GL Texture
+        GLuint tex = dst_texture->tex;
+        //Current texture
+        GLint cur_tex;
+        GLint cur_fbo;
+        glGetIntegerv(GL_TEXTURE_2D,&cur_tex);
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING,&cur_fbo);
+        //Create a fbo
+        GLuint fbo;
+        glGenFramebuffers(1,&fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER,fbo);
+        BTK_GL_CHECK();
+        //Attach
+        glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,texture->tex,0);
+
+        BTK_GL_CHECK();
+        //Bind
+        glBindTexture(GL_TEXTURE_2D,tex);
+        BTK_GL_CHECK();
+        glCopyTexSubImage2D(GL_TEXTURE_2D,0,0,0,0,0,w,h);
+        BTK_GL_CHECK();
+
+        //Reset to prev
+        glBindTexture(GL_TEXTURE_2D,cur_tex);
+        glBindFramebuffer(GL_FRAMEBUFFER,cur_fbo);
+        //Delete fbo
+        glDeleteFramebuffers(1,&fbo);
+
+        BTK_GL_END();
+
+        return dst_tex;
+    }
+    //Dump texture
+    PixBuf Renderer::dump_texture(int texture_id){
+        BTK_GL_BEGIN();
+        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
+        int w = texture->width;
+        int h = texture->height;
+        PixBuf buf(w,h,SDL_PIXELFORMAT_RGBA32);
+
+        //Current texture and fbo
+        GLint cur_fbo;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING,&cur_fbo);
+
+        GLuint fbo;
+        glGenFramebuffers(1,&fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER,fbo);
+        BTK_GL_CHECK();
+
+        //Copy into fbo
+        glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,texture->tex,0);
+        BTK_GL_CHECK();
+        //Do copy
+        //Read pixels glGetTexImage doesnnot exists in opengles
+        glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,buf->pixels);
+        //glGetTexImage();
+        
+        BTK_GL_CHECK();
+        //Cleanup
+        glBindFramebuffer(GL_FRAMEBUFFER,cur_fbo);
+        glDeleteFramebuffers(1,&fbo);
+        BTK_GL_END();
+        return buf;
+    }
     void Renderer::update_texture(int texture,const void *pixels){
         BTK_GL_BEGIN();
         nvgUpdateImage(nvg_ctxt,texture,static_cast<const Uint8*>(pixels));
@@ -228,6 +341,10 @@ namespace Btk{
         device->buffer->bind();
         //Drawing at the texture
         glViewport(0,0,size.w,size.h);
+        //ClearStencil
+        glClearStencil(0);
+        glClear(GL_STENCIL_BUFFER_BIT);
+
         begin_frame(size.w,size.h,1);
         //Make it flip
         //Because opengl framebuffer's x,y begin at
@@ -337,6 +454,7 @@ namespace Btk{
         screen_fbo = fbo;
         screen_rbo = rbo;
 
+        BTK_LOGINFO("Create OpenGL Device version:%s",glGetString(GL_VERSION));
         //Makeframebuffer
     }
     RendererDevice::~RendererDevice(){

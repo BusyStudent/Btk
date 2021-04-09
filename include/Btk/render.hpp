@@ -157,14 +157,6 @@ namespace Btk{
             int  text(Font &,int x,int y,Color c,std::u16string_view u16);
             int  text(Font &,int x,int y,Color c,std::u16string_view fmt,...);
             /**
-             * @brief Dump a texture into pixbuf
-             * 
-             * @param texture The texture
-             * @return Pixbuf
-             */
-            PixBuf  dump_texture(const Texture &texture);
-            Texture clone_texture(const Texture &texture);
-            /**
              * @brief Draw a image
              * 
              * @param x 
@@ -226,6 +218,9 @@ namespace Btk{
              * @param c 
              */
             void clear(Color c);
+            void clear(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
+                clear({r,g,b,a});
+            }
             /**
              * @brief Get the backend
              * 
@@ -454,6 +449,8 @@ namespace Btk{
              * @param texture_id 
              */
             void free_texture(int texture_id);
+            int  clone_texture(int texture_id);
+            PixBuf dump_texture(int texture_id);
             /**
              * @brief Update a texture pixels
              * 
@@ -484,7 +481,7 @@ namespace Btk{
             std::list<int> t_caches;//< Texture cache
             int max_caches = 20;//< Max cache
 
-            bool is_drawing;//< Is nanovg Has BeginFrame
+            bool is_drawing = false;//< Is nanovg Has BeginFrame
         friend class Texture;
     };
 

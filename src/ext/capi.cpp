@@ -180,7 +180,13 @@ const char *Btk_SetLableText(BtkLabel *label,const char *text){
 }
 //Window
 BtkWindow *Btk_NewWindow(const char *title,int w,int h){
-    return new Btk::Window(title,w,h);
+    BTK_BEGIN_CATCH();
+    auto *win = new Btk::Window(title,w,h);
+    win->on_destroy([win](){
+        delete win;
+    });
+    return win;
+    BTK_END_CATCH2(nullptr);
 }
 void Btk_ShowWindow(BtkWindow *win){
     BTK_NUL_CHK(win);

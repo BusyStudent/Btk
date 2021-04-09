@@ -42,6 +42,7 @@ namespace Btk::GL{
         #ifdef BTK_NEED_GLAD
         SDL_GL_UnloadLibrary();
         #endif
+        SDL_GL_ResetAttributes();
     }
 }
 namespace Btk::GL{

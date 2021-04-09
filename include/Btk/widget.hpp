@@ -298,6 +298,12 @@ namespace Btk{
                 return parent->window;
             }
             /**
+             * @brief Get current window's renderer
+             * 
+             * @return Renderer* (failed on nullptr)
+             */
+            Renderer *renderer() const;
+            /**
              * @brief Get the default font
              * 
              * @return Font 

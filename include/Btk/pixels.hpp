@@ -28,6 +28,53 @@ namespace Btk{
         Color(const Color &) = default;
         Color &operator =(const Color &) = default;
     };
+    /**
+     * @brief Color in opengl
+     * 
+     */
+    struct GLColor{
+        GLColor() = default;
+        GLColor(const GLColor &) = default;
+        GLColor(float r,float g,float b,float a = 1.0f){
+            this->r = r;
+            this->g = g;
+            this->b = b;
+            this->a = a;
+        }
+        GLColor(Color c){
+            this->r = 1.0f / 255 * c.r;
+            this->g = 1.0f / 255 * c.g;
+            this->b = 1.0f / 255 * c.b;
+            this->a = 1.0f / 255 * c.a;
+        }
+        operator Color() const noexcept{
+            return {
+                Uint8(r / 255),
+                Uint8(g / 255),
+                Uint8(b / 255),
+                Uint8(a / 255),
+            };
+        }
+        float r;
+        float g;
+        float b;
+        float a;
+    };
+    struct HSVColor{
+        HSVColor() = default;
+        HSVColor(const HSVColor &) = default;
+        HSVColor(float h,float s,float v,Uint8 a = 255){
+            this->h = h;
+            this->s = s;
+            this->v = v;
+            this->a = a;
+        }
+        float h;
+        float s;
+        float v;
+        Uint8 a;//<Alpha
+    };
+    using HSBColor = HSVColor;
     //PixelBuffer
     class BTKAPI PixBuf{
         public:
@@ -49,6 +96,8 @@ namespace Btk{
             //operators
 
             //save PixBuf
+            //FIXME:Why save png and jpg doesnnot work
+            //It exported an black image
             void save_png(RWops &,int quality);
             void save_jpg(RWops &,int quality);
             void save_bmp(RWops &);
@@ -333,6 +382,18 @@ namespace Btk{
              * @param p_handle The pointer to the handle
              */
             void native_handle(void *p_handle);
+            /**
+             * @brief Clone the texture
+             * 
+             * @return Texture 
+             */
+            Texture clone() const;
+            /**
+             * @brief Read the texture into pixbuffer
+             * 
+             * @return PixBuf 
+             */
+            PixBuf  dump() const;
         private:
             int texture = 0;//< NVG Image ID
             Renderer *render = nullptr;//Renderer

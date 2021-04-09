@@ -92,6 +92,10 @@ int main(){
             if(texture.empty()){
                 texture = render.create(500,500);
                 render.set_target(texture);
+                //The texture is uninited
+                //Clear it
+                render.clear(0,0,0,0);
+
                 render.begin_path();
                 render.move_to(0,0);
                 render.line_to(500,500);
@@ -105,6 +109,10 @@ int main(){
                 render.fill_color(50,20,40,55);
                 render.fill();
                 render.reset_target();
+
+                //Test clone
+                //texture = texture.clone();
+                texture.dump().save_bmp("A.bmp");
             }
             
             

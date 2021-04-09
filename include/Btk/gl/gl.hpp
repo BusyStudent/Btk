@@ -48,6 +48,19 @@ namespace GL{
         void bind();
         void unbind();
     };
+    /**
+     * @brief OpenGL Shader
+     * 
+     */
+    struct Shader{
+        ~Shader(){
+            glDeleteShader(shader);
+        }
+        operator GLuint() const noexcept{
+            return shader;
+        }
+        GLuint shader;
+    };
 }
 }
 

@@ -9,7 +9,7 @@
 #include <Btk/event.hpp>
 #include <Btk/font.hpp>
 namespace Btk{
-    bool AbstructButton::handle(Event &event){
+    bool AbstractButton::handle(Event &event){
         switch(event.type()){
             case Event::Enter:{
                 onenter();
@@ -44,12 +44,12 @@ namespace Btk{
         event.accept();
         return true;
     }
-    void AbstructButton::onenter(){
+    void AbstractButton::onenter(){
         is_entered = true;
 
         redraw();
     }
-    void AbstructButton::onleave(){
+    void AbstractButton::onleave(){
         is_entered = false;
         is_pressed = false;
 

@@ -36,12 +36,20 @@ namespace Btk{
             return draw_fn(render,widget,userdata);
         }
     };
-    struct BTKAPI WindowImpl{
+    struct BTKAPI WindowImpl:public HasSlots{
         //Init SDL Window
         WindowImpl(const char *title,int x,int y,int w,int h,int flags);
         ~WindowImpl();
         void draw();
+        
         void pixels_size(int *w,int *h);//GetWindowSize
+        /**
+         * @brief The framebuffer's size
+         * 
+         * @param w 
+         * @param h 
+         */
+        void buffer_size(int *w,int *h);//GetWindowSize
         //tirgger close cb
         
         bool on_close();

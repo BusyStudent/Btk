@@ -105,7 +105,7 @@ typedef void(*Btk_callback_t)(void*);
 typedef void(*Btk_ccallback_t)();
 
 //Buttons
-BTK_DEF_WIDGET(AbstructButton,Widget);
+BTK_DEF_WIDGET(AbstractButton,Widget);
 BTK_DEF_WIDGET(Button,AbstructButton);
 //TextBox
 BTK_DEF_WIDGET(TextBox,Widget);

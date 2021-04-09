@@ -90,7 +90,8 @@
         "ini.c": "cpp",
         "fontstash.h": "c",
         "glad.c": "cpp",
-        "nanovg.h": "c"
+        "nanovg.h": "c",
+        "*.def": "cpp"
     },
     "files.exclude": {
         "**/.git": true,
