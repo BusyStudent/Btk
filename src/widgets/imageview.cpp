@@ -37,11 +37,16 @@ namespace Btk{
 
     }
     void ImageView::draw(Renderer &render){
+        if(dirty){
+            //Cleanup
+            texture = nullptr;
+            dirty = false;
+        }
         if(not pixelbuf.empty()){
             //render.save();
             if(texture.empty()){
                 //create texture
-                texture = render.create_from(pixelbuf);
+                texture = render.create_from(pixelbuf,tex_flags);
             }
             //render image
             FRect dst = rect;
@@ -49,10 +54,16 @@ namespace Btk{
             render.draw_image(texture,&src,&dst);
             //render.restore();
         }
+        if(draw_borader){
+            render.begin_path();
+            render.rect(rect);
+            render.stroke_color(boarder_color);
+            render.stroke();
+        }
     }
     void ImageView::set_image(const PixBuf &buf){
         pixelbuf = buf.clone();
-        texture = nullptr;
+        dirty = true;//< We should cleanup
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;
@@ -60,7 +71,7 @@ namespace Btk{
     }
     void ImageView::ref_image(PixBuf &buf){
         pixelbuf = buf.ref();
-        texture = nullptr;
+        dirty = true;//< We should cleanup
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;

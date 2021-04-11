@@ -44,6 +44,7 @@ namespace Btk{
      */
     enum class RendererBackend{
         OpenGL,
+        Metail,
         Dx11,
         Software
     };
@@ -103,9 +104,10 @@ namespace Btk{
              * @brief Create a Texture from Pixbuf
              * 
              * @param pixbuf The Pixbuffer
+             * @param flags The texture flags
              * @return Texture The texture
              */
-            Texture create_from(const PixBuf &pixbuf);
+            Texture create_from(const PixBuf &pixbuf,TextureFlags flags = TextureFlags::Linear);
             /**
              * @brief Create a Texture
              * 
@@ -121,17 +123,18 @@ namespace Btk{
              * 
              * @param w 
              * @param h 
+             * @param flas texture flags
              * @return Texture 
              */
-            Texture create(int w,int h);
+            Texture create(int w,int h,TextureFlags flags = TextureFlags::Linear);
             /**
              * @brief Load a texture from a file
              * 
              * @param fname The filename
              * @return Texture 
              */
-            Texture load(std::string_view fname);
-            Texture load(RWops &);
+            Texture load(std::string_view fname,TextureFlags flags = TextureFlags::Linear);
+            Texture load(RWops &,TextureFlags flags = TextureFlags::Linear);
             /**
              * @brief Draw text
              * 
@@ -448,28 +451,25 @@ namespace Btk{
              * 
              * @param texture_id 
              */
-            void free_texture(int texture_id);
-            int  clone_texture(int texture_id);
-            PixBuf dump_texture(int texture_id);
+            BTKHIDDEN void free_texture(int texture_id);
+            BTKHIDDEN int  clone_texture(int texture_id);
+            BTKHIDDEN PixBuf dump_texture(int texture_id);
             /**
              * @brief Update a texture pixels
              * 
              * @param texture_id 
              * @param pixels 
              */
-            void update_texture(int texture_id,const void *pixels);
+            BTKHIDDEN void update_texture(int texture_id,const void *pixels);
             /**
              * @brief Get the texture's native handler
              * 
              * @param texture_id 
              * @param native_handle_ptr
              */
-            void get_texture_handle(int texture_id,void *native_handle_ptr);
-            /**
-             * @brief Active the render context
-             * 
-             */
-            void active();
+            BTKHIDDEN void get_texture_handle(int texture_id,void *native_handle_ptr);
+            BTKHIDDEN void set_texture_flags(int texture_id,TextureFlags);
+            BTKHIDDEN TextureFlags get_texture_flags(int texture_id);
 
             NVGcontext *nvg_ctxt = nullptr;//<NanoVG Context
             SDL_Window *window = nullptr;

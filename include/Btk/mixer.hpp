@@ -4,8 +4,7 @@
 #include <stdexcept>
 #include "defs.hpp"
 #include "signal.hpp"
-namespace Btk{
-namespace Mixer{
+namespace Btk::Mixer{
     struct MusicImpl;
     struct AudioPlayerImpl;
     /**
@@ -30,7 +29,6 @@ namespace Mixer{
     BTKAPI void Init();
     BTKAPI void Quit();
     BTKAPI bool WasInit();
-}
 }
 
 

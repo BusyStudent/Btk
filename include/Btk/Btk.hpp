@@ -71,11 +71,19 @@ namespace Btk{
      */
     BTKAPI bool CouldBlock();
     /**
+     * @brief Hide the console
+     * @note You would be better to use it in main thread
+     * 
+     * @return true on succeess
+     */
+    BTKAPI bool HideConsole();
+
+    /**
      * @brief Enter the EventLoop
      * 
      * @return 0 if succeed
      */
     BTKAPI int  run();
-};
+}
 
 #endif // _BTK_HPP_

@@ -43,11 +43,11 @@ namespace Btk{
         SDL_GetWindowSize(window,&size.w,&size.h);
         return size;
     }
-    Texture Renderer::load(std::string_view fname){
-        return create_from(PixBuf::FromFile(fname));
+    Texture Renderer::load(std::string_view fname,TextureFlags flags){
+        return create_from(PixBuf::FromFile(fname),flags);
     }
-    Texture Renderer::load(RWops &rwops){
-        return create_from(PixBuf::FromRWops(rwops));
+    Texture Renderer::load(RWops &rwops,TextureFlags flags){
+        return create_from(PixBuf::FromRWops(rwops),flags);
     }
     void Renderer::draw_image(const Texture &texture,float x,float y,float w,float h,float angle){
         //make pattern
@@ -394,6 +394,18 @@ namespace Btk{
             throwRuntimeError("empty texture");
         }
         return render->dump_texture(texture);
+    }
+    TextureFlags Texture::flags() const{
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        return render->get_texture_flags(texture);
+    }
+    void Texture::set_flags(TextureFlags flags){
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        render->set_texture_flags(texture,flags);
     }
     Texture &Texture::operator =(Texture &&t){
         if(&t == this){

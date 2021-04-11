@@ -10,6 +10,8 @@
 #include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL_system.h>
 
+#include <unistd.h>
+
 #include "internal.hpp"
 //Need we throw Exception when the error was happened
 static bool throw_xlib_err = true;
@@ -109,5 +111,8 @@ namespace Btk{
         }
         BTK_LOGINFO("XWindow %zd depth:%d",window,vinfo.depth);
         XSetWindowBackground(display,window,0);
+    }
+    bool HideConsole(){
+        return daemon(1,0) == 0;
     }
 }

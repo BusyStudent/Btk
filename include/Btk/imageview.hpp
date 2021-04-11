@@ -30,6 +30,12 @@ namespace Btk{
             PixBuf pixelbuf;
             Texture texture;
             Rect image_rect;
+            Color boarder_color;
+            Color bg_color;
+            bool draw_borader = false;//< Should we draw the boarder
+            bool dirty = false;
+            
+            TextureFlags tex_flags = TextureFlags::Linear;//< The flags of the texture
     };
     /**
      * @brief Gif player

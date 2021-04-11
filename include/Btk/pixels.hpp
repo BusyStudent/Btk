@@ -239,6 +239,26 @@ namespace Btk{
         Streaming,
         Target
     };
+    /**
+     * @brief TextureFlags from nanovg
+     * 
+     */
+    enum class TextureFlags:int{
+        Linear           = 0,        // Image interpolation is Linear instead Nearest(default)
+        GenerateMipmaps  = 1<<0,     // Generate mipmaps during creation of the image.
+        RepeatX			 = 1<<1,	 // Repeat image in X direction.
+        RepeatY			 = 1<<2,	 // Repeat image in Y direction.
+        Flips			 = 1<<3,	 // Flips (inverses) image in Y direction when rendered.
+        Premultiplied	 = 1<<4,	 // Image data has premultiplied alpha.
+        Nearest			 = 1<<5,	 // Image interpolation is Nearest instead Linear
+    };
+    //TextureFlags operators
+    inline TextureFlags operator |(TextureFlags a,TextureFlags b){
+        return static_cast<TextureFlags>(int(a) | int(b));
+    }
+    inline TextureFlags operator +(TextureFlags a,TextureFlags b){
+        return static_cast<TextureFlags>(int(a) | int(b));
+    }
     //RendererTexture
     class BTKAPI Texture{
         public:
@@ -288,7 +308,7 @@ namespace Btk{
             }
             //check is empty
             bool empty() const noexcept{
-                return texture == 0;
+                return texture <= 0;
             }
             //assign
             //Texture &operator =(BtkTexture*);
@@ -394,6 +414,18 @@ namespace Btk{
              * @return PixBuf 
              */
             PixBuf  dump() const;
+            /**
+             * @brief Get TextureFlags
+             * 
+             * @return TextureFlags 
+             */
+            TextureFlags flags() const;
+            /**
+             * @brief Set the flags 
+             * 
+             * @param flags 
+             */
+            void set_flags(TextureFlags flags);
         private:
             int texture = 0;//< NVG Image ID
             Renderer *render = nullptr;//Renderer

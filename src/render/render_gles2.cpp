@@ -41,6 +41,7 @@ static void _btk_glcheck(const char *f,int line,const char *fn){
     }
     _Btk_Backtrace();
     fprintf(stderr,"GLError at %s:%d '%s'=> %s\n",f,line,fn,errstring);
+    fflush(stderr);
 }
 
 #else
@@ -51,7 +52,7 @@ namespace Btk::GL{
      * @brief Helper for restore the device data
      * 
      */
-    struct GLGuard{
+    struct BTKHIDDEN GLGuard{
         GLGuard(SDL_GLContext ctxt,SDL_Window *win){
             this->ctxt = ctxt;
             this->win = win;
@@ -83,6 +84,23 @@ namespace Btk::GL{
 }
 namespace Btk{
     /**
+     * @brief The renderer device impl
+     * 
+     */
+    struct BTKHIDDEN RendererDevice{
+        RendererDevice(SDL_Window *win);
+        RendererDevice(const RendererDevice &) = delete;
+        ~RendererDevice();
+        SDL_GLContext glctxt;//< OpenGL Context
+        SDL_Window *window;
+        
+        GLuint screen_fbo;//< The fbo to the screen
+        GLuint screen_rbo;//< The rbo to the screen    
+        //TODO:Add a cache in there
+        GL::FrameBuffer *buffer = nullptr;
+    };
+
+    /**
      * @brief Get Texture from nanovg
      * 
      * @param ctxt 
@@ -105,21 +123,79 @@ namespace Btk{
             *static_cast<GLuint*>(p_handle) = texture->tex;
         }
     }
+    TextureFlags Renderer::get_texture_flags(int texture_id){
+        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
+        return static_cast<TextureFlags>(texture->flags);
+    }
+    void Renderer::set_texture_flags(int texture_id,TextureFlags flags){
+        BTK_GL_BEGIN();
+        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
+        BTK_ASSERT(texture != nullptr);
+        //Get cur texture
+        GLint cur_tex;
+        glGetIntegerv(GL_TEXTURE_2D,&cur_tex);
+        //Bind the texture
+        glBindTexture(GL_TEXTURE_2D,texture->tex);
+        //Code from nanovg gl
 
+        int w = texture->width;
+        int h = texture->height;
+        int imageFlags = int(flags);
+
+        #ifdef NANOVG_GLES2
+        // Check for non-power of 2.
+        if (glnvg__nearestPow2(w) != (unsigned int)w || glnvg__nearestPow2(h) != (unsigned int)h) {
+            // No repeat
+            if ((imageFlags & NVG_IMAGE_REPEATX) != 0 || (imageFlags & NVG_IMAGE_REPEATY) != 0) {
+                printf("Repeat X/Y is not supported for non power-of-two textures (%d x %d)\n", w, h);
+                imageFlags &= ~(NVG_IMAGE_REPEATX | NVG_IMAGE_REPEATY);
+            }
+            // No mips.
+            if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+                printf("Mip-maps is not support for non power-of-two textures (%d x %d)\n", w, h);
+                imageFlags &= ~NVG_IMAGE_GENERATE_MIPMAPS;
+            }
+        }
+        #endif
+
+        if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+            if (imageFlags & NVG_IMAGE_NEAREST) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+            } else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            }
+        } else {
+            if (imageFlags & NVG_IMAGE_NEAREST) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            } else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            }
+        }
+
+        if (imageFlags & NVG_IMAGE_NEAREST) {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+
+        if (imageFlags & NVG_IMAGE_REPEATX)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        else
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+        if (imageFlags & NVG_IMAGE_REPEATY)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        else
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        
+        texture->flags = imageFlags;
+        BTK_GL_CHECK();
+        //Reset
+        glBindTexture(GL_TEXTURE_2D,cur_tex);
+        BTK_GL_END();
+    }
 }
 namespace Btk{
-    struct RendererDevice{
-        RendererDevice(SDL_Window *win);
-        RendererDevice(const RendererDevice &) = delete;
-        ~RendererDevice();
-        SDL_GLContext glctxt;//< OpenGL Context
-        SDL_Window *window;
-        
-        GLuint screen_fbo;//< The fbo to the screen
-        GLuint screen_rbo;//< The rbo to the screen    
-        //TODO:Add a cache in there
-        GL::FrameBuffer *buffer = nullptr;
-    };
     //Create OpenGLES2 NanoVG Context
     Renderer::Renderer(SDL_Window *win){
         window = win;
@@ -276,7 +352,7 @@ namespace Btk{
         BTK_GL_END();
     }
     //create texture from pixbuf
-    Texture Renderer::create_from(const PixBuf &pixbuf){
+    Texture Renderer::create_from(const PixBuf &pixbuf,TextureFlags flags){
         if(pixbuf.empty()){
             throw RuntimeError("The pixbuf is empty");
         }
@@ -293,7 +369,7 @@ namespace Btk{
             nvg_ctxt,
             pixbuf->w,
             pixbuf->h,
-            NVG_IMAGE_NEAREST,
+            int(flags),
             static_cast<const Uint8*>(pixbuf->pixels)
         );
         BTK_GL_END();
@@ -303,13 +379,13 @@ namespace Btk{
         }
         return Texture(t,this);
     }
-    Texture Renderer::create(int w,int h){
+    Texture Renderer::create(int w,int h,TextureFlags flags){
         BTK_GL_BEGIN();
         int texture = nvgCreateImageRGBA(
             nvg_ctxt,
             w,
             h,
-            NVG_IMAGE_NEAREST,
+            int(flags),
             nullptr
         );
         BTK_GL_END();

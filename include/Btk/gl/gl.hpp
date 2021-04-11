@@ -53,6 +53,10 @@ namespace GL{
      * 
      */
     struct Shader{
+        Shader(GLenum type){
+            glCreateShader(type);
+        }
+        Shader(const Shader &) = delete;
         ~Shader(){
             glDeleteShader(shader);
         }
@@ -60,6 +64,22 @@ namespace GL{
             return shader;
         }
         GLuint shader;
+    };
+    struct Program{
+        Program(){
+            program = glCreateProgram();
+        }
+        Program(const Program &) = delete;
+        ~Program(){
+            glDeleteProgram(program);
+        }
+        void link(){
+            glLinkProgram(program);
+        }
+        operator GLuint() const noexcept{
+            return program;
+        }
+        GLuint program;
     };
 }
 }
