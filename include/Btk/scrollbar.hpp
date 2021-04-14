@@ -26,6 +26,13 @@ namespace Btk{
                 return bar_value;
             }
             void set_value(int value);
+            int move_slider(int x);
+
+            template<class Method,class TObject>
+            void set_move_signal(Method&& method,TObject* object)
+            {
+                signal.connect(method,object);
+            }
         private:
             /*
             *|--Widget's rect-|
@@ -46,17 +53,23 @@ namespace Btk{
             //<Bar's background
             Color bar_bg_color;
             //< The rect of the bar
-            Rect bar_rect;
+            // Rect bar_rect;
             //< The rect of the bar's range
             Rect bar_range;
             //< The value of the var,100 on max,0 on min
             int bar_value = 0;
+            int max_bar_value = 100;
             //< When the flag is true,draw hight color
             bool actived = false;
             bool dragging = false;
             //When min value of the bar
             int min = 5;
             int max = 99;
+            //qt信号槽
+            Signal<void(int)> signal;
+            //滑块
+            Rect slider_rect;
+            Color slider_color;
     };
 }
 

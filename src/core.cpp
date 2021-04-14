@@ -176,78 +176,81 @@ namespace Btk{
     //EventLoop
     void System::run(){
         SDL_Event event;
-        while(SDL_WaitEvent(&event)){
-            switch(event.type){
-                case SDL_QUIT:{
-                    #ifndef NDEBUG
-                    SDL_Log("[System::EventDispather] Got SDL_QUIT");
-                    #endif
-                    std::lock_guard<std::recursive_mutex> locker(map_mtx);
-                    for(auto &win:wins_map){
-                        if(win.second->on_close()){
-                            //Close Window
-                            
-                            unregister_window(win.second);
+        while(true){
+            while(SDL_PollEvent(&event)){
+                switch(event.type){
+                    case SDL_QUIT:{
+                        #ifndef NDEBUG
+                        SDL_Log("[System::EventDispather] Got SDL_QUIT");
+                        #endif
+                        std::lock_guard<std::recursive_mutex> locker(map_mtx);
+                        for(auto &win:wins_map){
+                            if(win.second->on_close()){
+                                //Close Window
+                                
+                                unregister_window(win.second);
+                            }
                         }
+                        if(wins_map.empty()){
+                            return;
+                        }
+                        break;
                     }
-                    if(wins_map.empty()){
-                        return;
+                    case SDL_WINDOWEVENT:{
+                        on_windowev(event);
+                        break;
                     }
-                    break;
-                }
-                case SDL_WINDOWEVENT:{
-                    on_windowev(event);
-                    break;
-                }
-                case SDL_DROPFILE:{
-                    #ifndef NDEBUG
-                    SDL_Log("[System::EventDispather] Got SDL_DROPFILE");
-                    #endif
-                    on_dropev(event);
-                    break;
-                }
-                case SDL_MOUSEMOTION:{
-                    on_mousemotion(event);
-                    break;
-                }
-                case SDL_MOUSEBUTTONUP:
-                case SDL_MOUSEBUTTONDOWN:{
-                    on_mousebutton(event);
-                    break;
-                }
-                case SDL_KEYUP:
-                case SDL_KEYDOWN:{
-                    on_keyboardev(event);
-                    break;
-                }
-                case SDL_TEXTINPUT:{
-                    on_textinput(event);
-                    break;
-                }
-                case SDL_MOUSEWHEEL:{
-                    on_mousewheel(event);
-                    break;
-                }
-                case SDL_SYSWMEVENT:{
-                    Platform::HandleSysMsg(*(event.syswm.msg));
-                    break;
-                }
-                default:{
-                    //get function from event callbacks map
-                    auto iter = evcbs_map.find(event.type);
-                    if(iter != evcbs_map.end()){
-                        iter->second(event);
+                    case SDL_DROPFILE:{
+                        #ifndef NDEBUG
+                        SDL_Log("[System::EventDispather] Got SDL_DROPFILE");
+                        #endif
+                        on_dropev(event);
+                        break;
                     }
-                    else{
-                        SDL_LogWarn(
-                            SDL_LOG_CATEGORY_APPLICATION,
-                            "[System::EventDispather]unknown event id %d timestamp %d",
-                            event.type,
-                            SDL_GetTicks()
-                        );
+                    case SDL_MOUSEMOTION:{
+                        on_mousemotion(event);
+                        break;
+                    }
+                    case SDL_MOUSEBUTTONUP:
+                    case SDL_MOUSEBUTTONDOWN:{
+                        on_mousebutton(event);
+                        break;
+                    }
+                    case SDL_KEYUP:
+                    case SDL_KEYDOWN:{
+                        on_keyboardev(event);
+                        break;
+                    }
+                    case SDL_TEXTINPUT:{
+                        on_textinput(event);
+                        break;
+                    }
+                    case SDL_MOUSEWHEEL:{
+                        on_mousewheel(event);
+                        break;
+                    }
+                    case SDL_SYSWMEVENT:{
+                        Platform::HandleSysMsg(*(event.syswm.msg));
+                        break;
+                    }
+                    default:{
+                        //get function from event callbacks map
+                        auto iter = evcbs_map.find(event.type);
+                        if(iter != evcbs_map.end()){
+                            iter->second(event);
+                        }
+                        else{
+                            SDL_LogWarn(
+                                SDL_LOG_CATEGORY_APPLICATION,
+                                "[System::EventDispather]unknown event id %d timestamp %d",
+                                event.type,
+                                SDL_GetTicks()
+                            );
+                        }
                     }
                 }
             }
+            SDL_Delay(10);
         }
     }
     //WindowEvent
