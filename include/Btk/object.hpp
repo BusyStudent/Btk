@@ -13,6 +13,29 @@ namespace Btk{
     //TODO:The SpinLock is not safe to lock recursively
     //So we are better to write our own recursive spinlock
     BTKAPI void DeferCall(void(* fn)(void*),void *data);
+    //MemberFunction traits
+
+    template<class T>
+    struct _MemberFunction{};
+    /**
+     * @brief Get detail information of the function
+     * 
+     * @tparam RetT 
+     * @tparam Class 
+     * @tparam Args 
+     */
+    template<class RetT,class Class,class ...Args>
+    struct _MemberFunction<RetT (Class::*)(Args...)>{
+        using result_type = RetT;
+        using object_type = Class;
+
+    };
+    //for const method
+    template<class RetT,class Class,class ...Args>
+    struct _MemberFunction<RetT (Class::*)(Args...) const>{
+        using result_type = RetT;
+        using object_type = Class;
+    };
 
     class SignalBase;
     template<class RetT>
@@ -223,8 +246,8 @@ namespace Btk{
      * @tparam Args 
      */
     template<class Class,class Method,class ...Args>
-    class _DeferCallInvoker:public std::tuple<Method,Args...>,_DeferCallBase{
-        Class *object;
+    class _DeferCallInvoker:public std::tuple<Class*,Args...>,_DeferCallBase{
+        Method method;
         /**
          * @brief Construct a new defercallinvoker object
          * 
@@ -232,21 +255,24 @@ namespace Btk{
          * @param method 
          */
         _DeferCallInvoker(Class *object,Method method,Args ...args):
-            std::tuple<Method,Args...>(method,std::forward<Args>(args)...){
+            std::tuple<Class*,Args...>(object,std::forward<Args>(args)...){
 
-            this->object = object;
+            this->method = method;
         }
         void invoke(){
             if(deleted){
                 return;
             }
-            if(not object->try_lock()){
+            if(not object()->try_lock()){
                 //< Failed to lock,The object is cleanuping
                 return;
             }
-            std::lock_guard locker<Object> locker(*object,std::adopt_lock);
+            std::lock_guard<Object> locker(*(object()),std::adopt_lock);
             //< Call self
-            std::apply(object,static_cast<std::tuple<Method,Args...>&&>(*this));
+            std::apply(method,static_cast<std::tuple<Class*,Args...>&&>(*this));
+        }
+        Class *object(){
+            return std::get<0>(static_cast<std::tuple<Class*,Args...>&&>(*this));
         }
         /**
          * @brief Main entry for DeferCall
@@ -407,8 +433,14 @@ namespace Btk{
              */
             template<class Signal,class Callable>
             decltype(auto) connect(Signal &&signal,Callable &&callable){
+                //FIXME!! It still have sth wrong
                 if constexpr(std::is_member_function_pointer<Callable>::value){
-                    return signal.connect(std::forward<Callable>,this);
+                    //NOTE:If we use std::forward<Callable>(callable)
+                    //It will have a template argument deduction/substitution failure
+                    return signal.connect(
+                        callable,
+                        static_cast<typename _MemberFunction<Callable>::object_type*>(this)
+                    );
                 }
                 else{
                     return signal.connect(std::forward<Callable>(callable));
@@ -419,11 +451,11 @@ namespace Btk{
                 using Method = std::remove_pointer_t<decltype(method)>;
                 using Invoker = _DeferCallInvoker<Class,Method,Args...>;
                 Invoker *invoker = new Invoker(
-                    reinterpret_cast<Class>(this),
+                    static_cast<Class*>(this),
                     method,
                     std::forward<Args>(args)...
                 );
-                _DeferCallFunctor functor(*invoker);
+                _DeferCallFunctor functor(invoker);
                 DeferCall(Invoker::Run,static_cast<void*>(invoker));
             }
         public:

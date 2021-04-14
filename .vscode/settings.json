@@ -95,6 +95,7 @@
         "compare": "cpp",
         "concepts": "cpp",
         "stop_token": "cpp"
+        "*.def": "cpp"
     },
     "files.exclude": {
         "**/.git": true,

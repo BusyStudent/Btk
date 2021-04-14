@@ -11,7 +11,7 @@ namespace Btk{
      * @brief Basic button
      * 
      */
-    class BTKAPI AbstructButton:public Widget{
+    class BTKAPI AbstractButton:public Widget{
         public:
             //Process event
             bool handle(Event &);
@@ -28,7 +28,7 @@ namespace Btk{
      * @brief A simple pushbutton
      * 
      */
-    class BTKAPI Button:public AbstructButton{
+    class BTKAPI Button:public AbstractButton{
         public:
             Button();
             Button(std::string_view text);

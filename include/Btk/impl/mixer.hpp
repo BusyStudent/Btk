@@ -36,8 +36,7 @@ namespace Btk{
         bool open(const char *dev,SDL_AudioSpec *want);
     };
 }
-namespace Btk{
-namespace Mixer{
+namespace Btk::Mixer{
     class  Music;
     struct MusicImpl;
     struct AudioPlayerImpl{
@@ -50,6 +49,13 @@ namespace Mixer{
     };
     struct MusicImpl{
         virtual ~MusicImpl(){};
+        /**
+         * @brief Poll the data
+         * 
+         * @param data 
+         * @param len 
+         */
+        //virtual void poll(AudioPlayerImpl*,Uint8 *data,int len) = 0;
         SDL_AudioSpec spec;//pcm formated data
         Music *master;//The master of the impl
         AudioDeviceImpl *dev;//The device belong to
@@ -67,6 +73,7 @@ namespace Mixer{
 
         //Audio devices pointer
         std::list<AudioDeviceImpl*> devices;
+        std::list<MusicImpl*(*)(SDL_RWops*)> adapter;
         std::mutex mtx;
     };
     extern BTKAPI Library* library;
@@ -77,7 +84,7 @@ namespace Mixer{
      * @param rwops The rwops
      * @return MusicImpl* nullptr on error
      */
-    MusicImpl *OpenWAV(SDL_RWops *rwops);
+    BTKHIDDEN MusicImpl *OpenWAV(SDL_RWops *rwops);
     
     template<class ...Args>
     int SetError(const char *fmt,Args &&...args){
@@ -86,7 +93,12 @@ namespace Mixer{
     inline const char *GetError(){
         return SDL_GetError();
     }
-}
+    /**
+     * @brief Open music from Rwops
+     * 
+     * @return MusicImpl* 
+     */
+    BTKHIDDEN MusicImpl *OpenMusic(SDL_RWops *);
 }
 
 

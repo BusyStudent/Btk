@@ -1,6 +1,7 @@
 #include "../../build.hpp"
 
 #include <Btk/msgbox/impl.hpp>
+#include <Btk/utils/mem.hpp>
 #include "internal.hpp"
 
 #undef MessageBox
@@ -19,8 +20,11 @@ namespace Btk{
         else if(flag == MessageBox::Error){
             type |= MB_ICONERROR;
         }
-
-        MessageBoxA(GetForegroundWindow(),message.c_str(),title.c_str(),type);
+        MessageBoxW(
+            GetForegroundWindow(),
+            reinterpret_cast<const wchar_t*>(Utf8To16(message).c_str()),
+            reinterpret_cast<const wchar_t*>(Utf8To16(title).c_str()),
+            type);
     }
     void MessageBoxImpl::unref(){
         --refcount;

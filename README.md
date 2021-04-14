@@ -1,6 +1,6 @@
 # Btk
 
-A library for developing Gui based on SDL2  
+A library for developing Gui based on SDL2 and nanovg  
 
 ## CI
 

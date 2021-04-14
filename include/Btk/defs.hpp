@@ -23,6 +23,9 @@
     #define BTKEXPORT __attribute__((dllexport))
     #define BTKIMPORT __attribute__((dllimport))
     #endif
+#elif defined(__GNUC__)
+    #define BTKEXPORT __attribute__((visibility("default")))  
+    #define BTKIMPORT 
 #else
     //ignore this
     #define BTKEXPORT     
@@ -32,12 +35,15 @@
 //attributes
 #if defined(__GNUC__)
     #define BTKWEAK   __attribute__((weak))
+    #define BTKHIDDEN __attribute__((visibility("hidden")))
     #define BTKINLINE __attribute__((__always_inline__))
 #else
     #define BTKWEAK 
+    #define BTKHIDDEN
     #define BTKINLINE 
 #endif
-
+//rename macro
+#define BTK_PRIVATE(NAME) __BtkPriv_##NAME
 
 
 

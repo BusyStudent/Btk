@@ -84,15 +84,15 @@ namespace Btk{
     }
 
     void PixBuf::save_bmp(std::string_view fname){
-        auto rw = RWops::FromFile(fname.data(),"rb");
+        auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_bmp(rw);
     }
     void PixBuf::save_jpg(std::string_view fname,int quality){
-        auto rw = RWops::FromFile(fname.data(),"rb");
+        auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_jpg(rw,quality);
     }
     void PixBuf::save_png(std::string_view fname,int quality){
-        auto rw = RWops::FromFile(fname.data(),"rb");
+        auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_png(rw,quality);
     }
     //operators

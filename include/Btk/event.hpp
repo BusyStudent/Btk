@@ -80,11 +80,23 @@ namespace Btk{
             bool is_accepted() const noexcept{
                 return _accepted;
             };
-            void accept() noexcept{
+            /**
+             * @brief Accept the event
+             * 
+             * @return Always return true
+             */
+            bool accept() noexcept{
                 _accepted = true;
+                return true;
             };
-            void reject() noexcept{
+            /**
+             * @brief Reject the event
+             * 
+             * @return Always return false
+             */
+            bool reject() noexcept{
                 _accepted = false;
+                return false;
             };
             /**
              * @brief Chaneg the event type

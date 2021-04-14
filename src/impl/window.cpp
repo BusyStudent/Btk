@@ -101,9 +101,18 @@ namespace Btk{
         }
     }
     void WindowImpl::pixels_size(int *w,int *h){
-        //SDL_GetWindowSize(win,w,h);
+        SDL_GetWindowSize(win,w,h);
         
-        SDL_GL_GetDrawableSize(win,w,h);
+        //SDL_GL_GetDrawableSize(win,w,h);
+    }
+    void WindowImpl::buffer_size(int *w,int *h){
+        auto size = render.output_size();
+        if(w != nullptr){
+            *w = size.w;
+        }
+        if(h != nullptr){
+            *h = size.h;
+        }
     }
     //update widgets postions
     void WindowImpl::update_postion(){

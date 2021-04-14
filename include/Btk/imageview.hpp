@@ -30,7 +30,34 @@ namespace Btk{
             PixBuf pixelbuf;
             Texture texture;
             Rect image_rect;
+            Color boarder_color;
+            Color bg_color;
+            bool draw_borader = false;//< Should we draw the boarder
+            bool dirty = false;
+            
+            TextureFlags tex_flags = TextureFlags::Linear;//< The flags of the texture
     };
-};
+    /**
+     * @brief Gif player
+     * 
+     */
+    class BTKAPI GifView:public Widget{
+        public:
+            GifView();
+            GifView(int x,int y,int w,int h);
+            ~GifView();
+
+            bool handle(Event &);
+            void draw(Renderer &);
+
+            void set_image(GifImage &&image);
+        private:
+            GifImage gifimage;
+            PixBuf frame;
+            Texture texture;
+            size_t cur_frame;//current frame
+            bool delete_texture = false;
+    };
+}
 
 #endif // _BTK_IMAGEVIEW_HPP_

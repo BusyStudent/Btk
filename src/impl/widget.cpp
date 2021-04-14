@@ -63,6 +63,12 @@ namespace Btk{
         BTK_ASSERT(parent != nullptr);
         return *parent;
     }
+    Renderer *Widget::renderer() const{
+        if(parent == nullptr){
+            return nullptr;
+        }
+        return &(window()->render);
+    }
     //Get the default font
     //TODO create a global default font
     Font Widget::default_font() const{
