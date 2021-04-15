@@ -20,6 +20,7 @@ namespace Btk{
         using X11::Init;
         using X11::Quit;
         using X11::HandleSysMsg;
+        using X11::MessageBox;
         #endif
     }
 }

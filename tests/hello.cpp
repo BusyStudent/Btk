@@ -78,7 +78,7 @@ void Hello::on_defc_call(){
     defer_call(&Hello::show_text);
 }
 int main(){
-    Btk::HideConsole();
+    //Btk::HideConsole();
     Hello app;
     app.mainloop();
 }

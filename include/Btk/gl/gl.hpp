@@ -76,9 +76,19 @@ namespace GL{
         void link(){
             glLinkProgram(program);
         }
+        void use(){
+            GLint pr;
+            glGetIntegerv(GL_CURRENT_PROGRAM,&pr);
+            prev = pr;
+            glUseProgram(program);
+        }
+        void unuse(){
+            glUseProgram(prev);
+        }
         operator GLuint() const noexcept{
             return program;
         }
+        GLuint prev;
         GLuint program;
     };
 }

@@ -1,5 +1,4 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_loadso.h>
 #include <SDL2/SDL_thread.h>
@@ -135,10 +134,10 @@ namespace Btk{
                 //Failed to init
                 return -1;
             }
-            if(TTF_Init() == -1){
-                //Failed to init font engine
-                return -1;
-            }
+            // if(TTF_Init() == -1){
+            //     //Failed to init font engine
+            //     return -1;
+            // }
             SDL_EnableScreenSaver();
             #ifndef NDEBUG
             //show detail version
@@ -170,7 +169,7 @@ namespace Btk{
         //Quit SDL
         Mixer::Quit();
         IMG_Quit();
-        TTF_Quit();
+        // TTF_Quit();
         SDL_Quit();
     }
     //EventLoop

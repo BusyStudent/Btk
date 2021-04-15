@@ -20,7 +20,7 @@ namespace Btk{
         int ptsize;
         std::string filename;
 
-        TTF_Font *font;
+        //TTF_Font *font;
         Atomic refcount;
     };
 };

@@ -15,8 +15,14 @@
 #include <limits>
 #include <vector>
 
-#include "libs/fontstash.h"
-#include "libs/nanovg.h"
+
+extern "C"{
+    #define FONS_USE_FREETYPE
+    #define NVG_NO_STB
+    #include "libs/fontstash.h"
+    #include "libs/nanovg.h"
+    #include "libs/nanovg.c"
+}
 
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
 #define BTK_NULLCHECK(VAL) if(VAL == nullptr){return;}
@@ -102,8 +108,8 @@ namespace Btk{
         _src.h = std::clamp(src->h,0.0f,float(tex_h));
 
         //Save the status
-        save();
-        nvgIntersectScissor(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
+        //save();
+        //nvgIntersectScissor(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
 
         float w_ratio = float(tex_w) / _src.w;
         float h_ratio = float(tex_h) / _src.h;
@@ -117,9 +123,22 @@ namespace Btk{
         target.y = _dst.y - (src->y / src->h) * _dst.h;
 
 
-        draw_image(texture,target);
-        nvgResetScissor(nvg_ctxt);
-        restore();
+        auto paint = nvgImagePattern(
+            nvg_ctxt,
+            target.x,
+            target.y,
+            target.w,
+            target.h,
+            0,
+            texture.get(),
+            1.0f
+        );
+        //nvgResetScissor(nvg_ctxt);
+        nvgBeginPath(nvg_ctxt);
+        nvgRect(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
+        nvgFillPaint(nvg_ctxt,paint);
+        nvgFill(nvg_ctxt);
+        //restore();
     }
     //Temp copy
     void Renderer::draw_image(const PixBuf &pixbuf,float x,float y,float w,float h,float angle){

@@ -179,6 +179,7 @@ namespace Btk{
                 return handle_whell(event_cast<WheelEvent&>(event));
             }
             case Event::WindowLeave:{
+                #if 0
                 if(cur_widget != drag_widget and cur_widget != nullptr and managed_window){
                     //On the window
                     int w,h;
@@ -190,10 +191,13 @@ namespace Btk{
                         cur_widget = nullptr;
                     }
                 }
+                #endif
                 //Boardcast to all the widget
+                #if 0
                 for(auto widget:widgets_list){
                     widget->handle(event);
                 }
+                #endif
                 return true;
             }
             default:{
@@ -416,5 +420,11 @@ namespace Btk{
         }
 
     }
-
+    void Container::window_mouse_leave(){
+        if(cur_widget != nullptr){
+            Event event(Event::Leave);
+            cur_widget->handle(event);
+            cur_widget = nullptr;
+        }
+    }
 }

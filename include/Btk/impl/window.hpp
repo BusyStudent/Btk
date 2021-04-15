@@ -80,6 +80,8 @@ namespace Btk{
         Atomic visible = false;
         //Last draw ticks
         Uint32 last_draw_ticks = 0;
+        //FPS limit
+        Uint32 fps_limit = 60;
         //Window theme
         Theme theme;
         Container container;

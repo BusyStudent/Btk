@@ -106,13 +106,14 @@ typedef void(*Btk_ccallback_t)();
 
 //Buttons
 BTK_DEF_WIDGET(AbstractButton,Widget);
-BTK_DEF_WIDGET(Button,AbstructButton);
+BTK_DEF_WIDGET(Button,AbstractButton);
 //TextBox
 BTK_DEF_WIDGET(TextBox,Widget);
 //Label
 BTK_DEF_WIDGET(Label,Widget);
 //ImageView
 BTK_DEF_WIDGET(ImageView,Widget);
+BTK_DEF_WIDGET(ScrollBar,Widget);
 //name end
 
 //function begin

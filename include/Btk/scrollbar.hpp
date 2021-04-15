@@ -33,6 +33,9 @@ namespace Btk{
             {
                 signal.connect(method,object);
             }
+            Signal<void(int)> &signal_moved(){
+                return signal;
+            }
         private:
             /*
             *|--Widget's rect-|
@@ -65,9 +68,9 @@ namespace Btk{
             //When min value of the bar
             int min = 5;
             int max = 99;
-            //qt信号槽
+            //The signal when the silder was moved
             Signal<void(int)> signal;
-            //滑块
+            //The silder
             Rect slider_rect;
             Color slider_color;
     };

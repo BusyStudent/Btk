@@ -209,8 +209,10 @@ namespace Btk{
             NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG
         );
         //Add default font
-        int face_id = nvgCreateFont(nvg_ctxt,"",FontUtils::GetFileByName("").c_str());
-        nvgFontFaceId(nvg_ctxt,face_id);
+        //int face_id = nvgCreateFont(nvg_ctxt,"",FontUtils::GetFileByName("").c_str());
+        //nvgFontFaceId(nvg_ctxt,face_id);
+        //Using default font from cache
+        nvgFontFace(nvg_ctxt,"");
         nvgFontBlur(nvg_ctxt,0);
     }
     Renderer::~Renderer(){

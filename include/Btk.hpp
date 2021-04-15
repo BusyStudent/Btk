@@ -7,6 +7,7 @@
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/imageview.hpp>
+#include <Btk/scrollbar.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/render.hpp>
 #include <Btk/object.hpp>

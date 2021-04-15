@@ -51,6 +51,8 @@ namespace Btk{
     //Draw window
     void WindowImpl::draw(){
         auto current = SDL_GetTicks();
+
+        //Uint32 durl = 1000 / fps_limit;
         if(current < last_draw_ticks + 10){
             //drawing too fast
             last_draw_ticks = current;
@@ -222,8 +224,9 @@ namespace Btk{
                     //reset to system cursor
                     SDL_SetCursor(SDL_GetDefaultCursor());
                 }
-                Event leave(Event::WindowLeave);
-                container.handle(leave);
+                //Event leave(Event::WindowLeave);
+                //container.handle(leave);
+                container.window_mouse_leave();
                 if(not sig_leave.empty()){
                     sig_leave();
                 }

@@ -7,7 +7,7 @@
 using namespace Btk;
 int main(){
     Window win("Drawing test",500,500);
-    #if 0
+    #if 1
     //Create a canvas
     auto &canvas = win.add<Canvas>(0,0,500,500);
     //load image
@@ -81,7 +81,7 @@ int main(){
         image = PixBuf::FromFile(fname);
     });
     #endif
-    #if 1
+    #if 0
     struct Test:public Widget{
         Test(){
 

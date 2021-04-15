@@ -9,6 +9,7 @@ namespace Btk{
         BTKAPI void Init();
         BTKAPI void Quit();
         BTKAPI void HandleSysMsg(const SDL_SysWMmsg &);
+        BTKAPI void MessageBox(std::string_view title,std::string_view msg);
     };
     //X11 Error
     class XError:public RuntimeError{

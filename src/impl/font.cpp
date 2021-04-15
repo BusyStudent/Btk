@@ -20,15 +20,15 @@ namespace Btk{
         
         refcount = 1;
         
-        font = TTF_OpenFont(fname.data(),size);
-        if(font == nullptr){
-            throwSDLError(TTF_GetError());
-        }
+        // font = TTF_OpenFont(fname.data(),size);
+        // if(font == nullptr){
+        //     throwSDLError(TTF_GetError());
+        // }
         ptsize = size;
         filename = fname;
     }
     FontImpl::~FontImpl(){
-        TTF_CloseFont(font);
+        //TTF_CloseFont(font);
     }
     //Ref
     FontImpl *FontImpl::ref(){
@@ -86,13 +86,13 @@ namespace Btk{
 
 
     bool Font::has_glyph(char16_t ch) const{
-        return TTF_GlyphIsProvided(pimpl->font,ch);
+        //return TTF_GlyphIsProvided(pimpl->font,ch);
     }
     int Font::height() const{
-        return TTF_FontHeight(pimpl->font);
+        //return TTF_FontHeight(pimpl->font);
     }
     int Font::kerning_size(char16_t prev,char16_t cur) const{
-        return TTF_GetFontKerningSizeGlyphs(pimpl->font,prev,cur);
+        //return TTF_GetFontKerningSizeGlyphs(pimpl->font,prev,cur);
     }
 
     int Font::ptsize() const noexcept{
@@ -116,112 +116,112 @@ namespace Btk{
         Font f = FromFile(pimpl->filename,pimpl->ptsize);
         //First open font
         //Set style
-        TTF_SetFontStyle(f.pimpl->font,TTF_GetFontStyle(pimpl->font));
+        //TTF_SetFontStyle(f.pimpl->font,TTF_GetFontStyle(pimpl->font));
         return f;
     }
 
     PixBuf Font::render_solid(std::string_view text,Color color){
-        SDL_Surface *surf = TTF_RenderUTF8_Solid(pimpl->font,text.data(),color);
-        if(surf == nullptr){
-            throwSDLError(TTF_GetError());
-        }
-        return surf;
+        // SDL_Surface *surf = TTF_RenderUTF8_Solid(pimpl->font,text.data(),color);
+        // if(surf == nullptr){
+        //     throwSDLError(TTF_GetError());
+        // }
+        // return surf;
     }
     PixBuf Font::render_shaded(std::string_view text,Color fg,Color bg){
-        SDL_Surface *surf = TTF_RenderUTF8_Shaded(
-            pimpl->font,
-            text.data(),
-            fg,
-            bg
-        );
-        if(surf == nullptr){
-            throwSDLError(TTF_GetError());
-        }
-        return surf;
+        // SDL_Surface *surf = TTF_RenderUTF8_Shaded(
+        //     pimpl->font,
+        //     text.data(),
+        //     fg,
+        //     bg
+        // );
+        // if(surf == nullptr){
+        //     throwSDLError(TTF_GetError());
+        // }
+        // return surf;
     }
     PixBuf Font::render_blended(std::string_view text,Color color){
-        SDL_Surface *surf = TTF_RenderUTF8_Blended(pimpl->font,text.data(),color);
-        if(surf == nullptr){
-            throwSDLError(TTF_GetError());
-        }
-        return surf;
+        // SDL_Surface *surf = TTF_RenderUTF8_Blended(pimpl->font,text.data(),color);
+        // if(surf == nullptr){
+        //     throwSDLError(TTF_GetError());
+        // }
+        // return surf;
     }
     //UNICODE Versions
     PixBuf Font::render_solid(std::u16string_view text,Color color){
-        SDL_Surface *surf = TTF_RenderUNICODE_Solid(
-            pimpl->font,reinterpret_cast<const Uint16*>(text.data()),
-            color
-        );
-        if(surf == nullptr){
-            throwSDLError(TTF_GetError());
-        }
-        return surf;
+        // SDL_Surface *surf = TTF_RenderUNICODE_Solid(
+        //     pimpl->font,reinterpret_cast<const Uint16*>(text.data()),
+        //     color
+        // );
+        // if(surf == nullptr){
+        //     throwSDLError(TTF_GetError());
+        // }
+        // return surf;
     }
     PixBuf Font::render_shaded(std::u16string_view text,Color fg,Color bg){
-        SDL_Surface *surf = TTF_RenderUNICODE_Shaded(
-            pimpl->font,
-            reinterpret_cast<const Uint16*>(text.data()),
-            fg,
-            bg
-        );
-        if(surf == nullptr){
-            throwSDLError(TTF_GetError());
-        }
-        return surf;
+        // SDL_Surface *surf = TTF_RenderUNICODE_Shaded(
+        //     pimpl->font,
+        //     reinterpret_cast<const Uint16*>(text.data()),
+        //     fg,
+        //     bg
+        // );
+        // if(surf == nullptr){
+        //     throwSDLError(TTF_GetError());
+        // }
+        // return surf;
     }
     PixBuf Font::render_blended(std::u16string_view text,Color color){
-        SDL_Surface *surf = TTF_RenderUNICODE_Blended(
-            pimpl->font,
-            reinterpret_cast<const Uint16*>(text.data()),
-            color
-        );
-        if(surf == nullptr){
-            throwSDLError(TTF_GetError());
-        }
-        return surf;
+        // SDL_Surface *surf = TTF_RenderUNICODE_Blended(
+        //     pimpl->font,
+        //     reinterpret_cast<const Uint16*>(text.data()),
+        //     color
+        // );
+        // if(surf == nullptr){
+        //     throwSDLError(TTF_GetError());
+        // }
+        // return surf;
     }
     //font style
     FontStyle Font::style() const {
-        return static_cast<FontStyle>(TTF_GetFontStyle(pimpl->font));
+        // return static_cast<FontStyle>(TTF_GetFontStyle(pimpl->font));
     }
     std::string Font::style_name() const{
-        char *name = TTF_FontFaceStyleName(pimpl->font);
-        if(name == nullptr){
-            throwSDLError(TTF_GetError());
-        }
-        std::string s(name);
-        SDL_free(name);
-        return s;
+        // char *name = TTF_FontFaceStyleName(pimpl->font);
+        // if(name == nullptr){
+        //     throwSDLError(TTF_GetError());
+        // }
+        // std::string s(name);
+        // SDL_free(name);
+        // return s;
     }
     std::string Font::family() const{
-        char *name = TTF_FontFaceFamilyName(pimpl->font);
-        if(name == nullptr){
-            throwSDLError(TTF_GetError());
-        }
-        std::string s(name);
-        SDL_free(name);
-        return s;
+        // char *name = TTF_FontFaceFamilyName(pimpl->font);
+        // if(name == nullptr){
+        //     throwSDLError(TTF_GetError());
+        // }
+        // std::string s(name);
+        // SDL_free(name);
+        // return s;
     }
     //size
     Size Font::size(std::string_view text){
-        int w,h;
-        if(TTF_SizeUTF8(pimpl->font,text.data(),&w,&h) != 0){
-            w = -1;
-            h = -1;
-        }
-        return {w,h};
+        // int w,h;
+        // if(TTF_SizeUTF8(pimpl->font,text.data(),&w,&h) != 0){
+        //     w = -1;
+        //     h = -1;
+        // }
+        // return {w,h};
     }
     Size Font::size(std::u16string_view text){
-        int w,h;
-        if(TTF_SizeUNICODE(pimpl->font,
-            reinterpret_cast<const Uint16*>(text.data()),
-            &w,
-            &h) != 0){
+        // int w,h;
+        // if(TTF_SizeUNICODE(pimpl->font,
+        //     reinterpret_cast<const Uint16*>(text.data()),
+        //     &w,
+        //     &h) != 0){
                 
-            w = -1;
-            h = -1;
-        }
-        return {w,h};
+        //     w = -1;
+        //     h = -1;
+        // }
+        // return {w,h};
     }
     Font &Font::operator =(const Font &f){
         if(&f != this){
