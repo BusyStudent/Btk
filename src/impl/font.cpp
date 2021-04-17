@@ -14,33 +14,34 @@
 #include <thread>
 #include <mutex>
 
+#include "../font/internal.hpp"
+
+//Cast to the implment
+
+#define FONTIMPL(X) reinterpret_cast<BtkFt::Font*>(X)
+
 namespace Btk{
-    //Font
-    FontImpl::FontImpl(std::string_view fname,int size){
-        
-        refcount = 1;
-        
-        // font = TTF_OpenFont(fname.data(),size);
-        // if(font == nullptr){
-        //     throwSDLError(TTF_GetError());
-        // }
-        ptsize = size;
-        filename = fname;
+    static BtkFt::Font *OpenFont(std::string_view fname,float ptsize){
+        BtkFt::Init();
+        auto *face = BtkFt::Instance().add_font(fname.data(),0);
+        return new BtkFt::Font(face,ptsize);
     }
-    FontImpl::~FontImpl(){
-        //TTF_CloseFont(font);
-    }
-    //Ref
-    FontImpl *FontImpl::ref(){
-        ++refcount;
-        return this;
-    }
-    void FontImpl::unref(){
-        --refcount;
-        if(refcount <= 0){
-            //No object hold it
-            delete this;
+    static BtkFt::Font *OpenFontBy(std::string_view fontname,float ptsize){
+        BtkFt::Init();
+
+        #if 1
+        if(fontname.find('/') != fontname.npos){
+            //Is filename
+            return OpenFont(fontname,ptsize);
         }
+        #endif
+
+        auto &ins = BtkFt::Instance();
+        auto *face = ins.find_font(fontname);
+        if(face == nullptr){
+            return OpenFont(FontUtils::GetFileByName(fontname),ptsize);
+        }
+        return new BtkFt::Font(face,ptsize);
     }
 }
 namespace Btk{
@@ -50,7 +51,8 @@ namespace Btk{
     //Copt font
     Font::Font(const Font &font){
         if(font.pimpl != nullptr){
-            pimpl = font.pimpl->ref();
+            pimpl = font.pimpl;
+            FONTIMPL(pimpl)->ref();
         }
         else{
             pimpl = nullptr;
@@ -58,66 +60,64 @@ namespace Btk{
     }
     Font::Font(std::string_view fontname,int ptsize){
         pimpl = nullptr;
-        pimpl = new FontImpl(
-            FontUtils::GetFileByName(fontname),
-            ptsize
-        );
+        pimpl = OpenFontBy(fontname,ptsize);
     }
     //Open font by name
     void Font::open(std::string_view fontname,int ptsize){
-        openfile(
-            FontUtils::GetFileByName(fontname),ptsize
-        );
+        auto *new_font = OpenFontBy(fontname,ptsize);
+        close();
+        pimpl = new_font;
     }
     //Open font by file
     void Font::openfile(std::string_view filename,int ptsize){
-        FontImpl *new_font = new FontImpl(
-            filename,ptsize
-        );
+        auto *new_font = OpenFont(filename,ptsize);
         close();
         pimpl = new_font;
     }
     Font Font::FromFile(std::string_view filename,int ptsize){
         return Font(
-            new FontImpl(filename,ptsize)
+            OpenFont(filename,ptsize)
         );
     }
 
 
 
-    bool Font::has_glyph(char16_t ch) const{
+    bool Font::has_glyph(char32_t ch) const{
         //return TTF_GlyphIsProvided(pimpl->font,ch);
+        return FONTIMPL(pimpl)->has_glyph(ch);
     }
-    int Font::height() const{
+    float Font::height() const{
         //return TTF_FontHeight(pimpl->font);
+        return FONTIMPL(pimpl)->height();
     }
-    int Font::kerning_size(char16_t prev,char16_t cur) const{
+    int Font::kerning_size(char32_t prev,char32_t cur) const{
         //return TTF_GetFontKerningSizeGlyphs(pimpl->font,prev,cur);
+        return FONTIMPL(pimpl)->kerning_size(prev,cur);
     }
 
     int Font::ptsize() const noexcept{
-        return pimpl->ptsize;
+        return FONTIMPL(pimpl)->ptsize;
     }
     void Font::set_ptsize(int new_ptsize){
-        FontImpl *new_font = new FontImpl(
-            pimpl->filename,
-            new_ptsize
-        );
-        close();
-        pimpl = new_font;
+        // FontImpl *new_font = new FontImpl(
+        //     pimpl->filename,
+        //     new_ptsize
+        // );
+        // close();
+        // pimpl = new_font;
+        throwRuntimeError("UnImpl yet");
     }
     void Font::close(){
         if(pimpl != nullptr){
-            pimpl->unref();
+            FONTIMPL(pimpl)->unref();
             pimpl = nullptr;
         }
     }
     Font Font::clone() const{
-        Font f = FromFile(pimpl->filename,pimpl->ptsize);
-        //First open font
-        //Set style
-        //TTF_SetFontStyle(f.pimpl->font,TTF_GetFontStyle(pimpl->font));
-        return f;
+        if(pimpl == nullptr){
+            return Font();
+        }
+        return Font(new BtkFt::Font(*FONTIMPL(pimpl)));
     }
 
     PixBuf Font::render_solid(std::string_view text,Color color){
@@ -126,6 +126,8 @@ namespace Btk{
         //     throwSDLError(TTF_GetError());
         // }
         // return surf;
+        throwRuntimeError("UnImpl yet");
+
     }
     PixBuf Font::render_shaded(std::string_view text,Color fg,Color bg){
         // SDL_Surface *surf = TTF_RenderUTF8_Shaded(
@@ -138,6 +140,7 @@ namespace Btk{
         //     throwSDLError(TTF_GetError());
         // }
         // return surf;
+        throwRuntimeError("UnImpl yet");
     }
     PixBuf Font::render_blended(std::string_view text,Color color){
         // SDL_Surface *surf = TTF_RenderUTF8_Blended(pimpl->font,text.data(),color);
@@ -145,6 +148,7 @@ namespace Btk{
         //     throwSDLError(TTF_GetError());
         // }
         // return surf;
+        throwRuntimeError("UnImpl yet");
     }
     //UNICODE Versions
     PixBuf Font::render_solid(std::u16string_view text,Color color){
@@ -156,6 +160,7 @@ namespace Btk{
         //     throwSDLError(TTF_GetError());
         // }
         // return surf;
+        throwRuntimeError("UnImpl yet");
     }
     PixBuf Font::render_shaded(std::u16string_view text,Color fg,Color bg){
         // SDL_Surface *surf = TTF_RenderUNICODE_Shaded(
@@ -168,6 +173,7 @@ namespace Btk{
         //     throwSDLError(TTF_GetError());
         // }
         // return surf;
+        throwRuntimeError("UnImpl yet");
     }
     PixBuf Font::render_blended(std::u16string_view text,Color color){
         // SDL_Surface *surf = TTF_RenderUNICODE_Blended(
@@ -179,10 +185,12 @@ namespace Btk{
         //     throwSDLError(TTF_GetError());
         // }
         // return surf;
+        throwRuntimeError("UnImpl yet");
     }
     //font style
     FontStyle Font::style() const {
         // return static_cast<FontStyle>(TTF_GetFontStyle(pimpl->font));
+        throwRuntimeError("UnImpl yet");
     }
     std::string Font::style_name() const{
         // char *name = TTF_FontFaceStyleName(pimpl->font);
@@ -192,6 +200,7 @@ namespace Btk{
         // std::string s(name);
         // SDL_free(name);
         // return s;
+        return FONTIMPL(pimpl)->style_name();
     }
     std::string Font::family() const{
         // char *name = TTF_FontFaceFamilyName(pimpl->font);
@@ -201,6 +210,7 @@ namespace Btk{
         // std::string s(name);
         // SDL_free(name);
         // return s;
+        return FONTIMPL(pimpl)->family_name();
     }
     //size
     Size Font::size(std::string_view text){
@@ -210,6 +220,7 @@ namespace Btk{
         //     h = -1;
         // }
         // return {w,h};
+        return FONTIMPL(pimpl)->text_size(text);
     }
     Size Font::size(std::u16string_view text){
         // int w,h;
@@ -222,12 +233,14 @@ namespace Btk{
         //     h = -1;
         // }
         // return {w,h};
+        throwRuntimeError("UnImpl yet");
     }
     Font &Font::operator =(const Font &f){
         if(&f != this){
             close();
             if(f.pimpl != nullptr){
-                pimpl = f.pimpl->ref();
+                pimpl = f.pimpl;
+                FONTIMPL(pimpl)->ref();
             }
         }
         return *this;
@@ -239,5 +252,8 @@ namespace Btk{
             f.pimpl = nullptr;
         }
         return *this;
+    }
+    int Font::refcount() const noexcept{
+        return FONTIMPL(pimpl)->refcount;
     }
 };

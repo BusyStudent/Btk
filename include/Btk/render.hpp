@@ -410,6 +410,7 @@ namespace Btk{
              * @return false On the font is not exist
              */
             bool use_font(std::string_view fontname) noexcept;
+            bool use_font(const Font &font);
             /**
              * @brief Add font
              * 

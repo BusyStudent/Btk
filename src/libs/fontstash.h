@@ -128,6 +128,14 @@ BTKHIDDEN void fonsDrawDebug(FONScontext* s, float x, float y);
 
 BTKHIDDEN int fonsAddFallbackFont(FONScontext* stash, int base, int fallback);
 BTKHIDDEN void fonsResetFallbackFont(FONScontext* stash, int base);
+/**
+ * @brief Get BtkFt::Face *
+ * 
+ * @param stash 
+ * @param font 
+ * @return no-null value on succeed 
+ */
+BTKHIDDEN void *fontsGetFaceByID(FONScontext* stash,int font);
 
 #ifdef __cplusplus
 }

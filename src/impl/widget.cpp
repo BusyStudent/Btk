@@ -38,6 +38,9 @@ namespace Btk{
             //We couldnot find the window
             return;
         }
+        if(not window()->visible){
+            return;
+        }
         SDL_Event event;
         event.type = SDL_WINDOWEVENT;
         event.window.timestamp = SDL_GetTicks();

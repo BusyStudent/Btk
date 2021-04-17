@@ -13,4 +13,7 @@ int main(){
     std::cout << Btk::FontUtils::GetFileByName("Ebrima") << std::endl;
     std::cout << Btk::FontUtils::GetDefaultFont();
     #endif
+    Btk::Font font("Aria",16);
+
+    std::cout << font.size("HelloWorld") << std::endl;
 }

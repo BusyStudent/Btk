@@ -1,6 +1,5 @@
 #if !defined(_BTKIMPL_FONT_HPP_)
 #define _BTKIMPL_FONT_HPP_
-#include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_pixels.h>
 #include <string>
 #include <string_view>

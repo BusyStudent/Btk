@@ -40,6 +40,8 @@ namespace BtkFt{
         
         faces_map[face->name] = face;
 
+        BTK_LOGINFO("Add font %s",face->name.c_str());
+
         return face;
     }
     void Face::unref(){

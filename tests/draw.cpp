@@ -33,7 +33,7 @@ int main(){
         render.begin_path();
         render.text_align(Align::Center,Align::Center);
         render.text_size(12);
-        render.text(vec2.x,vec2.y,"HelloWorld");
+        render.text(vec2.x,vec2.y,"HelloWorld   PPP");
         render.fill_color(255,255,255,255);
         render.fill();
 

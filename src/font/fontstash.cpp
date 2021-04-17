@@ -32,6 +32,7 @@ extern "C"{
 
 //Using our layer
 extern "C++"{
+	#include "../build.hpp"
 	#include "internal.hpp"
 	#include <thread>
 	#include <list>
@@ -80,6 +81,7 @@ static int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font, unsigne
 
 static void fons__tt_getFontVMetrics(FONSttFontImpl *font, int *ascent, int *descent, int *lineGap)
 {
+	BTK_ASSERT(font->face != nullptr);
 	std::lock_guard locker(*font->face);
 	
 	*ascent = font->font->ascender;
@@ -89,19 +91,22 @@ static void fons__tt_getFontVMetrics(FONSttFontImpl *font, int *ascent, int *des
 
 static float fons__tt_getPixelHeightScale(FONSttFontImpl *font, float size)
 {
+	BTK_ASSERT(font->face != nullptr);
 	std::lock_guard locker(*font->face);
 	return size / font->font->units_per_EM;
 }
 
 static int fons__tt_getGlyphIndex(FONSttFontImpl *font, int codepoint)
 {
+	BTK_ASSERT(font->face != nullptr);
 	std::lock_guard locker(*font->face);
-	return FT_Get_Char_Index(font->font, codepoint);
+	return font->face->index_char(codepoint);
 }
 
 static int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size, float scale,
 							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1)
 {
+	BTK_ASSERT(font->face != nullptr);
 	std::lock_guard locker(*font->face);
 	FT_Error ftError;
 	FT_GlyphSlot ftGlyph;
@@ -127,6 +132,7 @@ static int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size
 static void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *output, int outWidth, int outHeight, int outStride,
 								float scaleX, float scaleY, int glyph)
 {
+	BTK_ASSERT(font->face != nullptr);	
 	std::lock_guard locker(*font->face);
 	
 	FT_GlyphSlot ftGlyph = font->font->glyph;
@@ -148,11 +154,14 @@ static void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *outp
 
 static int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int glyph2)
 {
-	//std::lock_guard locker(*font->face);
+	BTK_ASSERT(font->face != nullptr);
 	
-	FT_Vector ftKerning;
-	FT_Get_Kerning(font->font, glyph1, glyph2, FT_KERNING_DEFAULT, &ftKerning);
-	return (int)((ftKerning.x + 32) >> 6);  // Round up and convert to integer
+	std::lock_guard locker(*font->face);
+	
+	//FT_Vector ftKerning;
+	//FT_Get_Kerning(font->font, glyph1, glyph2, FT_KERNING_DEFAULT, &ftKerning);
+	//return (int)((ftKerning.x + 32) >> 6);  // Round up and convert to integer
+	return font->face->kerning_size(glyph1,glyph2);
 }
 
 #endif

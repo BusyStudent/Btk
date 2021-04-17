@@ -77,6 +77,10 @@ namespace Btk{
         image_rect.h = buf->h;
         redraw();
     }
+    void ImageView::set_draw_boarder(bool f){
+        draw_borader = f;
+        redraw();
+    }
     void ImageView::set_clip(const Rect &r){
         image_rect = r;
         redraw();

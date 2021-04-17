@@ -79,6 +79,7 @@
         }
 #endif
 
+#include <Btk/impl/window.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk.hpp>
@@ -182,7 +183,7 @@ const char *Btk_SetLableText(BtkLabel *label,const char *text){
 BtkWindow *Btk_NewWindow(const char *title,int w,int h){
     BTK_BEGIN_CATCH();
     auto *win = new Btk::Window(title,w,h);
-    win->on_destroy([win](){
+    win->impl()->on_destroy([win](){
         delete win;
     });
     return win;
@@ -226,10 +227,28 @@ bool Btk_WindowAdd(BtkWindow*win,BtkWidget*widget){
 
     return win->container().add(widget);
 }
+bool Btk_MainLoop(BtkWindow *win){
+    BTK_BEGIN_CATCH();
+    return win->mainloop();
+    BTK_END_CATCH2(false);
+}
 //ImageView
 BtkImageView *Btk_NewImageView(){
     return new BtkImageView();
 }
+//GifView
+#ifndef BTK_NGIF
+BtkGifView *Btk_NewGifView(){
+    return new BtkGifView();
+}
+bool Bkt_SetGifViewImageFrom(BtkGifView *view,const char *filename){
+    BTK_NUL_CHK2(view,false);
+    BTK_NUL_CHK2(filename,false);
+    BTK_BEGIN_CATCH();
+    view->set_image(Btk::GifImage::FromFile(filename));
+    BTK_END_CATCH2(false);
+}
+#endif
 //Error
 const char *Btk_GetError(){
     return global_error.c_str();

@@ -7,7 +7,6 @@
 #include "defs.hpp"
 namespace Btk{
     struct Size;
-    struct FontImpl;
     /**
      * @brief FontStyle from SDL_ttf
      * 
@@ -78,7 +77,7 @@ namespace Btk{
              * @param ch The next char
              * @return The kerning
              */
-            int kerning_size(char16_t prev_ch,char16_t ch) const;
+            int kerning_size(char32_t prev_ch,char32_t ch) const;
             /**
              * @brief Check the font has the glyph
              * 
@@ -86,13 +85,13 @@ namespace Btk{
              * @return true 
              * @return false 
              */
-            bool has_glyph(char16_t ch) const;
+            bool has_glyph(char32_t ch) const;
             /**
              * @brief Get font height
              * 
-             * @return int 
+             * @return float 
              */
-            int height() const;
+            float height() const;
             /**
              * @brief Get font ptsize
              * 
@@ -156,9 +155,6 @@ namespace Btk{
              * @param style The style you want to set
              */
             void  set_style(FontStyle style);
-            FontImpl *impl() const noexcept{
-                return pimpl;
-            }
             /**
              * @brief Get font family name
              * 
@@ -185,8 +181,9 @@ namespace Btk{
              */
             static Font FromFile(std::string_view filename,int ptsize);
         private:
-            Font(FontImpl *i):pimpl(i){};
-            FontImpl *pimpl;
+            Font(void *i):pimpl(i){};
+            void *pimpl;
+        friend class Renderer;
     };
     class BTKAPI FontSet{
         #ifdef __gnu_linux__

@@ -114,6 +114,14 @@ namespace Btk{
         }
         return surf;
     }
+    PixBuf PixBuf::zoom(double w_f,double_t h_f){
+        SDL_Surface *surf = zoomSurface(this->surf,w_f,h_f,SMOOTHING_ON);
+        if(surf == nullptr){
+            throwSDLError();
+        }
+        return surf;
+
+    }
     //static method
     PixBuf PixBuf::FromMem(const void *mem,size_t size){
         SDL_Surface *surf = IMG_Load_RW(SDL_RWFromConstMem(mem,size),true);

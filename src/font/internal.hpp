@@ -2,6 +2,7 @@
 #define _BTK_FT_INTERNAL_HPP_
 #include <cassert>
 #include <cstring>
+#include <string>
 #include <mutex>
 #include <map>
 
@@ -12,17 +13,40 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include <Btk/impl/atomic.hpp>
+#include <Btk/pixels.hpp>
+#include <Btk/rect.hpp>
 #include <Btk/defs.hpp>
 
 namespace BTKHIDDEN BtkFt{
     using FaceIndex = FT_ULong;
     using CharIndex = FT_ULong;
     using Char = char32_t;
+    using Btk::Size;
+    using Btk::Color;
+    using Btk::PixBuf;
+    using Btk::Atomic;
     struct Font;
     struct FontMetrics{
         float ascender;
         float descender;
         float height;
+    };
+    struct GlyphMetric{
+        int minx;
+        int maxx;
+        int miny;
+        int maxxy;
+        int advance;
+    };
+    /**
+     * @brief The font's data buffer
+     * 
+     */
+    struct FaceData{
+        void *buffer;
+        size_t len;
+        Atomic refcount;
     };
     struct Face{
         Face(const char *fname,FaceIndex index = 0);
@@ -54,6 +78,20 @@ namespace BTKHIDDEN BtkFt{
          */
         FontMetrics metrics();
         /**
+         * @brief Get GlyphMetric
+         * 
+         * @param index 
+         * @return GlyphMetric 
+         */
+        GlyphMetric glyph_metrics(CharIndex index);
+        /**
+         * @brief Get the char's index
+         * 
+         * @param ch 
+         * @return Index(0 on failure)
+         */
+        CharIndex index_char(Char ch);
+        /**
          * @brief Is the glyph is provieded
          * 
          * @param ch 
@@ -61,14 +99,30 @@ namespace BTKHIDDEN BtkFt{
          * @return false 
          */
         bool has_glyph(Char ch);
-
-        void render_glyph();
+        bool render_glyph(CharIndex index);
+        int kerning_size(CharIndex prev,CharIndex cur);
     };
     /**
      * @brief Slot for 
      * 
      */
     struct GlyphSlots{
+        ~GlyphSlots();
+        /**
+         * @brief Copy from FT_GlyphSlot
+         * 
+         */
+        GlyphSlots(const FT_GlyphSlot &);
+        GlyphSlots(const GlyphSlots &) = delete;
+        GlyphSlots(GlyphSlots &&s){
+            w = s.w;
+            h = s.h;
+            pitch = s.pitch;
+            buffer = s.buffer;
+
+            s.buffer = nullptr;
+        }
+        GlyphSlots();
         int w;
         int h;
         int pitch;
@@ -79,8 +133,62 @@ namespace BTKHIDDEN BtkFt{
      * 
      */
     struct Font{
-        Face *face;
-        int refcount;
+        /**
+         * @brief Construct a new Font object
+         * 
+         * @param name 
+         * @param ptsize 
+         */
+        Font(std::string_view name,float ptsize);
+        Font(const Font &f){
+            face = f.face;
+            refcount = 1;
+            face->ref();
+            ptsize = f.ptsize;
+        }
+        Font(Face *face,float ptsize);
+        int refcount = 0;
+        Face *face = nullptr;
+        float ptsize = 0;
+        int style = 0;
+
+        Size text_size(std::string_view text);
+        Size text_size(std::u16string_view text);
+
+        void ref(){
+            ++refcount;
+        }
+        void unref(){
+            --refcount;
+            if(refcount <= 0){
+                face->unref();
+                delete this;
+            }
+        }
+
+        PixBuf render_glyph(Char ch,Color color);
+        PixBuf render_text(std::string_view text,Color color);
+        /**
+         * @brief Get kerning size
+         * 
+         * @param prev_ch 
+         * @param ch 
+         * @return int 
+         */
+        int kerning_size(char32_t prev_ch,char32_t ch);
+        bool has_glyph(char32_t ch){
+            return face->has_glyph(ch);
+        }
+
+        std::string family_name() const{
+            return face->face->family_name;
+        }
+        std::string style_name() const{
+            return face->face->style_name;
+        }
+        float height() const{
+            return face->metrics().height;
+        }
     };
     struct Library{
         Library();

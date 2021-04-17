@@ -335,6 +335,9 @@ namespace Btk{
             is_drawing = false;
         }
     }
+    bool Renderer::use_font(const Font &font){
+        use_font(font.family());
+    }
 }
 namespace Btk{
     Texture::~Texture(){

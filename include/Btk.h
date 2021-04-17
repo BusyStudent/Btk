@@ -56,15 +56,18 @@
 #if !defined(__cplusplus)
 typedef struct BtkWindow BtkWindow;
 typedef struct BtkWidget BtkWidget;
+typedef struct BtkContainer BtkContainer;
 #include <stdbool.h>
 #elif defined(_BTK_SOURCE)
 #include <Btk/window.hpp>
 #include <Btk/widget.hpp>
 typedef Btk::Window BtkWindow;
 typedef Btk::Widget BtkWidget;
+typedef Btk::Container BtkContainer;
 #else
 struct BtkWindow{};
 struct BtkWidget{};
+struct BtkContainer{};
 #endif
 
 //stack alloc
@@ -114,6 +117,10 @@ BTK_DEF_WIDGET(Label,Widget);
 //ImageView
 BTK_DEF_WIDGET(ImageView,Widget);
 BTK_DEF_WIDGET(ScrollBar,Widget);
+
+#ifndef BTK_NGIF
+BTK_DEF_WIDGET(GifView,Widget);
+#endif
 //name end
 
 //function begin
@@ -192,6 +199,12 @@ BTK_CAPI void Btk_SetWindowResizeable(BtkWindow*,bool resizeable);
  */
 BTK_CAPI bool Btk_WindowAdd(BtkWindow*,BtkWidget*);
 /**
+ * @brief Show the window and enter the eventloop
+ * 
+ * @return BTK_CAPI 
+ */
+BTK_CAPI bool Btk_MainLoop(BtkWindow*);
+/**
  * @brief Set the window icon from filename
  * 
  * @param filename 
@@ -199,6 +212,8 @@ BTK_CAPI bool Btk_WindowAdd(BtkWindow*,BtkWidget*);
  */
 BTK_CAPI bool Btk_SetWindowIconFromFile(BtkWindow*,const char *filename);
 BTK_CAPI bool Btk_SetWindowCursorFromFile(BtkWindow*,const char *filename);
+//Gif
+BTK_CAPI bool Btk_SetGifViewImageFrom(BtkGifView *view,const char *filename);
 //Error
 BTK_CAPI const char *Btk_GetError();
 BTK_CAPI void        Btk_SetError(const char *fmt,...);
