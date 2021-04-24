@@ -20,7 +20,7 @@ namespace X11{
         XDisplay *display;
         XWindow window;
     };
-    XContext GetXContext(SDL_Window *win);
+    BTKHIDDEN XContext GetXContext(SDL_Window *win);
     /**
      * @brief Handle X Error
      * 
@@ -28,7 +28,10 @@ namespace X11{
      * @param event 
      * @return int 
      */
-    int XErrorHandler(Display *display,XErrorEvent *event);
+    BTKHIDDEN int XErrorHandler(Display *display,XErrorEvent *event);
+    //Value for native file dialog
+    extern BTKHIDDEN bool has_zenity;
+    extern BTKHIDDEN bool has_kdialog;
 }
 }
 

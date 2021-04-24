@@ -208,6 +208,12 @@ namespace Btk{
         bool has_kmod(Keymode mode) const noexcept{
             return static_cast<bool>(keymode & mode);
         }
+        bool is_pressed() const noexcept{
+            return state == Pressed;
+        }
+        bool is_released() const noexcept{
+            return state == Released;
+        }
     };
     /**
      * @brief A event about mouse motion

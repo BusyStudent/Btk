@@ -8,7 +8,7 @@ namespace Btk::GL{
     void Init(){
         #ifdef __ANDROID__
         //Tell the sdl,We want to use OPENGLES
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES | SDL_GL_CONTEXT_PROFILE_CORE);
         #else
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_CORE);
         #endif

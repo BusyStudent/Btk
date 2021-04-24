@@ -100,6 +100,7 @@ namespace Btk{
     }
     void Container::clear(){
         for(auto iter = widgets_list.begin();iter != widgets_list.end();){
+            iter->_cleanup();
             delete *iter;
             iter = widgets_list.erase(iter);
         }
@@ -114,6 +115,7 @@ namespace Btk{
             return false;
         }
         widgets_list.erase(iter);
+        iter->_cleanup();
         //Tell the widget
         SetContainerEvent event(nullptr);
         widget->handle(event);

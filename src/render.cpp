@@ -17,11 +17,8 @@
 
 
 extern "C"{
-    #define FONS_USE_FREETYPE
-    #define NVG_NO_STB
     #include "libs/fontstash.h"
     #include "libs/nanovg.h"
-    #include "libs/nanovg.c"
 }
 
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
@@ -264,7 +261,15 @@ namespace Btk{
     FSize Renderer::text_size(std::u16string_view view){
         auto &buf = FillInternalU8Buffer(view);
         NVGtextRow  row;
-        nvgTextBreakLines(nvg_ctxt,&buf[0],nullptr,std::numeric_limits<float>::max(),&row,1);
+        nvgTextBreakLinesEx(nvg_ctxt,&buf[0],nullptr,std::numeric_limits<float>::max(),&row,1);
+        return FSize{
+            row.width,
+            font_height()
+        };
+    }
+    FSize Renderer::text_size(std::string_view view){
+        NVGtextRow  row;
+        nvgTextBreakLinesEx(nvg_ctxt,&view.front(),&view.back() + 1,std::numeric_limits<float>::max(),&row,1);
         return FSize{
             row.width,
             font_height()

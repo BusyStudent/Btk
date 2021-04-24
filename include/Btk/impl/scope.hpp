@@ -28,9 +28,9 @@ namespace Impl{
      * 
      */
     struct VaListGuard{
-        VaListGuard(va_list &v):varg(v){}
-        VaListGuard(const VaListGuard &) = delete;
-        ~VaListGuard(){
+        inline VaListGuard(va_list &v):varg(v){}
+        inline VaListGuard(const VaListGuard &) = delete;
+        inline ~VaListGuard(){
             va_end(varg);
         }
         va_list &varg;

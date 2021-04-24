@@ -5,14 +5,17 @@
 #include <Btk/imageview.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/button.hpp>
+#include <Btk/event.hpp>
 #include <Btk/themes.hpp>
 #include <Btk/event.hpp>
 #include <Btk/label.hpp>
 #include <iostream>
 using Btk::Button;
 using Btk::Label;
+using Btk::Event;
 using Btk::TextBox;
 using Btk::ImageView;
+using Btk::KeyEvent;
 struct Hello:public Btk::Window{
     /**
      * @brief Construct a new Hello object
@@ -25,6 +28,7 @@ struct Hello:public Btk::Window{
     void on_select(std::string_view fname);
     void on_defc_call();//Test defer_call
     void on_fullscreen();
+    bool handle(Event &event);
     void show_text();
 
     Button *close_btn;
@@ -71,6 +75,8 @@ Hello::Hello():Window("Hello",500,500){
     fsc_btn->signal_clicked().connect(&Hello::on_fullscreen,this);
     //Config
     img_view->set_draw_boarder();
+
+    signal_event().connect(&Hello::handle,this);
 }
 void Hello::onclose(){
     Window::close();
@@ -97,6 +103,17 @@ void Hello::show_text(){
 }
 void Hello::on_defc_call(){
     defer_call(&Hello::show_text);
+}
+bool Hello::handle(Event &event){
+    if(event.type() == Event::KeyBoard){
+        auto &key = static_cast<KeyEvent&>(event);
+        if(key.state == KeyEvent::Pressed){
+            if(key.keycode == SDLK_F11){
+                on_fullscreen();
+            }
+        }
+    }
+    return true;
 }
 int main(){
     //Btk::HideConsole();

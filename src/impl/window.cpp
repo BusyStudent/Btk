@@ -145,7 +145,7 @@ namespace Btk{
             //update each Layout
             Layout *layout;
             for(auto widget:widgets_list){
-                layout = dynamic_cast<Layout*>(widget);
+                layout = dynamic_cast<Layout*>(widget.get());
                 if(layout != nullptr){
                     layout->update();
                 }

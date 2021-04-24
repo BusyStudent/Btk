@@ -48,6 +48,53 @@ namespace Btk{
         bool disable = false;//<The widget is disabled?
         FocusPolicy focus = FocusPolicy::None;//<Default the widget couldnot get focus
     };
+    /**
+     * @brief Helper class for store data
+     * 
+     */
+    struct WidgetHolder{
+        WidgetHolder() = default;
+        WidgetHolder(const WidgetHolder &) = default;
+        WidgetHolder(Widget *w):widget(w){};
+        Widget *widget = nullptr;
+        void *userdata = nullptr;
+        void (*cleanup)(WidgetHolder&) = nullptr;
+
+        void _cleanup(){
+            if(cleanup == nullptr){
+                return;
+            }
+            cleanup(*this);
+        }
+        operator Widget*() const noexcept{
+            return widget;
+        }
+        Widget *operator ->() const noexcept{
+            return widget;
+        }
+        Widget *get() const noexcept{
+            return widget;
+        }
+
+        template<class T>
+        static void DeleteHelper(WidgetHolder &h){
+            delete static_cast<T*>(h.userdata);
+        }
+        template<class T>
+        void set_userdata(){
+            userdata = new T;
+            cleanup = DeleteHelper<T>;
+        }
+        template<class T>
+        void set_userdata(T &&t){
+            userdata = new T(std::forward<T>(t));
+            cleanup = DeleteHelper<T>;
+        }
+        template<class T>
+        T &get_userdata(){
+            return *static_cast<T*>(userdata);
+        }
+    };
     #if 0
     /**
      * @brief A helper of dispatch event in widget
@@ -151,6 +198,31 @@ namespace Btk{
              * @return false The widget pointer is invaid
              */
             bool detach(Widget *widget);
+            /**
+             * @brief Get the widget's list
+             * 
+             * @return std::list<Widget*>& 
+             */
+            std::list<WidgetHolder> &widgets() noexcept{
+                return widgets_list;
+            }
+            const std::list<WidgetHolder> &widgets() const noexcept{
+                return widgets_list;
+            }
+            /**
+             * @brief For each widget
+             * 
+             * @tparam Callable 
+             * @tparam Args 
+             * @param callable 
+             * @param args 
+             */
+            template<class Callable,class ...Args>
+            void for_each(Callable &&callable,Args &&...args){
+                for(auto w:widgets_list){
+                    callable(w,std::forward<Args>(args)...);
+                }
+            }
         public:
             //Process Event
             bool handle_click(MouseEvent   &);
@@ -206,7 +278,7 @@ namespace Btk{
         protected:
             //top window
             WindowImpl *window;
-            std::list<Widget*> widgets_list;
+            std::list<WidgetHolder> widgets_list;
         friend class  Window;
         friend class  Widget;
         friend struct System;
@@ -320,6 +392,9 @@ namespace Btk{
              * @return WindowImpl* 
              */
             WindowImpl *window() const noexcept{
+                if(parent == nullptr){
+                    return nullptr;
+                }
                 return parent->window;
             }
             /**

@@ -16,7 +16,7 @@
 namespace Btk{
     struct ThreadPool;
     struct Task;
-    struct Worker{
+    struct BTKHIDDEN Worker{
         //Create a worker
         Worker(ThreadPool *p):
             pool(p),
@@ -37,14 +37,14 @@ namespace Btk{
         //It will get a task from queue
         bool wait_task(Task &task);
     };
-    struct Task{
+    struct BTKHIDDEN Task{
         void *userdata;
         void(*entry)(void *userdata);
         void run(){
             entry(userdata);
         };
     };
-    struct ThreadPool{
+    struct BTKHIDDEN ThreadPool{
         static ThreadPool *instance;
 
         std::list<Worker> workers_list;

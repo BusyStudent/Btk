@@ -93,6 +93,7 @@ target("btk")
     add_files("./src/gl/*.cpp")
     --Render
     add_files("./src/render/render_gles2.cpp")
+    add_files("./src/render/nanovg.cpp")
     --Font
     add_files("./src/font/fontstash.cpp")
     add_files("./src/font/core.cpp")

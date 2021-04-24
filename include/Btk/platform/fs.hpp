@@ -2,9 +2,12 @@
 #define _BTK_PLATFORM_FS_HPP_
 
 #include <string_view>
+#include <type_traits>
+#include <utility>
 #include <string>
 
 #include <cstring>
+#include <cstdlib>
 #include <cerrno>
 #ifdef _WIN32
     #include <direct.h>
@@ -64,7 +67,58 @@ namespace Btk{
     inline bool chdir(std::string_view path){
         return BTK_CHDIR(path.data()) == 0;
     }
+    /**
+     * @brief For Value in the path
+     * 
+     * @tparam Callable 
+     * @tparam Args 
+     * @param callable 
+     * @param args 
+     * @return true 
+     * @return false 
+     */
+    template<class Callable,class ...Args>
+    bool ForPath(Callable &&callable,Args &&...args){
+        //Does the callable has return value
+        constexpr bool has_retvalue = not 
+        std::is_same_v<
+            void,
+            std::invoke_result_t<Callable,std::string_view,Args...>
+        >;
 
+        char *path = std::getenv("PATH");
+        if(path == nullptr){
+            return false;
+        }
+        std::string_view dir;
+        #ifdef _WIN32
+        char delim = ';';
+        #else
+        char delim = ':';
+        #endif
+        char *end,*cur = path;
+        do{
+            end = strchr(cur,delim);
+            if(end != nullptr){
+                dir = std::string_view(cur,end - cur);
+            }
+            else{
+                dir = std::string_view(cur);
+            }
+            if constexpr(has_retvalue){
+                if(not callable(dir,std::forward<Args>(args)...)){
+                    break;
+                }
+            }
+            else{
+                callable(dir,std::forward<Args>(args)...);
+            }
+            
+            cur = end + 1;
+        }
+        while(end != nullptr);
+        return true;
+    }
 }
 
 
