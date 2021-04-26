@@ -30,7 +30,7 @@ namespace Btk{
             virtual void onleave();
             bool is_entered = false;//< Is mouse on the button?
             bool is_pressed = false;//< Is mouse pressed the button?
-            Theme *theme = nullptr;//< current theme
+            Theme theme;//< current theme
             float ptsize = 0;//< fontsize
             
             Signal<void()> clicked;

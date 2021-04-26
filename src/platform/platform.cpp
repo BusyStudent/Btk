@@ -1,4 +1,3 @@
-#include <SDL2/SDL_ttf.h>
 
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
@@ -14,5 +13,5 @@
 namespace Btk{
 namespace Platform{
     
-};
-};
+}
+}

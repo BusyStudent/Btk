@@ -485,6 +485,7 @@ namespace Btk{
         private:
             void *pimpl;
     };
+    BTKAPI std::ostream &operator <<(std::ostream &,Color c);
 };
 
 #endif // _BTK_PIXELS_HPP_

@@ -125,6 +125,12 @@ namespace BtkFt{
         m.advance = adv;
         return m;
     }
+    Glyph Face::get_glyph(CharIndex idx){
+        FT_Load_Glyph(face,idx,FT_LOAD_DEFAULT);
+        FT_Glyph glyph;
+        FT_Get_Glyph(face->glyph,&glyph);
+        return glyph;
+    }
 
     GlyphSlots::~GlyphSlots(){
         if(buffer != nullptr){

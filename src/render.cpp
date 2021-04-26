@@ -324,6 +324,10 @@ namespace Btk{
     void Renderer::scissor(float x,float y,float w,float h){
         nvgScissor(nvg_ctxt,x,y,w,h);
     }
+    void Renderer::intersest_scissor(float x,float y,float w,float h){
+        nvgIntersectScissor(nvg_ctxt,x,y,w,h);
+    }
+    
     void Renderer::reset_scissor(){
         nvgResetScissor(nvg_ctxt);
     }

@@ -52,7 +52,7 @@ target("btk")
         add_links("fontconfig")
     elseif is_plat("windows") or is_plat("mingw") then
         --xmake repo
-        add_packages("libsdl","libsdl_ttf","libsdl_image")
+        add_packages("libsdl","libsdl_image")
 
         add_files("./src/platform/win32/*.cpp")
         add_links("user32","shell32","advapi32","ole32","oleaut32")

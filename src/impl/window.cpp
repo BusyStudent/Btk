@@ -33,7 +33,7 @@ namespace Btk{
         //Set theme
         theme = Themes::GetDefault();
         //Set background color
-        bg_color = theme.window_color;
+        bg_color = theme[Theme::Window];
         last_draw_ticks = 0;
 
         //Managed by window
@@ -417,7 +417,7 @@ namespace Btk{
         SDL_ShowWindow(pimpl->win);
     }
     Font Window::font() const{
-        return pimpl->font();
+        throwRuntimeError("Unimpl yet");
     }
     Container &Window::container() const{
         return pimpl->container;

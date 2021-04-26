@@ -34,8 +34,8 @@ namespace Btk{
                 auto &ev = event_cast<SetContainerEvent&>(event);
                 parent = ev.container();
 
-                theme = &window()->theme;
-                ptsize = window()->font().ptsize();
+                theme = window_theme();
+                ptsize = theme.font_size();
                 break;
             }
             default:
@@ -77,18 +77,18 @@ namespace Btk{
 
         
         if(is_pressed){
-            bg = theme->high_light;
+            bg = theme[Theme::Highlight];
         }
         else{
-            bg = theme->button_color;
+            bg = theme[Theme::Button];
         }
         
         //second draw border
         if(is_entered){
-            boarder = theme->high_light;
+            boarder = theme[Theme::Highlight];
         }
         else{
-            boarder = theme->border_color;
+            boarder = theme[Theme::Border];
         }
         //Draw box
         render.begin_path();
@@ -115,18 +115,17 @@ namespace Btk{
             }
             auto pos = CalculateRectByAlign(rect,textbuf->w,textbuf->h,Align::Center,Align::Center);
             #endif
-            auto cliprect = render.get_cliprect();
-            render.set_cliprect(rect);
+            render.intersest_scissor(rect);
             // render.copy(texture,nullptr,&pos);
             render.begin_path();
             render.text_size(ptsize);
             render.text_align(TextAlign::Center | TextAlign::Middle);
 
             if(is_pressed){
-                render.fill_color(theme->high_light_text);
+                render.fill_color(theme[Theme::HighlightedText]);
             }
             else{
-                render.fill_color(theme->text_color);
+                render.fill_color(theme[Theme::Text]);
             }
             //NOTE plus 2 to make it look better
             float x = float(fixed_rect.x) + float(fixed_rect.w) / 2 + 2;
@@ -142,8 +141,6 @@ namespace Btk{
 
 
             render.fill();
-
-            render.set_cliprect(cliprect);
             
             render.restore();
         }
@@ -181,5 +178,13 @@ namespace Btk{
     void Button::set_text(std::string_view text){
         btext = text;
         redraw();
+    }
+}
+//RadioButton
+namespace Btk{
+    RadioButton::~RadioButton() = default;
+    RadioButton::RadioButton() = default;
+    void RadioButton::draw(Renderer &render){
+        //...
     }
 }

@@ -11,6 +11,7 @@
 #include <Btk/pixels.hpp>
 #include <Btk/rwops.hpp>
 #include <Btk/rect.hpp>
+#include <ostream>
 namespace Btk{
     PixBuf::~PixBuf(){
         SDL_FreeSurface(surf);
@@ -176,5 +177,9 @@ namespace Btk{
     //Get names
     std::string_view PixFmt::name() const{
         return SDL_GetPixelFormatName(fmt->format);
+    }
+    std::ostream &operator <<(std::ostream &os,Color c){
+        os << '(' << int(c.r) << ',' << int(c.g) << ',' << int(c.b) << ',' << int(c.a) << ')';
+        return os;
     }
 }

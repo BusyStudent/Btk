@@ -7,8 +7,10 @@
 #include "defs.hpp"
 namespace Btk{
     class Font;
+    class Theme;
     class Window;
     class Renderer;
+    
     //Event forward decl
     class Event;
     class Widget;
@@ -409,6 +411,12 @@ namespace Btk{
              * @return Font 
              */
             Font default_font() const;
+            /**
+             * @brief Get the theme of the current window
+             * 
+             * @return Theme& 
+             */
+            Theme &window_theme() const;
         protected:
             WidgetAttr attr;//Widget attributes
             Rect rect;//Widget rect

@@ -109,6 +109,21 @@ namespace Btk{
              */
             Texture create_from(const PixBuf &pixbuf,TextureFlags flags = TextureFlags::Linear);
             /**
+             * @brief Create a from handle object
+             * 
+             * @param p_handle The pointer to native handler
+             * @param w The texture's width
+             * @param h The texture's height
+             * @param flags The texture flags
+             * @return Texture 
+             */
+            Texture create_from_handle(
+                const void *p_handle,
+                int w,
+                int h,
+                TextureFlags flags = TextureFlags::Linear
+            );
+            /**
              * @brief Create a Texture
              * 
              * @param fmt 
@@ -188,6 +203,18 @@ namespace Btk{
             void draw_circle(const FVec2 &vec,float r,Color c){
                 begin_path();
                 circle(vec,r);
+                stroke_color(c);
+                stroke();
+            }
+            void draw_box(const FRect &r,Color c){
+                begin_path();
+                rect(r);
+                fill_color(c);
+                fill();
+            }
+            void draw_rect(const FRect &r,Color c){
+                begin_path();
+                rect(r);
                 stroke_color(c);
                 stroke();
             }
@@ -429,7 +456,10 @@ namespace Btk{
             void scissor(const FRect &rect){
                 scissor(rect.x,rect.y,rect.w,rect.h);
             }
-
+            void intersest_scissor(float x,float y,float w,float h);
+            void intersest_scissor(const FRect &rect){
+                intersest_scissor(rect.x,rect.y,rect.w,rect.h);
+            }
             void reset_scissor();
         public:
             /**
@@ -462,6 +492,7 @@ namespace Btk{
              * @param pixels 
              */
             BTKHIDDEN void update_texture(int texture_id,const void *pixels);
+            BTKHIDDEN void update_texture(int texture_id,const Rect&,const void *pixels);
             /**
              * @brief Get the texture's native handler
              * 

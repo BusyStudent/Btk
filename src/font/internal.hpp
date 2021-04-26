@@ -12,6 +12,7 @@
 //Freetype impl
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_GLYPH_H
 
 #include <Btk/impl/atomic.hpp>
 #include <Btk/pixels.hpp>
@@ -39,6 +40,8 @@ namespace BTKHIDDEN BtkFt{
         int maxxy;
         int advance;
     };
+    struct Glyph;
+    struct Bitmap;
     /**
      * @brief The font's data buffer
      * 
@@ -100,7 +103,58 @@ namespace BTKHIDDEN BtkFt{
          */
         bool has_glyph(Char ch);
         bool render_glyph(CharIndex index);
+        /**
+         * @brief Get the glyph object
+         * 
+         * @param index The char index
+         * @return Glyph 
+         */
+        Glyph get_glyph(CharIndex index);
         int kerning_size(CharIndex prev,CharIndex cur);
+    };
+    /**
+     * @brief Glyph
+     * 
+     */
+    struct Glyph{
+        Glyph(FT_Glyph g):glyph(g){}
+        Glyph(const Glyph &g){
+            FT_Glyph_Copy(g.glyph,&glyph);
+        }
+        Glyph(Glyph &&g){
+            glyph = g.glyph;
+            g.glyph = nullptr;
+        }
+        ~Glyph(){
+            FT_Done_Glyph(glyph);
+        }
+        FT_Glyph operator ->() const noexcept{
+            return glyph;
+        }
+        FT_Glyph glyph;
+    };
+    /**
+     * @brief GlyphBitmap
+     * 
+     */
+    struct Bitmap{
+        Bitmap(FT_BitmapGlyph g):glyph(g){}
+        Bitmap(const Bitmap &map){
+            FT_Glyph_Copy(
+                reinterpret_cast<FT_Glyph>(map.glyph),
+                reinterpret_cast<FT_Glyph*>(&glyph)
+            );
+        }
+        Bitmap(Bitmap && b):glyph(b.glyph){
+            b.glyph = nullptr;
+        }
+        ~Bitmap(){
+            FT_Done_Glyph(reinterpret_cast<FT_Glyph>(glyph));
+        }
+        FT_BitmapGlyph operator ->() const noexcept{
+            return glyph;
+        }
+        FT_BitmapGlyph glyph;
     };
     /**
      * @brief Slot for 
@@ -178,6 +232,11 @@ namespace BTKHIDDEN BtkFt{
         int kerning_size(char32_t prev_ch,char32_t ch);
         bool has_glyph(char32_t ch){
             return face->has_glyph(ch);
+        }
+
+        Glyph get_glyph(Char ch){
+            auto i = face->index_char(ch);
+            
         }
 
         std::string family_name() const{

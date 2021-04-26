@@ -116,8 +116,8 @@ namespace Btk{
         }
     }
     void ScrollBar::draw(Renderer &render){
-        auto cliprect = render.get_cliprect();
-        render.set_cliprect(rect);
+        render.save();
+        render.intersest_scissor(rect);
         //draw background
         //Rect range = {bar_range.x,bar_range.y + 1,bar_range.w - 1,bar_range.h - 2}; 
         render.rounded_box(bar_range,1,bar_bg_color);
@@ -128,7 +128,7 @@ namespace Btk{
         // cliprect = render.get_cliprect();
         // render.set_cliprect(rect);
         render.box(slider_rect,slider_color);
-        render.set_cliprect(cliprect);
+        render.restore();
     }
     void ScrollBar::set_value(int value){
         bar_value = 0;

@@ -353,6 +353,23 @@ namespace Btk{
         nvgUpdateImage(nvg_ctxt,texture,static_cast<const Uint8*>(pixels));
         BTK_GL_END();
     }
+    void Renderer::update_texture(int texture_id,const Rect &r,const void *pixels){
+        BTK_ASSERT(not r.empty());
+        BTK_GL_BEGIN();
+        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
+        int w = texture->width;
+        int h = texture->height;
+
+        GLint cur_tex;
+        glGetIntegerv(GL_TEXTURE_2D,&cur_tex);
+
+        glBindTexture(GL_TEXTURE_2D,texture->tex);
+        glTexSubImage2D(GL_TEXTURE_2D,0,r.x,r.y,r.w,r.h,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+        BTK_GL_CHECK();
+
+        glBindTexture(GL_TEXTURE_2D,cur_tex);
+        BTK_GL_END();
+    }
     //create texture from pixbuf
     Texture Renderer::create_from(const PixBuf &pixbuf,TextureFlags flags){
         if(pixbuf.empty()){
@@ -379,6 +396,15 @@ namespace Btk{
         if(SDL_MUSTLOCK(pixbuf.get())){
             SDL_UnlockSurface(pixbuf.get());
         }
+        return Texture(t,this);
+    }
+    Texture Renderer::create_from_handle(const void *p_handle,int w,int h,TextureFlags flags){
+        if(p_handle == nullptr){
+            return Texture();
+        }
+        GLuint tex;
+        tex = *static_cast<const GLuint*>(p_handle);
+        int t = nvglCreateImageFromHandleGLES2(nvg_ctxt,tex,w,h,int(flags));
         return Texture(t,this);
     }
     Texture Renderer::create(int w,int h,TextureFlags flags){

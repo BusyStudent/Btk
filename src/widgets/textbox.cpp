@@ -82,8 +82,8 @@ namespace Btk{
                 event.accept();
                 parent = event_cast<SetContainerEvent&>(event).container();
                 //Set theme
-                theme =   window()->theme;
-                ptsize = window()->font().ptsize();
+                theme =  window_theme();
+                ptsize = theme.font_size();
 
                 //Get rendered text's h
                 //ft_h = tb_font.height();
@@ -145,7 +145,7 @@ namespace Btk{
     }
 
     void TextBox::draw(Renderer &render){
-        render.box(rect,theme.background_color);
+        render.box(rect,theme[Theme::Background]);
         
         //BTK_LOGINFO("RendererLineH %f,ft_h %d",render.font_height(),ft_h);
         ft_h = render.font_height();
@@ -172,7 +172,7 @@ namespace Btk{
 
             render.text_size(ptsize);
             render.text_align(TextAlign::Middle | TextAlign::Left);
-            render.fill_color(theme.text_color);
+            render.fill_color(theme[Theme::Text]);
             
             //plus 2 make it look better
             render.text(
@@ -198,7 +198,7 @@ namespace Btk{
                     line_x = txt_rect.x + render.text_size(view).w;
                 }
                 
-                render.line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme.text_color);
+                render.line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme[Theme::Text]);
             }
 
             render.set_cliprect(cliprect);
@@ -211,15 +211,15 @@ namespace Btk{
                         line_y,
                         rect.x + tb_boarder,
                         line_y + ft_h,
-                        theme.text_color
+                        theme[Theme::Text]
                         );
         }
 
         if(has_focus){
-            render.rounded_rect(rect,1,theme.high_light);
+            render.rounded_rect(rect,1,theme[Theme::Highlight]);
         }
         else{
-            render.rounded_rect(rect,1,theme.border_color);
+            render.rounded_rect(rect,1,theme[Theme::Border]);
         }
         render.restore();
     }

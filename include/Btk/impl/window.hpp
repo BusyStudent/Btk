@@ -90,14 +90,7 @@ namespace Btk{
         std::list<DrawCallback> draw_cbs;
 
         //Methods for Widget impl
-        /**
-         * @brief Get window's font
-         * 
-         * @return Font 
-         */
-        Font font() const{
-            return theme.font;
-        }
+
         /**
          * @brief Add widget in Window
          * 

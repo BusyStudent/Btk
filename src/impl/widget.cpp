@@ -76,7 +76,11 @@ namespace Btk{
     //TODO create a global default font
     Font Widget::default_font() const{
         BTK_ASSERT(parent != nullptr);
-        return window()->font();
+        //return window()->font();
+        throwRuntimeError("Unimpl yet");
+    }
+    Theme &Widget::window_theme() const{
+        return window()->theme;
     }
 
 

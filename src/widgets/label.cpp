@@ -57,7 +57,6 @@ namespace Btk{
         //begin render
         //limit the position
         //Rect text_rect;
-        Rect cliprect = render.get_cliprect();
 
         //Calculate text postiton
         #if 0
@@ -69,8 +68,7 @@ namespace Btk{
             h_align
         );
         #endif
-        
-        render.set_cliprect(rect);
+        render.intersest_scissor(rect);
         //render.copy(texture,nullptr,&text_rect);
 
         render.begin_path();
@@ -85,8 +83,6 @@ namespace Btk{
         render.fill_color(text_color);
         render.fill();
         
-        render.set_cliprect(cliprect);
-
         render.restore();
     }
     void Label::set_text(std::string_view text){
@@ -104,8 +100,8 @@ namespace Btk{
         }
         else if(event.type() == Event::SetContainer){
             parent = event_cast<SetRectEvent&>(event).container();
-            text_color = window()->theme.text_color;
-            ptsize = window()->theme.font.ptsize();
+            text_color = window_theme()[Theme::Text];
+            ptsize = window_theme().font_size();
             return true;
         }
         event.reject();
