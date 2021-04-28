@@ -28,6 +28,53 @@ namespace Btk{
         Color(const Color &) = default;
         Color &operator =(const Color &) = default;
     };
+    /**
+     * @brief Color in opengl
+     * 
+     */
+    struct GLColor{
+        GLColor() = default;
+        GLColor(const GLColor &) = default;
+        GLColor(float r,float g,float b,float a = 1.0f){
+            this->r = r;
+            this->g = g;
+            this->b = b;
+            this->a = a;
+        }
+        GLColor(Color c){
+            this->r = 1.0f / 255 * c.r;
+            this->g = 1.0f / 255 * c.g;
+            this->b = 1.0f / 255 * c.b;
+            this->a = 1.0f / 255 * c.a;
+        }
+        operator Color() const noexcept{
+            return {
+                Uint8(r / 255),
+                Uint8(g / 255),
+                Uint8(b / 255),
+                Uint8(a / 255),
+            };
+        }
+        float r;
+        float g;
+        float b;
+        float a;
+    };
+    struct HSVColor{
+        HSVColor() = default;
+        HSVColor(const HSVColor &) = default;
+        HSVColor(float h,float s,float v,Uint8 a = 255){
+            this->h = h;
+            this->s = s;
+            this->v = v;
+            this->a = a;
+        }
+        float h;
+        float s;
+        float v;
+        Uint8 a;//<Alpha
+    };
+    using HSBColor = HSVColor;
     //PixelBuffer
     class BTKAPI PixBuf{
         public:
@@ -49,6 +96,8 @@ namespace Btk{
             //operators
 
             //save PixBuf
+            //FIXME:Why save png and jpg doesnnot work
+            //It exported an black image
             void save_png(RWops &,int quality);
             void save_jpg(RWops &,int quality);
             void save_bmp(RWops &);
@@ -110,6 +159,10 @@ namespace Btk{
              * @return PixBuf The pixel buf
              */
             PixBuf convert(Uint32 fmt) const;
+            PixBuf zoom(double w_factor,double h_factor);
+            PixBuf zoom_to(int w,int h){
+                return zoom(double(w) / double(this->w()),double(h) / double(this->h()));
+            }
             //Some static method to load image
             static PixBuf FromFile(std::string_view file);
             static PixBuf FromFile(FILE *f);
@@ -190,6 +243,26 @@ namespace Btk{
         Streaming,
         Target
     };
+    /**
+     * @brief TextureFlags from nanovg
+     * 
+     */
+    enum class TextureFlags:int{
+        Linear           = 0,        // Image interpolation is Linear instead Nearest(default)
+        GenerateMipmaps  = 1<<0,     // Generate mipmaps during creation of the image.
+        RepeatX			 = 1<<1,	 // Repeat image in X direction.
+        RepeatY			 = 1<<2,	 // Repeat image in Y direction.
+        Flips			 = 1<<3,	 // Flips (inverses) image in Y direction when rendered.
+        Premultiplied	 = 1<<4,	 // Image data has premultiplied alpha.
+        Nearest			 = 1<<5,	 // Image interpolation is Nearest instead Linear
+    };
+    //TextureFlags operators
+    inline TextureFlags operator |(TextureFlags a,TextureFlags b){
+        return static_cast<TextureFlags>(int(a) | int(b));
+    }
+    inline TextureFlags operator +(TextureFlags a,TextureFlags b){
+        return static_cast<TextureFlags>(int(a) | int(b));
+    }
     //RendererTexture
     class BTKAPI Texture{
         public:
@@ -239,7 +312,7 @@ namespace Btk{
             }
             //check is empty
             bool empty() const noexcept{
-                return texture == 0;
+                return texture <= 0;
             }
             //assign
             //Texture &operator =(BtkTexture*);
@@ -333,6 +406,30 @@ namespace Btk{
              * @param p_handle The pointer to the handle
              */
             void native_handle(void *p_handle);
+            /**
+             * @brief Clone the texture
+             * 
+             * @return Texture 
+             */
+            Texture clone() const;
+            /**
+             * @brief Read the texture into pixbuffer
+             * 
+             * @return PixBuf 
+             */
+            PixBuf  dump() const;
+            /**
+             * @brief Get TextureFlags
+             * 
+             * @return TextureFlags 
+             */
+            TextureFlags flags() const;
+            /**
+             * @brief Set the flags 
+             * 
+             * @param flags 
+             */
+            void set_flags(TextureFlags flags);
         private:
             int texture = 0;//< NVG Image ID
             Renderer *render = nullptr;//Renderer
@@ -388,6 +485,7 @@ namespace Btk{
         private:
             void *pimpl;
     };
+    BTKAPI std::ostream &operator <<(std::ostream &,Color c);
 };
 
 #endif // _BTK_PIXELS_HPP_

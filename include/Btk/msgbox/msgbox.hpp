@@ -10,9 +10,9 @@ namespace Btk{
         public:
             typedef Signal<void()> SignalAsync;
             enum Flag:int{
-                Info,//Information
-                Warn,//Warning
-                Error,//Error
+                Info = 0,//Information
+                Warn = 1,//Warning
+                Error = 2,//Error
             };
             /**
              * @brief Construct a new Message Box object

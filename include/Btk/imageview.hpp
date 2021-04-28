@@ -26,10 +26,17 @@ namespace Btk{
             const PixBuf &image() const{
                 return pixelbuf;
             }
+            void set_draw_boarder(bool flags = true);
         private:
             PixBuf pixelbuf;
             Texture texture;
             Rect image_rect;
+            Color boarder_color = {208,208,208,255};
+            Color bg_color;
+            bool draw_borader = false;//< Should we draw the boarder
+            bool dirty = false;
+            
+            TextureFlags tex_flags = TextureFlags::Linear;//< The flags of the texture
     };
     /**
      * @brief Gif player

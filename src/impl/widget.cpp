@@ -38,6 +38,9 @@ namespace Btk{
             //We couldnot find the window
             return;
         }
+        if(not window()->visible){
+            return;
+        }
         SDL_Event event;
         event.type = SDL_WINDOWEVENT;
         event.window.timestamp = SDL_GetTicks();
@@ -63,11 +66,21 @@ namespace Btk{
         BTK_ASSERT(parent != nullptr);
         return *parent;
     }
+    Renderer *Widget::renderer() const{
+        if(parent == nullptr){
+            return nullptr;
+        }
+        return &(window()->render);
+    }
     //Get the default font
     //TODO create a global default font
     Font Widget::default_font() const{
         BTK_ASSERT(parent != nullptr);
-        return window()->font();
+        //return window()->font();
+        throwRuntimeError("Unimpl yet");
+    }
+    Theme &Widget::window_theme() const{
+        return window()->theme;
     }
 
 
@@ -91,6 +104,7 @@ namespace Btk{
     }
     void Container::clear(){
         for(auto iter = widgets_list.begin();iter != widgets_list.end();){
+            iter->_cleanup();
             delete *iter;
             iter = widgets_list.erase(iter);
         }
@@ -105,6 +119,7 @@ namespace Btk{
             return false;
         }
         widgets_list.erase(iter);
+        iter->_cleanup();
         //Tell the widget
         SetContainerEvent event(nullptr);
         widget->handle(event);
@@ -173,6 +188,7 @@ namespace Btk{
                 return handle_whell(event_cast<WheelEvent&>(event));
             }
             case Event::WindowLeave:{
+                #if 0
                 if(cur_widget != drag_widget and cur_widget != nullptr and managed_window){
                     //On the window
                     int w,h;
@@ -184,10 +200,13 @@ namespace Btk{
                         cur_widget = nullptr;
                     }
                 }
+                #endif
                 //Boardcast to all the widget
+                #if 0
                 for(auto widget:widgets_list){
                     widget->handle(event);
                 }
+                #endif
                 return true;
             }
             default:{
@@ -410,5 +429,11 @@ namespace Btk{
         }
 
     }
-
+    void Container::window_mouse_leave(){
+        if(cur_widget != nullptr){
+            Event event(Event::Leave);
+            cur_widget->handle(event);
+            cur_widget = nullptr;
+        }
+    }
 }

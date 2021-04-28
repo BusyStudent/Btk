@@ -14,8 +14,8 @@ else
     --add_requires("vcpkg::SDL2-ttf",{alias = "SDL2_ttf"})
     --add_requires("vcpkg::gif",{optional = true,alias = "gif"})
     --using xmake repo
-    add_requires("libsdl","libsdl_ttf","libsdl_image")
-    add_packages("libsdl","libsdl_ttf","libsdl_image")
+    add_requires("libsdl","freetype","libsdl_image")
+    add_packages("libsdl","freetype","libsdl_image")
 
     --add_packages("SDL2","SDL2-image","SDL2-ttf")
     --add_includedirs("E:/VisualStudio/VCPKG/vcpkg-master/installed/x86-windows/include")
@@ -52,7 +52,7 @@ target("btk")
         add_links("fontconfig")
     elseif is_plat("windows") or is_plat("mingw") then
         --xmake repo
-        add_packages("libsdl","libsdl_ttf","libsdl_image")
+        add_packages("libsdl","libsdl_image")
 
         add_files("./src/platform/win32/*.cpp")
         add_links("user32","shell32","advapi32","ole32","oleaut32")
@@ -63,9 +63,11 @@ target("btk")
     --Add gif ext
     if has_package("gif") then
         add_files("./src/ext/gif.cpp")
+    else
+        add_defines("BTK_NGIF")
     end
 
-    add_links("SDL2","SDL2_image","SDL2_ttf")
+    add_links("SDL2","SDL2_image")
     set_kind("shared")
     --core
     add_files("./src/impl/*.cpp")
@@ -83,7 +85,7 @@ target("btk")
     add_files("./src/utils/*.cpp")
     --Msgboxs
     add_files("./src/msgbox/*.cpp")
-    add_packages("SDL2","SDL2_ttf","SDL2_image","gif")
+    add_packages("SDL2","SDL2_image","gif")
     --Mixer
     add_files("./src/mixer/mixer.cpp")
     add_files("./src/mixer/raw.cpp")
@@ -91,6 +93,11 @@ target("btk")
     add_files("./src/gl/*.cpp")
     --Render
     add_files("./src/render/render_gles2.cpp")
+    add_files("./src/render/nanovg.cpp")
+    --Font
+    add_files("./src/font/fontstash.cpp")
+    add_files("./src/font/core.cpp")
+    add_files("./src/font/ft2.cpp")
 if is_mode("debug") then
     target("hello")
         set_kind("binary")

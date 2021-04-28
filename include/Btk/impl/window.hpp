@@ -36,12 +36,20 @@ namespace Btk{
             return draw_fn(render,widget,userdata);
         }
     };
-    struct BTKAPI WindowImpl{
+    struct BTKAPI WindowImpl:public HasSlots{
         //Init SDL Window
         WindowImpl(const char *title,int x,int y,int w,int h,int flags);
         ~WindowImpl();
         void draw();
+        
         void pixels_size(int *w,int *h);//GetWindowSize
+        /**
+         * @brief The framebuffer's size
+         * 
+         * @param w 
+         * @param h 
+         */
+        void buffer_size(int *w,int *h);//GetWindowSize
         //tirgger close cb
         
         bool on_close();
@@ -72,6 +80,8 @@ namespace Btk{
         Atomic visible = false;
         //Last draw ticks
         Uint32 last_draw_ticks = 0;
+        //FPS limit
+        Uint32 fps_limit = 60;
         //Window theme
         Theme theme;
         Container container;
@@ -80,14 +90,7 @@ namespace Btk{
         std::list<DrawCallback> draw_cbs;
 
         //Methods for Widget impl
-        /**
-         * @brief Get window's font
-         * 
-         * @return Font 
-         */
-        Font font() const{
-            return theme.font;
-        }
+
         /**
          * @brief Add widget in Window
          * 

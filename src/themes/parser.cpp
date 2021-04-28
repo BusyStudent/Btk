@@ -8,6 +8,7 @@
 #include <Btk/themes.hpp>
 
 #include <cstring>
+#if 0
 namespace Btk{
 namespace Themes{
     //Internal default theme
@@ -197,5 +198,5 @@ namespace Btk{
         return theme;
     }
 }
-
+#endif
 #endif

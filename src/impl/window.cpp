@@ -33,7 +33,7 @@ namespace Btk{
         //Set theme
         theme = Themes::GetDefault();
         //Set background color
-        bg_color = theme.window_color;
+        bg_color = theme[Theme::Window];
         last_draw_ticks = 0;
 
         //Managed by window
@@ -51,6 +51,8 @@ namespace Btk{
     //Draw window
     void WindowImpl::draw(){
         auto current = SDL_GetTicks();
+
+        //Uint32 durl = 1000 / fps_limit;
         if(current < last_draw_ticks + 10){
             //drawing too fast
             last_draw_ticks = current;
@@ -101,9 +103,18 @@ namespace Btk{
         }
     }
     void WindowImpl::pixels_size(int *w,int *h){
-        //SDL_GetWindowSize(win,w,h);
+        SDL_GetWindowSize(win,w,h);
         
-        SDL_GL_GetDrawableSize(win,w,h);
+        //SDL_GL_GetDrawableSize(win,w,h);
+    }
+    void WindowImpl::buffer_size(int *w,int *h){
+        auto size = render.output_size();
+        if(w != nullptr){
+            *w = size.w;
+        }
+        if(h != nullptr){
+            *h = size.h;
+        }
     }
     //update widgets postions
     void WindowImpl::update_postion(){
@@ -134,7 +145,7 @@ namespace Btk{
             //update each Layout
             Layout *layout;
             for(auto widget:widgets_list){
-                layout = dynamic_cast<Layout*>(widget);
+                layout = dynamic_cast<Layout*>(widget.get());
                 if(layout != nullptr){
                     layout->update();
                 }
@@ -213,8 +224,9 @@ namespace Btk{
                     //reset to system cursor
                     SDL_SetCursor(SDL_GetDefaultCursor());
                 }
-                Event leave(Event::WindowLeave);
-                container.handle(leave);
+                //Event leave(Event::WindowLeave);
+                //container.handle(leave);
+                container.window_mouse_leave();
                 if(not sig_leave.empty()){
                     sig_leave();
                 }
@@ -405,7 +417,7 @@ namespace Btk{
         SDL_ShowWindow(pimpl->win);
     }
     Font Window::font() const{
-        return pimpl->font();
+        throwRuntimeError("Unimpl yet");
     }
     Container &Window::container() const{
         return pimpl->container;

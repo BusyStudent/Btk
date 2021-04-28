@@ -7,8 +7,10 @@
 #include "defs.hpp"
 namespace Btk{
     class Font;
+    class Theme;
     class Window;
     class Renderer;
+    
     //Event forward decl
     class Event;
     class Widget;
@@ -47,6 +49,53 @@ namespace Btk{
         bool container = false;//<Is container
         bool disable = false;//<The widget is disabled?
         FocusPolicy focus = FocusPolicy::None;//<Default the widget couldnot get focus
+    };
+    /**
+     * @brief Helper class for store data
+     * 
+     */
+    struct WidgetHolder{
+        WidgetHolder() = default;
+        WidgetHolder(const WidgetHolder &) = default;
+        WidgetHolder(Widget *w):widget(w){};
+        Widget *widget = nullptr;
+        void *userdata = nullptr;
+        void (*cleanup)(WidgetHolder&) = nullptr;
+
+        void _cleanup(){
+            if(cleanup == nullptr){
+                return;
+            }
+            cleanup(*this);
+        }
+        operator Widget*() const noexcept{
+            return widget;
+        }
+        Widget *operator ->() const noexcept{
+            return widget;
+        }
+        Widget *get() const noexcept{
+            return widget;
+        }
+
+        template<class T>
+        static void DeleteHelper(WidgetHolder &h){
+            delete static_cast<T*>(h.userdata);
+        }
+        template<class T>
+        void set_userdata(){
+            userdata = new T;
+            cleanup = DeleteHelper<T>;
+        }
+        template<class T>
+        void set_userdata(T &&t){
+            userdata = new T(std::forward<T>(t));
+            cleanup = DeleteHelper<T>;
+        }
+        template<class T>
+        T &get_userdata(){
+            return *static_cast<T*>(userdata);
+        }
     };
     #if 0
     /**
@@ -151,6 +200,31 @@ namespace Btk{
              * @return false The widget pointer is invaid
              */
             bool detach(Widget *widget);
+            /**
+             * @brief Get the widget's list
+             * 
+             * @return std::list<Widget*>& 
+             */
+            std::list<WidgetHolder> &widgets() noexcept{
+                return widgets_list;
+            }
+            const std::list<WidgetHolder> &widgets() const noexcept{
+                return widgets_list;
+            }
+            /**
+             * @brief For each widget
+             * 
+             * @tparam Callable 
+             * @tparam Args 
+             * @param callable 
+             * @param args 
+             */
+            template<class Callable,class ...Args>
+            void for_each(Callable &&callable,Args &&...args){
+                for(auto w:widgets_list){
+                    callable(w,std::forward<Args>(args)...);
+                }
+            }
         public:
             //Process Event
             bool handle_click(MouseEvent   &);
@@ -173,6 +247,12 @@ namespace Btk{
             Function<bool(Event&)> &filter() noexcept{
                 return ev_filter;
             }
+            /**
+             * @brief The window's mouse was left(Internal)
+             * 
+             * @internal User should not use it
+             */
+            BTKHIDDEN void window_mouse_leave();
         protected:
             //A helper for set the current focus widget
             void set_focus_widget(Widget *);
@@ -200,7 +280,7 @@ namespace Btk{
         protected:
             //top window
             WindowImpl *window;
-            std::list<Widget*> widgets_list;
+            std::list<WidgetHolder> widgets_list;
         friend class  Window;
         friend class  Widget;
         friend struct System;
@@ -251,25 +331,44 @@ namespace Btk{
             void set_rect(const Rect &rect);
             void set_rect(int x,int y,int w,int h){
                  set_rect({x,y,w,h});
-            };
+            }
             void set_position(const Vec2 &vec2){
                 set_rect(vec2.x,vec2.y,rect.w,rect.h);
-            };
+            }
             int x() const noexcept{
                 return rect.x;
-            };
+            }
             int y() const noexcept{
                 return rect.y;
-            };
+            }
             int w() const noexcept{
                 return rect.w;
-            };
+            }
             int h() const noexcept{
                 return rect.h;
-            };
+            }
             bool is_enable() const noexcept{
                 return not attr.disable;
-            };
+            }
+            /**
+             * @brief A function for getting rect
+
+             * @return Rect 
+             */
+            Rect rectangle() const noexcept{
+                return rect;
+            }
+            /**
+             * @brief A template for get FRect like this rectangle<float>()
+             * 
+             * @tparam T 
+             * @tparam RetT 
+             * @return RetT 
+             */
+            template<class T,class RetT = FRect>
+            RetT rectangle() const noexcept;
+
+
             /**
              * @brief Get the container of the widget
              * 
@@ -295,14 +394,29 @@ namespace Btk{
              * @return WindowImpl* 
              */
             WindowImpl *window() const noexcept{
+                if(parent == nullptr){
+                    return nullptr;
+                }
                 return parent->window;
             }
+            /**
+             * @brief Get current window's renderer
+             * 
+             * @return Renderer* (failed on nullptr)
+             */
+            Renderer *renderer() const;
             /**
              * @brief Get the default font
              * 
              * @return Font 
              */
             Font default_font() const;
+            /**
+             * @brief Get the theme of the current window
+             * 
+             * @return Theme& 
+             */
+            Theme &window_theme() const;
         protected:
             WidgetAttr attr;//Widget attributes
             Rect rect;//Widget rect
@@ -324,6 +438,10 @@ namespace Btk{
         private:
             Orientation orientation;
     };
-};
+    template<>
+    inline FRect Widget::rectangle<float,FRect>() const noexcept{
+        return FRect(rect);
+    }
+}
 
 #endif // _BTK_WIDGET_HPP_

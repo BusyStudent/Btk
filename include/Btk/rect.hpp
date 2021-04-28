@@ -1,6 +1,7 @@
 #if !defined(_BTK_RECT_HPP_)
 #define _BTK_RECT_HPP_
 #include <SDL2/SDL_rect.h>
+#include <iosfwd>
 #include "defs.hpp"
 namespace Btk{
     /**
@@ -160,5 +161,12 @@ namespace Btk{
             };
         }
     };
+
+    BTKAPI std::ostream &operator <<(std::ostream&,const Rect &);
+    BTKAPI std::ostream &operator <<(std::ostream&,const FRect &);
+    BTKAPI std::ostream &operator <<(std::ostream&,const Size &);
+    BTKAPI std::ostream &operator <<(std::ostream&,const FSize &);
+    BTKAPI std::ostream &operator <<(std::ostream&,const Vec2 &);
+    BTKAPI std::ostream &operator <<(std::ostream&,const FVec2 &);
 }
 #endif // _BTK_RECT_HPP_

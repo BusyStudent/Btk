@@ -44,15 +44,19 @@ namespace Btk{
      */
     enum class RendererBackend{
         OpenGL,
+        Metail,
         Dx11,
         Software
     };
+    struct RendererDevice;
     /**
      * @brief Abstruct Renderer
      * 
      */
     class BTKAPI Renderer{
         public:
+            using Device = RendererDevice;
+            
             Renderer(SDL_Window *win);
             Renderer(const Renderer &) = delete;
             ~Renderer();
@@ -100,9 +104,25 @@ namespace Btk{
              * @brief Create a Texture from Pixbuf
              * 
              * @param pixbuf The Pixbuffer
+             * @param flags The texture flags
              * @return Texture The texture
              */
-            Texture create_from(const PixBuf &pixbuf);
+            Texture create_from(const PixBuf &pixbuf,TextureFlags flags = TextureFlags::Linear);
+            /**
+             * @brief Create a from handle object
+             * 
+             * @param p_handle The pointer to native handler
+             * @param w The texture's width
+             * @param h The texture's height
+             * @param flags The texture flags
+             * @return Texture 
+             */
+            Texture create_from_handle(
+                const void *p_handle,
+                int w,
+                int h,
+                TextureFlags flags = TextureFlags::Linear
+            );
             /**
              * @brief Create a Texture
              * 
@@ -118,17 +138,18 @@ namespace Btk{
              * 
              * @param w 
              * @param h 
+             * @param flas texture flags
              * @return Texture 
              */
-            Texture create(int w,int h);
+            Texture create(int w,int h,TextureFlags flags = TextureFlags::Linear);
             /**
              * @brief Load a texture from a file
              * 
              * @param fname The filename
              * @return Texture 
              */
-            Texture load(std::string_view fname);
-            Texture load(RWops &);
+            Texture load(std::string_view fname,TextureFlags flags = TextureFlags::Linear);
+            Texture load(RWops &,TextureFlags flags = TextureFlags::Linear);
             /**
              * @brief Draw text
              * 
@@ -154,14 +175,6 @@ namespace Btk{
             int  text(Font &,int x,int y,Color c,std::u16string_view u16);
             int  text(Font &,int x,int y,Color c,std::u16string_view fmt,...);
             /**
-             * @brief Dump a texture into pixbuf
-             * 
-             * @param texture The texture
-             * @return Pixbuf
-             */
-            PixBuf  dump_texture(const Texture &texture);
-            Texture clone_texture(const Texture &texture);
-            /**
              * @brief Draw a image
              * 
              * @param x 
@@ -180,6 +193,44 @@ namespace Btk{
             }
             void draw_image(const Texture &,const FRect *src = nullptr,const FRect *dst = nullptr);
             void draw_image(const PixBuf  &,const FRect *src = nullptr,const FRect *dst = nullptr);
+            /**
+             * @brief Draw a circle
+             * 
+             * @param vec 
+             * @param r 
+             * @param c 
+             */
+            void draw_circle(const FVec2 &vec,float r,Color c){
+                begin_path();
+                circle(vec,r);
+                stroke_color(c);
+                stroke();
+            }
+            void draw_box(const FRect &r,Color c){
+                begin_path();
+                rect(r);
+                fill_color(c);
+                fill();
+            }
+            void draw_rect(const FRect &r,Color c){
+                begin_path();
+                rect(r);
+                stroke_color(c);
+                stroke();
+            }
+            /**
+             * @brief Fill a circle
+             * 
+             * @param vec 
+             * @param r 
+             * @param c 
+             */
+            void fill_circle(const FVec2 &vec,float r,Color c){
+                begin_path();
+                circle(vec,r);
+                fill_color(c);
+                fill();
+            }
         public:
             /**
              * @brief Begin the frame,Init the device
@@ -197,6 +248,9 @@ namespace Btk{
              * @param c 
              */
             void clear(Color c);
+            void clear(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
+                clear({r,g,b,a});
+            }
             /**
              * @brief Get the backend
              * 
@@ -220,14 +274,27 @@ namespace Btk{
              * 
              * @return float 
              */
-            float pixels_radio(){
+            float pixels_ratio(){
                 auto screen = screen_size();
                 auto output = output_size();
                 return float(output.w) / float(screen.w);
             }
-
-            void set_target(const Texture &texture);
-            
+            /**
+             * @brief Set the target object
+             * 
+             * @param texture The texture you want to draw
+             */
+            void set_target(Texture &texture);
+            /**
+             * @brief Reset it back to the screen
+             * 
+             */
+            void reset_target();
+            /**
+             * @brief Make the Context current
+             * 
+             */
+            void make_current();
         public:
             //NanoVG Functions
             /**
@@ -238,6 +305,8 @@ namespace Btk{
             NVGcontext *get() const noexcept{
                 return nvg_ctxt;
             }
+            void begin_frame(float w,float h,float ratio);
+            void end_frame();
 
             void begin_path();
             void close_path();
@@ -368,6 +437,7 @@ namespace Btk{
              * @return false On the font is not exist
              */
             bool use_font(std::string_view fontname) noexcept;
+            bool use_font(const Font &font);
             /**
              * @brief Add font
              * 
@@ -386,7 +456,10 @@ namespace Btk{
             void scissor(const FRect &rect){
                 scissor(rect.x,rect.y,rect.w,rect.h);
             }
-
+            void intersest_scissor(float x,float y,float w,float h);
+            void intersest_scissor(const FRect &rect){
+                intersest_scissor(rect.x,rect.y,rect.w,rect.h);
+            }
             void reset_scissor();
         public:
             /**
@@ -409,36 +482,38 @@ namespace Btk{
              * 
              * @param texture_id 
              */
-            void free_texture(int texture_id);
+            BTKHIDDEN void free_texture(int texture_id);
+            BTKHIDDEN int  clone_texture(int texture_id);
+            BTKHIDDEN PixBuf dump_texture(int texture_id);
             /**
              * @brief Update a texture pixels
              * 
              * @param texture_id 
              * @param pixels 
              */
-            void update_texture(int texture_id,const void *pixels);
+            BTKHIDDEN void update_texture(int texture_id,const void *pixels);
+            BTKHIDDEN void update_texture(int texture_id,const Rect&,const void *pixels);
             /**
              * @brief Get the texture's native handler
              * 
              * @param texture_id 
              * @param native_handle_ptr
              */
-            void get_texture_handle(int texture_id,void *native_handle_ptr);
-            /**
-             * @brief Active the render context
-             * 
-             */
-            void active();
+            BTKHIDDEN void get_texture_handle(int texture_id,void *native_handle_ptr);
+            BTKHIDDEN void set_texture_flags(int texture_id,TextureFlags);
+            BTKHIDDEN TextureFlags get_texture_flags(int texture_id);
 
             NVGcontext *nvg_ctxt = nullptr;//<NanoVG Context
             SDL_Window *window = nullptr;
-            void *device = nullptr;//<Render device data
-
+            Device     *device = nullptr;//<Render device data
+            
             Rect  viewport = {0,0,0,0};//< cached viewport
             FRect cliprect = {0,0,0,0};//< cached cliprect
 
             std::list<int> t_caches;//< Texture cache
             int max_caches = 20;//< Max cache
+
+            bool is_drawing = false;//< Is nanovg Has BeginFrame
         friend class Texture;
     };
 

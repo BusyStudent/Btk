@@ -35,7 +35,6 @@
 /.xmake
 #vscode
 /.vscode/launch.json
-/.vscode/tasks.json
 #scons
 *.os
 .sconsign.dblite
@@ -43,3 +42,5 @@
 /.vscode/compile_commands.json
 #vscode lunch
 *.cbin
+#vs
+/.vs/

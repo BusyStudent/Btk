@@ -10,33 +10,32 @@ namespace Btk{
     void Layout::draw(Renderer &render){
         //draw layout widgets
         //Get ClipRect calcuate layout cliprect
-        Rect cliprect = render.get_cliprect();
-        Rect current;
-        if(not cliprect.empty()){
-            //on another container
-            current.x = rect.x + cliprect.x;
-            current.y = rect.y + cliprect.y;
-            
-            current.w = rect.w;
-            current.h = rect.h;
-        }
-        else{
-            current = rect;
-        }
-        render.set_cliprect(current);
-        Btk_defer{
-            //reset cliprect
-            if(cliprect.empty()){
-                render.set_cliprect(cliprect);
-            }
-        };
-        for(auto w:widgets_list){
-            if(visible() and (not w->rect.empty())){
-                w->draw(render);
-            }
-        }
+        for_each([](Widget *widget,Renderer &render){
+            widget->draw(render);
+        },render);
     }
     bool Layout::handle(Event &event){
-        return Container::handle(event);
+        switch(event.type()){
+            case Event::SetRect:{
+                auto r = event_cast<SetRectEvent&>(event).rect();
+                //Get rect
+                rect = r;
+                update();
+                return event.accept();
+            }
+            case Event::SetContainer:{
+                parent = event_cast<SetContainerEvent&>(event).container();
+            }
+            default:
+                return Container::handle(event);
+        }
     }
-};
+}
+namespace Btk{
+    GridLayout::GridLayout() = default;
+    GridLayout::~GridLayout() = default;
+
+    void GridLayout::update(){
+        
+    }
+}

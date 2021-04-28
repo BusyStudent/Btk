@@ -11,6 +11,7 @@
 #include <Btk/pixels.hpp>
 #include <Btk/rwops.hpp>
 #include <Btk/rect.hpp>
+#include <ostream>
 namespace Btk{
     PixBuf::~PixBuf(){
         SDL_FreeSurface(surf);
@@ -84,15 +85,15 @@ namespace Btk{
     }
 
     void PixBuf::save_bmp(std::string_view fname){
-        auto rw = RWops::FromFile(fname.data(),"rb");
+        auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_bmp(rw);
     }
     void PixBuf::save_jpg(std::string_view fname,int quality){
-        auto rw = RWops::FromFile(fname.data(),"rb");
+        auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_jpg(rw,quality);
     }
     void PixBuf::save_png(std::string_view fname,int quality){
-        auto rw = RWops::FromFile(fname.data(),"rb");
+        auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_png(rw,quality);
     }
     //operators
@@ -113,6 +114,14 @@ namespace Btk{
             throwSDLError();
         }
         return surf;
+    }
+    PixBuf PixBuf::zoom(double w_f,double_t h_f){
+        SDL_Surface *surf = zoomSurface(this->surf,w_f,h_f,SMOOTHING_ON);
+        if(surf == nullptr){
+            throwSDLError();
+        }
+        return surf;
+
     }
     //static method
     PixBuf PixBuf::FromMem(const void *mem,size_t size){
@@ -168,5 +177,9 @@ namespace Btk{
     //Get names
     std::string_view PixFmt::name() const{
         return SDL_GetPixelFormatName(fmt->format);
+    }
+    std::ostream &operator <<(std::ostream &os,Color c){
+        os << '(' << int(c.r) << ',' << int(c.g) << ',' << int(c.b) << ',' << int(c.a) << ')';
+        return os;
     }
 }

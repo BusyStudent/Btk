@@ -1,12 +1,29 @@
 # Btk
 
-A library for developing Gui based on SDL2  
+A library for developing Gui based on SDL2 and nanovg  
+***Still developing***  
 
 ## CI
 
 ![C/C++ CI on Linux](https://github.com/BusyStudent/Btk/workflows/C/C++%20CI%20on%20Linux/badge.svg)
 
 [![C/C++ CI on Windows](https://github.com/BusyStudent/Btk/actions/workflows/windows.yml/badge.svg)](https://github.com/BusyStudent/Btk/actions/workflows/windows.yml)
+
+----
+
+## Tiny example  
+
+```cpp
+#include <Btk.hpp>
+using Btk::Window;
+struct App:public Window{
+    App():Window("Hello World",100,100){}
+};
+int main(){
+    App app;
+    app.mainloop();
+}
+```
 
 ----
 

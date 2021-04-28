@@ -11,37 +11,41 @@ namespace Btk{
      * @brief Basic button
      * 
      */
-    class BTKAPI AbstructButton:public Widget{
+    class BTKAPI AbstractButton:public Widget{
         public:
             //Process event
             bool handle(Event &);
+            
+            template<class ...T>
+            void on_click(T &&...args){
+                clicked.connect(std::forward<T>(args)...);
+            }
+            Signal<void()> &signal_clicked(){
+                return clicked;
+            }
+
         protected:
             virtual void onclick(const MouseEvent &) = 0;
             virtual void onenter();
             virtual void onleave();
             bool is_entered = false;//< Is mouse on the button?
             bool is_pressed = false;//< Is mouse pressed the button?
-            Theme *theme = nullptr;//< current theme
+            Theme theme;//< current theme
             float ptsize = 0;//< fontsize
+            
+            Signal<void()> clicked;
     };
     /**
      * @brief A simple pushbutton
      * 
      */
-    class BTKAPI Button:public AbstructButton{
+    class BTKAPI Button:public AbstractButton{
         public:
             Button();
             Button(std::string_view text);
             Button(int x,int y,int w,int h);
             ~Button();
             void draw(Renderer &);
-            template<class ...T>
-            void on_click(T &&...args){
-                clicked.connect(std::forward<T>(args)...);
-            };
-            Signal<void()> &signal_clicked(){
-                return clicked;
-            };
             void set_text(std::string_view text);
             /**
              * @brief Get the button text
@@ -55,13 +59,28 @@ namespace Btk{
             void onclick(const MouseEvent &);
             void onleave();
 
-            Signal<void()> clicked;
 
             //Button text
             std::string btext;
             //PixBuf  textbuf;
             //Texture texture;
             //Font    textfont;
+    };
+    class RadioButton:public AbstractButton{
+        public:
+            RadioButton();
+            ~RadioButton();
+
+            void draw(Renderer &);
+            bool is_checked() const noexcept{
+                return checked;
+            }
+        private:
+            bool checked = false;
+            bool checkable = true;
+
+            FRect circle_rect;
+            std::string btext;
     };
 };
 

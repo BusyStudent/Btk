@@ -90,7 +90,12 @@
         "ini.c": "cpp",
         "fontstash.h": "c",
         "glad.c": "cpp",
-        "nanovg.h": "c"
+        "nanovg.h": "c",
+        "bit": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "stop_token": "cpp"
+        "*.def": "cpp"
     },
     "files.exclude": {
         "**/.git": true,

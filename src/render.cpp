@@ -15,24 +15,30 @@
 #include <limits>
 #include <vector>
 
-#include "libs/fontstash.h"
-#include "libs/nanovg.h"
+
+extern "C"{
+    #include "libs/fontstash.h"
+    #include "libs/nanovg.h"
+}
 
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
 #define BTK_NULLCHECK(VAL) if(VAL == nullptr){return;}
 
 namespace Btk{
     void Renderer::end(){
-        nvgEndFrame(nvg_ctxt);
-        swap_buffer();
-        //Too many caches
-        if(t_caches.size() > max_caches){
-            int n = t_caches.size() - max_caches;
-            BTK_LOGINFO("Clear %d textures",n);
-            for(int i = 0;i < n;i++){
-                nvgDeleteImage(nvg_ctxt,t_caches.front());
-                t_caches.pop_front();
+        if(is_drawing){
+            nvgEndFrame(nvg_ctxt);
+            swap_buffer();
+            //Too many caches
+            if(t_caches.size() > max_caches){
+                int n = t_caches.size() - max_caches;
+                BTK_LOGINFO("Clear %d textures",n);
+                for(int i = 0;i < n;i++){
+                    nvgDeleteImage(nvg_ctxt,t_caches.front());
+                    t_caches.pop_front();
+                }
             }
+            is_drawing = false;
         }
     }
     Size Renderer::screen_size(){
@@ -40,11 +46,11 @@ namespace Btk{
         SDL_GetWindowSize(window,&size.w,&size.h);
         return size;
     }
-    Texture Renderer::load(std::string_view fname){
-        return create_from(PixBuf::FromFile(fname));
+    Texture Renderer::load(std::string_view fname,TextureFlags flags){
+        return create_from(PixBuf::FromFile(fname),flags);
     }
-    Texture Renderer::load(RWops &rwops){
-        return create_from(PixBuf::FromRWops(rwops));
+    Texture Renderer::load(RWops &rwops,TextureFlags flags){
+        return create_from(PixBuf::FromRWops(rwops),flags);
     }
     void Renderer::draw_image(const Texture &texture,float x,float y,float w,float h,float angle){
         //make pattern
@@ -92,14 +98,15 @@ namespace Btk{
         }
 
         FRect _src;
-        _src.x = std::clamp(src->x,0.0f,std::numeric_limits<float>::max());
-        _src.y = std::clamp(src->y,0.0f,std::numeric_limits<float>::max());
+        float max_float = std::numeric_limits<float>::max();
+        _src.x = std::clamp(src->x,0.0f,max_float);
+        _src.y = std::clamp(src->y,0.0f,max_float);
         _src.w = std::clamp(src->w,0.0f,float(tex_w));
         _src.h = std::clamp(src->h,0.0f,float(tex_h));
 
         //Save the status
-        save();
-        nvgIntersectScissor(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
+        //save();
+        //nvgIntersectScissor(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
 
         float w_ratio = float(tex_w) / _src.w;
         float h_ratio = float(tex_h) / _src.h;
@@ -113,9 +120,22 @@ namespace Btk{
         target.y = _dst.y - (src->y / src->h) * _dst.h;
 
 
-        draw_image(texture,target);
-        nvgResetScissor(nvg_ctxt);
-        restore();
+        auto paint = nvgImagePattern(
+            nvg_ctxt,
+            target.x,
+            target.y,
+            target.w,
+            target.h,
+            0,
+            texture.get(),
+            1.0f
+        );
+        //nvgResetScissor(nvg_ctxt);
+        nvgBeginPath(nvg_ctxt);
+        nvgRect(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
+        nvgFillPaint(nvg_ctxt,paint);
+        nvgFill(nvg_ctxt);
+        //restore();
     }
     //Temp copy
     void Renderer::draw_image(const PixBuf &pixbuf,float x,float y,float w,float h,float angle){
@@ -241,7 +261,15 @@ namespace Btk{
     FSize Renderer::text_size(std::u16string_view view){
         auto &buf = FillInternalU8Buffer(view);
         NVGtextRow  row;
-        nvgTextBreakLines(nvg_ctxt,&buf[0],nullptr,std::numeric_limits<float>::max(),&row,1);
+        nvgTextBreakLinesEx(nvg_ctxt,&buf[0],nullptr,std::numeric_limits<float>::max(),&row,1);
+        return FSize{
+            row.width,
+            font_height()
+        };
+    }
+    FSize Renderer::text_size(std::string_view view){
+        NVGtextRow  row;
+        nvgTextBreakLinesEx(nvg_ctxt,&view.front(),&view.back() + 1,std::numeric_limits<float>::max(),&row,1);
         return FSize{
             row.width,
             font_height()
@@ -296,8 +324,28 @@ namespace Btk{
     void Renderer::scissor(float x,float y,float w,float h){
         nvgScissor(nvg_ctxt,x,y,w,h);
     }
+    void Renderer::intersest_scissor(float x,float y,float w,float h){
+        nvgIntersectScissor(nvg_ctxt,x,y,w,h);
+    }
+    
     void Renderer::reset_scissor(){
         nvgResetScissor(nvg_ctxt);
+    }
+    //Begin or end Frame
+    void Renderer::begin_frame(float w,float h,float ratio){
+        if(not is_drawing){
+            nvgBeginFrame(nvg_ctxt,w,h,ratio);
+            is_drawing = true;
+        }
+    }
+    void Renderer::end_frame(){
+        if(is_drawing){
+            nvgEndFrame(nvg_ctxt);
+            is_drawing = false;
+        }
+    }
+    bool Renderer::use_font(const Font &font){
+        use_font(font.family());
     }
 }
 namespace Btk{
@@ -365,6 +413,30 @@ namespace Btk{
             throwRuntimeError("empty texture");
         }
         render->get_texture_handle(texture,p_handle);
+    }
+    Texture Texture::clone() const{
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        return Texture(render->clone_texture(texture),render);
+    }
+    PixBuf  Texture::dump() const{
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        return render->dump_texture(texture);
+    }
+    TextureFlags Texture::flags() const{
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        return render->get_texture_flags(texture);
+    }
+    void Texture::set_flags(TextureFlags flags){
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        render->set_texture_flags(texture,flags);
     }
     Texture &Texture::operator =(Texture &&t){
         if(&t == this){
