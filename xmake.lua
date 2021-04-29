@@ -52,7 +52,7 @@ target("btk")
         add_links("fontconfig")
     elseif is_plat("windows") or is_plat("mingw") then
         --xmake repo
-        add_packages("libsdl","libsdl_image")
+        add_packages("libsdl","libsdl_image","freetype")
 
         add_files("./src/platform/win32/*.cpp")
         add_links("user32","shell32","advapi32","ole32","oleaut32")
@@ -141,8 +141,12 @@ target("btk-rcc")
     add_files("./tools/btk-rcc.cpp")
 --Do you need CAPI
 --If not,omit it
-if true then 
+if false  then 
     target("btk_capi")
+        if not has_package("gif") then
+            add_defines("BTK_NGIF")
+        end
+
         set_kind("shared")
         add_files("./src/ext/capi.cpp")
         add_deps("btk")

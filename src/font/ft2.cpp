@@ -4,14 +4,15 @@
 #include FT_ERRORS_H
 #include FT_GLYPH_H
 
-#include <Btk/thirdparty/utf8.h>
-#include <Btk/exception.hpp>
 
 #include <cmath>
 #include <algorithm>
 
 #include "../build.hpp"
 #include "internal.hpp"
+
+#include <Btk/thirdparty/utf8.h>
+#include <Btk/exception.hpp>
 
 namespace BtkFt{
     using Btk::throwRuntimeError;
@@ -206,7 +207,7 @@ namespace BtkFt{
     int Font::kerning_size(char32_t prev,char32_t cur){
         auto i_prev = face->index_char(prev);
         auto i_cur = face->index_char(cur);
-
+        return face->kerning_size(i_prev,i_cur);
     }
     Font::Font(Face *face,float ptsize){
         this->face = face;

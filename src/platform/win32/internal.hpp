@@ -3,6 +3,12 @@
 #include <ShlObj.h>
 #include <wingdi.h>
 #include <winreg.h>
+
+#include <string>
+
+#define WIN32_WSTR (wchar_t*)
+#define WIN32_CWSTR (const wchar_t *)
+
 namespace Btk{
 namespace Win32{
     /**
@@ -15,6 +21,9 @@ namespace Win32{
         ComInstance() = default;
         ComInstance(const ComInstance &) = delete;
         ~ComInstance(){
+            release();
+        }
+        void release(){
             if(ptr != nullptr){
                 ptr->Release();
             }
@@ -25,6 +34,9 @@ namespace Win32{
         }
         T **operator &(){
             return &ptr;
+        }
+        operator T *() const noexcept{
+            return ptr;
         }
         T *ptr = nullptr;
     };
@@ -91,6 +103,24 @@ namespace Win32{
             if(opened){
                 RegCloseKey(key);
             }
+        }
+        /**
+         * @brief Query the value
+         * 
+         * @param key The key ('\0' terminated)
+         * @param outbuf The output buffer
+         * @return LSTATUS 
+         */
+        LSTATUS query_value(std::u16string_view k,std::u16string &outbuf){
+            DWORD size = outbuf.size();
+            return RegQueryValueExW(
+                key,
+                reinterpret_cast<LPCWSTR>(k.data()),
+                nullptr,
+                nullptr,
+                reinterpret_cast<LPBYTE>(outbuf.data()),
+                &size
+            );
         }
         /**
          * @brief Is succeed to open?

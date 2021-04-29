@@ -6,6 +6,9 @@
 #include <string>
 #include "../defs.hpp"
 #include "../exception.hpp"
+
+#undef MessageBox
+
 namespace Btk{
 namespace Win32{
     BTKAPI void Init();
@@ -25,6 +28,15 @@ namespace Win32{
      * @return std::u16string
      */
     BTKAPI std::u16string StrMessageW(DWORD errcode);
+    /**
+     * @brief Win32 native MessageBox
+     * 
+     * @param title
+     * @param msg 
+     * @param flag 
+     * @return BTKAPI 
+     */
+    BTKAPI bool MessageBox(std::string_view title,std::string_view msg,int flag = 0);
 }
 }
 namespace Btk{

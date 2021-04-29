@@ -116,7 +116,7 @@ bool Hello::handle(Event &event){
     return true;
 }
 int main(){
-    //Btk::HideConsole();
+    Btk::HideConsole();
     Hello app;
     app.mainloop();
 }

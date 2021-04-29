@@ -140,10 +140,21 @@ namespace{
                 if(addr.offset == 0){
                     return;
                 }
-                fprintf(stderr,"  at %p: %s (in %s)\n",
-                    reinterpret_cast<void*>(addr.offset),
-                    addr.name,
-                    addr.moduleName);
+                if(addr.lineNumber == 0){
+                    //No line number
+                    fprintf(stderr,"  at %p: %s (in %s)\n",
+                        reinterpret_cast<void*>(addr.offset),
+                        addr.name,
+                        addr.moduleName
+                    );
+                }
+                else{
+                    fprintf(stderr,"  at %p: %s (in %s:%d)\n",
+                        reinterpret_cast<void*>(addr.offset),
+                        addr.name,
+                        addr.lineFileName,
+                        int(addr.lineNumber));
+                }
             }
     };
 }

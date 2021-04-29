@@ -213,7 +213,9 @@ BTK_CAPI bool Btk_MainLoop(BtkWindow*);
 BTK_CAPI bool Btk_SetWindowIconFromFile(BtkWindow*,const char *filename);
 BTK_CAPI bool Btk_SetWindowCursorFromFile(BtkWindow*,const char *filename);
 //Gif
+#ifndef BTK_NGIF
 BTK_CAPI bool Btk_SetGifViewImageFrom(BtkGifView *view,const char *filename);
+#endif
 //Error
 BTK_CAPI const char *Btk_GetError();
 BTK_CAPI void        Btk_SetError(const char *fmt,...);

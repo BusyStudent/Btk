@@ -346,6 +346,7 @@ namespace Btk{
     }
     bool Renderer::use_font(const Font &font){
         use_font(font.family());
+        return true;
     }
 }
 namespace Btk{

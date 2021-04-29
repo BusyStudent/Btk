@@ -1,14 +1,18 @@
 #include "../../build.hpp"
 
 #include <Btk/platform/win32.hpp>
+#include <Btk/msgbox/msgbox.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
+#include <Btk/Btk.hpp>
 #include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL.h>
 #include <csignal>
 #include <string>
 
 #include <ShlObj.h>
+
+#include "internal.hpp"
 
 #ifndef NDEBUG
 
@@ -23,10 +27,20 @@ namespace{
 
             }
             virtual void OnCallstackEntry(CallstackEntryType,CallstackEntry &addr){
-                msg += Btk::cformat("  at %p: %s (in %s)\n",
-                    reinterpret_cast<void*>(addr.offset),
-                    addr.name,
-                    addr.moduleName);
+                if(addr.lineNumber == 0){
+                    //No line number
+                    Btk::cformat(msg,"  at %p: %s (in %s)\n",
+                        reinterpret_cast<void*>(addr.offset),
+                        addr.name,
+                        addr.moduleName);
+                }
+                else{
+                    Btk::cformat(msg,"  at %p: %s (in %s:%d)\n",
+                        reinterpret_cast<void*>(addr.offset),
+                        addr.name,
+                        addr.lineFileName,
+                        int(addr.lineNumber));
+                }
             }
         std::string &msg;
     };
@@ -130,20 +144,21 @@ namespace Win32{
 
     }
     std::string StrMessageA(DWORD errcode){
-        char *ret;
-        DWORD result = FormatMessageA(
+        char16_t *ret;
+        DWORD result = FormatMessageW(
             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
             nullptr,
             errcode,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            reinterpret_cast<LPSTR>(&ret),
+            reinterpret_cast<LPWSTR>(&ret),
             0,
             nullptr
         );
         if(result == 0){
             throwWin32Error();
         }
-        std::string s(ret);
+        std::string s;
+        Utf16To8(s,ret);
         LocalFree(ret);
         return s;
     }
@@ -164,6 +179,26 @@ namespace Win32{
         std::u16string s(ret);
         LocalFree(ret);
         return s;
+    }
+    bool MessageBox(std::string_view title,std::string_view msg,int flag){
+        UINT type = 0;
+
+        if(flag == MessageBox::Info){
+            type |= MB_ICONINFORMATION;
+        }
+        else if(flag == MessageBox::Warn){
+            type |= MB_ICONWARNING;
+        }
+        else if(flag == MessageBox::Error){
+            type |= MB_ICONERROR;
+        }
+        MessageBoxW(
+            GetForegroundWindow(),
+            reinterpret_cast<const wchar_t*>(Utf8To16(msg).c_str()),
+            reinterpret_cast<const wchar_t*>(Utf8To16(title).c_str()),
+            type
+        );
+        return true;
     }
 }
 }
@@ -187,5 +222,8 @@ namespace Btk{
     }
     [[noreturn]] void throwWin32Error(DWORD errcode){
         throw Win32Error(errcode);
+    }
+    bool HideConsole(){
+        return FreeConsole();
     }
 }

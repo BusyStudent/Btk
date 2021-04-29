@@ -37,6 +37,10 @@
     #define BTKWEAK   __attribute__((weak))
     #define BTKHIDDEN __attribute__((visibility("hidden")))
     #define BTKINLINE __attribute__((__always_inline__))
+#elif defined(_MSC_VER)    
+    #define BTKWEAK 
+    #define BTKHIDDEN  
+    #define BTKINLINE __forceinline
 #else
     #define BTKWEAK 
     #define BTKHIDDEN

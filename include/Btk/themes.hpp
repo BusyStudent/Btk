@@ -77,7 +77,7 @@ namespace Btk{
             bool has_color(std::string_view key) const;
         private:
             std::map<std::string,Color> colors;
-        friend std::ostream &operator <<(std::ostream &,const Palette &);
+        friend BTKAPI std::ostream &operator <<(std::ostream &,const Palette &);
     };
 
     inline _PaletteProxy::operator Color() const{
