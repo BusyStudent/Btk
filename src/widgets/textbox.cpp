@@ -73,23 +73,6 @@ namespace Btk{
                 event.accept();
                 return true;
             }
-            case Event::SetRect:{
-                event.accept();
-                rect = event_cast<SetRectEvent&>(event).rect();
-                return true;
-            }
-            case Event::SetContainer:{
-                event.accept();
-                parent = event_cast<SetContainerEvent&>(event).container();
-                //Set theme
-                theme =  window_theme();
-                ptsize = theme.font_size();
-
-                //Get rendered text's h
-                //ft_h = tb_font.height();
-
-                return true;
-            }
             case Event::TakeFocus:{
                 //Enable Text input
                 event.accept();
@@ -143,7 +126,11 @@ namespace Btk{
     TextBox::~TextBox(){
         timer.stop();
     }
-
+    void TextBox::set_parent(Widget *w){
+        Widget::set_parent(w);
+        theme =  window_theme();
+        ptsize = theme.font_size();
+    }
     void TextBox::draw(Renderer &render){
         render.box(rect,theme[Theme::Background]);
         

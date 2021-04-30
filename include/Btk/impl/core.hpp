@@ -13,8 +13,10 @@
 #include "../module.hpp"
 
 namespace Btk{
-    struct WindowImpl;
-    struct System{
+    class WindowImpl;
+    class System{
+        public:
+        
         struct ExitHandler{
             //Function pointer
             typedef void (*FnPtr)(void*);
@@ -53,7 +55,7 @@ namespace Btk{
         //Get window from WindowID
         WindowImpl *get_window(Uint32 winid);//< It is thread unsafe
         WindowImpl *get_window_s(Uint32 winid);//< It is thread safe
-
+    
         std::unordered_map<Uint32,WindowImpl*> wins_map;//Windows map
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
         std::recursive_mutex map_mtx;

@@ -265,7 +265,7 @@ namespace Btk{
             return;
         }
         auto motion = TranslateEvent(event.motion);
-        win->container.handle_motion(motion);
+        win->handle_motion(motion);
     }
     //MouseButton
     inline void System::on_mousebutton(const SDL_Event &event){
@@ -274,7 +274,7 @@ namespace Btk{
             return;
         }
         auto click = TranslateEvent(event.button);
-        win->container.handle_click(click);
+        win->handle_click(click);
     }
     //MouseWheel
     inline void System::on_mousewheel(const SDL_Event &event){
@@ -283,7 +283,7 @@ namespace Btk{
             return;
         }
         auto wheel = TranslateEvent(event.wheel);
-        if(win->container.handle_whell(wheel)){
+        if(win->handle_whell(wheel)){
             if(not wheel.is_accepted()){
                 win->sig_event(wheel);
             }
@@ -307,7 +307,7 @@ namespace Btk{
             return;
         }
         auto kevent = TranslateEvent(event.key);
-        if(not win->container.handle_keyboard(kevent)){
+        if(not win->handle_keyboard(kevent)){
             //No one process it
             if(not kevent.is_accepted()){
                 win->sig_event(kevent);
@@ -322,7 +322,7 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        win->container.handle_textinput(ev);
+        win->handle_textinput(ev);
     }
     void System::register_window(WindowImpl *impl){
         if(impl == nullptr){

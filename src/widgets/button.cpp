@@ -19,23 +19,10 @@ namespace Btk{
                 onleave();
                 break;
             }
-            case Event::SetRect:{
-                //SetPositions
-                rect = event_cast<SetRectEvent&>(event).rect();
-                break;
-            }
             case Event::Click:{
                 //Click button
                 auto &ev = event_cast<MouseEvent&>(event);
                 onclick(ev);
-                break;
-            }
-            case Event::SetContainer:{
-                auto &ev = event_cast<SetContainerEvent&>(event);
-                parent = ev.container();
-
-                theme = window_theme();
-                ptsize = theme.font_size();
                 break;
             }
             default:
@@ -54,6 +41,11 @@ namespace Btk{
         is_pressed = false;
 
         redraw();
+    }
+    void AbstractButton::set_parent(Widget *w){
+        Widget::set_parent(w);
+        theme = window_theme();
+        ptsize = theme.font_size();
     }
 };
 namespace Btk{

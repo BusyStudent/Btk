@@ -7,8 +7,7 @@
 #include "rect.hpp"
 #include "defs.hpp"
 namespace Btk{
-    struct WindowImpl;
-    class Container;
+    class WindowImpl;
     class PixBuf;
     class Widget;
     class Event;
@@ -205,12 +204,6 @@ namespace Btk{
             int w() const noexcept;//get w
             int h() const noexcept;//get h
             Font font() const;//get font
-            /**
-             * @brief Get Container refer
-             * 
-             * @return Container& 
-             */
-            Container &container() const;
         private:
             WindowImpl *pimpl;
             Uint32 winid;

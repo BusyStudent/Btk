@@ -92,19 +92,9 @@ namespace Btk{
         
         redraw();
     }
-    bool Label::handle(Event &event){
-        event.accept();
-        if(event.type() == Event::SetRect){
-            rect = event_cast<SetRectEvent&>(event).rect();
-            return true;
-        }
-        else if(event.type() == Event::SetContainer){
-            parent = event_cast<SetRectEvent&>(event).container();
-            text_color = window_theme()[Theme::Text];
-            ptsize = window_theme().font_size();
-            return true;
-        }
-        event.reject();
-        return false;
+    void Label::set_parent(Widget *w){
+        Widget::set_parent(w);
+        text_color = window_theme()[Theme::Text];
+        ptsize = window_theme().font_size();
     }
 };

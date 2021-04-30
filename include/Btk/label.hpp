@@ -30,8 +30,8 @@ namespace Btk{
             };
             //Set Label text
             void set_text(std::string_view text);
+            void set_parent(Widget *) override;
             void draw(Renderer&);
-            bool handle(Event &);
         private:
             std::string text_;//text
             //Font font_;//font

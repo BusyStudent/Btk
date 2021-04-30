@@ -20,7 +20,7 @@ namespace{
     using Btk::System;
     using Btk::WindowImpl;
     void internal_pushevent(Event *ev,WindowImpl *win,Widget *widget){
-        Uint32 winid = SDL_GetWindowID(win->win);
+        Uint32 winid = win->id();
         SDL_Event sdl_ev;
         SDL_zero(sdl_ev);
 

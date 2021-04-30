@@ -4,10 +4,9 @@
 #include "rect.hpp"
 #include "widget.hpp"
 namespace Btk{
-    class Layout:public Widget,protected Container{
+    class Layout:public Widget{
         public:
             virtual void draw(Renderer &render) final;
-            virtual bool handle(Event&) final;
             //update each widgets postions
             virtual void update() = 0;
         protected:

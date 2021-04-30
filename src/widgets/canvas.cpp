@@ -21,11 +21,6 @@ namespace Btk{
         }
     }
     bool Canvas::handle(Event &event){
-        if(event.type() == Event::SetContainer){
-            event.accept();
-            parent = event_cast<SetContainerEvent&>(event).container();
-            return true;
-        }
         if(event_fn.empty()){
             return false;
         }

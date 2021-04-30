@@ -35,13 +35,12 @@ namespace Btk{
         //Set background color
         bg_color = theme[Theme::Window];
         last_draw_ticks = 0;
-
-        //Managed by window
-        container.managed_window = true;
+        
+        attr.window = true;
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
-        container.clear();
+        clear_childrens();
         SDL_FreeCursor(cursor);
         //destroy the render before destroy the window
         render.destroy();
@@ -49,7 +48,7 @@ namespace Btk{
         SDL_DestroyWindow(win);
     }
     //Draw window
-    void WindowImpl::draw(){
+    void WindowImpl::draw(Renderer &render){
         auto current = SDL_GetTicks();
 
         //Uint32 durl = 1000 / fps_limit;
@@ -68,7 +67,7 @@ namespace Btk{
         render.begin();
         render.clear(bg_color);
         //Draw each widget
-        for(auto widget:container.widgets_list){
+        for(auto widget:childrens){
             //check widgets
             if((widget->visible()) and not(widget->rect.empty())){
                 widget->draw(render);
@@ -118,7 +117,7 @@ namespace Btk{
     }
     //update widgets postions
     void WindowImpl::update_postion(){
-        auto &widgets_list = container.widgets_list;
+        auto &widgets_list = childrens;
         if(widgets_list.empty()){
             return;
         }
@@ -131,13 +130,7 @@ namespace Btk{
             if(not widget->attr.user_rect){
                 int w,h;
                 pixels_size(&w,&h);
-                SetRectEvent ev({
-                    0,
-                    0,
-                    w,
-                    h
-                });
-                widget->handle(ev); 
+                widget->set_rect(0,0,w,h);
             }
         }
         else{
@@ -145,7 +138,7 @@ namespace Btk{
             //update each Layout
             Layout *layout;
             for(auto widget:widgets_list){
-                layout = dynamic_cast<Layout*>(widget.get());
+                layout = dynamic_cast<Layout*>(widget);
                 if(layout != nullptr){
                     layout->update();
                 }
@@ -154,7 +147,7 @@ namespace Btk{
     }
     //Dispatch Event
     bool WindowImpl::dispatch(Event &event){
-        if(container.handle(event)){
+        if(Widget::handle(event)){
             if(event.is_accepted()){
                 return true;
             }
@@ -171,11 +164,18 @@ namespace Btk{
 }
 //Event Processing
 namespace Btk{
+    bool WindowImpl::handle(Event &event){
+        if(not Widget::handle(event)){
+            //The widget doesnnot process it
+            return sig_event(event);
+        }
+        return true;
+    }
     void WindowImpl::handle_windowev(const SDL_Event &event){
         switch(event.window.event){
             case SDL_WINDOWEVENT_EXPOSED:{
                 //redraw window
-                draw();
+                draw(render);
                 break;
             }
             case SDL_WINDOWEVENT_HIDDEN:{
@@ -212,7 +212,7 @@ namespace Btk{
                     SDL_SetCursor(cursor);
                 }
                 Event enter(Event::WindowEnter);
-                container.handle(enter);
+                handle(enter);
                 if(not sig_enter.empty()){
                     sig_enter();
                 }
@@ -226,7 +226,7 @@ namespace Btk{
                 }
                 //Event leave(Event::WindowLeave);
                 //container.handle(leave);
-                container.window_mouse_leave();
+                window_mouse_leave();
                 if(not sig_leave.empty()){
                     sig_leave();
                 }
@@ -234,7 +234,220 @@ namespace Btk{
             }
         }
     }
-    
+    bool WindowImpl::handle_click(MouseEvent &event){
+        event.accept();
+        
+        int x = event.x;
+        int y = event.y;
+
+        //If the focus_widget get focus by click
+        if(focus_widget != nullptr){
+            if(focus_widget->attr.focus == FocusPolicy::Click){
+                //Is not dragging
+                if(focus_widget != drag_widget and not focus_widget->rect.has_point(x,y)){
+                    set_focus_widget(nullptr);
+                }
+            }
+        }
+
+        if(event.state == MouseEvent::Pressed){
+            mouse_pressed = true;
+        }
+        else{
+            //cleanup flags
+            mouse_pressed = false;
+            drag_rejected = false;
+            //Dragging is at end
+            if(drag_widget != nullptr){
+                DragEvent ev(Event::DragEnd,x,y,-1,-1);
+                drag_widget->handle(ev);
+                BTK_LOGINFO("(%s)%p DragEnd",get_typename(drag_widget).c_str(),drag_widget);
+                drag_widget = nullptr;
+
+                SDL_CaptureMouse(SDL_FALSE);
+            }
+        }
+
+        if(cur_widget == nullptr){
+            //try to find a new_widget
+            for(auto widget:childrens){
+                if(widget->visible() and widget->rect.has_point(x,y)){
+                    cur_widget = widget;
+                    //It can get focus by Click
+                    if(widget->attr.focus == FocusPolicy::Click){
+                        set_focus_widget(cur_widget);
+                    }
+                    break;
+                }
+            }
+            //We didnot find it
+            return true;
+        }
+        //Send the mouse event to it
+        cur_widget->handle(event);
+
+        if(cur_widget != focus_widget){
+            if(cur_widget->attr.focus == FocusPolicy::Click){
+                //It can get focus by click
+                set_focus_widget(cur_widget);
+            }
+        }
+        return true;
+    }
+    bool WindowImpl::handle_motion(MotionEvent &event){
+        event.accept();
+        
+        int x = event.x;
+        int y = event.y;
+
+
+        //Is dragging
+        if(drag_widget != nullptr){
+            DragEvent drag_ev(Event::Drag,event);
+            BTK_LOGINFO("(%s)%p Dragging x=%d y=%d",get_typename(drag_widget).c_str(),drag_widget,x,y);
+            drag_widget->handle(drag_ev);
+        }
+        else if(mouse_pressed == true and 
+                cur_widget != nullptr and 
+                not(drag_rejected)){
+            //Send Drag Begin
+            DragEvent drag_ev(Event::DragBegin,event);
+            if(cur_widget->handle(drag_ev)){
+                if(drag_ev.is_accepted()){
+                    //The event is accepted
+                    drag_widget = cur_widget;
+                    BTK_LOGINFO("(%s)%p accepted DragBegin",get_typename(cur_widget).c_str(),cur_widget);
+                    SDL_CaptureMouse(SDL_TRUE);
+                }
+                else{
+                    drag_rejected = true;
+                    BTK_LOGINFO("(%s)%p rejected DragBegin",get_typename(cur_widget).c_str(),cur_widget);
+                }
+            }
+            else{
+                drag_rejected = true;
+                BTK_LOGINFO("(%s)%p rejected DragBegin",get_typename(cur_widget).c_str(),cur_widget);
+            }
+        }
+
+        
+        //We didnot has the widget
+        if(cur_widget != nullptr){
+            if(cur_widget->rect.has_point(x,y)){
+                //It does not change
+                //Dispatch this motion event
+                cur_widget->handle(event);
+                return true;
+            }
+            else{
+                //widget leave
+                event.set_type(Event::Type::Leave);
+                cur_widget->handle(event);
+                cur_widget = nullptr;
+            }
+        }
+        //find new widget which has this point
+        for(auto widget:childrens){
+            if(widget->visible() and widget->rect.has_point(x,y)){
+                cur_widget = widget;
+                //widget enter
+                event.set_type(Event::Type::Enter);
+                cur_widget->handle(event);
+                break;
+            }
+        }
+        return true;
+    }
+    bool WindowImpl::handle_keyboard(KeyEvent &event){
+        //event.accept();
+
+        if(focus_widget != nullptr){
+            if(focus_widget->handle(event)){
+                if(event.is_accepted()){
+                    return true;
+                }
+            }
+        }
+        if(cur_widget != nullptr){
+            if(cur_widget->handle(event)){
+                if(event.is_accepted()){
+                    return true;
+                }
+            }
+        }
+        for(auto widget:childrens){
+            if(widget != focus_widget and widget != cur_widget){
+                widget->handle(event);
+                if(event.is_accepted()){
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+    bool WindowImpl::handle_textinput(TextInputEvent &event){
+        event.accept();
+        if(focus_widget != nullptr){
+            //Send the event to focus event
+            focus_widget->handle(event);
+            if(not event.is_accepted()){
+                //this event is rejected
+                //dispatch it to other widget
+                for(auto widget:childrens){
+                    if(widget != focus_widget){
+                        widget->handle(event);
+                        if(event.is_accepted()){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    bool WindowImpl::handle_whell(WheelEvent &event){
+        if(cur_widget != nullptr){
+            return cur_widget->handle(event);
+        }
+        return false;
+    }
+    void WindowImpl::set_focus_widget(Widget *widget){
+        Event event(Event::LostFocus);
+        //We has last widget which has focus
+        if(focus_widget != nullptr){
+            //Send a lose focus
+            
+            BTK_LOGINFO("[Container:%p]'%s' %p lost focus",
+                        this,
+                        get_typename(focus_widget).c_str(),
+                        focus_widget);
+            
+            focus_widget->handle(event);
+        }
+        event.set_type(Event::TakeFocus);
+        focus_widget = widget;
+        
+        if(widget != nullptr){
+
+            BTK_LOGINFO("[Container:%p]'%s' %p take focus",
+                this,
+                get_typename(focus_widget).c_str(),
+                focus_widget);
+
+            
+            focus_widget->handle(event);
+        }
+
+    }
+    void WindowImpl::window_mouse_leave(){
+        if(cur_widget != nullptr){
+            Event event(Event::Leave);
+            cur_widget->handle(event);
+            cur_widget = nullptr;
+        }
+    }
+
     
 }
 namespace Btk{
@@ -255,7 +468,7 @@ namespace Btk{
             h,
             flags
         );
-        pimpl->container.window = pimpl;
+        // pimpl->container.window = pimpl;
         SDL_SetWindowData(pimpl->win,"btk_win",this);
         SDL_SetWindowData(pimpl->win,"btk_imp",pimpl);
         winid = SDL_GetWindowID(pimpl->win);
@@ -341,7 +554,13 @@ namespace Btk{
     }
     //add widget
     bool Window::add(Widget *ptr){
-        return pimpl->container.add(ptr);
+        if(ptr == nullptr){
+            return false;
+        }
+        else{
+            pimpl->childrens.push_back(ptr);
+            return true;
+        }
     }
     //Window exists
     bool Window::exists() const{
@@ -418,8 +637,5 @@ namespace Btk{
     }
     Font Window::font() const{
         throwRuntimeError("Unimpl yet");
-    }
-    Container &Window::container() const{
-        return pimpl->container;
     }
 }

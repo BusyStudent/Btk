@@ -10,9 +10,14 @@
 //A file of themes
 
 //Macro to gen color constant
-#define BTK_MAKE_COLOR(COLOR) \
-    static constexpr std::string_view COLOR = #COLOR;
 
+#ifdef BTK_VSCODE_SUPPRESS
+    //For suppress the error
+    #define BTK_MAKE_COLOR(COLOR) static std::string_view COLOR;
+#else
+    #define BTK_MAKE_COLOR(COLOR) \
+        static constexpr std::string_view COLOR = #COLOR;
+#endif
 namespace Btk{
     class Palette;
     /**

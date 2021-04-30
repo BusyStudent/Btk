@@ -44,6 +44,7 @@ namespace Btk{
              */
             void set_text(std::u16string_view txt);
             void set_text(std::string_view txt);
+            void set_parent(Widget *w);
         private:
             void timeout();
             //Process keyboard event

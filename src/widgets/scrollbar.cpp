@@ -22,25 +22,23 @@ namespace Btk{
         slider_color = {100,100,100};
     }
     ScrollBar::~ScrollBar(){}
-
+    void ScrollBar::set_rect(const Rect &r){
+        Widget::set_rect(r);
+        if(orientation == Orientation::H){
+            int y = CalculateYByAlign(rect,rect.h,Align::Center);
+            bar_range = {rect.x,y,rect.w,rect.h};
+        }
+        else{
+            int x = CalculateXByAlign(rect,rect.w,Align::Center);
+            bar_range = {x,rect.y,rect.w,rect.h};
+        }
+        set_value(100);
+        BTK_LOGINFO("bar_range={%d,%d,%d,%d}",bar_range.x,bar_range.y,bar_range.w,bar_range.h);
+        //update bar_rect
+        redraw();
+    }
     bool ScrollBar::handle(Event &event){
         switch(event.type()){
-            case Event::SetRect:
-                rect = event_cast<SetRectEvent&>(event).rect();
-                //Set bar range
-                if(orientation == Orientation::H){
-                    int y = CalculateYByAlign(rect,rect.h,Align::Center);
-                    bar_range = {rect.x,y,rect.w,rect.h};
-                }
-                else{
-                    int x = CalculateXByAlign(rect,rect.w,Align::Center);
-                    bar_range = {x,rect.y,rect.w,rect.h};
-                }
-                set_value(100);
-                BTK_LOGINFO("bar_range={%d,%d,%d,%d}",bar_range.x,bar_range.y,bar_range.w,bar_range.h);
-                //update bar_rect
-                redraw();
-                return true;
             case Event::Enter:{
                 BTK_LOGINFO("Enter scroll bar %p",this);
                 event.accept();
@@ -81,15 +79,6 @@ namespace Btk{
                 }
                 return true;
             }
-            case Event::SetContainer:{
-                event.accept();
-                parent = event_cast<SetContainerEvent&>(event).container();
-                window()->pixels_size(&_x,&_y);
-                if(orientation == Orientation::H)set_rect(0,_y - 10,_x,10);
-                else if(orientation == Orientation::V)set_rect(_x-10,0,10,_y);
-                return true;
-            }
-
             case Event::Drag :{
                 DragEvent& e = event_cast<DragEvent&>(event);
                 int x = e.xrel;
@@ -191,7 +180,13 @@ namespace Btk{
         );
         redraw();
     }
+    void ScrollBar::set_parent(Widget *w){
+        Widget::set_parent(w);
+        window()->pixels_size(&_x,&_y);
+        if(orientation == Orientation::H)set_rect(0,_y - 10,_x,10);
+        else if(orientation == Orientation::V)set_rect(_x-10,0,10,_y);
 
+    }
     int ScrollBar::move_slider(int x)
     {
         if(orientation == Orientation::H)

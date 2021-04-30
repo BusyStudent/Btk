@@ -25,7 +25,9 @@
                 "${default}"
             ],
             "defines": [
-                "BTK_USE_GFX"
+                "BTK_USE_GFX",
+                //A flag to suppress warning
+                "BTK_VSCODE_SUPPRESS"
             ],
             "cStandard": "c11",
             "cppStandard": "c++17",

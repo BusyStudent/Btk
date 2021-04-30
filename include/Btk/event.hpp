@@ -10,7 +10,6 @@ struct SDL_MouseButtonEvent;
 namespace Btk{
     class Window;
     class Widget;
-    class Container;
     /**
      * @brief A base event of all events
      * 
@@ -18,7 +17,6 @@ namespace Btk{
     class BTKAPI Event{
         public:
             enum Type:Uint32{
-                SetRect = 0,//Update widget's rect
                 KeyBoard = 1,//Key pressed or released
 
                 //MotionEvent
@@ -47,8 +45,7 @@ namespace Btk{
                 Wheel = 14,//The mouse Wheel
                 WindowEnter = 15,//The mouse enter the window
                 WindowLeave = 16,//The mouse leave the window
-
-                SetContainer = 17,//< The container has be changed
+                Resize = 17,//< The widget is be resized
 
                 User = 10000,
                 UserMax = UINT32_MAX - 1,
@@ -113,8 +110,27 @@ namespace Btk{
             bool _accepted;
         friend class Window;
     };
-    class ResizeEvent:public Event{
-        
+    /**
+     * @brief A event about resize
+     * 
+     */
+    struct ResizeEvent:public Event{
+        public:
+            ResizeEvent(int w,int h):Event(Resize){
+                this->w = w;
+                this->h = h;
+            }
+            ResizeEvent(const ResizeEvent &) = default;
+            ~ResizeEvent() = default;
+            /**
+             * @brief Get the size
+             * 
+             * @return Size 
+             */
+            Size size() const noexcept{
+                return {w,h};
+            }
+            int w,h;
     };    
     /**
      * @brief A event about mouse click
@@ -309,21 +325,9 @@ namespace Btk{
     struct BTKAPI UpdateEvent:public Event{
         UpdateEvent(Type t):Event(t){};
         UpdateEvent(const UpdateEvent &) = default;
-        /**
-         * @brief Construct a new Update Rect Event object
-         * 
-         * @param r The Widget's rect
-         */
-        UpdateEvent(const Rect &r):Event(SetRect){
-            data.rect = r;
-        }
-        UpdateEvent(Container *c):Event(SetContainer){
-            data.container = c;
-        }
         ~UpdateEvent();
         union {
             Rect rect;//< Widget's rect(type SetRect)
-            Container *container;
         }data;
         //UpdateRect
         Rect rect() const noexcept{
@@ -332,16 +336,8 @@ namespace Btk{
         Vec2 position() const noexcept{
             return {rect().x,rect().y};
         }
-
-
-
-        Container* container() const noexcept{
-            return data.container;
-        }
     };
     typedef MouseEvent ClickEvent;
-    typedef UpdateEvent SetRectEvent;
-    typedef UpdateEvent SetContainerEvent;
     /**
      * @brief Push event to queue
      * 

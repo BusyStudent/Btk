@@ -25,6 +25,7 @@ namespace Btk{
             }
 
         protected:
+            virtual void set_parent(Widget *);
             virtual void onclick(const MouseEvent &) = 0;
             virtual void onenter();
             virtual void onleave();

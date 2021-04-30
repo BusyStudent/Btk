@@ -9,45 +9,57 @@
 #include <algorithm>
 
 namespace Btk{
+    Widget::Widget() = default;
+    Widget::Widget(Widget *parent):Widget(){
+        set_parent(parent);
+    }
     Widget::~Widget(){
-        
+        //Delete each children
+        clear_childrens();
     }
     bool Widget::handle(Event& ev){
         //Default Process event
-        ev.accept();
         switch(ev.type()){
-            case Event::SetRect:
-                rect = event_cast<SetRectEvent&>(ev).rect();
-                return true;
-            case Event::SetContainer:
-                parent = event_cast<SetContainerEvent&>(ev).container();
-                return true;
+            //Normal event handle
+            case Event::Motion:
+                return handle_motion(event_cast<MotionEvent&>(ev));
+            case Event::Click:
+                return handle_click(event_cast<ClickEvent&>(ev));
+            case Event::KeyBoard:
+                return handle_keyboard(event_cast<KeyEvent&>(ev));
+            case Event::Wheel:
+                return handle_whell(event_cast<WheelEvent&>(ev));
+            case Event::Drag:
+            case Event::DragBegin:
+            case Event::DragEnd:
+                return handle_drag(event_cast<DragEvent&>(ev));
+            case Event::TextInput:
+                return handle_textinput(event_cast<TextInputEvent&>(ev));
             default:
-                ev.reject();
                 return false;
         }
     }
+    //Virtual member function
+    void Widget::set_parent(Widget *parent){
+        this->_parent = parent;
+        //Reset the cache
+        _window = nullptr;
+    }
     void Widget::set_rect(const Rect &rect){
-        attr.user_rect = true;
-        SetRectEvent ev(rect);
-        handle(ev);
+        this->rect = rect;    
     }
     //redraw the window
     void Widget::redraw(){
-        if(parent == nullptr){
+        if(parent() == nullptr){
             //We couldnot find the window
             return;
         }
-        if(not window()->visible){
+        //Try to find the window
+        WindowImpl *win = window();
+        if(win == nullptr){
             return;
         }
-        SDL_Event event;
-        event.type = SDL_WINDOWEVENT;
-        event.window.timestamp = SDL_GetTicks();
-        event.window.windowID = SDL_GetWindowID(parent->window->win);
-        event.window.event = SDL_WINDOWEVENT_EXPOSED;
-
-        SDL_PushEvent(&event);
+        win->redraw();
     }
     //Get the window
     Window &Widget::master() const{
@@ -57,17 +69,8 @@ namespace Btk{
         BTK_ASSERT(win == nullptr);
         return *win;
     }
-    //Get the top container
-    Container &Widget::top_container() const{
-        BTK_ASSERT(parent != nullptr);
-        return window()->container;
-    }
-    Container &Widget::container() const{
-        BTK_ASSERT(parent != nullptr);
-        return *parent;
-    }
     Renderer *Widget::renderer() const{
-        if(parent == nullptr){
+        if(parent() == nullptr){
             return nullptr;
         }
         return &(window()->render);
@@ -75,14 +78,44 @@ namespace Btk{
     //Get the default font
     //TODO create a global default font
     Font Widget::default_font() const{
-        BTK_ASSERT(parent != nullptr);
+        BTK_ASSERT(parent() != nullptr);
         //return window()->font();
         throwRuntimeError("Unimpl yet");
     }
     Theme &Widget::window_theme() const{
         return window()->theme;
     }
-
+    //Try to find the window
+    WindowImpl *Widget::window() const noexcept{
+        if(_window != nullptr){
+            //Try the cache
+            return _window;
+        }
+        if(parent() == nullptr){
+            //No window
+            return nullptr;
+        }
+        Widget *cur = const_cast<Widget*>(this);
+        while(cur->_parent != nullptr){
+            cur = cur->_parent;
+        }
+        //At the top
+        
+        if(cur->attr.window){
+            //Is the window
+            _window = static_cast<WindowImpl*>(cur);
+            BTK_ASSERT(dynamic_cast<WindowImpl*>(cur) != nullptr);
+            return _window;
+        }
+        return nullptr;
+    }
+    void Widget::clear_childrens(){
+        for(auto i = childrens.begin();i != childrens.end();){
+            delete *i;
+            i = childrens.erase(i);
+        }
+    }
+    #if 0
 
     //Container
     Container::Container(){
@@ -98,8 +131,7 @@ namespace Btk{
         }
         widgets_list.push_back(w);
         //Tell the widget
-        SetContainerEvent event(this);
-        w->handle(event);
+        w->set_parent(this);
         return true;
     }
     void Container::clear(){
@@ -121,8 +153,7 @@ namespace Btk{
         widgets_list.erase(iter);
         iter->_cleanup();
         //Tell the widget
-        SetContainerEvent event(nullptr);
-        widget->handle(event);
+        widget->set_parent(nullptr);
 
         return true;
     }
@@ -133,7 +164,9 @@ namespace Btk{
         }
         return false;
     }
-};
+    #endif
+}
+#if 0
 namespace Btk{
     //EventDispatcher in Container
     bool Container::handle(Event &event){
@@ -437,3 +470,4 @@ namespace Btk{
         }
     }
 }
+#endif

@@ -1,5 +1,6 @@
 #if !defined(_BTK_WIDGET_HPP_)
 #define _BTK_WIDGET_HPP_
+#include <cstdio>
 #include <list>
 #include "function.hpp"
 #include "signal.hpp"
@@ -16,12 +17,14 @@ namespace Btk{
     class Widget;
     class Container;
 
-    struct WindowImpl;
+    class WindowImpl;
 
     struct KeyEvent;
+    struct DragEvent;
     struct MouseEvent;
     struct WheelEvent;
     struct MotionEvent;
+    struct ResizeEvent;
     struct TextInputEvent;
 
     enum class FocusPolicy{
@@ -45,6 +48,7 @@ namespace Btk{
     //Attribute for Widget
     struct WidgetAttr{
         bool hide = false;//<Is hide
+        bool window = false;//<Is window
         bool user_rect = false;//<Using user defined position
         bool container = false;//<Is container
         bool disable = false;//<The widget is disabled?
@@ -147,6 +151,7 @@ namespace Btk{
         friend struct WindowImpl;
     };
     #endif
+    #if 0
     /**
      * @brief A Container of Widget
      * 
@@ -284,23 +289,18 @@ namespace Btk{
         friend class  Window;
         friend class  Widget;
         friend struct System;
-        friend struct WindowImpl;
+        friend class  WindowImpl;
     };
+    #endif
     class BTKAPI Widget:public HasSlots{
         public:
             /**
              * @brief Construct a new Widget object
              * @note All data will be inited to 0
              */
-            Widget():attr(),rect(
-                0,0,0,0
-            ),parent(nullptr){};
-            Widget(Container *parent):Widget(){
-                this->parent = parent;
-            }
-            Widget(Container &parent):Widget(){
-                this->parent = &parent;
-            }
+            Widget();
+            Widget(Widget *parent);
+            Widget(Widget &parent):Widget(&parent){}
 
             Widget(const Widget &) = delete;
             virtual ~Widget();
@@ -312,6 +312,8 @@ namespace Btk{
              * @return false if widget unprocessed it
              */
             virtual bool handle(Event &);
+            virtual void set_rect(const Rect &rect);
+
             bool visible() const noexcept{
                 return not attr.hide;
             };
@@ -328,7 +330,6 @@ namespace Btk{
              */
             Window &master() const;
             //Set widget rect
-            void set_rect(const Rect &rect);
             void set_rect(int x,int y,int w,int h){
                  set_rect({x,y,w,h});
             }
@@ -367,21 +368,25 @@ namespace Btk{
              */
             template<class T,class RetT = FRect>
             RetT rectangle() const noexcept;
-
-
             /**
-             * @brief Get the container of the widget
+             * @brief Show the widget tree 
              * 
-             * @return Container& 
              */
-            Container& container() const;
+            void dump_tree(FILE *output = stderr);
             /**
-             * @brief Get the top container
+             * @brief Set the parent (you can overload it)
              * 
-             * @return Container& 
+             * @param parent The pointer to the parent
              */
-            Container& top_container() const;
-
+            virtual void set_parent(Widget *parent);
+            Widget *parent() const noexcept{
+               return _parent; 
+            }
+            /**
+             * @brief Delete all childrens
+             * 
+             */
+            void clear_childrens();
         protected:
             /**
              * @brief Send a redraw request to the window
@@ -393,12 +398,7 @@ namespace Btk{
              * 
              * @return WindowImpl* 
              */
-            WindowImpl *window() const noexcept{
-                if(parent == nullptr){
-                    return nullptr;
-                }
-                return parent->window;
-            }
+            WindowImpl *window() const noexcept;
             /**
              * @brief Get current window's renderer
              * 
@@ -417,15 +417,36 @@ namespace Btk{
              * @return Theme& 
              */
             Theme &window_theme() const;
+
+            
+        public:
+            //Event Handle Method,It will be called in Widget::handle()
+            /**
+             * @brief Called in Drag(type Is Drag DragBegin DragEnd)
+             * 
+             * @return true 
+             * @return false 
+             */
+            virtual bool handle_drag(DragEvent     &){return false;}
+            virtual bool handle_click(MouseEvent   &){return false;}
+            virtual bool handle_whell(WheelEvent   &){return false;}
+            virtual bool handle_motion(MotionEvent &){return false;}
+            virtual bool handle_keyboard(KeyEvent  &){return false;}
+            virtual bool handle_textinput(TextInputEvent &){return false;}
+            
         protected:
             WidgetAttr attr;//Widget attributes
-            Rect rect;//Widget rect
-            Container *parent;//Parents
-        friend class  Window;
-        friend class  Layout;
-        friend struct WindowImpl;
-        friend class  Container;
-        friend void   PushEvent(Event *,Widget &);
+            Rect rect = {0,0,0,0};//Widget rect
+
+            std::list<Widget*> childrens;
+        private:
+            Widget *_parent = nullptr;//< Parent
+            mutable WindowImpl *_window = nullptr;//<Window pointer
+        friend class Window;
+        friend class Layout;
+        friend class WindowImpl;
+        friend class Container;
+        friend void  PushEvent(Event *,Widget &);
     };
 
     class BTKAPI Line:public Widget{

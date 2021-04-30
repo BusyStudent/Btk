@@ -6,6 +6,7 @@
 namespace Btk{
     class BTKAPI ScrollBar:public Widget{
         public:
+            using Widget::set_rect;
             /**
              * @brief Construct a new Scroll Bar object
              * 
@@ -27,6 +28,9 @@ namespace Btk{
             }
             void set_value(int value);
             int move_slider(int x);
+            
+            void set_rect(const Rect &r) override;
+            void set_parent(Widget *w) override;
 
             template<class Method,class TObject>
             void set_move_signal(Method&& method,TObject* object)
