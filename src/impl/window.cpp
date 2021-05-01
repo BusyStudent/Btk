@@ -33,9 +33,7 @@ namespace Btk{
         //Set theme
         theme = Themes::GetDefault();
         //Set background color
-        bg_color = theme[Theme::Window];
-        last_draw_ticks = 0;
-        
+        bg_color = theme[Theme::Window];        
         attr.window = true;
     }
     WindowImpl::~WindowImpl(){
@@ -49,17 +47,6 @@ namespace Btk{
     }
     //Draw window
     void WindowImpl::draw(Renderer &render){
-        auto current = SDL_GetTicks();
-
-        //Uint32 durl = 1000 / fps_limit;
-        if(current < last_draw_ticks + 10){
-            //drawing too fast
-            last_draw_ticks = current;
-            return;
-        }
-        else{
-            last_draw_ticks = current;
-        }
         #ifndef NDEBUG
         SDL_Log("[System::Renderer]Draw Window %p",win);
         #endif
@@ -160,6 +147,29 @@ namespace Btk{
             }
             return sig_event(event);
         }
+    }
+    void WindowImpl::redraw(){
+        if(not visible){
+            return;
+        }
+        auto cur = SDL_GetTicks();
+        if(fps_limit != 0){
+            //Has limited
+            if(cur - last_redraw_ticks < 1000 / fps_limit){
+                //Too fast,ignore
+                BTK_LOGINFO("drawing too fast,ignored");
+                return;
+            }
+        }
+        last_redraw_ticks = cur;
+        //Window is visible
+        SDL_Event event;
+        event.type = SDL_WINDOWEVENT;
+        event.window.timestamp = SDL_GetTicks();
+        event.window.windowID = id();
+        event.window.event = SDL_WINDOWEVENT_EXPOSED;
+        SDL_PushEvent(&event);
+       
     }
 }
 //Event Processing
@@ -406,7 +416,7 @@ namespace Btk{
         }
         return false;
     }
-    bool WindowImpl::handle_whell(WheelEvent &event){
+    bool WindowImpl::handle_wheel(WheelEvent &event){
         if(cur_widget != nullptr){
             return cur_widget->handle(event);
         }
@@ -494,23 +504,7 @@ namespace Btk{
         SDL_SetWindowTitle(pimpl->win,title.data());
     }
     void Window::draw(){
-        /*
-        //send a draw request
-        //README possible memory error on here if window is closed
-        System::instance->defer_call([](void *win){
-            static_cast<WindowImpl*>(win)->draw();
-        },pimpl);
-        */
-       if(pimpl->visible){
-            //Window is not visible
-            SDL_Event event;
-            SDL_zero(event);
-            event.type = SDL_WINDOWEVENT;
-            event.window.timestamp = SDL_GetTicks();
-            event.window.windowID = winid;
-            event.window.event = SDL_WINDOWEVENT_EXPOSED;
-            SDL_PushEvent(&event);
-       }
+        pimpl->redraw();
     }
     void Window::close(){
         //send a close request
@@ -554,13 +548,7 @@ namespace Btk{
     }
     //add widget
     bool Window::add(Widget *ptr){
-        if(ptr == nullptr){
-            return false;
-        }
-        else{
-            pimpl->childrens.push_back(ptr);
-            return true;
-        }
+        return pimpl->add(ptr);
     }
     //Window exists
     bool Window::exists() const{
@@ -637,5 +625,17 @@ namespace Btk{
     }
     Font Window::font() const{
         throwRuntimeError("Unimpl yet");
+    }
+    void Window::dump_tree(FILE *output) const{
+        pimpl->dump_tree(output);
+    }
+}
+namespace Btk{
+    Size GetScreenSize(int index){
+        SDL_DisplayMode mode;
+        if(SDL_GetCurrentDisplayMode(index,&mode) == -1){
+            throwSDLError();
+        }
+        return {mode.w,mode.h};
     }
 }

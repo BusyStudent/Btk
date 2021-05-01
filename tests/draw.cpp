@@ -42,7 +42,7 @@ int main(){
         render.rounded_rect(0,0,vec2.x,vec2.y,2);
         render.rounded_rect(50,50,50,50,5);
         render.stroke();
-        render.show_path_caches();
+        //render.show_path_caches();
 
         render.begin_path();
         render.circle(vec2,100);

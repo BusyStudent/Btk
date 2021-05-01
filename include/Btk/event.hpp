@@ -67,7 +67,7 @@ namespace Btk{
             Event(const Event &ev):
                 _type(ev._type),
                 _accepted(false){};
-            virtual ~Event();
+            virtual ~Event() = default;
             /**
              * @brief is accepted
              * 

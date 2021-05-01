@@ -48,7 +48,6 @@ namespace Btk{
             GifView(int x,int y,int w,int h);
             ~GifView();
 
-            bool handle(Event &);
             void draw(Renderer &);
 
             void set_image(GifImage &&image);

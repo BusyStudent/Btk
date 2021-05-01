@@ -39,9 +39,6 @@ namespace{
 };
 namespace Btk{
     static std::atomic<Event::Type> current_type = Event::User;
-    Event::~Event(){
-
-    }
     //Register a event
     Event::Type Event::Register(){
         auto now = current_type.load(

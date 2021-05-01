@@ -40,6 +40,9 @@ namespace Btk{
             Signal<void(int)> &signal_moved(){
                 return signal;
             }
+            
+            bool handle_drag(DragEvent &) override;
+            bool handle_wheel(WheelEvent &) override;
         private:
             /*
             *|--Widget's rect-|

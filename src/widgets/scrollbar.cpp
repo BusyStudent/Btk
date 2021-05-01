@@ -13,7 +13,10 @@ namespace Btk{
      */
     constexpr int BarWidth = 10;
     constexpr int SingleStep = 4;
-    int _x = 10,_y = 10;
+    //...
+    static thread_local int _x = 10;
+    static thread_local int _y = 10;
+    
     ScrollBar::ScrollBar(Orientation orient){
         attr.focus = FocusPolicy::Wheel;
         orientation = orient;
@@ -38,6 +41,9 @@ namespace Btk{
         redraw();
     }
     bool ScrollBar::handle(Event &event){
+        if(Widget::handle(event)){
+            return true;
+        }
         switch(event.type()){
             case Event::Enter:{
                 BTK_LOGINFO("Enter scroll bar %p",this);
@@ -56,33 +62,35 @@ namespace Btk{
                 redraw();
                 return true;
             }
+            default:
+                return false;
+        }
+    }
+    bool ScrollBar::handle_wheel(WheelEvent &event){
+        if(event.y < 0){
+            move_slider(SingleStep);
+        }
+        else{
+            move_slider(-SingleStep);
+        }
+        return event.accept();
+    }
+    bool ScrollBar::handle_drag(DragEvent &event){
+        switch(event.type()){
             case Event::DragBegin:{
-                event.accept();
                 dragging = true;
                 actived = true;
-                return true;
+                break;
             }
             case Event::DragEnd:{
                 event.accept();
                 dragging = false;
                 actived = false;
-                return true;
-            }
-            case Event::Wheel:{
-                auto wheel = event_cast<WheelEvent&>(event);
-                
-                if(wheel.y > 0){
-                    move_slider(SingleStep);
-                }
-                else{
-                    move_slider(-SingleStep);
-                }
-                return true;
+                break;
             }
             case Event::Drag :{
-                DragEvent& e = event_cast<DragEvent&>(event);
-                int x = e.xrel;
-                int y = e.yrel;
+                int x = event.xrel;
+                int y = event.yrel;
                 if(orientation == Orientation::H){
                     //Is Horizontal
                     move_slider(x);
@@ -99,10 +107,11 @@ namespace Btk{
                     move_slider(y);
                 }
                 // BTK_LOGINFO("The Bar_value={%d}\nThe rel={%d,%d}",this->bar_value,x,y);
+                break;
             }
-            default:
-                return false;
+            default:{}
         }
+        return event.accept();
     }
     void ScrollBar::draw(Renderer &render){
         render.save();

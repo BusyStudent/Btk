@@ -10,6 +10,10 @@
 #include <Btk/font.hpp>
 namespace Btk{
     bool AbstractButton::handle(Event &event){
+        //The Widget had already processd it
+        if(Widget::handle(event)){
+            return true;
+        }
         switch(event.type()){
             case Event::Enter:{
                 onenter();
@@ -17,12 +21,6 @@ namespace Btk{
             }
             case Event::Leave:{
                 onleave();
-                break;
-            }
-            case Event::Click:{
-                //Click button
-                auto &ev = event_cast<MouseEvent&>(event);
-                onclick(ev);
                 break;
             }
             default:
@@ -143,7 +141,7 @@ namespace Btk{
         render.stroke();
         
     }
-    void Button::onclick(const MouseEvent &event){
+    bool Button::handle_click(MouseEvent &event){
         if(event.is_pressed() and event.button.is_left()){
             BTK_LOGINFO("This button is clicked %p",this);
             is_pressed = true;
@@ -161,6 +159,7 @@ namespace Btk{
                 clicked.emit();
             }
         }
+        return event.accept();
     }
     void Button::onleave(){
         is_entered = false;

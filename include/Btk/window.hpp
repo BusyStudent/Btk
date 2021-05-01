@@ -1,8 +1,8 @@
 #if !defined(_BTK_WINDOW_HPP_)
 #define _BTK_WINDOW_HPP_
 #include <string_view>
-#include <functional>
 #include <string>
+#include <cstdio>
 #include "signal.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
@@ -204,9 +204,20 @@ namespace Btk{
             int w() const noexcept;//get w
             int h() const noexcept;//get h
             Font font() const;//get font
+            /**
+             * @brief Dump the widget tree
+             * 
+             */
+            void dump_tree(FILE *output = stderr) const;
         private:
             WindowImpl *pimpl;
             Uint32 winid;
     };
+    /**
+     * @brief Get the Screen Size object
+     * @param display The display index(0 on default)
+     * @return BTKAPI 
+     */
+    BTKAPI Size GetScreenSize(int display = 0);
 }
 #endif // _BTK_WINDOW_HPP_

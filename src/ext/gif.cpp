@@ -162,18 +162,6 @@ namespace Btk{
         set_rect(x,y,w,h);
     }
     GifView::~GifView() = default;
-    bool GifView::handle(Event &event){
-        switch(event.type()){
-            case Event::SetRect:
-                rect = event_cast<SetRectEvent&>(event).rect();
-                return event.accept();
-            case Event::SetContainer:
-                parent = event_cast<SetContainerEvent&>(event).container();
-                return event.accept();
-            default:
-                return event.reject();
-        }
-    }
     void GifView::set_image(GifImage &&image){
         gifimage = std::move(image);
         auto [w,h] = gifimage.size();

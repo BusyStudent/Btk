@@ -3,6 +3,7 @@
 #include <Btk/thirdparty/utf8.h>
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/render.hpp>
+#include <Btk/impl/input.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/textbox.hpp>
@@ -37,50 +38,18 @@ namespace Btk{
     };
     bool TextBox::handle(Event &event){
         static Cursor cursor(SystemCursor::Ibeam);
+        if(Widget::handle(event)){
+            return true;
+        }
         switch(event.type()){
-            //Accept the keyboard
-            case Event::KeyBoard:{
-                if(not has_focus){
-                    return false;
-                }
-                event.accept();
-                return do_keyboard(event_cast<KeyEvent&>(event));
-            }
-            case Event::TextInput:{
-                if(not has_focus){
-                    return false;
-                }
-                event.accept();
-                auto &tevent = event_cast<TextInputEvent&>(event);
-                add_string(tevent.text);
-                return true;
-            }
-            case Event::DragBegin:{
-                event.accept();
-                is_dragging = true;
-                return true;
-            }
-            case Event::Drag:{
-                event.accept();
-                return true;
-            }
-            case Event::DragEnd:{
-                event.accept();
-                is_dragging = false;
-                return true;
-            }
-            case Event::Click:{
-                event.accept();
-                return true;
-            }
             case Event::TakeFocus:{
                 //Enable Text input
                 event.accept();
                 has_focus = true;
                 show_line = true;
                 timer.start();
-                SDL_SetTextInputRect(&rect);
-                SDL_StartTextInput();
+                SetTextInputRect(&rect);
+                StartTextInput();
                 redraw();
                 return true;
             }
@@ -89,7 +58,7 @@ namespace Btk{
                 event.accept();
                 has_focus = false;
                 timer.stop();
-                SDL_StopTextInput();
+                StopTextInput();
                 redraw();
                 return true;
             }
@@ -210,7 +179,7 @@ namespace Btk{
         }
         render.restore();
     }
-    bool TextBox::do_keyboard(KeyEvent &event){
+    bool TextBox::handle_keyboard(KeyEvent &event){
         if(event.state == KeyEvent::Pressed){
             switch(event.keycode){
                 case SDLK_BACKSPACE:{
@@ -272,6 +241,31 @@ namespace Btk{
         //We donnot need the key 
         event.reject();
         return false;
+    }
+    bool TextBox::handle_textinput(TextInputEvent &event){
+        add_string(event.text);
+        return event.accept();
+    }
+    bool TextBox::handle_drag(DragEvent &event){
+        switch(event.type()){
+            case Event::DragBegin:{
+                is_dragging = true;
+                break;
+            }
+            case Event::Drag:{
+                //TODO
+                break;
+            }
+            case Event::DragEnd:{
+                is_dragging = false;
+                break;
+            }
+            default:{}
+        }
+        return event.accept();
+    }
+    bool TextBox::handle_click(ClickEvent &event){
+        return event.accept();
     }
     void TextBox::u8text(std::string &s) const{
         utf16to8(tb_text.begin(),tb_text.end(),back_inserter(s));

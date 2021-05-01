@@ -48,7 +48,10 @@ namespace Btk{
         private:
             void timeout();
             //Process keyboard event
-            bool do_keyboard(KeyEvent &event);
+            bool handle_drag(DragEvent    &) override;
+            bool handle_click(MouseEvent  &) override;
+            bool handle_keyboard(KeyEvent &) override;
+            bool handle_textinput(TextInputEvent&) override;
             //Add string in where the cur_text point
             void add_string(std::string_view);
             //Font  tb_font;//Text Font

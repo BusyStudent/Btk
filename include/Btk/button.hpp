@@ -26,7 +26,6 @@ namespace Btk{
 
         protected:
             virtual void set_parent(Widget *);
-            virtual void onclick(const MouseEvent &) = 0;
             virtual void onenter();
             virtual void onleave();
             bool is_entered = false;//< Is mouse on the button?
@@ -57,8 +56,8 @@ namespace Btk{
                 return btext;
             }
         protected:
-            void onclick(const MouseEvent &);
-            void onleave();
+            bool handle_click(MouseEvent &) override;
+            void onleave() override;
 
 
             //Button text

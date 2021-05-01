@@ -1,8 +1,9 @@
 #if !defined(_BTKIMPL_WINDOW_HPP_)
 #define _BTKIMPL_WINDOW_HPP_
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_video.h>
 #include <string_view>
-#include <functional>
+#include <atomic>
 #include <mutex>
 #include <list>
 #include "render.hpp"
@@ -36,13 +37,18 @@ namespace Btk{
             return draw_fn(render,widget,userdata);
         }
     };
-    class BTKAPI WindowImpl:public Widget{
+    class BTKAPI WindowImpl:public Container{
         //Init SDL Window
         public:
             WindowImpl(const char *title,int x,int y,int w,int h,int flags);
             ~WindowImpl();
             //Overload the method from widget
             void draw(Renderer &render);
+            /**
+             * @brief Send a redraw request
+             * 
+             */
+            void redraw();
             bool handle(Event &);
             
             void pixels_size(int *w,int *h);//GetWindowSize
@@ -69,10 +75,11 @@ namespace Btk{
             Uint32 id() const{
                 return SDL_GetWindowID(win);
             }
+
         public:
             //Process Event
             bool handle_click(MouseEvent   &);
-            bool handle_whell(WheelEvent   &);
+            bool handle_wheel(WheelEvent   &);
             bool handle_motion(MotionEvent &);
             bool handle_keyboard(KeyEvent  &);
             bool handle_textinput(TextInputEvent &);
@@ -93,9 +100,9 @@ namespace Btk{
             //mutex
             std::recursive_mutex mtx;
             Atomic visible = false;
-            //Last draw ticks
-            Uint32 last_draw_ticks = 0;
-            //FPS limit
+            //Last time we call the redraw
+            Uint32 last_redraw_ticks = 0;
+            //FPS limit(0 on unlimited)
             Uint32 fps_limit = 60;
             //Window theme
             Theme theme;
@@ -104,21 +111,6 @@ namespace Btk{
             std::list<DrawCallback> draw_cbs;
 
             //Methods for Widget impl
-
-            /**
-             * @brief Add widget in Window
-             * 
-             * @tparam T 
-             * @tparam Args 
-             * @param args 
-             * @return T& 
-             */
-            template<class T,class ...Args>
-            T &add(Args &&...args){
-                T *ptr = new T(container,std::forward<Args>(args)...);
-                container.add(ptr);
-                return *ptr;
-            }
         private:
             //A helper for set the current focus widget
             void set_focus_widget(Widget *);
@@ -138,6 +130,6 @@ namespace Btk{
         friend class System;
         friend void DispatchEvent(const SDL_Event &ev,void*);
     };
-};
+}
 
 #endif // _BTKIMPL_WINDOW_HPP_

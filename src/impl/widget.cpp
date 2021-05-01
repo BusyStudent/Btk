@@ -28,7 +28,7 @@ namespace Btk{
             case Event::KeyBoard:
                 return handle_keyboard(event_cast<KeyEvent&>(ev));
             case Event::Wheel:
-                return handle_whell(event_cast<WheelEvent&>(ev));
+                return handle_wheel(event_cast<WheelEvent&>(ev));
             case Event::Drag:
             case Event::DragBegin:
             case Event::DragEnd:
@@ -59,7 +59,7 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        win->redraw();
+        win->WindowImpl::redraw();
     }
     //Get the window
     Window &Widget::master() const{
@@ -115,43 +115,45 @@ namespace Btk{
             i = childrens.erase(i);
         }
     }
-    #if 0
-
-    //Container
-    Container::Container(){
-        window = nullptr;
+    void Widget::dump_tree(FILE *output){
+        if(output == nullptr){
+            output = stderr;
+        }
+        dump_tree_impl(output,0);
     }
-    //delete container
-    Container::~Container(){
-        clear();
+    void Widget::dump_tree_impl(FILE *output,int depth){
+        //Print space
+        for(int i = 0;i < depth;i++){
+            fputc(' ',output);
+            fputc(' ',output);
+        }
+        fprintf(output,"- %s\n",get_typename(typeid(*this)).c_str());
+        for(auto ch:childrens){
+            ch->dump_tree_impl(output,depth + 1);
+        }
     }
     bool Container::add(Widget *w){
         if(w == nullptr){
             return false;
         }
-        widgets_list.push_back(w);
+        childrens.push_back(w);
         //Tell the widget
         w->set_parent(this);
         return true;
     }
     void Container::clear(){
-        for(auto iter = widgets_list.begin();iter != widgets_list.end();){
-            iter->_cleanup();
-            delete *iter;
-            iter = widgets_list.erase(iter);
-        }
+        clear_childrens();
     }
     //detach widget
     bool Container::detach(Widget *widget){
         if(widget == nullptr){
             return false;
         }
-        auto iter = std::find(widgets_list.begin(),widgets_list.end(),widget);
-        if(iter == widgets_list.end()){
+        auto iter = std::find(childrens.begin(),childrens.end(),widget);
+        if(iter == childrens.end()){
             return false;
         }
-        widgets_list.erase(iter);
-        iter->_cleanup();
+        childrens.erase(iter);
         //Tell the widget
         widget->set_parent(nullptr);
 
@@ -164,7 +166,6 @@ namespace Btk{
         }
         return false;
     }
-    #endif
 }
 #if 0
 namespace Btk{

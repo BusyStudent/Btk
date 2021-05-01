@@ -16,6 +16,7 @@ namespace Btk{
         using Win32::Init;
         using Win32::Quit;
         using Win32::HandleSysMsg;
+        using Win32::MessageBox;
         #elif defined(BTK_X11)
         using X11::Init;
         using X11::Quit;

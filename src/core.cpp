@@ -283,7 +283,7 @@ namespace Btk{
             return;
         }
         auto wheel = TranslateEvent(event.wheel);
-        if(win->handle_whell(wheel)){
+        if(win->handle_wheel(wheel)){
             if(not wheel.is_accepted()){
                 win->sig_event(wheel);
             }

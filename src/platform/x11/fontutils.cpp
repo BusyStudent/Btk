@@ -9,6 +9,9 @@
 #include <Btk/exception.hpp>
 #include <Btk/font.hpp>
 #include <Btk/Btk.hpp>
+
+#include <SDL2/SDL_mutex.h>
+
 #include <mutex>
 namespace Btk{
 namespace FontUtils{

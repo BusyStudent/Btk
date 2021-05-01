@@ -101,197 +101,6 @@ namespace Btk{
             return *static_cast<T*>(userdata);
         }
     };
-    #if 0
-    /**
-     * @brief A helper of dispatch event in widget
-     * 
-     */
-    class BTKAPI EventDispatcher{
-        public:
-            using container_type = std::list<Widget*>;
-            
-            EventDispatcher(container_type &w):
-                widgets(w){};
-            EventDispatcher(const EventDispatcher &) = delete;
-            ~EventDispatcher() = default;
-        public:
-            //Process Event
-            bool handle_click(MouseEvent   &);
-            bool handle_motion(MotionEvent &);
-            bool handle_keyboard(KeyEvent  &);
-            bool handle_textinput(TextInputEvent &);
-            /**
-             * @brief Generic to dispatch event to widgets
-             * 
-             * @return true 
-             * @return false 
-             */
-            bool handle(Event &);
-        private:
-            //A helper for set the current focus widget
-            void set_focus_widget(Widget *);
-            
-
-            container_type& widgets;
-            Widget *focus_widget = nullptr;//The widget which has focus
-            Widget *drag_widget = nullptr;//The Dragging event
-            Widget *cur_widget = nullptr;//Mouse point widget
-            /**
-             * @brief The mouse is pressed
-             * 
-             * @note This value is used to check the drag status
-             */
-            bool mouse_pressed = false;
-            bool drag_rejected = false;
-            /**
-             * @brief Manager by window
-             * 
-             */
-            bool managed_window = false;
-        friend struct WindowImpl;
-    };
-    #endif
-    #if 0
-    /**
-     * @brief A Container of Widget
-     * 
-     */
-    class BTKAPI Container{
-        public:
-            Container();
-            Container(const Container &) = delete;
-            ~Container();
-            /**
-             * @brief The event filter(return false to drop the event)
-             * 
-             */
-            typedef Function<bool(Event&)> Filter;
-        public:
-            /**
-             * @brief Add a widget to the Container
-             * 
-             * @tparam T 
-             * @tparam Args 
-             * @param args 
-             * @return The new widget ref
-             */
-            template<class T,class ...Args>
-            T& add(Args &&...args){
-                T *ptr = new T(
-                    std::forward<Args>(args)...
-                );
-                add(static_cast<Widget*>(ptr));
-                return *ptr;
-            }
-            bool add(Widget *w);
-            /**
-             * @brief Destroy all widget
-             * 
-             */
-            void clear();
-            /**
-             * @brief Remove the widget in the container
-             * 
-             * @param widget The widget pointer
-             * @return true Successed to remove it
-             * @return false The widget pointer is invaid
-             */
-            bool remove(Widget *widget);
-            /**
-             * @brief Detach the widget in the container
-             * 
-             * @param widget The widget pointer
-             * @return true Successed to Detach it
-             * @return false The widget pointer is invaid
-             */
-            bool detach(Widget *widget);
-            /**
-             * @brief Get the widget's list
-             * 
-             * @return std::list<Widget*>& 
-             */
-            std::list<WidgetHolder> &widgets() noexcept{
-                return widgets_list;
-            }
-            const std::list<WidgetHolder> &widgets() const noexcept{
-                return widgets_list;
-            }
-            /**
-             * @brief For each widget
-             * 
-             * @tparam Callable 
-             * @tparam Args 
-             * @param callable 
-             * @param args 
-             */
-            template<class Callable,class ...Args>
-            void for_each(Callable &&callable,Args &&...args){
-                for(auto w:widgets_list){
-                    callable(w,std::forward<Args>(args)...);
-                }
-            }
-        public:
-            //Process Event
-            bool handle_click(MouseEvent   &);
-            bool handle_whell(WheelEvent   &);
-            bool handle_motion(MotionEvent &);
-            bool handle_keyboard(KeyEvent  &);
-            bool handle_textinput(TextInputEvent &);
-            /**
-             * @brief Generic to dispatch event to widgets
-             * 
-             * @return true 
-             * @return false 
-             */
-            bool handle(Event &);
-            /**
-             * @brief Get the Container EventFilter
-             * 
-             * @return Function<bool(Event&)>& 
-             */
-            Function<bool(Event&)> &filter() noexcept{
-                return ev_filter;
-            }
-            /**
-             * @brief The window's mouse was left(Internal)
-             * 
-             * @internal User should not use it
-             */
-            BTKHIDDEN void window_mouse_leave();
-        protected:
-            //A helper for set the current focus widget
-            void set_focus_widget(Widget *);
-            
-            Widget *focus_widget = nullptr;//The widget which has focus
-            Widget *drag_widget = nullptr;//The Dragging event
-            Widget *cur_widget = nullptr;//Mouse point widget
-            /**
-             * @brief The mouse is pressed
-             * 
-             * @note This value is used to check the drag status
-             */
-            bool mouse_pressed = false;
-            bool drag_rejected = false;
-            /**
-             * @brief Manager by window
-             * 
-             */
-            bool managed_window = false;
-            /**
-             * @brief Event filter
-             * 
-             */
-            Function<bool(Event&)> ev_filter;
-        protected:
-            //top window
-            WindowImpl *window;
-            std::list<WidgetHolder> widgets_list;
-        friend class  Window;
-        friend class  Widget;
-        friend struct System;
-        friend class  WindowImpl;
-    };
-    #endif
     class BTKAPI Widget:public HasSlots{
         public:
             /**
@@ -429,7 +238,7 @@ namespace Btk{
              */
             virtual bool handle_drag(DragEvent     &){return false;}
             virtual bool handle_click(MouseEvent   &){return false;}
-            virtual bool handle_whell(WheelEvent   &){return false;}
+            virtual bool handle_wheel(WheelEvent   &){return false;}
             virtual bool handle_motion(MotionEvent &){return false;}
             virtual bool handle_keyboard(KeyEvent  &){return false;}
             virtual bool handle_textinput(TextInputEvent &){return false;}
@@ -440,6 +249,8 @@ namespace Btk{
 
             std::list<Widget*> childrens;
         private:
+             void dump_tree_impl(FILE *output,int depth);
+
             Widget *_parent = nullptr;//< Parent
             mutable WindowImpl *_window = nullptr;//<Window pointer
         friend class Window;
@@ -447,6 +258,76 @@ namespace Btk{
         friend class WindowImpl;
         friend class Container;
         friend void  PushEvent(Event *,Widget &);
+    };
+    /**
+     * @brief A Container of Widget(Abstract)
+     * 
+     */
+    class BTKAPI Container:public Widget{
+        public:
+            Container() = default;
+            Container(const Container &) = delete;
+            ~Container() = default;
+        public:
+            /**
+             * @brief Add a widget to the Container
+             * 
+             * @tparam T 
+             * @tparam Args 
+             * @param args 
+             * @return The new widget ref
+             */
+            template<class T,class ...Args>
+            T& add(Args &&...args){
+                T *ptr = new T(
+                    std::forward<Args>(args)...
+                );
+                add(static_cast<Widget*>(ptr));
+                return *ptr;
+            }
+            /**
+             * @brief Add child
+             * 
+             * @param w 
+             * @return true 
+             * @return false 
+             */
+            virtual bool add(Widget *w);
+            /**
+             * @brief Destroy all widget
+             * 
+             */
+            virtual void clear();
+            /**
+             * @brief Remove the widget in the container
+             * 
+             * @param widget The widget pointer
+             * @return true Successed to remove it
+             * @return false The widget pointer is invaid
+             */
+            virtual bool remove(Widget *widget);
+            /**
+             * @brief Detach the widget in the container
+             * 
+             * @param widget The widget pointer
+             * @return true Successed to Detach it
+             * @return false The widget pointer is invaid
+             */
+            virtual bool detach(Widget *widget);
+            /**
+             * @brief For each widget
+             * 
+             * @tparam Callable 
+             * @tparam Args 
+             * @param callable 
+             * @param args 
+             */
+            template<class Callable,class ...Args>
+            void for_each(Callable &&callable,Args &&...args){
+                for(auto w:childrens){
+                    callable(w,std::forward<Args>(args)...);
+                }
+            }
     };
 
     class BTKAPI Line:public Widget{
