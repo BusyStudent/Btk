@@ -159,6 +159,12 @@ namespace Btk{
             float font_size() const{
                 return ptr->ptsize;
             }
+            void set_font_ptsize(float ptsize){
+                ptr->ptsize = ptsize;
+            }
+            void set_font_name(std::string_view name){
+                ptr->font = name;
+            }
             /**
              * @brief Create an empty theme
              * 
@@ -203,7 +209,7 @@ namespace Btk{
     }
 
     namespace Themes{
-        BTKAPI Theme GetDefault();
+        BTKAPI Theme &GetDefault();
     };
     BTKAPI std::ostream &operator <<(std::ostream &,const Palette &);
 }

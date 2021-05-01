@@ -9,24 +9,8 @@
 #include <Btk/pixels.hpp>
 #include <Btk/Btk.hpp>
 namespace Btk{
-    ImageView::ImageView(){
-        image_rect.x = 0;
-        image_rect.y = 0;
-        image_rect.w = 0;
-        image_rect.h = 0;
-
-        rect.x = 0;
-        rect.y = 0;
-        rect.w = 0;
-        rect.h = 0;
-
-    }
+    ImageView::ImageView() = default;
     ImageView::ImageView(int x,int y,int w,int h){
-        image_rect.x = 0;
-        image_rect.y = 0;
-        image_rect.w = 0;
-        image_rect.h = 0;
-
         rect.x = x;
         rect.y = y;
         rect.w = w;
@@ -42,6 +26,9 @@ namespace Btk{
             //Cleanup
             texture = nullptr;
             dirty = false;
+        }
+        if(draw_background){
+            render.draw_box(rect,bg_color);
         }
         if(not pixelbuf.empty()){
             //render.save();
@@ -74,6 +61,20 @@ namespace Btk{
         //Set image rect pos
         image_rect.w = buf->w;
         image_rect.h = buf->h;
+        redraw();
+    }
+    void ImageView::set_image(PixBuf &&buf){
+        pixelbuf = std::move(buf);
+        if(window() != nullptr and IsMainThread()){
+            //We can create texture right now
+            texture = renderer()->create_from(pixelbuf);
+        }
+        else{
+            dirty = true;//< We should cleanup
+        }
+        //Set image rect pos
+        image_rect.w = pixelbuf->w;
+        image_rect.h = pixelbuf->h;
         redraw();
     }
     void ImageView::ref_image(PixBuf &buf){

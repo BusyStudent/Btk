@@ -329,6 +329,10 @@ namespace Btk{
                 }
             }
     };
+    template<>
+    inline FRect Widget::rectangle<float,FRect>() const noexcept{
+        return FRect(rect);
+    }
 
     class BTKAPI Line:public Widget{
         public:
@@ -340,10 +344,6 @@ namespace Btk{
         private:
             Orientation orientation;
     };
-    template<>
-    inline FRect Widget::rectangle<float,FRect>() const noexcept{
-        return FRect(rect);
-    }
 }
 
 #endif // _BTK_WIDGET_HPP_

@@ -70,6 +70,32 @@ namespace Btk{
         }
         render.end();
     }
+    void WindowImpl::redraw(){
+        if(not visible){
+            //Window is not visible
+            return;
+        }
+        auto current = SDL_GetTicks();
+        if(fps_limit > 0){
+            //Has limit
+            Uint32 durl = 1000 / fps_limit;
+            if(last_redraw_ticks - current < durl){
+                //Too fast,ignore it
+                BTK_LOGINFO("Drawing too fast,ignored");
+                return;
+            }
+        }
+        //Update it
+        last_redraw_ticks = current;
+        
+        SDL_Event event;
+        event.type = SDL_WINDOWEVENT;
+        event.window.timestamp = current;
+        event.window.windowID = SDL_GetWindowID(win);
+        event.window.event = SDL_WINDOWEVENT_EXPOSED;
+        SDL_PushEvent(&event);
+       
+    }
     //TryCloseWIndow
     bool WindowImpl::on_close(){
         if(not sig_close.empty()){
@@ -147,29 +173,6 @@ namespace Btk{
             }
             return sig_event(event);
         }
-    }
-    void WindowImpl::redraw(){
-        if(not visible){
-            return;
-        }
-        auto cur = SDL_GetTicks();
-        if(fps_limit != 0){
-            //Has limited
-            if(cur - last_redraw_ticks < 1000 / fps_limit){
-                //Too fast,ignore
-                BTK_LOGINFO("drawing too fast,ignored");
-                return;
-            }
-        }
-        last_redraw_ticks = cur;
-        //Window is visible
-        SDL_Event event;
-        event.type = SDL_WINDOWEVENT;
-        event.window.timestamp = SDL_GetTicks();
-        event.window.windowID = id();
-        event.window.event = SDL_WINDOWEVENT_EXPOSED;
-        SDL_PushEvent(&event);
-       
     }
 }
 //Event Processing

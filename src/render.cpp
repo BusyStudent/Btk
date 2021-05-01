@@ -384,7 +384,7 @@ namespace Btk{
             throw RuntimeError("The pixbuf is empty");
         }
         if(pixbuf.size() != size()){
-            throw RuntimeError("Pibuf.size() != size()");
+            throw RuntimeError("pixbuf.size() != size()");
         }
         //Check end
         if(pixbuf->format->format != SDL_PIXELFORMAT_RGBA32){
@@ -406,8 +406,20 @@ namespace Btk{
         }
     }
     void Texture::update(const Rect &rect,const void *pixels){
-        SDL_Unsupported();
-        throwRuntimeError(SDL_GetError());
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        if(pixels == nullptr){
+            return;
+        }
+        if(rect.empty()){
+            throwRuntimeError("rect is empty");
+        }
+        auto s = size();
+        if(rect.x + rect.w > s.w or rect.y + rect.h > s.h){
+            throwRuntimeError("rect.size() > size()");
+        }
+        render->update_texture(texture,rect,pixels);
     }
     void Texture::native_handle(void *p_handle){
         if(empty()){

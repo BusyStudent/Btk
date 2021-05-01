@@ -6,17 +6,28 @@
 #include <tuple>
 
 #include "../exception.hpp"
+
 namespace Btk{
     //SDL_Thread
     namespace Impl{
         template<class T,class ...Args>
-        struct ThreadInvoker{
+        struct ThreadInvoker:public std::tuple<Args...>{
             T callable;
-            std::tuple<Args...> args;
+            
             //A Simple invoker for SDL_Thread
             static int SDLCALL Run(void *__self){
-                std::unique_ptr<ThreadInvoker> ptr(static_cast<ThreadInvoker*>(__self));
-                std::apply(ptr->callable,ptr->args);
+                //It is easy to move
+                if constexpr(std::is_nothrow_move_assignable<ThreadInvoker>() 
+                         and std::is_trivially_move_assignable<ThreadInvoker>()
+                    ){
+                    ThreadInvoker self = std::move(*static_cast<ThreadInvoker*>(__self));
+                    delete static_cast<ThreadInvoker*>(__self);
+                    std::apply(self.callable,static_cast<std::tuple<Args...>&&>(self));
+                }
+                else{
+                    std::unique_ptr<ThreadInvoker> ptr(static_cast<ThreadInvoker*>(__self));
+                    std::apply(ptr->callable,static_cast<std::tuple<Args...>&&>(*ptr));
+                }
                 return 0;
             }
         };
@@ -38,8 +49,8 @@ namespace Btk{
                 
                 
                 auto *invoker = new InvokerType{
-                    std::forward<Callable>(callable),
-                    {std::forward<Args>(args)...}
+                    {std::forward<Args>(args)...},
+                    std::forward<Callable>(callable)
                 };
                 thrd = SDL_CreateThread(
                     InvokerType::Run,
@@ -54,8 +65,8 @@ namespace Btk{
                 
                 
                 auto *invoker = new InvokerType{
-                    std::forward<Callable>(callable),
-                    {std::forward<Args>(args)...}
+                    {std::forward<Args>(args)...},
+                    std::forward<Callable>(callable)
                 };
                 thrd = SDL_CreateThread(
                     InvokerType::Run,

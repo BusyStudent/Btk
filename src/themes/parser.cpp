@@ -5,16 +5,9 @@
 #include <SDL2/SDL_rwops.h>
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
+#include "../build.hpp"
 #include <Btk/themes.hpp>
-
 #include <cstring>
-#if 0
-namespace Btk{
-namespace Themes{
-    //Internal default theme
-    Theme &DefaultTheme();
-}
-}
 
 
 namespace{
@@ -25,9 +18,6 @@ namespace{
     //The context of parser
     struct ParseContext{
         Theme &theme;
-        std::string fontname;
-        int font_ptsize = 12;
-        bool err = false;
     };
     bool parse_color(std::string_view str,Color &color){
         Color c;//tmp color
@@ -93,91 +83,35 @@ namespace{
         #ifndef NDEBUG
         fprintf(stderr,"  section:%s name:%s value:%s\n",section,name,value);
         #endif
-        if(strcasecmp(section,"Font")){
-            //Font name?
+        if(strcasecmp(section,"Color")){
+            Color c;
+            parse_color(value,c);
+            ctxt.theme[name] = c;
+        }
+        else if(strcasecmp(section,"Font")){
             if(strcasecmp(name,"name")){
-                ctxt.fontname = value;
+                ctxt.theme.set_font_name(value);
             }
-            //FontPtsize
             else if(strcasecmp(name,"ptsize")){
-                ctxt.font_ptsize = std::atoi(value);
+                ctxt.theme.set_font_ptsize(ParseInt(value));
             }
-            else{
-                //Unknown value
-                goto err;
-            }
-        }
-        else if(strcasecmp(section,"Color")){
-            //Is setting color
-            if(strcasecmp(name,"text")){
-                if(not parse_color(value,ctxt.theme.text_color)){
-                    goto err;
-                }
-            }
-            else if(strcasecmp(name,"background")){
-                if(not parse_color(value,ctxt.theme.background_color)){
-                    goto err;
-                }
-            }
-            else if(strcasecmp(name,"window")){
-                if(not parse_color(value,ctxt.theme.window_color)){
-                    goto err;
-                }
-            }
-            else if(strcasecmp(name,"button")){
-                if(not parse_color(value,ctxt.theme.button_color)){
-                    goto err;
-                }
-            }
-            else if(strcasecmp(name,"border")){
-                if(not parse_color(value,ctxt.theme.border_color)){
-                    goto err;
-                }
-            }
-            else if(strcasecmp(name,"high_light")){
-                if(not parse_color(value,ctxt.theme.high_light)){
-                    goto err;
-                }
-            }
-            else if(strcasecmp(name,"high_light_text")){
-                if(not parse_color(value,ctxt.theme.high_light_text)){
-                    goto err;
-                }
-            }
-            else{
-                goto err;
-            }
-        }
-        else{
-            err:;
-            ctxt.err = true;
-            return 0;
         }
         return 1;
     }
 }
 namespace Btk{
     Theme Theme::Parse(std::string_view txt){
-        Theme theme = Themes::DefaultTheme();
+        Theme theme = Theme::Create();
 
         ParseContext ctxt{theme};
 
         ini_parse_memory(txt.data(),txt.length(),process_ini,&ctxt);
-
-        if(ctxt.err){
-            throwRuntimeError("Failed to parse theme");
-        }
         
-
-        if(not ctxt.fontname.empty()){
-            //We set the fontname
-            theme.font.open(ctxt.fontname,ctxt.font_ptsize);
-        }
-
+        
         return theme;
     }
     Theme Theme::ParseFile(std::string_view txt){
-        Theme theme = Themes::DefaultTheme();
+        Theme theme = Theme::Create();
 
         ParseContext ctxt{theme};
 
@@ -185,18 +119,9 @@ namespace Btk{
             throwRuntimeError(cformat("fopen('%s') failed",txt.data()).c_str());
         }
 
-        if(ctxt.err){
-            throwRuntimeError("Failed to parse theme");
-        }
-        
-
-        if(not ctxt.fontname.empty()){
-            //We set the fontname
-            theme.font.open(ctxt.fontname,ctxt.font_ptsize);
-        }
 
         return theme;
     }
 }
-#endif
+
 #endif

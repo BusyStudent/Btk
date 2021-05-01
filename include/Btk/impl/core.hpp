@@ -1,6 +1,7 @@
 #if !defined(_BOXIMPL_CORE_HPP_)
 #define _BOXIMPL_CORE_HPP_
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_events.h>
 #include <condition_variable>
 #include <unordered_map>
 #include <exception>
@@ -14,9 +15,37 @@
 
 namespace Btk{
     class WindowImpl;
-    class System{
-        public:
-        
+    /**
+     * @brief Image Adpater for Laoding or Saving Image
+     * 
+     */
+    struct ImageAdapter{
+        /**
+         * @brief Load the image
+         * @param rwops
+         * @return nullptr on failure
+         */
+        SDL_Surface *(*fn_load)(SDL_RWops *);
+        /**
+         * @brief Save the image
+         * 
+         * @param rwops
+         * @param surf 
+         * @param quality
+         * @return true 
+         * @return false 
+         */
+        bool (*fn_save)(SDL_RWops *,SDL_Surface *surf,int quality);
+        /**
+         * @brief Is the image
+         * 
+         * @return true 
+         * @return false 
+         */
+        bool (*fn_is)(SDL_RWops *);
+        const char *name;
+    };
+    struct System{
         struct ExitHandler{
             //Function pointer
             typedef void (*FnPtr)(void*);
@@ -66,6 +95,7 @@ namespace Btk{
         bool (*handle_exception)(std::exception *) = nullptr;
         //called atexit
         std::list<ExitHandler> atexit_handlers;
+        std::list<ImageAdapter> image_adapters;
         //register handlers
         void atexit(void (*fn)(void *),void *data);
         void atexit(void (*fn)());

@@ -9,19 +9,19 @@
 
 #ifdef _WIN32
     #ifdef _MSC_VER
-    #define BTKEXPORT __declspec(dllexport)
-    #define BTKIMPORT __declspec(dllimport)
-    
-    #undef not
-    #undef and
-    #undef or
+        #define BTKEXPORT __declspec(dllexport)
+        #define BTKIMPORT __declspec(dllimport)
+        
+        #undef not
+        #undef and
+        #undef or
 
-    #define not !
-    #define and &&
-    #define or ||
+        #define not !
+        #define and &&
+        #define or ||
     #else
-    #define BTKEXPORT __attribute__((dllexport))
-    #define BTKIMPORT __attribute__((dllimport))
+        #define BTKEXPORT __attribute__((dllexport))
+        #define BTKIMPORT __attribute__((dllimport))
     #endif
 #elif defined(__GNUC__)
     #define BTKEXPORT __attribute__((visibility("default")))  

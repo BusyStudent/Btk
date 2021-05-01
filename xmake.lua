@@ -43,6 +43,11 @@ if is_plat("linux") then
     add_links("GL")
     add_defines("BTK_HAS_FREETYPE")
     add_defines("BTK_USE_FONTCONFIG")
+    --Check modes
+    if is_mode("release") then
+        add_cxxflags("-fvisibility=hidden")
+        add_cflags("-fvisibility=hidden")
+    end
 end
 target("btk")
     add_defines("BTK_USE_GFX")

@@ -530,6 +530,9 @@ namespace Btk{
 namespace Btk{
     RendererDevice::RendererDevice(SDL_Window *win){
         glctxt = SDL_GL_CreateContext(win);
+        if(glctxt == nullptr){
+            throwSDLError();
+        }
         window = win;
         
         //Failed to create

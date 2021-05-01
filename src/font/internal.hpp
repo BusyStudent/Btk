@@ -19,7 +19,7 @@
 #include <Btk/rect.hpp>
 #include <Btk/defs.hpp>
 
-namespace BTKHIDDEN BtkFt{
+namespace BtkFt{
     using FaceIndex = FT_ULong;
     using CharIndex = FT_ULong;
     using Char = char32_t;
@@ -51,7 +51,7 @@ namespace BTKHIDDEN BtkFt{
         size_t len;
         Atomic refcount;
     };
-    struct Face{
+    struct BTKHIDDEN Face{
         Face(const char *fname,FaceIndex index = 0);
         Face(const void *buf,size_t buflen,FaceIndex index = 0,bool dup = true);
         ~Face();
@@ -116,7 +116,7 @@ namespace BTKHIDDEN BtkFt{
      * @brief Glyph
      * 
      */
-    struct Glyph{
+    struct BTKHIDDEN Glyph{
         Glyph(FT_Glyph g):glyph(g){}
         Glyph(const Glyph &g){
             FT_Glyph_Copy(g.glyph,&glyph);
@@ -137,7 +137,7 @@ namespace BTKHIDDEN BtkFt{
      * @brief GlyphBitmap
      * 
      */
-    struct Bitmap{
+    struct BTKHIDDEN Bitmap{
         Bitmap(FT_BitmapGlyph g):glyph(g){}
         Bitmap(const Bitmap &map){
             FT_Glyph_Copy(
@@ -160,7 +160,7 @@ namespace BTKHIDDEN BtkFt{
      * @brief Slot for 
      * 
      */
-    struct GlyphSlots{
+    struct BTKHIDDEN GlyphSlots{
         ~GlyphSlots();
         /**
          * @brief Copy from FT_GlyphSlot
@@ -186,7 +186,7 @@ namespace BTKHIDDEN BtkFt{
      * @brief The font user used
      * 
      */
-    struct Font{
+    struct BTKHIDDEN Font{
         /**
          * @brief Construct a new Font object
          * 
@@ -249,7 +249,7 @@ namespace BTKHIDDEN BtkFt{
             return face->metrics().height;
         }
     };
-    struct Library{
+    struct BTKHIDDEN Library{
         Library();
         ~Library();
         Library(const Library &) = delete;
@@ -291,9 +291,9 @@ namespace BTKHIDDEN BtkFt{
     struct FontStash{
 
     };
-    extern void Init();
-    extern void Quit();
-    extern Library *library;
+    extern BTKHIDDEN void Init();
+    extern BTKHIDDEN void Quit();
+    extern BTKHIDDEN Library *library;
     inline Library &Instance(){
         return *library;
     }

@@ -83,6 +83,9 @@ namespace Btk{
         throwRuntimeError("Unimpl yet");
     }
     Theme &Widget::window_theme() const{
+        if(window() == nullptr){
+            return Themes::GetDefault();
+        }
         return window()->theme;
     }
     //Try to find the window
@@ -242,6 +245,14 @@ namespace Btk{
                 }
                 #endif
                 return true;
+            }
+            case Event::SetRect:{
+                auto &ev = event_cast<SetRectEvent&>(event);
+                return handle_setrect(ev);
+            }
+            case Event::SetContainer:{
+                auto &ev = event_cast<SetContainerEvent&>(event);
+                parent = ev.container();
             }
             default:{
                 for(auto widget:widgets_list){

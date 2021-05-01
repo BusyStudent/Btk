@@ -163,6 +163,14 @@ namespace Btk{
             PixBuf zoom_to(int w,int h){
                 return zoom(double(w) / double(this->w()),double(h) / double(this->h()));
             }
+            /**
+             * @brief Copy it into
+             * 
+             * @param buf 
+             * @param src 
+             * @param dst 
+             */
+            void bilt(const PixBuf &buf,const Rect *src,Rect *dst);
             //Some static method to load image
             static PixBuf FromFile(std::string_view file);
             static PixBuf FromFile(FILE *f);

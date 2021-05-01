@@ -113,8 +113,8 @@ namespace Btk{
     }
 }
 namespace Btk::Themes{
-    Theme GetDefault(){
-        auto t = Theme::Create();
+    Theme &GetDefault(){
+        static auto t = Theme::Create();
         //Normal color
         t.normal()[Theme::Window] = Color(239,240,241,255);
         t.normal()[Theme::Background] = Color(255,255,255,255);

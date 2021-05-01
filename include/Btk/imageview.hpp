@@ -13,6 +13,7 @@ namespace Btk{
             ~ImageView();
             //set image
             void set_image(const PixBuf &buf);
+            void set_image(PixBuf &&buf);
             //ref image
             void ref_image(PixBuf &buf);
             //called from parent widget
@@ -30,10 +31,11 @@ namespace Btk{
         private:
             PixBuf pixelbuf;
             Texture texture;
-            Rect image_rect;
+            Rect image_rect = {0,0,0,0};
             Color boarder_color = {208,208,208,255};
             Color bg_color;
             bool draw_borader = false;//< Should we draw the boarder
+            bool draw_background = false;//< Should we draw the boarder
             bool dirty = false;
             
             TextureFlags tex_flags = TextureFlags::Linear;//< The flags of the texture

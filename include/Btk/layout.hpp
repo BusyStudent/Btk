@@ -29,8 +29,9 @@ namespace Btk{
 
             void update();
             bool add_row(Widget *widget);
+            void add();
         private:
-
+            
     };
 };
 

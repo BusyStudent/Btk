@@ -123,6 +123,12 @@ namespace Btk{
         return surf;
 
     }
+    void PixBuf::bilt(const PixBuf &buf,const Rect *src,Rect *dst){
+        
+        if(SDL_BlitSurface(buf.get(),src,surf,dst) != 0){
+            throwSDLError();
+        }
+    }
     //static method
     PixBuf PixBuf::FromMem(const void *mem,size_t size){
         SDL_Surface *surf = IMG_Load_RW(SDL_RWFromConstMem(mem,size),true);
