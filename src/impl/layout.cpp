@@ -1,8 +1,8 @@
 #include "../build.hpp"
 
-#include <Btk/impl/render.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/layout.hpp>
+#include <Btk/render.hpp>
 #include <Btk/event.hpp>
 #include <Btk/rect.hpp>
 #include <list>

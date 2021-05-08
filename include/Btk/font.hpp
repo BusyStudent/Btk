@@ -12,11 +12,11 @@ namespace Btk{
      * 
      */
     enum class FontStyle:int{
-        Normal = 0x00,
-        Bold = 0x01,
-        Italic = 0x02,
-        Underline = 0x04,
-        Strikethrough = 0x08
+        Normal = 0,
+        Bold = 1 << 0,
+        Italic = 1 << 1,
+        Underline = 1 << 2,
+        Strikethrough = 1 << 3
     };
     /**
      * @brief Font Class

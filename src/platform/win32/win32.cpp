@@ -136,6 +136,7 @@ namespace Win32{
 
         CoInitializeEx(nullptr,COINIT_MULTITHREADED);
         //SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
+        SDL_SetWindowsMessageHook(MessageHook,nullptr);
     }
     void Quit(){
         CoUninitialize();
@@ -200,6 +201,22 @@ namespace Win32{
         );
         return true;
     }
+    Context GetContext(SDL_Window *win){
+        SDL_SysWMinfo info;
+        SDL_GetVersion(&info.version);
+        SDL_GetWindowWMInfo(win, &info);
+
+        BTK_ASSERT(info.subsystem == SDL_SYSWM_WINDOWS);
+
+        HWND window = info.info.win.window;
+        HINSTANCE instance = info.info.win.hinstance;
+        HDC hdc = info.info.win.hdc;
+        return {
+            window,
+            hdc,
+            instance
+        };
+    }
 }
 }
 namespace Btk{
@@ -225,5 +242,11 @@ namespace Btk{
     }
     bool HideConsole(){
         return FreeConsole();
+    }
+}
+namespace Btk{
+    void Window::set_transparent(float){
+        auto ctxt = Win32::GetContext(pimpl->win);
+        SetLayeredWindowAttributes(ctxt.window,RGB(0,0,0),0, LWA_ALPHA);
     }
 }

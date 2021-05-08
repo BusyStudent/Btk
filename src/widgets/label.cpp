@@ -1,11 +1,12 @@
 #include "../build.hpp"
 
-#include <Btk/impl/render.hpp>
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/window.hpp>
 #include <Btk/themes.hpp>
+#include <Btk/render.hpp>
 #include <Btk/label.hpp>
+
 namespace Btk{
     //Label Impl
     

@@ -6,10 +6,10 @@
 #include <atomic>
 #include <mutex>
 #include <list>
-#include "render.hpp"
 #include "../signal.hpp"
 #include "../widget.hpp"
 #include "../themes.hpp"
+#include "../render.hpp"
 #include "../event.hpp"
 #include "../font.hpp"
 #include "atomic.hpp"
@@ -75,7 +75,9 @@ namespace Btk{
             Uint32 id() const{
                 return SDL_GetWindowID(win);
             }
-
+            SDL_Window *sdl_window() const noexcept{
+                return win;
+            }
         public:
             //Process Event
             bool handle_click(MouseEvent   &);

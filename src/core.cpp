@@ -65,18 +65,17 @@ namespace Btk{
             //double call or call from another thread
             return -1;
         }
-        Btk_defer{
-            //Quit main
-            System::is_running = false;
-        };
+       
         //resume from error
-        resume:System::is_running = true;
+        resume:
+            Instance().is_running = true;
         try{
             
-            System::instance->run();
+            Instance().run();
         }
         catch(int i){
             //Exit
+            Instance().is_running = false;
             return i;
         }
         catch(std::exception &exp){
@@ -87,6 +86,8 @@ namespace Btk{
                     goto resume;
                 }
             }
+            Instance().is_running = false;
+
             throw;
         }
         catch(...){
@@ -96,8 +97,11 @@ namespace Btk{
                     goto resume;
                 }
             }
+            Instance().is_running = false;
+
             throw;
         }
+        Instance().is_running = false;
         return 0;
     }
     System::System(){

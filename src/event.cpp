@@ -164,8 +164,8 @@ namespace Btk{
             ev.state = KeyEvent::Released;
         }
 
-        ev.keycode = event.keysym.sym;
-        ev.scancode = event.keysym.scancode;
+        ev.keycode = Keycode(event.keysym.sym);
+        ev.scancode = Scancode(event.keysym.scancode);
         ev.keymode = static_cast<Keymode>(event.keysym.mod);
 
         ev.repeat = event.repeat;

@@ -2,7 +2,6 @@
 
 #include "../build.hpp"
 
-#include <Btk/impl/font.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/platform.hpp>

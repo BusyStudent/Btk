@@ -17,8 +17,9 @@ namespace Btk{
             //A Simple invoker for SDL_Thread
             static int SDLCALL Run(void *__self){
                 //It is easy to move
-                if constexpr(std::is_nothrow_move_assignable<ThreadInvoker>() 
-                         and std::is_trivially_move_assignable<ThreadInvoker>()
+                
+                if constexpr(std::is_nothrow_move_assignable_v<ThreadInvoker>
+                         and std::is_trivially_move_assignable_v<ThreadInvoker>
                     ){
                     ThreadInvoker self = std::move(*static_cast<ThreadInvoker*>(__self));
                     delete static_cast<ThreadInvoker*>(__self);

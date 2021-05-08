@@ -2,13 +2,13 @@
 
 #include <Btk/thirdparty/utf8.h>
 #include <Btk/impl/window.hpp>
-#include <Btk/impl/render.hpp>
 #include <Btk/impl/input.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/window.hpp>
 #include <Btk/cursor.hpp>
+#include <Btk/render.hpp>
 #include <Btk/event.hpp>
 
 #include <algorithm>
@@ -182,7 +182,7 @@ namespace Btk{
     bool TextBox::handle_keyboard(KeyEvent &event){
         if(event.state == KeyEvent::Pressed){
             switch(event.keycode){
-                case SDLK_BACKSPACE:{
+                case Keycode::Backspace:{
                     if(not tb_text.empty() and cur_txt != --tb_text.begin()){
                         
                         cur_txt = tb_text.erase(cur_txt);
@@ -199,7 +199,7 @@ namespace Btk{
                     }
                     return true;
                 }
-                case SDLK_LEFT:{
+                case Keycode::Left:{
                     if(cur_txt != --tb_text.begin()){
                         --cur_txt;
                         show_line = true;
@@ -207,7 +207,7 @@ namespace Btk{
                     }
                     return true;
                 }
-                case SDLK_RIGHT:{
+                case Keycode::Right:{
                     if(cur_txt != --tb_text.end()){
                         ++cur_txt;
                         show_line = true;
@@ -215,7 +215,7 @@ namespace Btk{
                     }
                     return true;
                 }
-                case SDLK_v:{
+                case Keycode::V:{
                     //Ctrl + V
                     if(event.has_kmod(Keymode::Ctrl)){
                         BTK_LOGINFO("Ctrl + V");
@@ -228,7 +228,7 @@ namespace Btk{
                     } 
                     return true;
                 }
-                case SDLK_c:{
+                case Keycode::C:{
                     //Ctrl + C
                     if(event.has_kmod(Keymode::Ctrl)){
                         BTK_LOGINFO("Ctrl + C");

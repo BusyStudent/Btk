@@ -8,7 +8,7 @@
 
 #define WIN32_WSTR (wchar_t*)
 #define WIN32_CWSTR (const wchar_t *)
-
+struct SDL_Window;
 namespace Btk{
 namespace Win32{
     /**
@@ -137,6 +137,22 @@ namespace Win32{
         HKEY key;
         bool opened;
     };
+    //Get native context
+    struct Context{
+        HWND window;
+        HDC hdc;
+        HINSTANCE hinstance;
+    };
+    Context GetContext(SDL_Window*);
+    /**
+     * @brief Internal MessageHook
+     * 
+     * @param hWnd 
+     * @param message 
+     * @param wParam 
+     * @param lParam 
+     */
+    void SDLCALL MessageHook(void *,void *hWnd,UINT message,UINT64 wParam,INT64 lParam);
 }
 }
 
