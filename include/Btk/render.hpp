@@ -1,6 +1,7 @@
 #if !defined(_BTK_RENDERER_HPP_)
 #define _BTK_RENDERER_HPP_
 #include "pixels.hpp"
+#include "string.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
 #include <list>
@@ -148,7 +149,7 @@ namespace Btk{
              * @param fname The filename
              * @return Texture 
              */
-            Texture load(std::string_view fname,TextureFlags flags = TextureFlags::Linear);
+            Texture load(u8string_view fname,TextureFlags flags = TextureFlags::Linear);
             Texture load(RWops &,TextureFlags flags = TextureFlags::Linear);
             /**
              * @brief Draw text
@@ -160,7 +161,8 @@ namespace Btk{
              * 
              * @return 0 on success
              */
-            int  text(Font &,int x,int y,Color c,std::string_view u8);
+            int  text(Font &,int x,int y,Color c,u8string_view u8);
+            int  text(Font &,int x,int y,Color c,u16string_view u16);
             /**
              * @brief Draw text by using c-tyle format string
              * 
@@ -171,9 +173,8 @@ namespace Btk{
              * @param ... The format args
              * @return 0 on success
              */
-            int  text(Font &,int x,int y,Color c,std::string_view fmt,...);
-            int  text(Font &,int x,int y,Color c,std::u16string_view u16);
-            int  text(Font &,int x,int y,Color c,std::u16string_view fmt,...);
+            int  vtext(Font &,int x,int y,Color c,u8string_view fmt,...);
+            int  vtext(Font &,int x,int y,Color c,u16string_view fmt,...);
             /**
              * @brief Draw a image
              * 
@@ -390,8 +391,8 @@ namespace Btk{
              * @param y The Text's buttom
              * @param text 
              */
-            void text(float x,float y,std::string_view text);
-            void text(float x,float y,std::u16string_view text);
+            void text(float x,float y,u8string_view text);
+            void text(float x,float y,u16string_view text);
             /**
              * @brief Draw text(if the text's width > width)
              *        it will be drawed in next line
@@ -401,14 +402,14 @@ namespace Btk{
              * @param width 
              * @param text 
              */
-            void textbox(float x,float y,float width,std::string_view text);
-            void textbox(float x,float y,float width,std::u16string_view text);
+            void textbox(float x,float y,float width,u8string_view text);
+            void textbox(float x,float y,float width,u16string_view text);
             /**
              * @brief Get the size of the rendered string
              * 
              * @return FSize 
              */
-            FSize text_size(std::string_view);
+            FSize text_size(u8string_view);
             FSize text_size(std::u16string_view);
             /**
              * @brief Set the text's size
@@ -436,7 +437,7 @@ namespace Btk{
              * @return true On the font is exist
              * @return false On the font is not exist
              */
-            bool use_font(std::string_view fontname) noexcept;
+            bool use_font(u8string_view fontname) noexcept;
             bool use_font(const Font &font);
             /**
              * @brief Add font

@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include "defs.hpp"
 #include "signal.hpp"
+#include "string.hpp"
 namespace Btk::Mixer{
     struct MusicImpl;
     struct AudioPlayerImpl;
@@ -14,7 +15,7 @@ namespace Btk::Mixer{
     class BTKAPI Music{
         public:
             ~Music();
-            static Music FromFile(std::string_view fname);
+            static Music FromFile(u8string_view fname);
         private:
             MusicImpl *pimpl;
     };

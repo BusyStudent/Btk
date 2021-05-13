@@ -1,11 +1,11 @@
 #if !defined(_BTK_PIXELS_HPP_)
 #define _BTK_PIXELS_HPP_
-#include <string_view>
 #include <cstdlib>
 #include <cstddef>
 #include <iosfwd>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_surface.h>
+#include "string.hpp"
 #include "defs.hpp"
 #include "rect.hpp"
 struct SDL_Surface;
@@ -81,7 +81,7 @@ namespace Btk{
             PixBuf(SDL_Surface *s = nullptr):surf(s){};//empty 
             PixBuf(int w,int h,Uint32 format);//Create a buffer
             //LoadFromFile
-            PixBuf(std::string_view file);
+            PixBuf(u8string_view file);
             //Move construct
             PixBuf(const PixBuf &) = delete;
             PixBuf(PixBuf && s){
@@ -102,9 +102,9 @@ namespace Btk{
             void save_jpg(RWops &,int quality);
             void save_bmp(RWops &);
 
-            void save_png(std::string_view fname,int quality);
-            void save_jpg(std::string_view fname,int quality);
-            void save_bmp(std::string_view fname);
+            void save_png(u8string_view fname,int quality);
+            void save_jpg(u8string_view fname,int quality);
+            void save_bmp(u8string_view fname);
             
             PixBuf &operator =(SDL_Surface *);//assign
             PixBuf &operator =(PixBuf &&);//assign
@@ -172,7 +172,7 @@ namespace Btk{
              */
             void bilt(const PixBuf &buf,const Rect *src,Rect *dst);
             //Some static method to load image
-            static PixBuf FromFile(std::string_view file);
+            static PixBuf FromFile(u8string_view file);
             static PixBuf FromFile(FILE *f);
             static PixBuf FromMem(const void *mem,size_t size);
             static PixBuf FromRWops(RWops &);
@@ -229,7 +229,7 @@ namespace Btk{
                 );
             };
             //Get its name
-            std::string_view name() const;
+            u8string_view name() const;
             SDL_PixelFormat *operator ->() const noexcept{
                 return fmt;
             }
@@ -489,7 +489,7 @@ namespace Btk{
 
             GifImage &operator =(GifImage &&);
             static GifImage FromRwops(RWops &);
-            static GifImage FromFile(std::string_view fname);
+            static GifImage FromFile(u8string_view fname);
         private:
             void *pimpl;
     };

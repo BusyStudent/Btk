@@ -46,7 +46,7 @@ namespace Btk{
         SDL_GetWindowSize(window,&size.w,&size.h);
         return size;
     }
-    Texture Renderer::load(std::string_view fname,TextureFlags flags){
+    Texture Renderer::load(u8string_view fname,TextureFlags flags){
         return create_from(PixBuf::FromFile(fname),flags);
     }
     Texture Renderer::load(RWops &rwops,TextureFlags flags){
@@ -215,27 +215,29 @@ namespace Btk{
         nvgClosePath(nvg_ctxt);
     }
     //Text
-    void Renderer::text(float x,float y,std::string_view text){
+    void Renderer::text(float x,float y,u8string_view _text){
+        std::string_view text = _text.base();
         #ifdef _MSC_VER
         nvgText(nvg_ctxt,x,y,&*text.begin(),&*text.end());
         #else
         nvgText(nvg_ctxt,x,y,text.begin(),text.end());
         #endif
     }
-    void Renderer::text(float x,float y,std::u16string_view text){
-        auto &buf = FillInternalU8Buffer(text);
+    void Renderer::text(float x,float y,u16string_view _text){
+        auto &buf = FillInternalU8Buffer(_text);
         
         nvgText(nvg_ctxt,x,y,&buf[0],nullptr);
     }
     //TextBox
-    void Renderer::textbox(float x,float y,float width,std::string_view text){
+    void Renderer::textbox(float x,float y,float width,u8string_view _text){
+        std::string_view text = _text.base();
         #ifdef _MSC_VER
         nvgTextBox(nvg_ctxt,x,y,width,&*text.begin(),&*text.end());
         #else
         nvgTextBox(nvg_ctxt,x,y,width,text.begin(),text.end());
         #endif
     }
-    void Renderer::textbox(float x,float y,float width,std::u16string_view text){
+    void Renderer::textbox(float x,float y,float width,u16string_view text){
         auto &buf = FillInternalU8Buffer(text);
 
         nvgTextBox(nvg_ctxt,x,y,width,&buf[0],nullptr);
@@ -267,7 +269,8 @@ namespace Btk{
             font_height()
         };
     }
-    FSize Renderer::text_size(std::string_view view){
+    FSize Renderer::text_size(u8string_view _view){
+        auto view = _view.base();
         NVGtextRow  row;
         nvgTextBreakLinesEx(nvg_ctxt,&view.front(),&view.back() + 1,std::numeric_limits<float>::max(),&row,1);
         return FSize{
@@ -286,7 +289,7 @@ namespace Btk{
         nvgFontSize(nvg_ctxt,ptsize);
     }
     //Set font
-    bool Renderer::use_font(std::string_view fontname) noexcept{
+    bool Renderer::use_font(u8string_view fontname) noexcept{
         auto &buf = FillInternalU8Buffer(fontname);
         int font_id = nvgFindFont(nvg_ctxt,buf.c_str());
         if(font_id == -1){

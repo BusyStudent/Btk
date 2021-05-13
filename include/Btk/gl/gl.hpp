@@ -91,6 +91,21 @@ namespace GL{
         GLuint prev;
         GLuint program;
     };
+    inline GLuint CurrentFBO(){
+        GLint fbo;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING,&fbo);
+        return fbo;
+    }
+    inline GLuint CurrentRBO(){
+        GLint fbo;
+        glGetIntegerv(GL_RENDERBUFFER_BINDING,&fbo);
+        return fbo;
+    }
+    inline GLuint CurrentTex(){
+        GLint fbo;
+        glGetIntegerv(GL_TEXTURE,&fbo);
+        return fbo;
+    }
 }
 }
 

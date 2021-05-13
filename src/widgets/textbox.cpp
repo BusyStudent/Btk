@@ -134,7 +134,7 @@ namespace Btk{
             render.text(
                 float(rect.x + tb_boarder),
                 float(rect.y + float(rect.h) / 2) + 2,
-                tb_text
+                u16string_view(tb_text)
             );
 
             render.fill();
@@ -276,15 +276,16 @@ namespace Btk{
         cur_txt = tb_text.begin();
         redraw();
     }
-    void TextBox::set_text(std::string_view txt){
+    void TextBox::set_text(u8string_view _txt){
         tb_text.clear();
+        auto txt = _txt.base();
         utf8to16(txt.begin(),txt.end(),back_inserter(tb_text));
         //tb_buf = nullptr;
         cur_txt = tb_text.begin();
         redraw();
     }
-    void TextBox::add_string(std::string_view text){
-        if(text.length() == 0){
+    void TextBox::add_string(u8string_view _text){
+        if(_text.length() == 0){
             return;
         }
         std::u16string::iterator iter;
@@ -300,8 +301,8 @@ namespace Btk{
             }
         }
         //Check the string is valid
-        BTK_ASSERT(utf8::is_valid(text.begin(),text.end()));
-
+        BTK_ASSERT(_text.is_vaild());
+        auto text = _text.base();
         auto end = utf8to16(text.begin(),text.end(),TextBoxInserter{*this,iter});
         cur_txt = --(end.cur);
         #ifndef NDEBUG

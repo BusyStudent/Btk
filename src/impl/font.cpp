@@ -20,12 +20,12 @@
 #define FONTIMPL(X) reinterpret_cast<BtkFt::Font*>(X)
 
 namespace Btk{
-    static BtkFt::Font *OpenFont(std::string_view fname,float ptsize){
+    static BtkFt::Font *OpenFont(u8string_view fname,float ptsize){
         BtkFt::Init();
         auto *face = BtkFt::Instance().add_font(fname.data(),0);
         return new BtkFt::Font(face,ptsize);
     }
-    static BtkFt::Font *OpenFontBy(std::string_view fontname,float ptsize){
+    static BtkFt::Font *OpenFontBy(u8string_view fontname,float ptsize){
         BtkFt::Init();
 
         #if 1
@@ -36,7 +36,7 @@ namespace Btk{
         #endif
 
         auto &ins = BtkFt::Instance();
-        auto *face = ins.find_font(fontname);
+        auto *face = ins.find_font(fontname.base());
         if(face == nullptr){
             return OpenFont(FontUtils::GetFileByName(fontname),ptsize);
         }
@@ -57,23 +57,23 @@ namespace Btk{
             pimpl = nullptr;
         }
     }
-    Font::Font(std::string_view fontname,int ptsize){
+    Font::Font(u8string_view fontname,int ptsize){
         pimpl = nullptr;
         pimpl = OpenFontBy(fontname,ptsize);
     }
     //Open font by name
-    void Font::open(std::string_view fontname,int ptsize){
+    void Font::open(u8string_view fontname,int ptsize){
         auto *new_font = OpenFontBy(fontname,ptsize);
         close();
         pimpl = new_font;
     }
     //Open font by file
-    void Font::openfile(std::string_view filename,int ptsize){
+    void Font::openfile(u8string_view filename,int ptsize){
         auto *new_font = OpenFont(filename,ptsize);
         close();
         pimpl = new_font;
     }
-    Font Font::FromFile(std::string_view filename,int ptsize){
+    Font Font::FromFile(u8string_view filename,int ptsize){
         return Font(
             OpenFont(filename,ptsize)
         );
@@ -119,7 +119,7 @@ namespace Btk{
         return Font(new BtkFt::Font(*FONTIMPL(pimpl)));
     }
 
-    PixBuf Font::render_solid(std::string_view text,Color color){
+    PixBuf Font::render_solid(u8string_view text,Color color){
         // SDL_Surface *surf = TTF_RenderUTF8_Solid(pimpl->font,text.data(),color);
         // if(surf == nullptr){
         //     throwSDLError(TTF_GetError());
@@ -128,7 +128,7 @@ namespace Btk{
         throwRuntimeError("UnImpl yet");
 
     }
-    PixBuf Font::render_shaded(std::string_view text,Color fg,Color bg){
+    PixBuf Font::render_shaded(u8string_view text,Color fg,Color bg){
         // SDL_Surface *surf = TTF_RenderUTF8_Shaded(
         //     pimpl->font,
         //     text.data(),
@@ -141,7 +141,7 @@ namespace Btk{
         // return surf;
         throwRuntimeError("UnImpl yet");
     }
-    PixBuf Font::render_blended(std::string_view text,Color color){
+    PixBuf Font::render_blended(u8string_view text,Color color){
         // SDL_Surface *surf = TTF_RenderUTF8_Blended(pimpl->font,text.data(),color);
         // if(surf == nullptr){
         //     throwSDLError(TTF_GetError());
@@ -212,14 +212,14 @@ namespace Btk{
         return FONTIMPL(pimpl)->family_name();
     }
     //size
-    Size Font::size(std::string_view text){
+    Size Font::size(u8string_view text){
         // int w,h;
         // if(TTF_SizeUTF8(pimpl->font,text.data(),&w,&h) != 0){
         //     w = -1;
         //     h = -1;
         // }
         // return {w,h};
-        return FONTIMPL(pimpl)->text_size(text);
+        return FONTIMPL(pimpl)->text_size(text.base());
     }
     Size Font::size(std::u16string_view text){
         // int w,h;

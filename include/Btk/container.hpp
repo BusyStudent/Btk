@@ -8,10 +8,10 @@
 #include "widget.hpp"
 namespace Btk{
 
-    class BTKAPI GroupBox:public Widget,Container{
+    class BTKAPI GroupBox:public Container{
 
     };
-    class BTKAPI DockWidget:public Widget,Container{
+    class BTKAPI DockWidget:public Container{
         
     };
 }

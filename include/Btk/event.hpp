@@ -258,7 +258,7 @@ namespace Btk{
      */
     struct BTKAPI TextInputEvent:Event{
         TextInputEvent():Event(TextInput){};
-        std::string_view text;//<Text input buffer(utf-8 encoded)
+        u8string_view text;//<Text input buffer(utf-8 encoded)
         /**
          * @brief Get length of the string
          * 

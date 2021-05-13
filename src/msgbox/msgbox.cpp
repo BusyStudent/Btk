@@ -9,7 +9,7 @@ namespace Btk{
             pimpl->unref();
         }
     }
-    MessageBox::MessageBox(std::string_view title,std::string_view txt,Flag flag){
+    MessageBox::MessageBox(u8string_view title,u8string_view txt,Flag flag){
         pimpl = new MessageBoxImpl();
         pimpl->title = title;
         pimpl->message = txt;
@@ -26,10 +26,10 @@ namespace Btk{
             return true;
         }
     }
-    void MessageBox::set_title(std::string_view title){
+    void MessageBox::set_title(u8string_view title){
         pimpl->title = title;
     }
-    void MessageBox::set_message(std::string_view message){
+    void MessageBox::set_message(u8string_view message){
         pimpl->message = message;
     }
     void MessageBox::set_flag(Flag flag){

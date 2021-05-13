@@ -42,17 +42,17 @@ namespace Btk{
     class BTKAPI Button:public AbstractButton{
         public:
             Button();
-            Button(std::string_view text);
+            Button(u8string_view text);
             Button(int x,int y,int w,int h);
             ~Button();
             void draw(Renderer &);
-            void set_text(std::string_view text);
+            void set_text(u8string_view text);
             /**
              * @brief Get the button text
              * 
-             * @return std::string_view 
+             * @return u8string_view 
              */
-            std::string_view text() const{
+            u8string_view text() const{
                 return btext;
             }
         protected:
@@ -61,7 +61,7 @@ namespace Btk{
 
 
             //Button text
-            std::string btext;
+            u8string btext;
             //PixBuf  textbuf;
             //Texture texture;
             //Font    textfont;
@@ -80,7 +80,7 @@ namespace Btk{
             bool checkable = true;
 
             FRect circle_rect;
-            std::string btext;
+            u8string btext;
     };
 };
 

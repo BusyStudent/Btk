@@ -20,6 +20,7 @@
 #endif
 
 #include "../exception.hpp"
+#include "../string.hpp"
 #include "../defs.hpp"
 namespace Btk{
     /**
@@ -100,12 +101,14 @@ namespace Btk{
              * @return PStream& The stream ref
              */
             friend PStream &operator >>(PStream &,std::string &);
+            friend PStream &operator >>(PStream &,u8string &);
             /**
              * @brief Write String to stream
              * It w
              * @return PStream& The stream ref
              */
             friend PStream &operator <<(PStream &,std::string_view);
+            friend PStream &operator <<(PStream &,u8string_view);
         private:
             FILE *fptr = nullptr;
     };
@@ -169,6 +172,9 @@ namespace Btk{
             str += char(ch);
         }
         return stream;
+    }
+    inline PStream &operator >>(PStream &stream,u8string &str){
+        return operator >>(stream,str.base());
     }
     //Write 
     inline PStream &operator <<(PStream &stream,std::string_view data){

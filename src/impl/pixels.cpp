@@ -16,7 +16,7 @@ namespace Btk{
     PixBuf::~PixBuf(){
         SDL_FreeSurface(surf);
     }
-    PixBuf::PixBuf(std::string_view file){
+    PixBuf::PixBuf(u8string_view file){
         surf = IMG_Load(file.data());
         if(surf == nullptr){
             throwSDLError(IMG_GetError());
@@ -84,15 +84,15 @@ namespace Btk{
         }
     }
 
-    void PixBuf::save_bmp(std::string_view fname){
+    void PixBuf::save_bmp(u8string_view fname){
         auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_bmp(rw);
     }
-    void PixBuf::save_jpg(std::string_view fname,int quality){
+    void PixBuf::save_jpg(u8string_view fname,int quality){
         auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_jpg(rw,quality);
     }
-    void PixBuf::save_png(std::string_view fname,int quality){
+    void PixBuf::save_png(u8string_view fname,int quality){
         auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_png(rw,quality);
     }
@@ -137,7 +137,7 @@ namespace Btk{
         }
         return PixBuf(surf);
     }
-    PixBuf PixBuf::FromFile(std::string_view file){
+    PixBuf PixBuf::FromFile(u8string_view file){
         return PixBuf(file);
     }
     PixBuf PixBuf::FromFile(FILE *f){
@@ -181,7 +181,7 @@ namespace Btk{
         return SDL_MapRGBA(fmt,r,g,b,a);
     }
     //Get names
-    std::string_view PixFmt::name() const{
+    u8string_view PixFmt::name() const{
         return SDL_GetPixelFormatName(fmt->format);
     }
     std::ostream &operator <<(std::ostream &os,Color c){

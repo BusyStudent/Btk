@@ -5,7 +5,7 @@
 int main(){
     Btk::Window win("Test image",500,600);
     auto &view = win.add<Btk::ImageView>();
-    win.on_dropfile([&view](std::string_view filename){
+    win.on_dropfile([&view](Btk::u8string_view filename){
         view.set_image(
             Btk::PixBuf::FromFile(filename)
         );

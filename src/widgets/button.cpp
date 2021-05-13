@@ -54,7 +54,7 @@ namespace Btk{
             x,y,w,h
         };
     }
-    Button::Button(std::string_view text):btext(text){}
+    Button::Button(u8string_view text):btext(text){}
     Button::~Button() = default;
     //draw button
     void Button::draw(Renderer &render){
@@ -166,7 +166,7 @@ namespace Btk{
         is_pressed = false;
         redraw();
     }
-    void Button::set_text(std::string_view text){
+    void Button::set_text(u8string_view text){
         btext = text;
         redraw();
     }

@@ -150,7 +150,7 @@ namespace Btk{
         }
         return GifImage(fp);
     }
-    GifImage GifImage::FromFile(std::string_view fname){
+    GifImage GifImage::FromFile(u8string_view fname){
         auto rw = RWops::FromFile(fname.data(),"rb");
         return FromRwops(rw);
     }

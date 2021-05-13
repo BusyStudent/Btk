@@ -80,8 +80,8 @@ namespace Btk{
     using Sint64 = int64_t;
     //end
     //Btk u16string
-    class String;
-    using u16string = String;
+    class u16string;
+    class u8string;
     //Generic Align
     
     enum class Orientation:unsigned int{

@@ -77,7 +77,7 @@ int main(){
         }
         return false;
     };
-    win.on_dropfile([&](std::string_view fname){
+    win.on_dropfile([&](u8string_view fname){
         image = PixBuf::FromFile(fname);
     });
     #endif

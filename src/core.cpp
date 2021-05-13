@@ -81,21 +81,18 @@ namespace Btk{
         }
         catch(std::exception &exp){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::GetException] %s",exp.what());
-            //call handler
-            if(System::instance->handle_exception != nullptr){
-                if(System::instance->handle_exception(&exp)){
-                    goto resume;
-                }
+            if(Instance().try_handle_exception(&exp)){
+                goto resume;
             }
+            Instance().is_running = false;
             throw;
         }
         catch(...){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::GetException]Unknown");
-            if(System::instance->handle_exception != nullptr){
-                if(System::instance->handle_exception(nullptr)){
-                    goto resume;
-                }
+            if(Instance().try_handle_exception(nullptr)){
+                goto resume;
             }
+            Instance().is_running = false;
             throw;
         }
         return 0;
@@ -112,6 +109,28 @@ namespace Btk{
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
             regiser_eventcb(dispatch_ev_id,DispatchEvent,nullptr);
         }
+        //BMP Adapter
+        ImageAdapter adapter;
+        adapter.name = "bmp";
+        adapter.fn_load = [](SDL_RWops *rwops){
+            return SDL_LoadBMP_RW(rwops,SDL_FALSE);
+        };
+        adapter.fn_save = [](SDL_RWops *rwops,SDL_Surface *s,int) -> bool{
+            return SDL_SaveBMP_RW(s,rwops,SDL_FALSE);
+        };
+        adapter.fn_is = [](SDL_RWops *rwops){
+            SDL_RWtell(rwops);
+            SDL_Surface *surf = SDL_LoadBMP_RW(rwops,SDL_FALSE);
+            if(surf == nullptr){
+                return false;
+            }
+            else{
+                SDL_FreeSurface(surf);
+                return true;
+            }
+        };
+        image_adapters.emplace_back(adapter);
+
         //First stop text input
         SDL_StopTextInput();
     }
@@ -405,6 +424,12 @@ namespace Btk{
             return iter->second;
         }
     }
+    bool System::try_handle_exception(std::exception *exp){
+        if(handle_exception == nullptr){
+            return false;
+        }
+        return handle_exception(exp);
+    }
 };
 namespace Btk{
     void Exit(int code){
@@ -444,6 +469,9 @@ namespace Btk{
     bool CouldBlock(){
         return not Instance().is_running or not IsMainThread();
     }
+    void RegisterImageAdapter(const ImageAdapter & a){
+        Instance().image_adapters.push_back(a);
+    }
 };
 namespace Btk{
     void Module::unload(){
@@ -452,7 +480,7 @@ namespace Btk{
         }
         SDL_UnloadObject(handle);
     }
-    void LoadModule(std::string_view module_name){
+    void LoadModule(u8string_view module_name){
         void *handle = SDL_LoadObject(module_name.data());
         if(handle == nullptr){
             throwSDLError();
@@ -483,7 +511,7 @@ namespace Btk{
 
         Instance().modules_list.push_back(mod);
     }
-    bool HasModule(std::string_view name){
+    bool HasModule(u8string_view name){
         for(auto &mod:Instance().modules_list){
             if(mod.name == name){
                 return true;
@@ -493,13 +521,13 @@ namespace Btk{
     }
 }
 namespace Btk{
-    static thread_local std::string u8buf; 
-    static thread_local std::u16string u16buf;
+    static thread_local u8string u8buf; 
+    static thread_local u16string u16buf;
 
-    std::string&    InternalU8Buffer(){
+    u8string&  InternalU8Buffer(){
         return u8buf;
     }
-    std::u16string& InternalU16Buffer(){
+    u16string& InternalU16Buffer(){
         return u16buf;
     }
 }

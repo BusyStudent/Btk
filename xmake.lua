@@ -1,8 +1,11 @@
 add_rules("mode.debug", "mode.release")
 --add SDL require
-if not is_plat("windows") then
+if is_plat("linux") then
     add_defines("USE_MMX")
     add_requires("SDL2","SDL2_image","SDL2_ttf")
+    --Linux X11
+    add_requires("dbus-1")
+
     --try add extensions
     add_requires("gif",{optional = true})
     --add_requires("freetype2",{optional = true})
@@ -54,6 +57,8 @@ target("btk")
     
     if is_plat("linux") then
         add_files("./src/platform/x11/*.cpp")
+        --Dbus
+        add_packages("dbus-1")
         add_links("fontconfig")
     elseif is_plat("windows") or is_plat("mingw") then
         --xmake repo

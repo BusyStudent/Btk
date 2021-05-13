@@ -104,7 +104,7 @@ namespace Btk{
         return true;
     }
     //DropFilecb
-    void WindowImpl::on_dropfile(std::string_view file){
+    void WindowImpl::on_dropfile(u8string_view file){
         if(not sig_dropfile.empty()){
             sig_dropfile(file);
         }
@@ -464,15 +464,27 @@ namespace Btk{
     
 }
 namespace Btk{
-    Window::Window(std::string_view title,int w,int h){
+    Window::Window(u8string_view title,int w,int h,Flags f){
         Init();
         #ifdef __ANDROID__
         //Android need full screen
-        constexpr Uint32 flags = 
+        Uint32 flags = 
             SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL;
         #else
-        constexpr Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
+        Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
         #endif
+
+        if((f & Flags::OpenGL) == Flags::OpenGL){
+            flags |= SDL_WINDOW_OPENGL;
+        }
+        if((f & Flags::Vulkan) == Flags::Vulkan){
+            flags |= SDL_WINDOW_VULKAN;
+        }
+        if((f & Flags::SkipTaskBar) == Flags::SkipTaskBar){
+            flags |= SDL_WINDOW_SKIP_TASKBAR;
+        }
+        
+
         pimpl = new WindowImpl(
             title.data(),
             SDL_WINDOWPOS_UNDEFINED,
@@ -503,7 +515,7 @@ namespace Btk{
     Window::SignalDropFile& Window::signal_dropfile(){
         return pimpl->sig_dropfile;
     }
-    void Window::set_title(std::string_view title){
+    void Window::set_title(u8string_view title){
         SDL_SetWindowTitle(pimpl->win,title.data());
     }
     void Window::draw(){
@@ -523,7 +535,7 @@ namespace Btk{
         SDL_SetWindowPosition(pimpl->win,x,y);
     }
     
-    void Window::set_icon(std::string_view file){
+    void Window::set_icon(u8string_view file){
         SDL_Surface *image = IMG_Load(file.data());
         if(image == nullptr){
             throwSDLError(IMG_GetError());

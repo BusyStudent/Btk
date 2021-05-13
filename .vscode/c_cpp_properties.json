@@ -5,7 +5,9 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/**/include",
-                "/usr/include/freetype2"
+                "/usr/include/freetype2",
+                "/usr/include/dbus-1.0",
+                "/usr/lib/x86_64-linux-gnu/dbus-1.0/include"
             ],
             "defines": [
                 "BTK_USE_GFX",

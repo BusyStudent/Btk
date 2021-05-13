@@ -15,7 +15,7 @@ namespace Btk{
         //Set text color inherted at window
 
     }
-    Label::Label(std::string_view text){
+    Label::Label(u8string_view text){
         //parent = &w;
         //font_ = window()->font();
         //Set text color inherted at window
@@ -85,7 +85,7 @@ namespace Btk{
         
         render.restore();
     }
-    void Label::set_text(std::string_view text){
+    void Label::set_text(u8string_view text){
         text_ = text;
         //texture  = nullptr;
         //text_buf = nullptr;

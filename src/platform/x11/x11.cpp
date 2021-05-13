@@ -92,9 +92,9 @@ namespace X11{
         _Xdebug = 1;
         #endif
         XSetErrorHandler(XErrorHandler);
-        std::string buf;
+        u8string buf;
         //Find zenity and kdialog
-        ForPath([&](std::string_view fdir){
+        ForPath([&](u8string_view fdir){
             buf = fdir;
             //add it
             if(buf.back() != '/'){

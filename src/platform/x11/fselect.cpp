@@ -8,6 +8,7 @@
 #include <Btk/impl/atomic.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/window.hpp>
+#include <Btk/string.hpp>
 #include <Btk/button.hpp>
 #include <Btk/async.hpp>
 #include <Btk/Btk.hpp>

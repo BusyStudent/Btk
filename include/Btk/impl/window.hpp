@@ -6,7 +6,8 @@
 #include <atomic>
 #include <mutex>
 #include <list>
-#include "render.hpp"
+#include "../render.hpp"
+#include "../string.hpp"
 #include "../signal.hpp"
 #include "../widget.hpp"
 #include "../themes.hpp"
@@ -63,7 +64,7 @@ namespace Btk{
             
             bool on_close();
             void on_resize(int new_w,int new_h);
-            void on_dropfile(std::string_view file);
+            void on_dropfile(u8string_view file);
             //handle event 
             void handle_windowev(const SDL_Event &event);
             //Dispatch Event to Widgets
@@ -90,7 +91,7 @@ namespace Btk{
             Signal<void()> sig_leave;//mouse leave
             Signal<void()> sig_enter;//mouse enter
             Signal<bool()> sig_close;//CloseWIndow
-            Signal<void(std::string_view)> sig_dropfile;//DropFile
+            Signal<void(u8string_view)> sig_dropfile;//DropFile
             Signal<void(int new_w,int new_h)> sig_resize;//WindowResize
             Signal<bool(Event &)> sig_event;//Process Unhandled Event
             //BackGroud Color

@@ -106,23 +106,27 @@ namespace Btk{
         size_t length = 0;
     };
     
-    size_t Utf16To8(std::string& ret,std::u16string_view input){
-        auto iter = CountedBackInserter(ret);
+    size_t Utf16To8(u8string& ret,u16string_view _input){
+        auto input = _input.base();
+        auto iter = CountedBackInserter(ret.base());
         utf16to8(input.begin(),input.end(),iter);
         return iter.length;
     }
-    size_t Utf8To16(std::u16string& ret,std::string_view input){
-        auto iter = CountedBackInserter(ret);
+    size_t Utf8To16(u16string& ret,u8string_view _input){
+        auto iter = CountedBackInserter(ret.base());
+        auto input = _input.base();
         utf8to16(input.begin(),input.end(),iter);
         return iter.length;
     }
-    bool IsValidUtf8(std::string_view input){
+    bool IsValidUtf8(u8string_view _input){
+        auto input = _input.base();
         return utf8::find_invalid(input.begin(),input.end()) == input.end();
     }
 }
 namespace Btk{
     //Parsing
-    Sint64 ParseInt(std::string_view str){
+    Sint64 ParseInt(u8string_view _str){
+        auto str = _str.base();
         std::string_view::iterator iter;
         Sint64 value = 0;
         Sint64 n = 1;
@@ -194,7 +198,8 @@ namespace Btk{
         }
         return value;
     }
-    Sint64 ParseHex(std::string_view str){
+    Sint64 ParseHex(u8string_view _str){
+        auto str = _str.base();
         std::string_view::iterator iter;
         Sint64 value = 0;
         Sint64 n = 1;

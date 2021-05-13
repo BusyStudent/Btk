@@ -43,7 +43,7 @@ namespace Btk{
              * @param txt The UTF16 encoded string 
              */
             void set_text(std::u16string_view txt);
-            void set_text(std::string_view txt);
+            void set_text(u8string_view txt);
             void set_parent(Widget *w);
         private:
             void timeout();
@@ -53,7 +53,7 @@ namespace Btk{
             bool handle_keyboard(KeyEvent &) override;
             bool handle_textinput(TextInputEvent&) override;
             //Add string in where the cur_text point
-            void add_string(std::string_view);
+            void add_string(u8string_view);
             //Font  tb_font;//Text Font
             float ptsize;//< Font ptsize
             Theme theme;

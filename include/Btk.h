@@ -7,6 +7,7 @@
     #define BTK_CLINKAGE
 #endif
 
+
 #ifdef _WIN32
     #ifdef _MSC_VER
     #define BTK_C_EXPORT __declspec(dllexport)
@@ -15,8 +16,11 @@
     #define BTK_C_EXPORT __attribute__((dllexport))
     #define BTK_C_IMPORT __attribute__((dllimport))
     #endif
+#elif defined(__GNUC__)
+    #define BTK_C_EXPORT __attribute__((visibility("default"))) 
+    #define BTK_C_IMPORT 
 #else
-    #define BTK_C_EXPORT     
+    #define BTK_C_EXPORT 
     #define BTK_C_IMPORT 
 #endif
 

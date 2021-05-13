@@ -45,7 +45,7 @@ namespace Btk{
         bool (*fn_is)(SDL_RWops *);
         const char *name;
     };
-    struct System{
+    struct BTKHIDDEN System{
         struct ExitHandler{
             //Function pointer
             typedef void (*FnPtr)(void*);
@@ -84,7 +84,13 @@ namespace Btk{
         //Get window from WindowID
         WindowImpl *get_window(Uint32 winid);//< It is thread unsafe
         WindowImpl *get_window_s(Uint32 winid);//< It is thread safe
-    
+        //register handlers
+        void atexit(void (*fn)(void *),void *data);
+        void atexit(void (*fn)());
+
+        void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data = nullptr);
+        bool try_handle_exception(std::exception *exp);
+
         std::unordered_map<Uint32,WindowImpl*> wins_map;//Windows map
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
         std::recursive_mutex map_mtx;
@@ -96,11 +102,6 @@ namespace Btk{
         //called atexit
         std::list<ExitHandler> atexit_handlers;
         std::list<ImageAdapter> image_adapters;
-        //register handlers
-        void atexit(void (*fn)(void *),void *data);
-        void atexit(void (*fn)());
-
-        void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data = nullptr);
 
         std::list<Module> modules_list;
         //std::list<RendererCreateFn> render_list;
@@ -112,9 +113,11 @@ namespace Btk{
     BTKAPI void Init();
     //Exit the app
     BTKAPI void Exit(int code);
+    BTKAPI void RegisterImageAdapter(const ImageAdapter &);
     inline System &Instance(){
         return *(System::instance);
     }
+    BTKAPI SDL_Surface *LoadImage(SDL_RWops *rwops);
 };
 
 

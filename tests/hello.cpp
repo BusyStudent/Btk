@@ -25,7 +25,7 @@ struct Hello:public Btk::Window{
     
     void onclose();
     void on_set_icon();
-    void on_select(std::string_view fname);
+    void on_select(Btk::u8string_view fname);
     void on_defc_call();//Test defer_call
     void on_fullscreen();
     bool handle(Event &event);
@@ -86,7 +86,7 @@ void Hello::on_set_icon(){
     box.signal_async().connect(&Hello::on_select,this);
     box.show();
 }
-void Hello::on_select(std::string_view fname){
+void Hello::on_select(Btk::u8string_view fname){
     if(fname.empty()){
         return;
     }

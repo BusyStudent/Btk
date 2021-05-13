@@ -37,7 +37,7 @@ namespace Btk{
              * @param fontname Font name
              * @param ptsize Font ptsize
              */
-            Font(std::string_view fontname,int ptsize);
+            Font(u8string_view fontname,int ptsize);
             ~Font();
             /**
              * @brief Render solid text
@@ -47,7 +47,7 @@ namespace Btk{
              * @param color Text color
              * @return PixBuf 
              */
-            PixBuf render_solid(std::string_view text,Color color);
+            PixBuf render_solid(u8string_view text,Color color);
             PixBuf render_solid(std::u16string_view text,Color color);
             /**
              * @brief Render shaded text
@@ -58,7 +58,7 @@ namespace Btk{
              * @param bg BackGround color
              * @return PixBuf 
              */
-            PixBuf render_shaded(std::string_view text,Color fg,Color bg);
+            PixBuf render_shaded(u8string_view text,Color fg,Color bg);
             PixBuf render_shaded(std::u16string_view text,Color fg,Color bg);
             /**
              * @brief Render blended text
@@ -68,7 +68,7 @@ namespace Btk{
              * @param color Text color
              * @return PixBuf 
              */
-            PixBuf render_blended(std::string_view text,Color color);
+            PixBuf render_blended(u8string_view text,Color color);
             PixBuf render_blended(std::u16string_view text,Color color);
             /**
              * @brief Get Kerning Size in two chars
@@ -116,7 +116,7 @@ namespace Btk{
              * @param text The text
              * @return w and h (-1 if failed)
              */
-            Size size(std::string_view text);
+            Size size(u8string_view text);
             Size size(std::u16string_view text);
             /**
              * @brief Close font
@@ -129,14 +129,14 @@ namespace Btk{
              * @param fontname Font name
              * @param ptsize Font ptsize
              */
-            void open(std::string_view fontname,int ptsize);
+            void open(u8string_view fontname,int ptsize);
             /**
              * @brief Open font by its filename
              * 
              * @param filename Font filename
              * @param ptsize Font ptsize
              */
-            void openfile(std::string_view filename,int ptsize);
+            void openfile(u8string_view filename,int ptsize);
             /**
              * @brief Clone a font
              * 
@@ -179,7 +179,7 @@ namespace Btk{
              * @param ptsize Font ptsize
              * @return Font 
              */
-            static Font FromFile(std::string_view filename,int ptsize);
+            static Font FromFile(u8string_view filename,int ptsize);
         private:
             Font(void *i):pimpl(i){};
             void *pimpl;
@@ -217,9 +217,9 @@ namespace Btk{
                  *       If you want to use it after destroying the fontset,
                  *       Please make a copy of the string_view
                  */
-                std::string_view family() const;
-                std::string_view style() const;
-                std::string_view file() const;
+                u8string_view family() const;
+                u8string_view style() const;
+                u8string_view file() const;
                 void  *font;
             };
             /**
@@ -317,7 +317,7 @@ namespace Btk{
          * @param name font name
          * @return std::string 
          */
-        BTKAPI std::string GetFileByName(std::string_view name);
+        BTKAPI std::string GetFileByName(u8string_view name);
         /**
          * @brief Get the File By font face name
          * 

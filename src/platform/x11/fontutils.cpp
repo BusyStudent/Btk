@@ -3,7 +3,6 @@
 
 #include "../../build.hpp"
 #include <Btk/platform/x11.hpp>
-#include <Btk/utils/string.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/exception.hpp>
@@ -63,7 +62,7 @@ namespace FontUtils{
 }
 namespace FontUtils{
     //Get font file
-    std::string GetFileByName(std::string_view fontname){
+    std::string GetFileByName(u8string_view fontname){
         if(not was_init){
             Init();
         }
@@ -97,13 +96,13 @@ namespace FontUtils{
         return s;
     }
     //Utf16 get font name
-    u16string  GetFileByName(std::u16string_view name){
-        auto &u8buf = InternalU8Buffer();
-        u8buf.clear();//clear the buffer
-        Utf16To8(u8buf,name);
+    // u16string  GetFileByName(std::u16string_view name){
+    //     auto &u8buf = InternalU8Buffer();
+    //     u8buf.clear();//clear the buffer
+    //     Utf16To8(u8buf,name);
 
-        return GetFileByName(u8buf);
-    }
+    //     return GetFileByName(u8buf);
+    // }
     std::string GetDefaultFont(){
         char *lan = nl_langinfo(_NL_IDENTIFICATION_LANGUAGE);
         return GetFileByName("");
@@ -165,7 +164,7 @@ namespace FontUtils{
     }
 
     //FontSet::Font
-    std::string_view FontSet::Font::family() const{
+    u8string_view FontSet::Font::family() const{
         FcChar8 *str = nullptr;
         auto pat = static_cast<FcPattern*>(font);
         if(FcPatternGetString(pat,FC_FAMILY,0,&str) != FcResultMatch){
@@ -175,7 +174,7 @@ namespace FontUtils{
             return reinterpret_cast<char*>(str);
         }
     }
-    std::string_view FontSet::Font::style() const{
+    u8string_view FontSet::Font::style() const{
         FcChar8 *str = nullptr;
         auto pat = static_cast<FcPattern*>(font);
         if(FcPatternGetString(pat,FC_STYLE,0,&str) != FcResultMatch){
@@ -185,7 +184,7 @@ namespace FontUtils{
             return reinterpret_cast<char*>(str);
         }
     }
-    std::string_view FontSet::Font::file() const{
+    u8string_view FontSet::Font::file() const{
         FcChar8 *str = nullptr;
         auto pat = static_cast<FcPattern*>(font);
         if(FcPatternGetString(pat,FC_FILE,0,&str) != FcResultMatch){
