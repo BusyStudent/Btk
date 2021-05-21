@@ -42,6 +42,8 @@ int main(){
         t.on_destroy([&t](){
             std::cout << "Object Test was destroyed" << std::endl; 
         });
+        signal.dump_slots();
+        t.dump_functors();
     }
     signal.emit();
 }

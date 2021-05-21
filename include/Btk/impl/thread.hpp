@@ -6,6 +6,7 @@
 #include <tuple>
 
 #include "../exception.hpp"
+#include "../utils/sync.hpp"
 
 namespace Btk{
     //SDL_Thread
@@ -106,54 +107,6 @@ namespace Btk{
         private:
             SDL_Thread *thrd;
     };
-    class SpinLock{
-        public:
-            void lock() noexcept{
-                SDL_AtomicLock(&slock);
-            };
-            void unlock() noexcept{
-                SDL_AtomicUnlock(&slock);
-            };
-            bool try_lock() noexcept{
-                return SDL_AtomicTryLock(&slock);
-            };
-        private:
-            SDL_SpinLock slock = 0;
-    };
-    class Semaphore{
-        public:
-            /**
-             * @brief Construct a new Semaphore object
-             * 
-             * @param value The initial value(default to 0)
-             */
-            Semaphore(Uint32 value = 0){
-                sem = SDL_CreateSemaphore(value);
-                if(sem == nullptr){
-                    throwSDLError();
-                }
-            }
-            Semaphore(const Semaphore &) = delete;
-            Semaphore(Semaphore &&s){
-                sem = s.sem;
-                s.sem = nullptr;
-            }
-            ~Semaphore(){
-                SDL_DestroySemaphore(sem);
-            }
-            /**
-             * @brief Get current value
-             * 
-             * @return Uint32 
-             */
-            Uint32 value() const{
-                return SDL_SemValue(sem);
-            }
-            
-        private:
-            SDL_sem *sem;
-    };
-    using Sem = Semaphore;
 };
 
 

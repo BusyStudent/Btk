@@ -225,7 +225,7 @@ bool Btk_WindowAdd(BtkWindow*win,BtkWidget*widget){
     BTK_NUL_CHK2(win,false);
     BTK_NUL_CHK2(widget,false);
 
-    return win->container().add(widget);
+    return win->add(widget);
 }
 bool Btk_MainLoop(BtkWindow *win){
     BTK_BEGIN_CATCH();

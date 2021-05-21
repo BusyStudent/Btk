@@ -1,13 +1,14 @@
 #if !defined(_BTK_OBJECT_HPP_)
 #define _BTK_OBJECT_HPP_
-#include "defs.hpp"
+#include "utils/template.hpp"
+#include "utils/sync.hpp"
 #include "impl/invoker.hpp"
+#include "defs.hpp"
 #include <type_traits>
 #include <cstddef>
-#include <memory>
+#include <cstdio>
 #include <chrono>
 #include <tuple>
-#include <mutex>
 #include <list>
 namespace Btk{
     //TODO:The SpinLock is not safe to lock recursively
@@ -41,6 +42,49 @@ namespace Btk{
     template<class RetT>
     class Signal;
     class Object;
+    class _SlotBase;
+    struct _Functor;
+    
+    /**
+     * @brief FunctionLocation
+     * 
+     */
+    struct _FunctorLocation{
+        std::list<_Functor>::iterator iter;
+        
+        _Functor *operator ->(){
+            return iter.operator->();
+        }
+    };
+
+    /**
+     * @brief Signal's connection
+     * 
+     */
+    class Connection{
+        public:
+            Connection() = default;
+            Connection(const Connection &) = default;
+
+
+            SignalBase *signal() const noexcept{
+                return current;
+            }
+            void disconnect(bool from_object = false);
+        protected:
+            typedef std::list<_SlotBase*>::iterator Iterator;
+            SignalBase *current;//< current signal
+            Iterator iter;//<The iterator of the slot ptr
+            Connection(SignalBase *c,Iterator i):
+                current(c),
+                iter(i){
+
+            }
+        template<class RetT>
+        friend class Signal;
+        friend class Object;
+    };
+
     /**
      * @brief Functor in Object for cleaningup data
      * 
@@ -80,17 +124,6 @@ namespace Btk{
             if(cleanup != nullptr){
                 cleanup(*this);
             }
-        }
-    };
-    /**
-     * @brief FunctionLocation
-     * 
-     */
-    struct _FunctorLocation{
-        std::list<_Functor>::iterator iter;
-        
-        _Functor *operator ->(){
-            return iter.operator->();
         }
     };
     struct _TimerID{
@@ -203,13 +236,13 @@ namespace Btk{
             Method method;
             _FunctorLocation location;
             static void Delete(void *self,bool from_object){
-                std::unique_ptr<_ClassSlot > ptr(
+                Btk::unique_ptr<_ClassSlot > ptr(
                     static_cast<_ClassSlot*>(self)
                 );
                 //Call from object
                 if(not from_object){
                     //< lock the object
-                    std::lock_guard<Class> locker(*(ptr->object));
+                    Btk::lock_guard<Class> locker(*(ptr->object));
                     
                     
                     ptr->object->Object::remove_callback(ptr->location);
@@ -233,20 +266,20 @@ namespace Btk{
         friend class Signal;
         friend class Object;
     };
-    class _DeferCallBase{
+    class _GenericCallBase{
         protected:
             bool deleted = false;
-        friend struct _DeferCallFunctor;
+        friend struct _GenericCallFunctor;
     };
     /**
-     * @brief A class for DeferCall
+     * @brief A class for DeferCall or async
      * 
      * @tparam Class 
      * @tparam Method 
      * @tparam Args 
      */
     template<class Class,class Method,class ...Args>
-    class _DeferCallInvoker:public std::tuple<Class*,Args...>,_DeferCallBase{
+    class _GenericCallInvoker:public std::tuple<Class*,Args...>,_GenericCallBase{
         Method method;
         /**
          * @brief Construct a new defercallinvoker object
@@ -254,7 +287,7 @@ namespace Btk{
          * @param object 
          * @param method 
          */
-        _DeferCallInvoker(Class *object,Method method,Args ...args):
+        _GenericCallInvoker(Class *object,Method method,Args ...args):
             std::tuple<Class*,Args...>(object,std::forward<Args>(args)...){
 
             this->method = method;
@@ -267,32 +300,32 @@ namespace Btk{
                 //< Failed to lock,The object is cleanuping
                 return;
             }
-            std::lock_guard<Object> locker(*(object()),std::adopt_lock);
+            Btk::lock_guard<Object> locker(*(object()),Btk::adopt_lock);
             //< Call self
             std::apply(method,static_cast<std::tuple<Class*,Args...>&&>(*this));
         }
         Class *object(){
             return std::get<0>(static_cast<std::tuple<Class*,Args...>&&>(*this));
         }
-        /**
+        /*
          * @brief Main entry for DeferCall
          * 
-         * @param self 
+         * @param self
          */
         static void Run(void *self){
-            std::unique_ptr<_DeferCallInvoker> ptr(
-                static_cast<_DeferCallInvoker*>(self)
+            Btk::unique_ptr<_GenericCallInvoker> ptr(
+                static_cast<_GenericCallInvoker*>(self)
             );
             ptr->invoke();
         }
         friend class Object;
     };
     /**
-     * @brief Helper class for defercall's invoker
+     * @brief Helper class for defercall or async invoker
      * 
      */
-    struct BTKAPI _DeferCallFunctor:public _Functor{
-        _DeferCallFunctor(_DeferCallBase *defercall);
+    struct BTKAPI _GenericCallFunctor:public _Functor{
+        _GenericCallFunctor(_GenericCallBase *defercall);
     };
     /**
      * @brief Basic signal
@@ -319,7 +352,7 @@ namespace Btk{
              * @return false 
              */
             bool emitting() const{
-                return spinlock;
+                return spinlock.is_lock();
             }
             bool operator ==(std::nullptr_t) const{
                 return empty();
@@ -330,55 +363,34 @@ namespace Btk{
             operator bool() const{
                 return not empty();
             }
-        protected:
-            struct lock_guard{
-                lock_guard(const SignalBase *b):sigbase(b){
-                    sigbase->lock();
-                }
-                lock_guard(const lock_guard &) = delete;
-                ~lock_guard(){
-                    sigbase->unlock();
-                }
-                const SignalBase *sigbase;
-            };
-            void lock() const;
-            void unlock() const;
+            /**
+             * @brief Debug for dump
+             * 
+             * @param output 
+             */
+            void dump_slots(FILE *output = stderr) const;
+        public:
+            /**
+             * @brief Lock the signal
+             * @internal use shound not use it
+             */
+            void lock() const{
+                spinlock.lock();
+            }
+            /**
+             * @brief Unlock the signal
+             * @internal use shound not use it
+             */
 
+            void unlock() const{
+                spinlock.unlock();
+            }
+        protected:
             std::list<_SlotBase*> slots;//< All slots
-            mutable int spinlock = 0;//< SDL_spinlock for multithreading
+            mutable SpinLock spinlock;//< SDL_spinlock for multithreading
         template<class RetT>
         friend class Signal;
         friend class Connection;
-    };
-    /**
-     * @brief Signal's connection
-     * 
-     */
-    class Connection{
-        public:
-            Connection() = default;
-            Connection(const Connection &) = default;
-
-
-            SignalBase *signal() const noexcept{
-                return current;
-            }
-            void disconnect(bool from_object = false){
-                (*iter)->cleanup(from_object);
-                current->slots.erase(iter);
-            }
-        protected:
-            typedef std::list<_SlotBase*>::iterator Iterator;
-            SignalBase *current;//< current signal
-            Iterator iter;//<The iterator of the slot ptr
-            Connection(SignalBase *c,Iterator i):
-                current(c),
-                iter(i){
-
-            }
-        template<class RetT>
-        friend class Signal;
-        friend class Object;
     };
     /**
      * @brief Generic object provide signals/slots timer etc...
@@ -449,25 +461,36 @@ namespace Btk{
             template<class RetT,class Class,class ...Args>
             void defer_call(RetT (Class::*method)(Args...),Args &&...args){
                 using Method = std::remove_pointer_t<decltype(method)>;
-                using Invoker = _DeferCallInvoker<Class,Method,Args...>;
+                using Invoker = _GenericCallInvoker<Class,Method,Args...>;
                 Invoker *invoker = new Invoker(
                     static_cast<Class*>(this),
                     method,
                     std::forward<Args>(args)...
                 );
-                _DeferCallFunctor functor(invoker);
+                _GenericCallFunctor functor(invoker);
                 DeferCall(Invoker::Run,static_cast<void*>(invoker));
             }
         public:
-            bool try_lock() const;
-            void lock() const;
-            void unlock() const;
+            bool try_lock() const{
+                return spinlock.try_lock();
+            }
+            void lock() const{
+                spinlock.lock();
+            }
+            void unlock() const{
+                spinlock.unlock();
+            }
+            /**
+             * @brief Debug for dump functors
+             * 
+             * @param output 
+             */
+            void dump_functors(FILE *output = stderr) const;
         protected:
             //
         private:
             std::list<Functor> functors_cb;
-            mutable int spinlock = 0;//<SDL_spinlock for multithreading
-        
+            mutable SpinLock spinlock;//<SDL_spinlock for multithreading
         template<class RetT>
         friend class Signal;
     };
@@ -502,7 +525,7 @@ namespace Btk{
              */
             RetT emit(Args ...args) const{
                 //lock the signalbase
-                lock_guard locker(this);
+                lock_guard<const SignalBase> locker(*this);
                 //why it has complie error on msvc
                 //std::is_same<void,RetT>()
                 if constexpr(std::is_same<void,RetT>::value){
@@ -534,7 +557,7 @@ namespace Btk{
              */
             template<class Callable>
             Connection connect(Callable &&callable){
-                lock_guard guard(this);
+                lock_guard<const SignalBase> locker(*this);
                 using Slot = _MemSlot<Callable,RetT,Args...>;
                 slots.push_back(
                     new Slot(std::forward<Callable>(callable))
@@ -547,7 +570,7 @@ namespace Btk{
             template<class Method,class TObject>
             void connect(Method &&method,TObject *object){
                 static_assert(std::is_base_of<Object,TObject>(),"Object must inherit HasSlots");
-                lock_guard guard(this);
+                lock_guard<const SignalBase> locker(*this);
 
                 using Slot = _ClassSlot<TObject,Method,RetT,Args...>;
                 Slot *slot = new Slot(object,method);

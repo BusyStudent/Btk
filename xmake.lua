@@ -108,6 +108,13 @@ target("btk")
     add_files("./src/font/fontstash.cpp")
     add_files("./src/font/core.cpp")
     add_files("./src/font/ft2.cpp")
+    --Image
+    add_files("./src/images/adapter.cpp")
+    --SDL_image support
+    if has_package("libsdl_image") or has_package("SDL2_image") then
+        add_defines("BTK_HAS_SDLIMG")
+        add_files("./src/images/sdl_image.cpp")
+    end
 if is_mode("debug") then
     target("hello")
         set_kind("binary")
@@ -151,7 +158,7 @@ target("btk-rcc")
     add_files("./tools/btk-rcc.cpp")
 --Do you need CAPI
 --If not,omit it
-if false  then 
+if true then 
     target("btk_capi")
         if not has_package("gif") then
             add_defines("BTK_NGIF")

@@ -11,18 +11,8 @@ namespace Btk{
     Object::~Object(){
         cleanup();
     }
-    //multithreading
-    void Object::lock() const{
-        SDL_AtomicLock(&spinlock);
-    }
-    void Object::unlock() const{
-        SDL_AtomicUnlock(&spinlock);
-    }
-    bool Object::try_lock() const{
-        return SDL_AtomicTryLock(&spinlock);
-    }
     void Object::cleanup(){
-        std::lock_guard<Object> locker(*this);
+        lock_guard<Object> locker(*this);
         //cleanup all
         for(auto i = functors_cb.begin();i != functors_cb.end();){
             //Call the functor
@@ -31,7 +21,7 @@ namespace Btk{
         }
     }
     void Object::disconnect_all(){
-        std::lock_guard<Object> locker(*this);
+        lock_guard<Object> locker(*this);
         //disconnect the timer
         for(auto i = functors_cb.begin();i != functors_cb.end();){
             //Call the functor
@@ -70,6 +60,21 @@ namespace Btk{
         }
         return {--functors_cb.end()};
     }
+    void Object::dump_functors(FILE *output) const{
+        if(output == nullptr){
+            output = stderr;
+        }
+        lock_guard<const Object> locker(*this);
+        for(auto &f:functors_cb){
+            char *type = nullptr;
+            switch(f.magic){
+                case Functor::Signal: type = "Signal";break;
+                case Functor::Unknown: type = "Unknown";break;
+                case Functor::Timer: type = "Timer";break;
+            }
+            fprintf(output,"  -(%s) => %p\n",type,f.call);
+        }
+    }
 }
 namespace Btk{
     //Remove the 
@@ -89,9 +94,9 @@ namespace Btk{
         user1 = new Connection(con);
         magic = Signal;
     }
-    _DeferCallFunctor::_DeferCallFunctor(_DeferCallBase *base){
+    _GenericCallFunctor::_GenericCallFunctor(_GenericCallBase *base){
         call = [](_Functor &self){
-            static_cast<_DeferCallBase*>(self.user1)->deleted = true;
+            static_cast<_GenericCallBase*>(self.user1)->deleted = true;
         };
         cleanup = nullptr;
         user1 = base;
@@ -99,21 +104,28 @@ namespace Btk{
     }
 }
 namespace Btk{
-    void SignalBase::lock() const{
-        SDL_AtomicLock(&spinlock);
-    }
-    void SignalBase::unlock() const{
-        SDL_AtomicUnlock(&spinlock);
-    }
     SignalBase::SignalBase(){
 
     }
     SignalBase::~SignalBase(){
-        lock_guard locker(this);
+        lock_guard<SignalBase> locker(*this);
         auto iter = slots.begin();
         while(iter != slots.end()){
             (*iter)->cleanup();
             iter = slots.erase(iter);
         }
+    }
+    void SignalBase::dump_slots(FILE *output) const{
+        if(output == nullptr){
+            output = stderr;
+        }
+        lock_guard<const SignalBase> locker(*this);
+        for(auto slot:slots){
+            fprintf(output,"  -(Slot => %p)\n",slot->cleanup_ptr);
+        }
+    }
+    void Connection::disconnect(bool from_object){
+        (*iter)->cleanup(from_object);
+        current->slots.erase(iter);
     }
 }

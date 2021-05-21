@@ -1,9 +1,9 @@
 #if !defined(_BTK_THEME_HPP_)
 #define _BTK_THEME_HPP_
-#include <string_view>
 #include <iosfwd>
 #include <map>
 
+#include "string.hpp"
 #include "pixels.hpp"
 #include "font.hpp"
 #include "defs.hpp"
@@ -13,10 +13,10 @@
 
 #ifdef BTK_VSCODE_SUPPRESS
     //For suppress the error
-    #define BTK_MAKE_COLOR(COLOR) static std::string_view COLOR;
+    #define BTK_MAKE_COLOR(COLOR) static Btk::u8string_view COLOR;
 #else
     #define BTK_MAKE_COLOR(COLOR) \
-        static constexpr std::string_view COLOR = #COLOR;
+        static constexpr Btk::u8string_view COLOR = #COLOR;
 #endif
 namespace Btk{
     class Palette;
@@ -26,7 +26,7 @@ namespace Btk{
      */
     struct _PaletteProxy{
         Palette *palette;
-        std::string_view key;
+        u8string_view key;
         /**
          * @brief load the color
          * 
@@ -50,8 +50,8 @@ namespace Btk{
             using Proxy = _PaletteProxy;
 
 
-            void  set(std::string_view key,Color c);
-            Color get(std::string_view key) const;
+            void  set(u8string_view key,Color c);
+            Color get(u8string_view key) const;
 
             Palette &operator =(Palette &&);
             Palette &operator =(const Palette &);
@@ -61,7 +61,7 @@ namespace Btk{
              * @param key 
              * @return Proxy 
              */
-            Proxy operator [](std::string_view key){
+            Proxy operator [](u8string_view key){
                 return Proxy{this,key};
             }
             /**
@@ -70,7 +70,7 @@ namespace Btk{
              * @param key 
              * @return Color 
              */
-            Color operator [](std::string_view key) const{
+            Color operator [](u8string_view key) const{
                 return get(key);
             }
             /**
@@ -79,9 +79,9 @@ namespace Btk{
              * @return size_t 
              */
             size_t size() const;
-            bool has_color(std::string_view key) const;
+            bool has_color(u8string_view key) const;
         private:
-            std::map<std::string,Color> colors;
+            std::map<u8string,Color> colors;
         friend BTKAPI std::ostream &operator <<(std::ostream &,const Palette &);
     };
 
@@ -114,8 +114,8 @@ namespace Btk{
              * @param txt The config text
              * @return Theme 
              */
-            static Theme Parse(std::string_view txt);
-            static Theme ParseFile(std::string_view txt);
+            static Theme Parse(u8string_view txt);
+            static Theme ParseFile(u8string_view txt);
 
             Palette &normal(){
                 return ptr->active;
@@ -148,12 +148,12 @@ namespace Btk{
              * @param v 
              * @return decltype(auto) 
              */
-            decltype(auto) operator [](std::string_view v){
+            decltype(auto) operator [](u8string_view v){
                 return normal()[v];
             }
             Theme &operator =(const Theme &t);
             
-            std::string_view font_name() const{
+            u8string_view font_name() const{
                 return ptr->font;
             }
             float font_size() const{
@@ -162,7 +162,7 @@ namespace Btk{
             void set_font_ptsize(float ptsize){
                 ptr->ptsize = ptsize;
             }
-            void set_font_name(std::string_view name){
+            void set_font_name(u8string_view name){
                 ptr->font = name;
             }
             /**
@@ -177,7 +177,7 @@ namespace Btk{
                 Palette active;
                 Palette inactive;
                 //Font
-                std::string font = "NotoSansCJK";
+                u8string font = "NotoSansCJK";
                 float ptsize = 12;
 
                 int refcount = 1;

@@ -204,6 +204,20 @@ namespace Btk{
         }
         return rw;
     }
+    RWops RWops::FromMem(const void *mem,size_t n){
+        SDL_RWops *rw = SDL_RWFromConstMem(mem,n);
+        if(rw == nullptr){
+            throwSDLError();
+        }
+        return rw;
+    }
+    RWops RWops::FromFP(FILE *fp,bool autoclose){
+        SDL_RWops *rw = SDL_RWFromFP(fp,autoclose ? SDL_TRUE : SDL_FALSE);
+        if(rw == nullptr){
+            throwSDLError();
+        }
+        return rw;
+    }
     //close rwops
     bool RWops::close(){
         if(fptr != nullptr){

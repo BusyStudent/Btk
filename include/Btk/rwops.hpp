@@ -3,6 +3,7 @@
 #include <iosfwd>
 #include <cstdint>
 #include <cstddef>
+#include <cstdio>
 #include "defs.hpp"
 #include <SDL2/SDL_rwops.h>
 namespace Btk{
@@ -45,10 +46,13 @@ namespace Btk{
             }
             RWops &operator =(RWops &&);
             RWops &operator =(MemBuffer &&) = delete;
+
             static RWops FromStdIstream(std::istream &);
             static RWops FromStdOstream(std::ostream &);
             static RWops FromStdFstream(std::fstream &);
             static RWops FromFile(const char *fname,const char *modes);
+            static RWops FromMem(const void *mem,size_t n);
+            static RWops FromFP(FILE *fp,bool autoclose = true);
             static RWops FromFD(int fd,const char *modes);
         private:
             SDL_RWops *fptr;

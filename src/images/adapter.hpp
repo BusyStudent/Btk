@@ -9,8 +9,19 @@
     }
 #else
     namespace Btk{
-        BTKINLINE void RegisterPNG(){}
+        inline void RegisterPNG(){}
     }
+#endif
+
+#ifdef BTK_HAS_SDLIMG
+    namespace Btk{
+        BTKHIDDEN void RegisterSDLImage();
+    }
+#else
+    namespace Btk{
+        inline void RegisterSDLImage(){}
+    }
+
 #endif
 
 namespace Btk{

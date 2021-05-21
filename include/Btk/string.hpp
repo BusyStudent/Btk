@@ -196,7 +196,11 @@ namespace Btk{
             operator std::string_view() const{
                 return *this;
             }
-
+            /**
+             * @brief find a char of
+             * 
+             * @return size_t 
+             */
             size_t find(char32_t) const;
         private:
             _iterator impl_begin(){
@@ -224,7 +228,8 @@ namespace Btk{
             const char *_translate_iterator(Base::const_iterator i) const{
                 return &*i;
             }
-        
+        template<class T>
+        friend struct std::hash;
         friend class u8string;
         friend std::ostream &operator <<(std::ostream &,u8string_view);
     };
@@ -232,6 +237,8 @@ namespace Btk{
         public:
             u16string_view(std::u16string_view v);
             using std::u16string_view::basic_string_view;
+            using std::u16string_view::empty;
+            using std::u16string_view::data;
 
             std::u16string_view &base(){
                 return *this;
@@ -239,6 +246,9 @@ namespace Btk{
             const std::u16string_view &base() const{
                 return *this;
             }
+        
+        template<class T>
+        friend struct std::hash;
     };
     /**
      * @brief UTF8 String
@@ -312,6 +322,12 @@ namespace Btk{
              */
             void pop_back();
             void push_back(char32_t ch);
+            void push_back(char16_t ch){
+                push_back(char32_t(ch));
+            }
+            void push_back(char ch){
+                Base::push_back(ch);
+            }
             /**
              * @brief Note it is a slow operation
              * 
@@ -468,7 +484,9 @@ namespace Btk{
                 impl_replace_ch(p,char32_t(ch));
             }
             void impl_replace_ch(CharProxy &p,char ch);
-
+        
+        template<class T>
+        friend struct std::hash;
         template<class _T>
         friend struct _U8Proxy;
     };
@@ -485,6 +503,9 @@ namespace Btk{
             const std::u16string &base() const noexcept{
                 return *this;
             }
+        
+        template<class T>
+        friend struct std::hash;
         friend class u8string;
     };
     //u8string inline begin
@@ -504,7 +525,7 @@ namespace Btk{
         std::string(reinterpret_cast<const char*>(s)){
     }
     inline u8string::u8string(const Uint8 *s,size_t n):
-        std::string(reinterpret_cast<const char*>(s,n)){
+        std::string(reinterpret_cast<const char*>(s),n){
     }
     //u8string_view
     inline u8string_view::u8string_view(const std::string &s):
@@ -563,6 +584,24 @@ namespace Btk{
     BTK_STRING_OPERATOR(u8string_view,>=);
     BTK_STRING_OPERATOR(u8string_view,<=);
     //u8string_view end
+    
+    //u16string inline begin
+    BTK_STRING_OPERATOR(u16string,>);
+    BTK_STRING_OPERATOR(u16string,<);
+    BTK_STRING_OPERATOR(u16string,==);
+    BTK_STRING_OPERATOR(u16string,!=);
+    BTK_STRING_OPERATOR(u16string,>=);
+    BTK_STRING_OPERATOR(u16string,<=);
+    //u16string end
+    
+    //u16strinf_view inline begin
+    BTK_STRING_OPERATOR(u16string_view,>);
+    BTK_STRING_OPERATOR(u16string_view,<);
+    BTK_STRING_OPERATOR(u16string_view,==);
+    BTK_STRING_OPERATOR(u16string_view,!=);
+    BTK_STRING_OPERATOR(u16string_view,>=);
+    BTK_STRING_OPERATOR(u16string_view,<=);
+    //u16strinf_view end
     /**
      * @brief Utf8 format string
      * 

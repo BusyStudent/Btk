@@ -1,7 +1,9 @@
 #include "../build.hpp"
+#include <Btk/impl/core.hpp>
 #include "adapter.hpp"
 namespace Btk{
-    void ImageInit(){
+    void InitImageAdapter(){
+        RegisterSDLImage();
         RegisterPNG();
     }
 }

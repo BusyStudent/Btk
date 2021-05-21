@@ -1,5 +1,4 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_loadso.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_filesystem.h>
@@ -80,6 +79,8 @@ namespace Btk{
             return i;
         }
         catch(std::exception &exp){
+            BTK_DEBUG(Platform::MessageBox("Exception",exp.what()));
+            
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::GetException] %s",exp.what());
             if(Instance().try_handle_exception(&exp)){
                 goto resume;
@@ -118,17 +119,7 @@ namespace Btk{
         adapter.fn_save = [](SDL_RWops *rwops,SDL_Surface *s,int) -> bool{
             return SDL_SaveBMP_RW(s,rwops,SDL_FALSE);
         };
-        adapter.fn_is = [](SDL_RWops *rwops){
-            SDL_RWtell(rwops);
-            SDL_Surface *surf = SDL_LoadBMP_RW(rwops,SDL_FALSE);
-            if(surf == nullptr){
-                return false;
-            }
-            else{
-                SDL_FreeSurface(surf);
-                return true;
-            }
-        };
+        adapter.fn_is = nullptr;
         image_adapters.emplace_back(adapter);
 
         //First stop text input
@@ -161,11 +152,9 @@ namespace Btk{
             #ifndef NDEBUG
             //show detail version
             SDL_version ver;
-            const SDL_version *iver = IMG_Linked_Version();
             SDL_GetVersion(&ver);
             SDL_Log("[System::Core]Init SDL2 Platfrom %s",SDL_GetPlatform());
             SDL_Log("[System::Core]SDL2 version: %d.%d.%d",ver.major,ver.major,ver.patch);
-            SDL_Log("[System::Core]SDL2 image version: %d.%d.%d",iver->major,iver->major,iver->patch);
             #endif
             //Create instance
             instance = new System();
@@ -174,6 +163,8 @@ namespace Btk{
             //Init platform
             Platform::Init();
             GL::Init();
+            //Image Adapter
+            InitImageAdapter();
         }
         return 1;
     }
@@ -187,7 +178,6 @@ namespace Btk{
         Platform::Quit();
         //Quit SDL
         Mixer::Quit();
-        IMG_Quit();
         // TTF_Quit();
         SDL_Quit();
     }
@@ -470,7 +460,49 @@ namespace Btk{
         return not Instance().is_running or not IsMainThread();
     }
     void RegisterImageAdapter(const ImageAdapter & a){
-        Instance().image_adapters.push_back(a);
+        Instance().image_adapters.push_front(a);
+        BTK_LOGINFO("[System::Core]Register ImageAdapter %s",a.name);
+    }
+    SDL_Surface *LoadImage(SDL_RWops *rwops,u8string_view type){
+        BTK_ASSERT(rwops != nullptr);
+        SDL_Surface *ret;
+        if(type.empty()){
+            //Didnot provide the type
+            for(auto &adapter:Instance().image_adapters){
+                if(adapter.fn_is == nullptr){
+                    //It cannot check the type
+                    //Try load it directly
+                    ret = adapter.load(rwops);
+                }
+                //Is the type
+                else if(adapter.is(rwops)){
+                    ret = adapter.load(rwops);
+                }
+                else{
+                    continue;
+                }
+                if(ret == nullptr){
+                    throwRuntimeError(SDL_GetError());
+                }
+                else{
+                    return ret;
+                }
+            }
+            throwRuntimeError("Unsupport format");
+        }
+        SDL_SetError("Unsupport format");
+        for(auto &adapter:Instance().image_adapters){
+            if(SDL_strncasecmp(adapter.name,type.data(),type.size()) == 0){
+                ret = adapter.load(rwops);
+                if(ret == nullptr){
+                    continue;
+                }
+                else{
+                    return ret;
+                }
+            }
+        }
+        throwRuntimeError(SDL_GetError());
     }
 };
 namespace Btk{

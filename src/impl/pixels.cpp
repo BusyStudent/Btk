@@ -1,11 +1,14 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+#ifdef BTK_HAS_SDLIMG
+    #include <SDL2/SDL_image.h>
+#endif
 #ifdef BTK_USE_GFX
     #include <Btk/thirdparty/SDL2_rotozoom.h>
 #endif
 
 #include "../build.hpp"
 
+#include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <Btk/pixels.hpp>
@@ -17,9 +20,9 @@ namespace Btk{
         SDL_FreeSurface(surf);
     }
     PixBuf::PixBuf(u8string_view file){
-        surf = IMG_Load(file.data());
+        surf = LoadImage(RWops::FromFile(file.data(),"rb").get());
         if(surf == nullptr){
-            throwSDLError(IMG_GetError());
+            throwSDLError();
         }
     }
     PixBuf::PixBuf(int w,int h,Uint32 fmt){
@@ -73,29 +76,29 @@ namespace Btk{
             throwSDLError();
         }
     }
-    void PixBuf::save_jpg(RWops &rw,int quality){
-        if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
-            throwSDLError();
-        }
-    }
-    void PixBuf::save_png(RWops &rw,int quality){
-        if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
-            throwSDLError();
-        }
-    }
+    // void PixBuf::save_jpg(RWops &rw,int quality){
+    //     if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
+    //         throwSDLError();
+    //     }
+    // }
+    // void PixBuf::save_png(RWops &rw,int quality){
+    //     if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
+    //         throwSDLError();
+    //     }
+    // }
 
     void PixBuf::save_bmp(u8string_view fname){
         auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_bmp(rw);
     }
-    void PixBuf::save_jpg(u8string_view fname,int quality){
-        auto rw = RWops::FromFile(fname.data(),"wb");
-        PixBuf::save_jpg(rw,quality);
-    }
-    void PixBuf::save_png(u8string_view fname,int quality){
-        auto rw = RWops::FromFile(fname.data(),"wb");
-        PixBuf::save_png(rw,quality);
-    }
+    // void PixBuf::save_jpg(u8string_view fname,int quality){
+    //     auto rw = RWops::FromFile(fname.data(),"wb");
+    //     PixBuf::save_jpg(rw,quality);
+    // }
+    // void PixBuf::save_png(u8string_view fname,int quality){
+    //     auto rw = RWops::FromFile(fname.data(),"wb");
+    //     PixBuf::save_png(rw,quality);
+    // }
     //operators
     PixBuf &PixBuf::operator =(SDL_Surface *sf){
         SDL_FreeSurface(surf);
@@ -131,31 +134,30 @@ namespace Btk{
     }
     //static method
     PixBuf PixBuf::FromMem(const void *mem,size_t size){
-        SDL_Surface *surf = IMG_Load_RW(SDL_RWFromConstMem(mem,size),true);
-        if(surf == nullptr){
-            throwSDLError(IMG_GetError());
-        }
-        return PixBuf(surf);
+        auto rw = RWops::FromMem(mem,size);
+        return FromRWops(rw);
     }
     PixBuf PixBuf::FromFile(u8string_view file){
         return PixBuf(file);
     }
     PixBuf PixBuf::FromFile(FILE *f){
-        SDL_Surface *surf = IMG_Load_RW(SDL_RWFromFP(f,SDL_FALSE),true);
-        if(surf == nullptr){
-            throwSDLError(IMG_GetError());
-        }
-        return PixBuf(surf);
+        auto rw = RWops::FromFP(f,false);
+        return FromRWops(rw);
     }
     PixBuf PixBuf::FromXPMArray(const char *const*da){
+        #ifdef BTK_HAS_SDLIMG
         SDL_Surface *surf = IMG_ReadXPMFromArray(const_cast<char**>(da));
         if(surf == nullptr){
             throwSDLError(IMG_GetError());
         }
         return PixBuf(surf);
+        #else
+        SDL_Unsupported();
+        throwSDLError();
+        #endif
     }
     PixBuf PixBuf::FromRWops(RWops &rwops){
-        SDL_Surface *surf = IMG_Load_RW(rwops.get(),false);
+        SDL_Surface *surf = LoadImage(rwops.get());
         if(surf == nullptr){
             throwSDLError();
         }

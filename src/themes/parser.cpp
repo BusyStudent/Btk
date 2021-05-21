@@ -19,6 +19,7 @@ namespace{
     struct ParseContext{
         Theme &theme;
     };
+    //TODO Rewrite the color parser
     bool parse_color(std::string_view str,Color &color){
         Color c;//tmp color
         size_t beg = str.find('(');
@@ -100,7 +101,7 @@ namespace{
     }
 }
 namespace Btk{
-    Theme Theme::Parse(std::string_view txt){
+    Theme Theme::Parse(u8string_view txt){
         Theme theme = Theme::Create();
 
         ParseContext ctxt{theme};
@@ -110,7 +111,7 @@ namespace Btk{
         
         return theme;
     }
-    Theme Theme::ParseFile(std::string_view txt){
+    Theme Theme::ParseFile(u8string_view txt){
         Theme theme = Theme::Create();
 
         ParseContext ctxt{theme};
@@ -118,8 +119,6 @@ namespace Btk{
         if(ini_parse(txt.data(),process_ini,&ctxt) == -1){
             throwRuntimeError(cformat("fopen('%s') failed",txt.data()).c_str());
         }
-
-
         return theme;
     }
 }

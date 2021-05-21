@@ -7,7 +7,9 @@
 #include "defs.hpp"
 #include "widget.hpp"
 namespace Btk{
-
+    class BTKAPI Group:public Container{
+        
+    };
     class BTKAPI GroupBox:public Container{
 
     };

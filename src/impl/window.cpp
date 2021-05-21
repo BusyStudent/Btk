@@ -1,6 +1,7 @@
-#include <SDL2/SDL_image.h>
-
 #include "../build.hpp"
+
+#include <SDL2/SDL_video.h>
+#include <SDL2/SDL_timer.h>
 
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/utils.hpp>
@@ -536,12 +537,7 @@ namespace Btk{
     }
     
     void Window::set_icon(u8string_view file){
-        SDL_Surface *image = IMG_Load(file.data());
-        if(image == nullptr){
-            throwSDLError(IMG_GetError());
-        }
-        SDL_SetWindowIcon(pimpl->win,image);
-        SDL_FreeSurface(image);
+        return set_icon(PixBuf::FromFile(file));
     }
     void Window::set_icon(const PixBuf &pixbuf){
         SDL_SetWindowIcon(pimpl->win,pixbuf.get());

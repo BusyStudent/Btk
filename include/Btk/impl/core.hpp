@@ -12,6 +12,7 @@
 
 #include "thread.hpp"
 #include "../module.hpp"
+#include "../string.hpp"
 
 namespace Btk{
     class WindowImpl;
@@ -43,6 +44,19 @@ namespace Btk{
          * @return false 
          */
         bool (*fn_is)(SDL_RWops *);
+
+        SDL_Surface *load(SDL_RWops *rw) const{
+            if(fn_load != nullptr){
+                return fn_load(rw);
+            }
+            return nullptr;
+        }
+        bool is(SDL_RWops *rwops){
+            if(fn_is != nullptr){
+                return fn_is(rwops);
+            }
+            return false;
+        }
         const char *name;
     };
     struct BTKHIDDEN System{
@@ -117,7 +131,20 @@ namespace Btk{
     inline System &Instance(){
         return *(System::instance);
     }
-    BTKAPI SDL_Surface *LoadImage(SDL_RWops *rwops);
+    /**
+     * @brief Load a image
+     * 
+     * @param rwops 
+     * @param type The image type(could be empty)
+     * @return BTKAPI* 
+     */
+    BTKAPI SDL_Surface *LoadImage(SDL_RWops *rwops,u8string_view type = {});
+    /**
+     * @brief Load builtin image adapter
+     * 
+     * @return BTKHIDDEN 
+     */
+    BTKHIDDEN void InitImageAdapter();
 };
 
 

@@ -81,9 +81,8 @@ namespace Btk{
 
     }
     void u8string::push_back(char32_t ch){
-        std::string tmp;
         std::u32string_view view(&ch,1);
-        utf8::unchecked::utf32to8(view.begin(),view.end(),std::back_insert_iterator(tmp));
+        utf8::unchecked::utf32to8(view.begin(),view.end(),std::back_insert_iterator(base()));
     }
     void u8string::pop_back(){
         if(empty()){
