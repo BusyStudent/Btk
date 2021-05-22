@@ -106,8 +106,8 @@ target("btk")
     add_files("./src/render/nanovg.cpp")
     --Font
     add_files("./src/font/fontstash.cpp")
-    add_files("./src/font/core.cpp")
-    add_files("./src/font/ft2.cpp")
+    add_files("./src/font/cache.cpp")
+    add_files("./src/font/ft_font.cpp")
     --Image
     add_files("./src/images/adapter.cpp")
     --SDL_image support

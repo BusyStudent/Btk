@@ -1,11 +1,17 @@
 #if !defined(_BOX_FONT_HPP_)
 #define _BOX_FONT_HPP_
 #include <cstddef>
-#include <string>
-#include <string_view>
+#include "string.hpp"
 #include "pixels.hpp"
 #include "defs.hpp"
 namespace Btk{
+    namespace Ft{
+        /**
+         * @brief Font impl
+         * 
+         */
+        struct Font;
+    }
     struct Size;
     /**
      * @brief FontStyle from SDL_ttf
@@ -48,7 +54,7 @@ namespace Btk{
              * @return PixBuf 
              */
             PixBuf render_solid(u8string_view text,Color color);
-            PixBuf render_solid(std::u16string_view text,Color color);
+            PixBuf render_solid(u16string_view text,Color color);
             /**
              * @brief Render shaded text
              * 
@@ -59,7 +65,7 @@ namespace Btk{
              * @return PixBuf 
              */
             PixBuf render_shaded(u8string_view text,Color fg,Color bg);
-            PixBuf render_shaded(std::u16string_view text,Color fg,Color bg);
+            PixBuf render_shaded(u16string_view text,Color fg,Color bg);
             /**
              * @brief Render blended text
              * 
@@ -69,7 +75,7 @@ namespace Btk{
              * @return PixBuf 
              */
             PixBuf render_blended(u8string_view text,Color color);
-            PixBuf render_blended(std::u16string_view text,Color color);
+            PixBuf render_blended(u16string_view text,Color color);
             /**
              * @brief Get Kerning Size in two chars
              * 
@@ -117,7 +123,7 @@ namespace Btk{
              * @return w and h (-1 if failed)
              */
             Size size(u8string_view text);
-            Size size(std::u16string_view text);
+            Size size(u16string_view text);
             /**
              * @brief Close font
              * 
@@ -160,8 +166,8 @@ namespace Btk{
              * 
              * @return family name
              */
-            std::string family() const;
-            std::string style_name() const;
+            u8string family() const;
+            u8string style_name() const;
             /**
              * @brief Assign font
              * 
@@ -181,8 +187,8 @@ namespace Btk{
              */
             static Font FromFile(u8string_view filename,int ptsize);
         private:
-            Font(void *i):pimpl(i){};
-            void *pimpl;
+            Font(Ft::Font *i):pimpl(i){};
+            Ft::Font *pimpl;
         friend class Renderer;
     };
     class BTKAPI FontSet{
@@ -317,14 +323,14 @@ namespace Btk{
          * @param name font name
          * @return std::string 
          */
-        BTKAPI std::string GetFileByName(u8string_view name);
+        BTKAPI u8string GetFileByName(u8string_view name);
         /**
          * @brief Get the File By font face name
          * 
          * @param name font name
          * @return utf16 encoded filename string
          */
-        BTKAPI   u16string GetFileByName(std::u16string_view name);
+        BTKAPI u16string GetFileByName(u16string_view name);
         /**
          * @brief Init font utils
          * 
@@ -342,7 +348,7 @@ namespace Btk{
          * 
          * @return Utf encoded font name
          */
-        BTKAPI std::string GetDefaultFont();
+        BTKAPI u8string GetDefaultFont();
     };
     //operators for FontStyle
     inline FontStyle operator |(FontStyle s1,FontStyle s2) noexcept{

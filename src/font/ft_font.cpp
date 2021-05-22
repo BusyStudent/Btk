@@ -1,10 +1,19 @@
 #include "../build.hpp"
 
+#include <Btk/font/system.hpp>
 #include <Btk/font/font.hpp>
 #include <Btk/exception.hpp>
 #include <cstring>
 #include <new>
 namespace Btk::Ft{
+    FT_Library Ft2Library = nullptr;
+    Font::Font(const char *filename,Uint32 idx){
+        GlobalCache().load_face(face,filename,idx);
+    }
+    Font::Font(const Font &font){
+        face = font.face;
+        ptsize = font.ptsize;
+    }
     Font::~Font(){
         bitmap_free();
     }
@@ -29,10 +38,16 @@ namespace Btk::Ft{
         bitmap.h = h;
         bitmap.pitch = sizeof(char) * w;
     }
-    void Font::bitmap_render(CharIndex idx){
+    bool Font::bitmap_render(CharIndex idx){
         FT_Error err;
         err = FT_Set_Pixel_Sizes(face,0,ptsize);
+        if(err){
+            return false;
+        }
         err = FT_Load_Glyph(face,idx,FT_LOAD_RENDER);
+        if(err){
+            return false;
+        }
         int w,h,pitch;
         FT_GlyphSlot slot = face->glyph;
         w = slot->bitmap.width;
@@ -43,12 +58,36 @@ namespace Btk::Ft{
         BTK_ASSERT(slot->bitmap.pitch == w);
         //Copy it
         memcpy(bitmap.buffer,slot->bitmap.buffer,pitch * h);
+        return true;
+    }
+    int Font::kerning_size(CharIndex prev,CharIndex cur){
+        FT_Vector vec;
+        FT_Get_Kerning(face, prev, cur, FT_KERNING_DEFAULT, &vec);
+        return vec.x >> 6;
+    }
+    int Font::advance(CharIndex idx){
+        FT_Fixed adv;
+        FT_Get_Advance(face,idx,FT_LOAD_NO_SCALE,&adv);
+        return adv;
     }
     CharIndex Font::index_char(Char ch){
         return FT_Get_Char_Index(face,ch);
     }
 }
 namespace Btk::Ft{
+    Ft2Face::Ft2Face(const char *fname,Uint32 idx){
+        FT_Error err = FT_New_Face(
+            Ft2Library,
+            fname,
+            idx,
+            &face
+        );
+        if(err){
+            face = nullptr;
+            throwRuntimeError("Could not new mem face");
+        }
+
+    }
     Ft2Face::Ft2Face(FontBuffer buf,Uint32 idx){
         buffer = buf;
         FT_Error err = FT_New_Memory_Face(
@@ -86,5 +125,48 @@ namespace Btk::Ft{
 // 3. This notice may not be removed or altered from any source distribution.
 //
 namespace Btk::Ft{
-    
+    void Font::fs_get_vmetrics(int *ascent,int *descent,int *lineGap){
+        *ascent = face->ascender;
+        *descent = face->descender;
+        *lineGap = face->height - (*ascent - *descent);
+    }
+    float Font::fs_get_pixel_height_scale(float size){
+        return size / face->units_per_EM;
+    }
+    bool  Font::fs_build_glyph(int glyph, float size, float scale,
+							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1){
+        set_ptsize(size);
+        if(FT_Set_Pixel_Sizes(face,0,size)){
+            return false;
+        }
+        if(FT_Load_Glyph(face,glyph,FT_LOAD_DEFAULT | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT)){
+            return false;
+        }
+        FT_GlyphSlot ftGlyph = face->glyph;
+        *advance = this->advance(glyph);
+        *lsb = (int)ftGlyph->metrics.horiBearingX;
+        *x0 = ftGlyph->bitmap_left;
+        *x1 = *x0 + ftGlyph->bitmap.width;
+        *y0 = -ftGlyph->bitmap_top;
+        *y1 = *y0 + ftGlyph->bitmap.rows;
+        return true;
+    }
+    void  Font::fs_render_glyph(unsigned char *output, int outWidth, int outHeight, int outStride,
+								float scaleX, float scaleY, int glyph){
+        int ftGlyphOffset = 0;
+        unsigned int x, y;
+        FT_GlyphSlot ftGlyph = face->glyph;
+        // FONS_NOTUSED(outWidth);
+        // FONS_NOTUSED(outHeight);
+        // FONS_NOTUSED(scaleX);
+        // FONS_NOTUSED(scaleY);
+        //FONS_NOTUSED(glyph);	// glyph has already been loaded by fons__tt_buildGlyphBitmap
+        FT_Set_Pixel_Sizes(face,0,ptsize);
+        FT_Load_Glyph(face,glyph,FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT | FT_LOAD_RENDER);
+        for ( y = 0; y < ftGlyph->bitmap.rows; y++ ) {
+            for ( x = 0; x < ftGlyph->bitmap.width; x++ ) {
+                output[(y * outStride) + x] = ftGlyph->bitmap.buffer[ftGlyphOffset++];
+            }
+        }
+    }
 }

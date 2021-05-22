@@ -62,7 +62,7 @@ namespace FontUtils{
 }
 namespace FontUtils{
     //Get font file
-    std::string GetFileByName(u8string_view fontname){
+    u8string GetFileByName(u8string_view fontname){
         if(not was_init){
             Init();
         }
@@ -90,7 +90,7 @@ namespace FontUtils{
             throwRuntimeError("Failed to match font");
         }
         BTK_LOGINFO("FcMatch %s => %s",fontname.data(),str);
-        std::string s(reinterpret_cast<char*>(str));
+        u8string s(reinterpret_cast<char*>(str));
         FcPatternDestroy(font);
         FcPatternDestroy(pat);
         return s;
@@ -103,7 +103,7 @@ namespace FontUtils{
 
     //     return GetFileByName(u8buf);
     // }
-    std::string GetDefaultFont(){
+    u8string GetDefaultFont(){
         char *lan = nl_langinfo(_NL_IDENTIFICATION_LANGUAGE);
         return GetFileByName("");
     }
