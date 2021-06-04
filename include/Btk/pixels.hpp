@@ -265,12 +265,13 @@ namespace Btk{
         Nearest			 = 1<<5,	 // Image interpolation is Nearest instead Linear
     };
     //TextureFlags operators
-    inline TextureFlags operator |(TextureFlags a,TextureFlags b){
-        return static_cast<TextureFlags>(int(a) | int(b));
-    }
-    inline TextureFlags operator +(TextureFlags a,TextureFlags b){
-        return static_cast<TextureFlags>(int(a) | int(b));
-    }
+    // inline TextureFlags operator |(TextureFlags a,TextureFlags b){
+    //     return static_cast<TextureFlags>(int(a) | int(b));
+    // }
+    // inline TextureFlags operator +(TextureFlags a,TextureFlags b){
+    //     return static_cast<TextureFlags>(int(a) | int(b));
+    // }
+    BTK_FLAGS_OPERATOR(TextureFlags,int);
     //RendererTexture
     class BTKAPI Texture{
         public:

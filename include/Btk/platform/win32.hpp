@@ -5,6 +5,7 @@
 #include <SDL2/SDL_events.h>
 #include <string>
 #include "../defs.hpp"
+#include "../string.hpp"
 #include "../exception.hpp"
 
 #undef MessageBox
@@ -20,14 +21,14 @@ namespace Win32{
      * @param errcode Windows error code
      * @return std::string
      */
-    BTKAPI std::string   StrMessageA(DWORD errcode);
+    BTKAPI string   StrMessageA(DWORD errcode);
     /**
      * @brief Errcode to string
      * 
      * @param errcode Windows error code
      * @return std::u16string
      */
-    BTKAPI std::u16string StrMessageW(DWORD errcode);
+    BTKAPI u16string StrMessageW(DWORD errcode);
     /**
      * @brief Win32 native MessageBox
      * 

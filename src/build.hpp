@@ -11,6 +11,7 @@
 //Is sourse
 #define _BTK_SOURCE
 #include <Btk/defs.hpp>
+#include <Btk/string.hpp>
 
 #if defined(_MSC_VER)
     //MSVC
@@ -95,7 +96,7 @@ namespace Btk{
      * @param info The typeinfo
      * @return The name of the typeinfo(no demangled)
      */
-    inline std::string get_typename(const std::type_info &info){
+    inline u8string get_typename(const std::type_info &info){
         #ifdef __GNUC__
         char *ret = abi::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
         if(ret == nullptr){
@@ -103,7 +104,7 @@ namespace Btk{
             return info.name();
         }
         else{
-            std::string name(ret);
+            u8string name(ret);
             free(ret);
             return name;
         }
@@ -112,7 +113,7 @@ namespace Btk{
         #endif
     }
     template<class T>
-    inline std::string get_typename(const T *ptr){
+    inline u8string get_typename(const T *ptr){
         return get_typename(typeid(*ptr));
     }
     /**
@@ -122,7 +123,7 @@ namespace Btk{
      * @param ... The args you want to format
      * @return std::string 
      */
-    inline std::string cformat(const char *fmt,...){
+    inline u8string cformat(const char *fmt,...){
         int strsize;
 
         //Get the size of the string
@@ -135,7 +136,7 @@ namespace Btk{
         #endif
         va_end(varg);
         
-        std::string str;
+        u8string str;
         str.resize(strsize);
 
         //start formatting
@@ -152,7 +153,7 @@ namespace Btk{
      * @param fmt The c-style fmt string
      * @param ... The args you want to format
      */
-    inline void cformat(std::string &str,const char *fmt,...){
+    inline void cformat(u8string &str,const char *fmt,...){
         int strsize;
         //Get the size of the string
         va_list varg;

@@ -13,6 +13,7 @@
 #include "thread.hpp"
 #include "../module.hpp"
 #include "../string.hpp"
+#include "../object.hpp"
 
 namespace Btk{
     class WindowImpl;
@@ -85,6 +86,7 @@ namespace Btk{
         //Window Register
         void register_window(WindowImpl *impl);
         void unregister_window(WindowImpl *impl);
+        void close_window(WindowImpl *impl);
         //Handle event
         inline void on_dropev(const SDL_Event &event);//Handle SDL_DropEvent
         inline void on_windowev(const SDL_Event &event);//Handle SDL_WINDOWEVENT
@@ -98,6 +100,7 @@ namespace Btk{
         //Get window from WindowID
         WindowImpl *get_window(Uint32 winid);//< It is thread unsafe
         WindowImpl *get_window_s(Uint32 winid);//< It is thread safe
+        WindowImpl *create_window(SDL_Window *win);
         //register handlers
         void atexit(void (*fn)(void *),void *data);
         void atexit(void (*fn)());
@@ -118,6 +121,11 @@ namespace Btk{
         std::list<ImageAdapter> image_adapters;
 
         std::list<Module> modules_list;
+        //<The signal will be init before the window will be removed
+        Signal<void(WindowImpl *)> signal_close_window;
+        Signal<void(WindowImpl *)> signal_create_window;
+        Signal<void()> signal_clipboard_update;
+        Signal<void()> signal_quit;
         //std::list<RendererCreateFn> render_list;
         //Init Global
         static int  Init();

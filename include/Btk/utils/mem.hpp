@@ -23,11 +23,6 @@ namespace Btk{
      */
     BTKAPI size_t Utf8To16(u16string&,u8string_view);
     /**
-     * @brief Check a string is vaid utf8
-     * 
-     */
-    BTKAPI bool IsValidUtf8(u8string_view);
-    /**
      * @brief Parse a hex string
      * 
      * @param txt The hex text

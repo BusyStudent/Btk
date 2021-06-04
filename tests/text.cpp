@@ -35,4 +35,9 @@ int main(){
 
     Btk::u8string_view view("你好世界 sss sjajskaj");
     std::cout << view.length() << std::endl;
+    std::cout << str.find("好") << std::endl;
+    
+    for(auto str:Btk::u8string_view("你好 哈哈哈 Hello ").split(" ")){
+        std::cout << str << std::endl;
+    }
 }

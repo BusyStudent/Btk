@@ -95,6 +95,39 @@ namespace FontUtils{
         FcPatternDestroy(pat);
         return s;
     }
+    u16string GetFileByName(u16string_view fontname){
+        if(not was_init){
+            Init();
+        }
+        FcPattern* font;
+        FcPattern* pat = FcNameParse(
+            reinterpret_cast<const FcChar8*>(fontname.to_utf8().c_str())   
+        );
+        LockGuard locker;//Lock the library
+        //Config substitute
+        FcConfigSubstitute(config, pat, FcMatchPattern);
+        FcDefaultSubstitute(pat);
+        //Begin match
+        FcResult result;
+        font = FcFontMatch(config,pat,&result);
+        
+        if(font == nullptr){
+            FcPatternDestroy(pat);
+            throwRuntimeError("Failed to match font");
+        }
+        FcChar8 *str;
+        if(FcPatternGetString(font,FC_FILE,0,&str) != FcResultMatch){
+            //Get String
+            FcPatternDestroy(font);
+            FcPatternDestroy(pat);
+            throwRuntimeError("Failed to match font");
+        }
+        BTK_LOGINFO("FcMatch %s => %s",fontname.data(),str);
+        u16string s(reinterpret_cast<char*>(str));
+        FcPatternDestroy(font);
+        FcPatternDestroy(pat);
+        return s;
+    }
     //Utf16 get font name
     // u16string  GetFileByName(std::u16string_view name){
     //     auto &u8buf = InternalU8Buffer();

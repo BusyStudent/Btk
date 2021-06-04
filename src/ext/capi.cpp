@@ -275,8 +275,15 @@ void Btk_SetError(const char *fmt,...){
     vsprintf(&global_error[0],fmt,varg);
     va_end(varg);
 }
-void Btk_Backtrace(){
-    _Btk_Backtrace();
+char *Btk_typeof(BtkWidget *w){
+    BTK_NUL_CHK2(w,nullptr);
+    auto s = Btk::get_typename(w);
+    char *mem = (char*)Btk_malloc(s.size() + 1);
+    if(mem == nullptr){
+        return nullptr;
+    }
+    strcpy(mem,s.c_str());
+    return mem;
 }
 //Memory
 void *Btk_malloc(size_t byte){
@@ -325,6 +332,19 @@ void Btk_SignConnect(BtkWidget *widget,const char *signal,...){
     Btk::Impl::VaListGuard vguard(varg);
 
     Btk_SetError("Unsupported");
+}
+BtkPixBuf *Btk_LoadImage(const char *filename){
+    static_assert(sizeof(Btk::PixBuf) == sizeof(SDL_Surface*));
+    Btk::ObjectHolder<Btk::PixBuf> buf;
+    BTK_BEGIN_CATCH();
+    buf.construct(Btk::PixBuf::FromFile(filename));
+    BTK_END_CATCH2(nullptr);
+    BtkPixBuf *p;
+    memcpy(&p,buf.get(),sizeof(void*));
+    return p;
+}
+void Btk_FreeImage(BtkPixBuf *b){
+    SDL_FreeSurface(reinterpret_cast<SDL_Surface*>(b));
 }
 //Format
 size_t _Btk_impl_fmtargs(const char *fmt,...){

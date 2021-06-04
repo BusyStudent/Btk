@@ -49,7 +49,7 @@ namespace Btk{
             void timeout();
             //Process keyboard event
             bool handle_drag(DragEvent    &) override;
-            bool handle_click(MouseEvent  &) override;
+            bool handle_mouse(MouseEvent  &) override;
             bool handle_keyboard(KeyEvent &) override;
             bool handle_textinput(TextInputEvent&) override;
             //Add string in where the cur_text point

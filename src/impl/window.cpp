@@ -18,18 +18,9 @@
 #include <algorithm>
 
 namespace Btk{
-    static SDL_Window *CreateWindow(const char *title,int x,int y,int w,int h,int flags){
-        SDL_Window *win = SDL_CreateWindow(title,x,y,w,h,flags);
-        if(win == nullptr){
-            const char *err = SDL_GetError();
-            BTK_LOGINFO("%s",err);
-            throwSDLError(err);
-        }
-        return win;
-    }
 
-    WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags):
-         win(CreateWindow(title,x,y,w,h,flags)),
+    WindowImpl::WindowImpl(SDL_Window *_win):
+         win(_win),
          render(win){
         //Set theme
         theme = Themes::GetDefault();
@@ -55,11 +46,13 @@ namespace Btk{
         render.begin();
         render.clear(bg_color);
         //Draw each widget
-        for(auto widget:childrens){
+        for(auto iter = childrens.rbegin();iter != childrens.rend(); ++iter){
+            auto widget = *iter;
             //check widgets
             if((widget->visible()) and not(widget->rect.empty())){
                 widget->draw(render);
             }
+            childrens.rend();
         }
         //Run the draw callback
         auto iter = draw_cbs.begin();
@@ -202,15 +195,7 @@ namespace Btk{
             }
             case SDL_WINDOWEVENT_CLOSE:{
                 //Close window;
-                if(on_close()){
-                    //success to close
-                    //Delete Wnidow;
-                    System::instance->unregister_window(this);
-                    if(System::instance->wins_map.empty()){
-                        //No window exist
-                        Btk::Exit(0);
-                    }
-                }
+                Instance().close_window(this);
                 break;
             }
             case SDL_WINDOWEVENT_RESIZED:{
@@ -248,7 +233,7 @@ namespace Btk{
             }
         }
     }
-    bool WindowImpl::handle_click(MouseEvent &event){
+    bool WindowImpl::handle_mouse(MouseEvent &event){
         event.accept();
         
         int x = event.x;
@@ -484,16 +469,19 @@ namespace Btk{
         if((f & Flags::SkipTaskBar) == Flags::SkipTaskBar){
             flags |= SDL_WINDOW_SKIP_TASKBAR;
         }
-        
-
-        pimpl = new WindowImpl(
+        SDL_Window *sdl_window = SDL_CreateWindow(
             title.data(),
             SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED,
-            w,
-            h,
+            w,h,
             flags
         );
+        if(sdl_window == nullptr){
+            pimpl = nullptr;
+            throwSDLError();
+        }
+
+        pimpl = Instance().create_window(sdl_window);
         // pimpl->container.window = pimpl;
         SDL_SetWindowData(pimpl->win,"btk_win",this);
         SDL_SetWindowData(pimpl->win,"btk_imp",pimpl);

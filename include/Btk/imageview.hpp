@@ -17,7 +17,7 @@ namespace Btk{
             //ref image
             void ref_image(PixBuf &buf);
             //called from parent widget
-            void draw(Renderer &);
+            void draw(Renderer &) override;
             //Clip this image
             void set_clip(const Rect &r);
 

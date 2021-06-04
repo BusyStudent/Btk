@@ -7,6 +7,7 @@
 #include "../defs.hpp"
 #include "../object.hpp"
 #include "../exception.hpp"
+#include "../utils/mem.hpp"
 
 #include <vector>
 namespace Btk::Ft{
@@ -14,20 +15,50 @@ namespace Btk::Ft{
     using CharIndex = FT_UInt;
 
     extern FT_Library Ft2Library;
+    struct BTKHIDDEN FontBufferImpl{
+        FontBufferImpl(const void *buf,size_t bufsize,bool dup);
+        FontBufferImpl(const FontBufferImpl &) = delete;
+        FontBufferImpl(FontBufferImpl &&) = delete;
+        ~FontBufferImpl();
+        Uint8 *data;
+        size_t size;
+        bool shoud_free;
+    };
     struct BTKHIDDEN FontBuffer{
         FontBuffer() = default;
+        FontBuffer(const void *buf,size_t bufsize,bool dup = true);
         FontBuffer(const FontBuffer &) = default;
         ~FontBuffer() = default;
 
-        RefPtr<std::vector<Uint8>> _data;
+        RefPtr<FontBufferImpl> _data;
 
-        Uint8 *data() const noexcept{
-            return _data->data();
+        const Uint8 *data() const noexcept{
+            return _data->data;
         }
         size_t size() const noexcept{
-            return _data->size();
+            return _data->size;
         }
     };
+    inline FontBuffer::FontBuffer(const void *buf,size_t bufsize,bool dup):
+        _data(new FontBufferImpl(buf,bufsize,dup)){
+    }
+    inline FontBufferImpl::FontBufferImpl(const void *buf__,size_t bufsize,bool dup){
+        const Uint8 * buf = static_cast<const Uint8*>(buf__);
+        if(dup){
+            shoud_free = true;
+            data = Memdup(buf,bufsize);
+        }
+        else{
+            shoud_free = false;
+            data = const_cast<Uint8*>(buf);
+        }
+        size = bufsize;
+    }
+    inline FontBufferImpl::~FontBufferImpl(){
+        if(shoud_free){
+            std::free(data);
+        }
+    }
     /**
      * @brief Freetype exception
      * 
@@ -121,6 +152,7 @@ namespace Btk::Ft{
         bool bitmap_render(CharIndex idx);
         int kerning_size(CharIndex prev,CharIndex cur);
         int advance(CharIndex idx);
+        //Query info
         /**
          * @brief Get a char index
          * 

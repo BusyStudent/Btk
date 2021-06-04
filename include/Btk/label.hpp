@@ -31,7 +31,7 @@ namespace Btk{
             //Set Label text
             void set_text(u8string_view text);
             void set_parent(Widget *) override;
-            void draw(Renderer&);
+            void draw(Renderer&) override;
         private:
             u8string text_;//text
             //Font font_;//font

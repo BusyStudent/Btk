@@ -854,18 +854,11 @@ int fonsAddFontFromBtkFt(FONScontext* stash, const char* name)
 	// Init font
 	stash->nscratch = 0;
 	//if (!fons__tt_loadFont(stash, &font->font, data, dataSize, fontIndex)) goto error;
-	font->font.font = Ft::GlobalCache().query(name);
+	font->font.font = Ft::GlobalCache().load_font(name,0);
 	if(font->font.font == nullptr){
 		//Couldnot get an exists font
 		//Try to open a new one
-		font->font.font = new Ft::Font(FontUtils::GetFileByName(name).c_str(),0);
-		if(font->font.font == nullptr){
-			goto error;
-		}
-	}
-	else{
-		//Ref it
-		font->font.font->ref();
+		goto error;
 	}
 	// Store normalized line height. The real line height is got
 	// by multiplying the lineh by font size.
@@ -1687,8 +1680,11 @@ int fonsResetAtlas(FONScontext* stash, int width, int height)
 
 	return 1;
 }
-
-
-#endif
-
+void *fontsGetFaceByID(FONScontext* stash,int font){
+	if(font == FONS_INVALID){
+		return nullptr;
+	}
+	return stash->fonts[font]->font.font;
 }
+}
+#endif

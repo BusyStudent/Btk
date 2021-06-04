@@ -48,6 +48,8 @@ namespace Btk{
              */
             Uint32 value() const;
             
+            void post();
+            void wait();
         private:
             SDL_semaphore *sem;
     };

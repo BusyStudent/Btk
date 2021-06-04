@@ -118,10 +118,6 @@ namespace Btk{
         utf8to16(input.begin(),input.end(),iter);
         return iter.length;
     }
-    bool IsValidUtf8(u8string_view _input){
-        auto input = _input.base();
-        return utf8::find_invalid(input.begin(),input.end()) == input.end();
-    }
 }
 namespace Btk{
     //Parsing

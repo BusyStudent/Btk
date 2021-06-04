@@ -196,6 +196,10 @@ namespace Btk{
              * 
              */
             void clear_childrens();
+            
+            auto &get_childrens(){
+                return childrens;
+            }
         protected:
             /**
              * @brief Send a redraw request to the window
@@ -237,7 +241,7 @@ namespace Btk{
              * @return false 
              */
             virtual bool handle_drag(DragEvent     &){return false;}
-            virtual bool handle_click(MouseEvent   &){return false;}
+            virtual bool handle_mouse(MouseEvent   &){return false;}
             virtual bool handle_wheel(WheelEvent   &){return false;}
             virtual bool handle_motion(MotionEvent &){return false;}
             virtual bool handle_keyboard(KeyEvent  &){return false;}

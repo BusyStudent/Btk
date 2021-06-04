@@ -50,7 +50,7 @@ namespace FontUtils{
         }
     }
     //It need impove if the value is 'MS Gothic & MS UI Gothic & MS PGothic (TrueType)'
-    std::string GetFileByName(std::string_view name){
+    u8string GetFileByName(u8string_view name){
         using Win32::StrMessageA;
         using Win32::RegKey;
 
@@ -109,12 +109,12 @@ namespace FontUtils{
         if(type == TRUETYPE_FONTTYPE){
             //Is truetype
             BTK_LOGINFO(font->lfFaceName);
-            ((std::string*)data)->assign(font->lfFaceName);
+            ((u8string*)data)->assign(font->lfFaceName);
             return 0;
         }
         return 1;
     };
-    std::string GetDefaultFont(){
+    u8string GetDefaultFont(){
         using Win32::HandleDC;
 
 
@@ -124,7 +124,7 @@ namespace FontUtils{
         
         BTK_LOGINFO("HDC charset %d",charset);
 
-        std::string facename;//Get the facename
+        u8string facename;//Get the facename
         LOGFONTA font_data;
         SDL_zero(font_data);
         font_data.lfCharSet = charset;

@@ -28,7 +28,7 @@
     #define BTKIMPORT 
 #else
     //ignore this
-    #define BTKEXPORT     
+    #define BTKEXPORT 
     #define BTKIMPORT 
 #endif
 
@@ -48,9 +48,41 @@
 #endif
 //rename macro
 #define BTK_PRIVATE(NAME) __BtkPriv_##NAME
-
-
-
+/**
+ * @brief Generate operator for enum
+ * @param ENUM The enum type
+ * @param BASE The enum base type
+ * @param OP The operator you want to impl
+ */
+#define BTK_ENUM_OPERATOR(ENUM,BASE,OP) \
+    inline ENUM operator OP(ENUM a1,ENUM a2) noexcept{\
+        return static_cast<ENUM>(\
+            static_cast<BASE>(a1) OP static_cast<BASE>(a2)\
+        );\
+    }
+#define BTK_ENUM_OPERATOR2(ENUM,BASE,OP) \
+    inline ENUM operator OP##=(ENUM a1,ENUM a2) noexcept{\
+        return static_cast<ENUM>(\
+            static_cast<BASE>(a1) OP static_cast<BASE>(a2)\
+        );\
+    }
+#define BTK_ENUM_ALIAS(ENUM,ALIAS,OP) \
+    inline ENUM operator ALIAS(ENUM a1,ENUM a2) noexcept{\
+        return a1 OP a2;\
+    }
+/**
+ * @brief Generate flags' operators
+ * 
+ */
+#define BTK_FLAGS_OPERATOR(ENUM,BASE) \
+    BTK_ENUM_OPERATOR(ENUM,BASE, &);\
+    BTK_ENUM_OPERATOR(ENUM,BASE, |);\
+    BTK_ENUM_OPERATOR(ENUM,BASE, ^);\
+    BTK_ENUM_OPERATOR2(ENUM,BASE, &);\
+    BTK_ENUM_OPERATOR2(ENUM,BASE, |);\
+    BTK_ENUM_OPERATOR2(ENUM,BASE, ^);\
+    BTK_ENUM_ALIAS(ENUM,+,|);\
+    BTK_ENUM_ALIAS(ENUM,+=,|=);
 
 
 #ifdef _BTK_SOURCE

@@ -64,22 +64,17 @@ namespace Btk{
             //double call or call from another thread
             return -1;
         }
-        Btk_defer{
-            //Quit main
-            System::is_running = false;
-        };
         //resume from error
         resume:System::is_running = true;
+        int retvalue = EXIT_SUCCESS;
         try{
-            
             System::instance->run();
         }
         catch(int i){
             //Exit
-            return i;
+            retvalue = i;
         }
         catch(std::exception &exp){
-            BTK_DEBUG(Platform::MessageBox("Exception",exp.what()));
             
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::GetException] %s",exp.what());
             if(Instance().try_handle_exception(&exp)){
@@ -96,7 +91,8 @@ namespace Btk{
             Instance().is_running = false;
             throw;
         }
-        return 0;
+        Instance().is_running = false;
+        return retvalue;
     }
     System::System(){
         AsyncInit();
@@ -187,20 +183,11 @@ namespace Btk{
         while(SDL_WaitEvent(&event)){
             switch(event.type){
                 case SDL_QUIT:{
-                    #ifndef NDEBUG
-                    SDL_Log("[System::EventDispather] Got SDL_QUIT");
-                    #endif
-                    std::lock_guard<std::recursive_mutex> locker(map_mtx);
-                    for(auto &win:wins_map){
-                        if(win.second->on_close()){
-                            //Close Window
-                            
-                            unregister_window(win.second);
-                        }
-                    }
-                    if(wins_map.empty()){
-                        return;
-                    }
+                    signal_quit();
+                    break;
+                }
+                case SDL_CLIPBOARDUPDATE:{
+                    signal_clipboard_update();
                     break;
                 }
                 case SDL_WINDOWEVENT:{
@@ -283,7 +270,7 @@ namespace Btk{
             return;
         }
         auto click = TranslateEvent(event.button);
-        win->handle_click(click);
+        win->handle_mouse(click);
     }
     //MouseWheel
     inline void System::on_mousewheel(const SDL_Event &event){
@@ -420,13 +407,43 @@ namespace Btk{
         }
         return handle_exception(exp);
     }
-};
+    void System::close_window(WindowImpl *win){
+        if(win == nullptr){
+            return;
+        }
+        if(win->on_close()){
+            signal_close_window(win);
+            unregister_window(win);
+        }
+        if(wins_map.empty()){
+            Exit(EXIT_SUCCESS);
+        }
+    }
+    WindowImpl *System::create_window(SDL_Window *win){
+        BTK_ASSERT(win != nullptr);
+        auto p = new WindowImpl(win);
+        register_window(p);
+        signal_create_window(p);
+        return p;
+    }
+}
 namespace Btk{
+    static inline void exit_impl_cb(void *args){
+        int v = *reinterpret_cast<int*>(&args);
+        throw v;
+    }
     void Exit(int code){
-        //FIXME possible memory leak on here
-        DeferCall([code](){
-            throw code;
-        });
+        if constexpr(sizeof(void *) < sizeof(int)){
+            //FIXME possible memory leak on here
+            DeferCall([code](){
+                throw code;
+            });
+        }
+        else{
+            void *args;
+            *reinterpret_cast<int*>(&args) = code;
+            DeferCall(exit_impl_cb,args);
+        }
     }
     ExceptionHandler SetExceptionHandler(ExceptionHandler handler){
         ExceptionHandler current = System::instance->handle_exception;

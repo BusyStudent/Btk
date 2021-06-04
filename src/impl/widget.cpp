@@ -24,7 +24,7 @@ namespace Btk{
             case Event::Motion:
                 return handle_motion(event_cast<MotionEvent&>(ev));
             case Event::Click:
-                return handle_click(event_cast<ClickEvent&>(ev));
+                return handle_mouse(event_cast<MouseEvent&>(ev));
             case Event::KeyBoard:
                 return handle_keyboard(event_cast<KeyEvent&>(ev));
             case Event::Wheel:
@@ -141,7 +141,13 @@ namespace Btk{
         }
         childrens.push_back(w);
         //Tell the widget
-        w->set_parent(this);
+        try{
+            w->set_parent(this);
+        }
+        catch(...){
+            childrens.pop_back();
+            throw;
+        }
         return true;
     }
     void Container::clear(){

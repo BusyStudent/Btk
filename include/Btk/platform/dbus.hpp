@@ -1,7 +1,14 @@
 #if !defined(_BTK_PLATFORM_DBUS_HPP_)
 #define _BTK_PLATFORM_DBUS_HPP_
 #include <dbus/dbus.h>
+#include <chrono>
+#include <initializer_list>
+#include "../exception.hpp"
+#include "../string.hpp"
+
+
 namespace Btk::DBus{
+    struct MessageIter;
     /**
      * @brief DBusMessage Wrapper
      * 
@@ -16,11 +23,17 @@ namespace Btk::DBus{
         Message(Message &&);
         ~Message();
         void unref();
+        MessageIter add();
 
         DBusMessage *msg;
     };
     struct MessageIter:public DBusMessageIter{
-        void add();
+        MessageIter &operator <<(Uint32);
+        MessageIter &operator <<(Sint32);
+        MessageIter &operator <<(const char *);
+        MessageIter &operator <<(const u8string &);
+
+        void close();
     };
     /**
      * @brief DBusConnection Wrapper
@@ -122,7 +135,7 @@ namespace Btk::DBus{
         }
     }
     //GetBus
-    Connection GetBus(DBusBusType t,DBusError *err){
+    inline Connection GetBus(DBusBusType t,DBusError *err){
         auto *con = dbus_bus_get(t,err);
         Connection c;
         c.con = con;
@@ -143,6 +156,30 @@ namespace Btk::DBus{
         Message m;
         m.msg = msg;
         return m;
+    }
+    inline MessageIter Message::add(){
+        MessageIter iter;
+        dbus_message_iter_init_append(msg,&iter);
+        return iter;
+    }
+    //Iter
+    inline MessageIter &MessageIter::operator <<(Uint32 v){
+        dbus_message_iter_append_basic(this,DBUS_TYPE_UINT32,&v);
+        return *this;
+    }
+    inline MessageIter &MessageIter::operator <<(Sint32 v){
+        dbus_message_iter_append_basic(this,DBUS_TYPE_INT32,&v);
+        return *this;
+    }
+    inline MessageIter &MessageIter::operator <<(const char *s){
+        dbus_message_iter_append_basic(this,DBUS_TYPE_STRING,&s);
+        return *this;
+    }
+    inline MessageIter &MessageIter::operator <<(const u8string &s){
+        return *this << s.c_str();
+    }
+    inline void MessageIter::close(){
+        dbus_message_iter_init_closed(this);
     }
 }
 #endif // _BTK_PLATFORM_DBUS_HPP_

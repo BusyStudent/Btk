@@ -16,8 +16,8 @@ namespace Btk{
             ScrollBar(const ScrollBar &) = delete;
             ~ScrollBar();
 
-            bool handle(Event &);
-            void draw(Renderer&);
+            bool handle(Event &) override;
+            void draw(Renderer&) override;
             /**
              * @brief Get the value of the scrollbar
              * 

@@ -75,6 +75,47 @@ namespace Btk::Ft{
     }
 }
 namespace Btk::Ft{
+    /**
+     * @brief Config charmap here
+     * 
+     * @param face 
+     */
+    static void config_charmap(FT_Face face){
+    //SDL_ttf code here
+    /* Set charmap for loaded font */
+    FT_CharMap found = nullptr;
+    #ifndef NDEBUG /* Font debug code */
+        for (int i = 0; i < face->num_charmaps; i++) {
+            FT_CharMap charmap = face->charmaps[i];
+            BTK_LOGINFO("Found charmap: platform id %d, encoding id %d", charmap->platform_id, charmap->encoding_id);
+        }
+    #endif
+        if (!found) {
+            for (int i = 0; i < face->num_charmaps; i++) {
+                FT_CharMap charmap = face->charmaps[i];
+                if (charmap->platform_id == 3 && charmap->encoding_id == 10) { /* UCS-4 Unicode */
+                    found = charmap;
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            for (int i = 0; i < face->num_charmaps; i++) {
+                FT_CharMap charmap = face->charmaps[i];
+                if ((charmap->platform_id == 3 && charmap->encoding_id == 1) /* Windows Unicode */
+                || (charmap->platform_id == 3 && charmap->encoding_id == 0) /* Windows Symbol */
+                || (charmap->platform_id == 2 && charmap->encoding_id == 1) /* ISO Unicode */
+                || (charmap->platform_id == 0)) { /* Apple Unicode */
+                    found = charmap;
+                    break;
+                }
+            }
+        }
+        if (found) {
+            /* If this fails, continue using the default charmap */
+            FT_Set_Charmap(face, found);
+        }
+    }
     Ft2Face::Ft2Face(const char *fname,Uint32 idx){
         FT_Error err = FT_New_Face(
             Ft2Library,
@@ -86,7 +127,7 @@ namespace Btk::Ft{
             face = nullptr;
             throwRuntimeError("Could not new mem face");
         }
-
+        config_charmap(face);
     }
     Ft2Face::Ft2Face(FontBuffer buf,Uint32 idx){
         buffer = buf;
@@ -101,6 +142,7 @@ namespace Btk::Ft{
             face = nullptr;
             throwRuntimeError("Could not new mem face");
         }
+        config_charmap(face);
     }
     Ft2Face::~Ft2Face(){
         FT_Done_Face(face);

@@ -22,8 +22,36 @@ namespace Btk::Ft{
     bool CacheSystem::load_face(Face &f,const char *filename,Uint32 idx){
         Face face;
         face.face = new Ft2Face(filename,idx);
+        //Try to use the cache
+        if(face->family_name != nullptr){
+            auto iter = faces.find(face->family_name);
+            if(iter != faces.end() and iter->second->face_index != idx){
+                //It is exists and hit the cache
+                face = iter->second;
+                BTK_LOGINFO("[System::Font]HitCache %s in openfont %s %u",filename,idx);
+            }
+            else{
+                //Add into cache
+                BTK_LOGINFO("[System::Font]Add Face %s",face->family_name);
+                faces[face->family_name] = face;
+            }
+        }
         f = face;
         return true;
+    }
+    Font *CacheSystem::load_font(const u8string &name,Uint32 idx){
+        Font *f = query(name);
+        if(f != nullptr and f->face->face_index == idx){
+            f->ref();
+            return f;
+        }
+        delete f;
+        auto filename = FontUtils::GetFileByName(name);
+        Face face;
+        if(load_face(face,filename.c_str(),idx)){
+            return new Font(face);
+        }
+        return nullptr;
     }
     Font *CacheSystem::query(const u8string &name){
         auto iter = faces.find(name);
@@ -31,5 +59,12 @@ namespace Btk::Ft{
             return nullptr;
         }
         return new Font(iter->second);
+    }
+}
+namespace Btk{
+    void AddMemFont(u8string_view name,const void *buf,size_t bufsize,bool dup){
+        BTK_ASSERT(buf != nullptr and bufsize > 0);
+        Ft::FontBuffer fbuf(buf,bufsize,dup);
+        Ft::GlobalCache().memfonts[u8string(name)] = fbuf;
     }
 }

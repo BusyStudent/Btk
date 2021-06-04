@@ -33,12 +33,13 @@ namespace Btk{
         Baseline = 1<<6, // Default, align text vertically to baseline.
     };
     //TextAlign operator
-    inline TextAlign operator |(TextAlign a,TextAlign b){
-        return static_cast<TextAlign>(int(a) | int(b));
-    }
-    inline TextAlign operator +(TextAlign a,TextAlign b){
-        return static_cast<TextAlign>(int(a) | int(b));
-    }
+    // inline TextAlign operator |(TextAlign a,TextAlign b){
+    //     return static_cast<TextAlign>(int(a) | int(b));
+    // }
+    // inline TextAlign operator +(TextAlign a,TextAlign b){
+    //     return static_cast<TextAlign>(int(a) | int(b));
+    // }
+    BTK_FLAGS_OPERATOR(TextAlign,int);
     /**
      * @brief The renderer backend
      * 
@@ -444,6 +445,12 @@ namespace Btk{
              * 
              */
             void add_font(const char *fontname,const char *filename);
+            /**
+             * @brief Get current font
+             * 
+             * @return Font 
+             */
+            Font cur_font();
             /**
              * @brief Set Text Alignment
              * 

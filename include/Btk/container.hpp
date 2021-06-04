@@ -7,13 +7,25 @@
 #include "defs.hpp"
 #include "widget.hpp"
 namespace Btk{
+    /**
+     * @brief A Interface for manage widget
+     * 
+     */
     class BTKAPI Group:public Container{
-        
+        public:
+            Group() = default;
+            ~Group() = default;
+        private:
+            //< The current dragging widget
+            Widget *dragg_widget = nullptr;
+            Widget *focus_widget = nullptr;
+            Widget *mouse_widget = nullptr;
+            bool drag_rejected = false;
     };
-    class BTKAPI GroupBox:public Container{
+    class BTKAPI GroupBox:public Group{
 
     };
-    class BTKAPI DockWidget:public Container{
+    class BTKAPI DockWidget:public Group{
         
     };
 }

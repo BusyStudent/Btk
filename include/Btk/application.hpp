@@ -1,6 +1,7 @@
 #if !defined(_BTK_APPLICATION_HPP_)
 #define _BTK_APPLICATION_HPP_
 #include "defs.hpp"
+#include "pixels.hpp"
 #include "object.hpp"
 #include "string.hpp"
 namespace Btk{
@@ -10,6 +11,9 @@ namespace Btk{
      * 
      */
     class BTKAPI Application:public HasSlots{
+        public:
+            using SignalQuit = Signal<void()>;
+            using SignalClipboardUpdate = Signal<void()>;
         public:
             Application();
             Application(const Application &) = delete;
@@ -23,6 +27,19 @@ namespace Btk{
              * @return false 
              */
             bool notify(u8string_view title = {},u8string_view msg = {});
+            bool mainloop();
+            int  run();
+            /**
+             * @brief Get the signal which will be emit 
+             *        when the os asked the app to quit
+             * 
+             * @return SignalQuit& 
+             */
+            Signal<void()> &signal_quit();
+            Signal<void()> &signal_clipboard_update();
+
+            void set_clipboard(const PixBuf &image);
+            void set_clipboard(const u8string &text);
         private:
             ApplicationImpl *app;
     };

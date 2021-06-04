@@ -74,6 +74,9 @@ struct BtkWidget{};
 struct BtkContainer{};
 #endif
 
+typedef struct BtkPixBuf BtkPixBuf;
+typedef BtkPixBuf BtkBitmap;
+
 //stack alloc
 #ifdef _WIN32
     #include <malloc.h>
@@ -191,6 +194,12 @@ BTK_CAPI const char *Btk_SetLableText(BtkLabel*,const char *text);
  * @return BTK_CAPI 
  */
 BTK_CAPI void Btk_SignConnect(BtkWidget*,const char *signal,...);
+//Widget
+typedef bool (*Btk_foreach_t)(BtkWidget *widget,void *userdata);
+BTK_CAPI void Btk_ForChildrens(BtkWidget *w,Btk_foreach_t fn,void *p);
+//PixBuf
+BTK_CAPI BtkPixBuf *Btk_LoadImage(const char *filename);
+BTK_CAPI void Btk_FreeImage(BtkPixBuf *);
 //window
 BTK_CAPI BtkWindow *Btk_NewWindow(const char *title,int w,int h);
 BTK_CAPI void Btk_ShowWindow(BtkWindow *);
@@ -226,7 +235,7 @@ BTK_CAPI void        Btk_SetError(const char *fmt,...);
 //MessageBox
 BTK_CAPI void Btk_MessageBox(const char *title,const char *message);
 //Debug
-BTK_CAPI void Btk_Backtrace();
+BTK_CAPI char *Btk_typeof(BtkWidget *);
 //function end
 
 //hidden api begin

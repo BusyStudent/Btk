@@ -141,7 +141,7 @@ namespace Btk{
         render.stroke();
         
     }
-    bool Button::handle_click(MouseEvent &event){
+    bool Button::handle_mouse(MouseEvent &event){
         if(event.is_pressed() and event.button.is_left()){
             BTK_LOGINFO("This button is clicked %p",this);
             is_pressed = true;

@@ -1,5 +1,6 @@
 #if !defined(_BTK_UTILS_TEMPLATE_HPP_)
 #define _BTK_UTILS_TEMPLATE_HPP_
+#include <memory>
 #include <utility>
 #include <cstddef>
 #include "../defs.hpp"
@@ -31,67 +32,9 @@ namespace Btk{
     };
     template<class T>
     using lock_guard = LockGuard<T>;
-    /**
-     * @brief Unique Pointer
-     * 
-     * @tparam T 
-     */
-    template<class T>
-    class UniquePtr{
-        public:
-            explicit UniquePtr(T *p):ptr(p){}
-            UniquePtr() = default;
-            UniquePtr(const UniquePtr &) = delete;
-            UniquePtr(UniquePtr &&p){
-                ptr = p.ptr;
-                p.ptr = nullptr;
-            } 
-            ~UniquePtr(){
-                reset();
-            }
-            void reset(){
-                delete ptr;
-                ptr = nullptr;
-            }
-            T *release() noexcept{
-                T *p = ptr;
-                reset();
-                return p;
-            }
-            T *get() const noexcept{
-                return ptr;
-            }
-            T *operator ->() const noexcept{
-                return ptr;
-            }
-            T &operator &() const noexcept{
-                return *ptr;
-            }
-            /**
-             * @brief reset
-             * 
-             * @return UniquePtr& 
-             */
-            UniquePtr &operator =(std::nullptr_t){
-                reset();
-                return *this;
-            }
-            UniquePtr &operator =(UniquePtr &&p){
-                if(&p != this){
-                    reset();
-                    ptr = p.ptr;
-                    p.ptr = nullptr;
-                }
-                return *this;
-            }
-            operator bool() const noexcept{
-                return ptr != nullptr;
-            }
-        private:
-            T *ptr = nullptr;
-    };
-    template<class T>
-    using unique_ptr = UniquePtr<T>;
+
+    template<class T,class Deleter = std::default_delete<T>>
+    using unique_ptr = std::unique_ptr<T,Deleter>;
     /**
      * @brief Base for RefPtr
      * 
@@ -248,6 +191,15 @@ namespace Btk{
         data = ptr.data;
         return *this;
     }
+    /**
+     * @brief Weak Pointer
+     * 
+     * @tparam T 
+     */
+    template<class T>
+    class WeakPtr{
+
+    };
     /**
      * @brief Holder for Object to erase the destructor
      * 

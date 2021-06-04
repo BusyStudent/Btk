@@ -1,6 +1,7 @@
 #if !defined(_BTK_OBJECT_HPP_)
 #define _BTK_OBJECT_HPP_
 #include "utils/template.hpp"
+#include "utils/traits.hpp"
 #include "utils/sync.hpp"
 #include "impl/invoker.hpp"
 #include "defs.hpp"
@@ -14,29 +15,6 @@ namespace Btk{
     //TODO:The SpinLock is not safe to lock recursively
     //So we are better to write our own recursive spinlock
     BTKAPI void DeferCall(void(* fn)(void*),void *data);
-    //MemberFunction traits
-
-    template<class T>
-    struct _MemberFunction{};
-    /**
-     * @brief Get detail information of the function
-     * 
-     * @tparam RetT 
-     * @tparam Class 
-     * @tparam Args 
-     */
-    template<class RetT,class Class,class ...Args>
-    struct _MemberFunction<RetT (Class::*)(Args...)>{
-        using result_type = RetT;
-        using object_type = Class;
-
-    };
-    //for const method
-    template<class RetT,class Class,class ...Args>
-    struct _MemberFunction<RetT (Class::*)(Args...) const>{
-        using result_type = RetT;
-        using object_type = Class;
-    };
 
     class SignalBase;
     template<class RetT>
@@ -451,7 +429,7 @@ namespace Btk{
                     //It will have a template argument deduction/substitution failure
                     return signal.connect(
                         callable,
-                        static_cast<typename _MemberFunction<Callable>::object_type*>(this)
+                        static_cast<typename MemberFunctionTraits<Callable>::object_type*>(this)
                     );
                 }
                 else{

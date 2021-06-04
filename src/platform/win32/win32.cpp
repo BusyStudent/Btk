@@ -4,6 +4,7 @@
 #include <Btk/msgbox/msgbox.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
+#include <Btk/string.hpp>
 #include <Btk/Btk.hpp>
 #include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL.h>
@@ -23,7 +24,7 @@ namespace{
     //Format strng to text
     class WalkerToString:public StackWalker{
         public:
-            WalkerToString(std::string &s):msg(s){
+            WalkerToString(Btk::u8string &s):msg(s){
 
             }
             virtual void OnCallstackEntry(CallstackEntryType,CallstackEntry &addr){
@@ -42,7 +43,7 @@ namespace{
                         int(addr.lineNumber));
                 }
             }
-        std::string &msg;
+        Btk::u8string &msg;
     };
 }
 
@@ -58,7 +59,7 @@ static void crash_handler(int sig){
         signame = "SIGSEGV";
     }
     _Btk_Backtrace();
-    std::string msg = Btk::cformat("Error: Caught signal %s",signame);
+    Btk::u8string msg = Btk::cformat("Error: Caught signal %s",signame);
 
     #ifdef _MSC_VER
     msg += "\nCurrent CallStack =>\n";
@@ -102,7 +103,7 @@ static LONG CALLBACK seh_exception_handler(_EXCEPTION_POINTERS *exp){
 
     fflush(stderr);
     
-    std::string msg = Btk::cformat("Exception at address %p\n",exp->ExceptionRecord->ExceptionAddress);
+    Btk::u8string msg = Btk::cformat("Exception at address %p\n",exp->ExceptionRecord->ExceptionAddress);
 
     #ifdef _MSC_VER
     msg += "\nCurrent CallStack =>\n";
@@ -143,7 +144,7 @@ namespace Win32{
     void HandleSysMsg(const SDL_SysWMmsg &msg){
 
     }
-    std::string StrMessageA(DWORD errcode){
+    string StrMessageA(DWORD errcode){
         char16_t *ret;
         DWORD result = FormatMessageW(
             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
@@ -162,7 +163,7 @@ namespace Win32{
         LocalFree(ret);
         return s;
     }
-    std::u16string StrMessageW(DWORD errcode){
+    u16string StrMessageW(DWORD errcode){
         char16_t *ret;
         DWORD result = FormatMessageW(
             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,

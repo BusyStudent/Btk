@@ -37,5 +37,14 @@ namespace Btk{
     Uint32 Semaphore::value() const{
         return SDL_SemValue(sem);
     }
-
+    void Semaphore::post(){
+        if(SDL_SemPost(sem) != 0){
+            throwSDLError();
+        }
+    }
+    void Semaphore::wait(){
+        if(SDL_SemWait(sem) != 0){
+            throwSDLError();
+        }
+    }
 }

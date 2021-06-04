@@ -41,7 +41,8 @@ namespace Btk{
     class BTKAPI WindowImpl:public Container{
         //Init SDL Window
         public:
-            WindowImpl(const char *title,int x,int y,int w,int h,int flags);
+            explicit WindowImpl(SDL_Window *);
+            WindowImpl(const WindowImpl &) = delete;
             ~WindowImpl();
             //Overload the method from widget
             void draw(Renderer &render);
@@ -79,7 +80,7 @@ namespace Btk{
 
         public:
             //Process Event
-            bool handle_click(MouseEvent   &);
+            bool handle_mouse(MouseEvent   &);
             bool handle_wheel(WheelEvent   &);
             bool handle_motion(MotionEvent &);
             bool handle_keyboard(KeyEvent  &);

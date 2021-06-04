@@ -25,7 +25,7 @@ namespace Btk{
             }
 
         protected:
-            virtual void set_parent(Widget *);
+            virtual void set_parent(Widget *) override;
             virtual void onenter();
             virtual void onleave();
             bool is_entered = false;//< Is mouse on the button?
@@ -45,7 +45,7 @@ namespace Btk{
             Button(u8string_view text);
             Button(int x,int y,int w,int h);
             ~Button();
-            void draw(Renderer &);
+            void draw(Renderer &) override;
             void set_text(u8string_view text);
             /**
              * @brief Get the button text
@@ -56,7 +56,7 @@ namespace Btk{
                 return btext;
             }
         protected:
-            bool handle_click(MouseEvent &) override;
+            bool handle_mouse(MouseEvent &) override;
             void onleave() override;
 
 
@@ -71,7 +71,7 @@ namespace Btk{
             RadioButton();
             ~RadioButton();
 
-            void draw(Renderer &);
+            void draw(Renderer &) override;
             bool is_checked() const noexcept{
                 return checked;
             }

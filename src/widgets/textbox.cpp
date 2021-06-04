@@ -180,6 +180,7 @@ namespace Btk{
         render.restore();
     }
     bool TextBox::handle_keyboard(KeyEvent &event){
+        event.accept();
         if(event.state == KeyEvent::Pressed){
             switch(event.keycode){
                 case SDLK_BACKSPACE:{
@@ -264,7 +265,7 @@ namespace Btk{
         }
         return event.accept();
     }
-    bool TextBox::handle_click(ClickEvent &event){
+    bool TextBox::handle_mouse(ClickEvent &event){
         return event.accept();
     }
     void TextBox::u8text(std::string &s) const{

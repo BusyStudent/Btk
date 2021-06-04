@@ -129,7 +129,7 @@ BTKHIDDEN void fonsDrawDebug(FONScontext* s, float x, float y);
 BTKHIDDEN int fonsAddFallbackFont(FONScontext* stash, int base, int fallback);
 BTKHIDDEN void fonsResetFallbackFont(FONScontext* stash, int base);
 /**
- * @brief Get BtkFt::Face *
+ * @brief Get Btk::Ft::Font *
  * 
  * @param stash 
  * @param font 

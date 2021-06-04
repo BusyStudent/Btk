@@ -2,6 +2,7 @@
 #define _BTK_STRING_HPP_
 #include <iosfwd>
 #include <string>
+#include <vector>
 #include <string_view>
 #include <type_traits>
 #include <cstdarg>
@@ -37,7 +38,33 @@ namespace Btk{
     inline char32_t Utf8Prev(char *& c){
         return Utf8Prev(const_cast<const char*&>(c));
     }
+    /**
+     * @brief Get distance of two utf8 char
+     * 
+     * @param p1 
+     * @param p2 
+     * @return ptrdiff_t 
+     */
+    inline ptrdiff_t Utf8Distance(const char *p1,const char *p2){
+        if(p1 > p2){
+            return -Utf8Strlen(p2,p1);
+        }
+        else{
+            return Utf8Strlen(p1,p2);
+        }
+    }
     BTKAPI bool Utf8IsVaild(const char *beg,const char *end);
+    /**
+     * @brief Advance in the string
+     * 
+     * @param beg The str begin
+     * @param end The str end
+     * @param cur current position
+     * @param n The distance
+     * @return BTKAPI const* (nullptr on out of range)
+     */
+    BTKAPI 
+    const char *Utf8Advance(const char *beg,const char *end,const char *cur,long n);
     /**
      * @brief Proxy for u8string
      * 
@@ -155,6 +182,17 @@ namespace Btk{
         _U8Proxy<T> *operator ->(){
             return this;
         }
+        /**
+         * @brief Calc the distance
+         * 
+         * @tparam T 
+         * @param i 
+         * @return ptrdiff_t 
+         */
+        template<class T1>
+        ptrdiff_t operator -(const _U8Iterator<T1> i) const{
+            return Utf8Distance(this->_beg,i._beg);
+        }
         friend class u8string;
     };
     class BTKAPI u8string_view:protected std::string_view{
@@ -170,6 +208,9 @@ namespace Btk{
             using std::string_view::npos;
 
             using Base = std::string_view;
+            using List = std::vector<u8string>;
+            using RefList = std::vector<u8string_view>;
+
             using _iterator = const char *;
             using _const_iterator = const char *;
             /**
@@ -202,6 +243,39 @@ namespace Btk{
              * @return size_t 
              */
             size_t find(char32_t) const;
+            size_t find(u8string_view) const;
+
+            u16string to_utf16() const;
+            u8string toupper() const;
+            u8string tolower() const;
+            /**
+             * @brief Strip the space at begin and end
+             * 
+             * @return u8string 
+             */
+            u8string strip() const;
+            /**
+             * @brief Cmp string(ignore the case)
+             * 
+             * @return true 
+             * @return false 
+             */
+            bool casecmp(u8string_view) const;
+            /**
+             * @brief Split string and copy them into buffer
+             * 
+             * @param delim 
+             * @param max Max substring(default unlimited)
+             * @return List 
+             */
+            List    split(u8string_view delim,size_t max = size_t(-1));
+            List    split(char delim,size_t max = size_t(-1)){
+                return split(u8string_view(&delim,1),max);
+            }
+            RefList split_ref(u8string_view delim,size_t max = size_t(-1));
+            RefList split_ref(char delim,size_t max = size_t(-1)){
+                return split_ref(u8string_view(&delim,1),max);
+            }
         private:
             _iterator impl_begin(){
                 return _translate_iterator(Base::begin());
@@ -236,6 +310,8 @@ namespace Btk{
     class BTKAPI u16string_view:protected std::u16string_view{
         public:
             u16string_view(std::u16string_view v);
+            u16string_view(const u16string &);
+            u16string_view(const std::u16string &);
             using std::u16string_view::basic_string_view;
             using std::u16string_view::empty;
             using std::u16string_view::data;
@@ -246,6 +322,7 @@ namespace Btk{
             const std::u16string_view &base() const{
                 return *this;
             }
+            u8string to_utf8() const;
         
         template<class T>
         friend struct std::hash;
@@ -267,6 +344,8 @@ namespace Btk{
             u8string(u8string &&) = default;
             ~u8string();
 
+            using std::string::basic_string;
+
             using CharProxy = _U8Proxy<u8string>;
             using ConstCharProxy = _U8Proxy<const u8string>;
             using Iterator = _U8Iterator<u8string>;
@@ -275,11 +354,13 @@ namespace Btk{
             //stl
             using const_iterator = ConstIterator;
             using iterator = Iterator;
+            u8string(const_iterator beg,const_iterator end);
 
             using value_type = char32_t;
             using reference = char32_t&;
             using pointer = char32_t*;
 
+            using std::string::assign;
             using std::string::c_str;
             using std::string::empty;
             using std::string::data;
@@ -298,6 +379,8 @@ namespace Btk{
             using _const_iterator = const char *;
 
             using Base = std::string;
+            using List = std::vector<u8string>;
+            using RefList = std::vector<u8string_view>;
 
             /**
              * @brief The string doesnnot has invaild char
@@ -314,7 +397,11 @@ namespace Btk{
             size_t raw_length() const{
                 return base().length();
             }
-
+            /**
+             * @brief Convert to utf16
+             * 
+             * @return u16string 
+             */
             u16string to_utf16() const;
             /**
              * @brief Pop the last char
@@ -333,6 +420,16 @@ namespace Btk{
              * 
              */
             void pop_front();
+            /**
+             * @brief Erase
+             * 
+             * @tparam T 
+             * @param iter 
+             */
+            template<class T>
+            void erase(_U8Iterator<T> iter){
+                Base::erase(iter._beg,iter._end);
+            }
             /**
              * @brief Locate the char 
              * 
@@ -373,10 +470,27 @@ namespace Btk{
             size_type find(char c) const{
                 return find(char32_t(c));
             }
-            size_type find(char32_t) const;
+            size_type find(char32_t ch) const{
+                return u8string_view(*this).find(ch);
+            }
+            size_type find(u8string_view v){
+                return u8string_view(*this).find(v);
+            }
+            List    split(u8string_view delim,size_t max = size_t(-1)){
+                return u8string_view(*this).split(delim,max);
+            }
+            RefList split_ref(u8string_view delim,size_t max = size_t(-1)){
+                return u8string_view(*this).split_ref(delim,max);
+            }
 
             u8string &operator =(const u8string &) = default;
             u8string &operator =(u8string &&) = default;
+
+            template<class T>
+            u8string &operator +=(T &&arg){
+                base() += std::forward<T>(arg);
+                return *this;
+            }
         public:
             //beg and end
             Iterator begin(){
@@ -450,8 +564,15 @@ namespace Btk{
                 return *this;
             }
 
-            u8string toupper() const;
-            u8string tolower() const;
+            u8string toupper() const{
+                return u8string_view(*this).toupper();
+            }
+            u8string tolower() const{
+                return u8string_view(*this).tolower();
+            }
+            bool casecmp(u8string_view v) const{
+                return u8string_view(*this).casecmp(v);
+            }
         private:
             _iterator impl_begin(){
                 return _translate_iterator(Base::begin());
@@ -493,9 +614,15 @@ namespace Btk{
     class BTKAPI u16string:protected std::u16string{
         public:
             u16string();
+            u16string(const char *);
+            u16string(const char16_t *);
+            u16string(const char16_t *,size_t n);
             u16string(const u16string &);
             u16string(const std::u16string &);
             ~u16string();
+
+            using std::u16string::data;
+            using std::u16string::c_str;
 
             std::u16string &base() noexcept{
                 return *this;
@@ -503,6 +630,23 @@ namespace Btk{
             const std::u16string &base() const noexcept{
                 return *this;
             }
+            u8string to_utf8() const{
+                return u16string_view(*this).to_utf8();
+            }
+        public:
+            //Cast
+            operator u16string_view() const noexcept{
+                return u16string_view(base().data(),base().length());
+            }
+            operator std::u16string_view() const noexcept{
+                return std::u16string_view(base().data(),base().length());
+            }
+            #ifdef _WIN32
+            static_assert(sizeof(wchar_t) == sizeof(char16_t));
+            operator std::wstring_view() const noexcept{
+                return std::wstring_view((const wchar_t*)base().data(),base().length());
+            }
+            #endif
         
         template<class T>
         friend struct std::hash;
@@ -514,6 +658,10 @@ namespace Btk{
     }
     inline u8string::u8string(u8string_view s):
         std::string(std::string_view(s)){
+    }
+    inline u8string::u8string(const_iterator beg,const_iterator end):
+        std::string(beg._beg,end._end){
+
     }
     inline u8string::u8string(const char *s):
         std::string(s){
@@ -527,6 +675,9 @@ namespace Btk{
     inline u8string::u8string(const Uint8 *s,size_t n):
         std::string(reinterpret_cast<const char*>(s),n){
     }
+    inline u16string u8string::to_utf16() const{
+        return u8string_view(*this).to_utf16();   
+    }
     //u8string_view
     inline u8string_view::u8string_view(const std::string &s):
         std::string_view(s){
@@ -537,6 +688,12 @@ namespace Btk{
     //u16string_view
     inline u16string_view::u16string_view(std::u16string_view v)
         :std::u16string_view(v){
+    }
+    inline u16string_view::u16string_view(const u16string &s):
+        std::u16string_view(s.base()){
+    }
+    inline u16string_view::u16string_view(const std::u16string &s):
+        std::u16string_view(s){
     }
     /**
      * @brief output helper
@@ -575,6 +732,9 @@ namespace Btk{
         ret.append(u2);
         return ret;
     }
+    inline u8string operator ""_btku8(const char *str,size_t n){
+        return u8string(str,n);
+    }
     //u8string inline end
     //u8string_view begin
     BTK_STRING_OPERATOR(u8string_view,>);
@@ -583,6 +743,9 @@ namespace Btk{
     BTK_STRING_OPERATOR(u8string_view,!=);
     BTK_STRING_OPERATOR(u8string_view,>=);
     BTK_STRING_OPERATOR(u8string_view,<=);
+    inline u8string_view operator ""_btku8v(const char *s,size_t n){
+        return u8string_view(s,n);
+    }
     //u8string_view end
     
     //u16string inline begin
@@ -592,6 +755,9 @@ namespace Btk{
     BTK_STRING_OPERATOR(u16string,!=);
     BTK_STRING_OPERATOR(u16string,>=);
     BTK_STRING_OPERATOR(u16string,<=);
+    inline u16string operator ""_btku16(const char16_t *str,size_t n){
+        return u16string(str,n);
+    }
     //u16string end
     
     //u16strinf_view inline begin
@@ -601,7 +767,9 @@ namespace Btk{
     BTK_STRING_OPERATOR(u16string_view,!=);
     BTK_STRING_OPERATOR(u16string_view,>=);
     BTK_STRING_OPERATOR(u16string_view,<=);
-    //u16strinf_view end
+    inline u16string_view operator ""_btku16v(const char16_t *str,size_t n){
+        return u16string_view(str,n);
+    }    //u16strinf_view end
     /**
      * @brief Utf8 format string
      * 
@@ -623,5 +791,9 @@ namespace Btk{
         va_end(l);
         return r;
     }
+    using StringList = u8string_view::List;
+    using StringRefList = u8string_view::RefList;
+
+    using String = u8string;
 }
 #endif // _BTK_STRING_HPP_
