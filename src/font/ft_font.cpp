@@ -63,7 +63,7 @@ namespace Btk::Ft{
     int Font::kerning_size(CharIndex prev,CharIndex cur){
         FT_Vector vec;
         FT_Get_Kerning(face, prev, cur, FT_KERNING_DEFAULT, &vec);
-        return vec.x >> 6;
+        return (vec.x  + 32) >> 6;
     }
     int Font::advance(CharIndex idx){
         FT_Fixed adv;

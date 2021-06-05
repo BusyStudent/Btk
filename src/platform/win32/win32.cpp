@@ -144,7 +144,7 @@ namespace Win32{
     void HandleSysMsg(const SDL_SysWMmsg &msg){
 
     }
-    string StrMessageA(DWORD errcode){
+    u8string StrMessageA(DWORD errcode){
         char16_t *ret;
         DWORD result = FormatMessageW(
             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
@@ -158,7 +158,7 @@ namespace Win32{
         if(result == 0){
             throwWin32Error();
         }
-        std::string s;
+        u8string s;
         Utf16To8(s,ret);
         LocalFree(ret);
         return s;
@@ -177,7 +177,7 @@ namespace Win32{
         if(result == 0){
             throwWin32Error();
         }
-        std::u16string s(ret);
+        u16string s(ret);
         LocalFree(ret);
         return s;
     }

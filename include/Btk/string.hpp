@@ -200,6 +200,7 @@ namespace Btk{
             u8string_view() = default;
             u8string_view(std::string_view);
             u8string_view(const std::string &);
+            u8string_view(const u8string &);
             u8string_view(const u8string_view &) = default;
             using std::string_view::basic_string_view;
             using std::string_view::empty;
@@ -316,6 +317,13 @@ namespace Btk{
             using std::u16string_view::empty;
             using std::u16string_view::data;
 
+            #ifdef _WIN32
+            u16string_view(const std::wstring &);
+            u16string_view(std::wstring_view);
+            u16string_view(const wchar_t *ws);
+            u16string_view(const wchar_t *ws,size_t n);
+            #endif
+
             std::u16string_view &base(){
                 return *this;
             }
@@ -326,6 +334,7 @@ namespace Btk{
         
         template<class T>
         friend struct std::hash;
+        friend class u16string;
     };
     /**
      * @brief UTF8 String
@@ -334,6 +343,7 @@ namespace Btk{
     class BTKAPI u8string:protected std::string{
         public:
             u8string();
+            u8string(const std::string &);
             u8string(u8string_view view);
             u8string(std::string_view view);
             u8string(const char *);
@@ -535,14 +545,12 @@ namespace Btk{
             operator std::string_view() const noexcept{
                 return std::string_view(base().c_str(),base().length());
             }
-            operator u8string_view() const noexcept{
-                return u8string_view(base().c_str(),base().length());
-            }
+            //FIXME:C2664 If we donnot ocomit it
+            // operator u8string_view() const noexcept{
+            //     return u8string_view(base().c_str(),base().length());
+            // }
             std::string *operator ->() noexcept{
                 return this;
-            }
-            std::string &operator &() noexcept{
-                return *this;
             }
             const std::string *operator ->() const noexcept{
                 return this;
@@ -619,7 +627,16 @@ namespace Btk{
             u16string(const char16_t *,size_t n);
             u16string(const u16string &);
             u16string(const std::u16string &);
+            u16string(std::u16string_view);
+            u16string(u16string_view);
             ~u16string();
+
+            #ifdef _WIN32
+            u16string(const wchar_t *);
+            u16string(const wchar_t *,size_t n);
+            u16string(const std::wstring &);
+            u16string(std::wstring_view);
+            #endif
 
             using std::u16string::data;
             using std::u16string::c_str;
@@ -659,6 +676,9 @@ namespace Btk{
     inline u8string::u8string(u8string_view s):
         std::string(std::string_view(s)){
     }
+    inline u8string::u8string(const std::string &s):
+        std::string(s){
+    }
     inline u8string::u8string(const_iterator beg,const_iterator end):
         std::string(beg._beg,end._end){
 
@@ -682,6 +702,9 @@ namespace Btk{
     inline u8string_view::u8string_view(const std::string &s):
         std::string_view(s){
     }
+    inline u8string_view::u8string_view(const u8string &s):
+        std::string_view(s){
+    }
     inline u8string_view::u8string_view(std::string_view s):
         std::string_view(s){
     }
@@ -695,6 +718,53 @@ namespace Btk{
     inline u16string_view::u16string_view(const std::u16string &s):
         std::u16string_view(s){
     }
+    //u16string_view windows
+    #ifdef _WIN32
+    inline u16string_view::u16string_view(const wchar_t *ws):
+        u16string_view(reinterpret_cast<const char16_t*>(ws)){
+    }
+    inline u16string_view::u16string_view(const wchar_t *ws,size_t n):
+        u16string_view(reinterpret_cast<const char16_t*>(ws),n){
+    }
+    inline u16string_view::u16string_view(const std::wstring &ws):
+        u16string_view(ws.c_str(),ws.length()){
+    }
+    inline u16string_view::u16string_view(std::wstring_view ws):
+        u16string_view(ws.data(),ws.length()){
+    }
+    #endif
+    //u16string
+    inline u16string::u16string(const std::u16string &us):
+        std::u16string(us){
+    }
+    inline u16string::u16string(const char16_t *us):
+        std::u16string(us){
+    }
+    inline u16string::u16string(const char16_t *us,size_t n):
+        std::u16string(us,n){
+    }
+    inline u16string::u16string(std::u16string_view us):
+        std::u16string(us){
+    }
+    inline u16string::u16string(u16string_view us):
+        std::u16string(std::u16string_view(us)){
+    }
+    //u16string windows
+    #ifdef _WIN32
+    inline u16string::u16string(const wchar_t *ws):
+        u16string(reinterpret_cast<const char16_t*>(ws)){
+    }
+    inline u16string::u16string(const wchar_t *ws,size_t n):
+        u16string(reinterpret_cast<const char16_t*>(ws),n){
+    }
+    inline u16string::u16string(std::wstring_view ws):
+        u16string(ws.data(),ws.length()){
+    }
+    inline u16string::u16string(const std::wstring &ws):
+        u16string(ws.c_str(),ws.length()){
+    }
+    #endif
+
     /**
      * @brief output helper
      * 

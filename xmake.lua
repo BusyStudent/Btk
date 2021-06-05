@@ -158,7 +158,7 @@ target("btk-rcc")
     add_files("./tools/btk-rcc.cpp")
 --Do you need CAPI
 --If not,omit it
-if true then 
+if true and not is_plat("windows")then 
     target("btk_capi")
         if not has_package("gif") then
             add_defines("BTK_NGIF")

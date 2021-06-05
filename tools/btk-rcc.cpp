@@ -2,7 +2,8 @@ extern "C"{
     #include "../src/libs/ini.h"
     #include "../src/libs/ini.c"
 }
-#include <Btk/platform/fs.hpp>
+#include <Btk/string.hpp>
+#include <Btk/defs.hpp>
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
@@ -11,8 +12,6 @@ extern "C"{
 #include <cstdint>
 #include <vector>
 
-using Btk::getcwd;
-using Btk::exists;
 
 namespace{
     void process(std::ostream &output,std::istream &input){

@@ -89,7 +89,8 @@
     //source file
     #define BTKAPI BTKEXPORT
 #else
-    #define BTKAPI BTKIMPORT
+    //#define BTKAPI BTKIMPORT
+    #define BTKAPI
 #endif
 
 #ifdef __cplusplus

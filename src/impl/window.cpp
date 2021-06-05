@@ -52,7 +52,6 @@ namespace Btk{
             if((widget->visible()) and not(widget->rect.empty())){
                 widget->draw(render);
             }
-            childrens.rend();
         }
         //Run the draw callback
         auto iter = draw_cbs.begin();

@@ -9,6 +9,7 @@
 #include "../exception.hpp"
 
 #undef MessageBox
+#undef LoadImage
 
 namespace Btk{
 namespace Win32{
@@ -21,7 +22,7 @@ namespace Win32{
      * @param errcode Windows error code
      * @return std::string
      */
-    BTKAPI string   StrMessageA(DWORD errcode);
+    BTKAPI u8string  StrMessageA(DWORD errcode);
     /**
      * @brief Errcode to string
      * 

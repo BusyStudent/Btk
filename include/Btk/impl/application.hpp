@@ -16,6 +16,7 @@
     #undef BTK_X11_DECL
     #define BTK_X11_DECL(X) X
 #elif defined(_WIN32)
+    #define NOMINMAX
     #include <windows.h>
     #undef BTK_WIN32_DECL
     #define BTK_WIN32_DECL(X) X
@@ -30,6 +31,8 @@ namespace Btk{
 
         BTK_X11_DECL(DBus::Connection dbus_con);
         BTK_X11_DECL(DBus::Error dbus_err);
+
+        BTK_WIN32_DECL(HWND app_handle = nullptr);
 
         std::list<Window> managed_windows;
         

@@ -20,7 +20,7 @@ namespace Btk{
         return Instance().signal_quit;
     }
     int Application::run(){
-        
+        return Btk::run();
     }
     bool Application::mainloop(){
         return run() == 0;

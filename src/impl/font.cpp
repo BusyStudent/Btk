@@ -59,18 +59,22 @@ namespace Btk{
     bool Font::has_glyph(char32_t ch) const{
         //return TTF_GlyphIsProvided(pimpl->font,ch);
         // return FONTIMPL(pimpl)->has_glyph(ch);
+        throwRuntimeError("Unimpl yet");
     }
     float Font::height() const{
         //return TTF_FontHeight(pimpl->font);
         // return FONTIMPL(pimpl)->height();
+        throwRuntimeError("Unimpl yet");
     }
     int Font::kerning_size(char32_t prev,char32_t cur) const{
         //return TTF_GetFontKerningSizeGlyphs(pimpl->font,prev,cur);
         // return FONTIMPL(pimpl)->kerning_size(prev,cur);
+        throwRuntimeError("Unimpl yet");
     }
 
     int Font::ptsize() const noexcept{
         // return FONTIMPL(pimpl)->ptsize;
+        throwRuntimeError("Unimpl yet");
     }
     void Font::set_ptsize(int new_ptsize){
         // FontImpl *new_font = new FontImpl(
@@ -175,6 +179,7 @@ namespace Btk{
         // SDL_free(name);
         // return s;
         // return FONTIMPL(pimpl)->style_name();
+        throwRuntimeError("Unimpl yet");
     }
     u8string Font::family() const{
         // char *name = TTF_FontFaceFamilyName(pimpl->font);
@@ -185,6 +190,7 @@ namespace Btk{
         // SDL_free(name);
         // return s;
         // return FONTIMPL(pimpl)->family_name();
+        throwRuntimeError("Unimpl yet");
     }
     //size
     Size Font::size(u8string_view text){
@@ -195,6 +201,7 @@ namespace Btk{
         // }
         // return {w,h};
         // return FONTIMPL(pimpl)->text_size(text.base());
+        throwRuntimeError("Unimpl yet");
     }
     Size Font::size(u16string_view text){
         // int w,h;
