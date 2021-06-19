@@ -3,6 +3,7 @@
 
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/core.hpp>
+#include <Btk/container.hpp>
 #include <Btk/widget.hpp>
 #include <Btk/event.hpp>
 
@@ -130,7 +131,7 @@ namespace Btk{
             fputc(' ',output);
             fputc(' ',output);
         }
-        fprintf(output,"- %s\n",get_typename(typeid(*this)).c_str());
+        fprintf(output,"- %s:(%d,%d,%d,%d)\n",get_typename(typeid(*this)).c_str(),x(),y(),w(),h());
         for(auto ch:childrens){
             ch->dump_tree_impl(output,depth + 1);
         }
@@ -176,316 +177,222 @@ namespace Btk{
         return false;
     }
 }
-#if 0
 namespace Btk{
-    //EventDispatcher in Container
-    bool Container::handle(Event &event){
-        //Filt the event
-        if(not ev_filter.empty()){
-            if(ev_filter(event) == false){
-                BTK_LOGINFO("Drop %s:%p",get_typename(&event).c_str(),&event);
-                event.reject();
-                return false;
+    /**
+     * @brief Dispatch event to widget
+     * 
+     * @param w The widget pointer(return false on nullptr)
+     * @param event 
+     * @return true 
+     * @return false 
+     */
+    static bool dispatch_to_widget(Widget *w,Event &event){
+        if(w == nullptr){
+            return false;
+        }
+        return w->handle(event);
+    }
+    void Group::draw(Renderer &render){
+        for(auto i = childrens.rbegin();i != childrens.rend();++i){
+            Widget *w = *i;
+            if(w->visible() and not w->rectangle().empty()){
+                w->draw(render);
             }
         }
-
+    }
+    bool Group::handle(Event &event){
+        if(Widget::handle(event)){
+            return true;
+        }
         switch(event.type()){
-            case Event::Click:
-                return handle_click(event_cast<MouseEvent&>(event));
-            case Event::KeyBoard:
-                return handle_keyboard(event_cast<KeyEvent&>(event));
-            case Event::Motion:
-                return handle_motion(event_cast<MotionEvent&>(event));
-            case Event::TextInput:
-                return handle_textinput(event_cast<TextInputEvent&>(event));
-            /*This three event handler is used to forward dragevent*/
+            case Event::Leave:{
+                //The mouse leave the widget
+                bool v = dispatch_to_widget(cur_widget,event);
+                cur_widget = nullptr;
+                return v;
+            }
+            default:
+                break;
+        }
+        //Dispatch to children
+        // for(auto widget:childrens){
+        //     if(widget->handle(event)){
+        //         return true;
+        //     }
+        // }
+        return false;
+    }
+    bool Group::handle_drag(DragEvent &event){
+        switch(event.type()){
             case Event::DragBegin:{
-                auto &drag = event_cast<DragEvent&>(event);
-                //try to find a widget which has the point
-                for(auto widget:widgets_list){
-                    if(widget->rect.has_point(drag.x,drag.y)){
-                        bool ret = false;
-                        ret |= widget->handle(drag);
-                        ret |= drag.is_accepted();
-                        if(ret){
-                            drag_widget = widget;
-                            return true;
-                        }
-                    }
+                BTK_LOGINFO("[%s->Group:%p]DragBegin (%d,%d)",
+                    get_typename(this).c_str(),
+                    this,
+                    event.x,
+                    event.y
+                );
+                
+                auto widget = find_children(event.position());
+                if(widget == nullptr){
+                    return false;
                 }
-                return false;
-            }
-            case Event::DragEnd:{
-                //finish dragging
-                BTK_ASSERT(drag_widget != nullptr);
-                bool ret = drag_widget->handle(event);
-                drag_widget = nullptr;
-                return ret;
-            }
-            case Event::Drag:{
-                //Send it to drag widget
-                BTK_ASSERT(drag_widget != nullptr);
-                return drag_widget->handle(event);
-            }
-            case Event::Wheel:{
-                return handle_whell(event_cast<WheelEvent&>(event));
-            }
-            case Event::WindowLeave:{
-                #if 0
-                if(cur_widget != drag_widget and cur_widget != nullptr and managed_window){
-                    //On the window
-                    int w,h;
-                    window->pixels_size(&w,&h);
-                    if(cur_widget->rect.w >= w and cur_widget->rect.h >= h){
-                        //We should generate a leave event fot it
-                        Event leave(Event::Leave);
-                        cur_widget->handle(leave);
-                        cur_widget = nullptr;
-                    }
-                }
-                #endif
-                //Boardcast to all the widget
-                #if 0
-                for(auto widget:widgets_list){
-                    widget->handle(event);
-                }
-                #endif
-                return true;
-            }
-            case Event::SetRect:{
-                auto &ev = event_cast<SetRectEvent&>(event);
-                return handle_setrect(ev);
-            }
-            case Event::SetContainer:{
-                auto &ev = event_cast<SetContainerEvent&>(event);
-                parent = ev.container();
-            }
-            default:{
-                for(auto widget:widgets_list){
-                    if(widget->handle(event)){
+                if(widget->handle(event)){
+                    if(event.accept()){
+                        drag_widget = widget;
+                        BTK_LOGINFO("Drag accepted");
                         return true;
                     }
                 }
+                BTK_LOGINFO("Drag rejected");
+                return false;
+            }
+            case Event::Drag:{
+                //Dragging
+                BTK_LOGINFO("[%s->Group:%p]Drag (%d,%d)",
+                    get_typename(this).c_str(),
+                    this,
+                    event.x,
+                    event.y
+                );
+                dispatch_to_widget(drag_widget,event);
+                return event.accept();
+            }
+            case Event::DragEnd:{
+                //Drag is end
+                BTK_LOGINFO("[%s->Group:%p]DragEnd (%d,%d)",
+                    get_typename(this).c_str(),
+                    this,
+                    event.x,
+                    event.y
+                );
+                dispatch_to_widget(drag_widget,event);
+                drag_widget = nullptr;
+                return event.accept();
+            }
+            default:{
+                //Impossible
+                BTK_ASSERT(!"Impossible");
                 return false;
             }
         }
     }
-    bool Container::handle_click(MouseEvent &event){
-        event.accept();
-        
-        int x = event.x;
-        int y = event.y;
+    bool Group::handle_motion(MotionEvent &event){
+        if(cur_widget == nullptr){
+            //Try to find the widget
+            cur_widget = find_children(event.position());
+            if(cur_widget == nullptr){
+                return false;
+            }
+            //Send enter
+            Event levent(Event::Enter);
+            cur_widget->handle(levent);
+        }
+        else{
+            if(not cur_widget->rectangle().has_point(event.position())){
+                //Leave the area
+                //Send motion
+                cur_widget->handle(event);
+                //Send leave
+                Event levent(Event::Leave);
+                cur_widget->handle(levent);
+                cur_widget = nullptr;
 
-        //If the focus_widget get focus by click
-        if(focus_widget != nullptr){
-            if(focus_widget->attr.focus == FocusPolicy::Click){
-                //Is not dragging
-                if(focus_widget != drag_widget and not focus_widget->rect.has_point(x,y)){
+                //Try to find the widget
+                cur_widget = find_children(event.position());
+                if(cur_widget == nullptr){
+                    return false;
+                }
+                //founded
+                levent.set_type(Event::Enter);
+                cur_widget->handle(levent);
+            }
+        }
+        //Dispatch the motion
+        return cur_widget->handle(event);
+    }
+    bool Group::handle_mouse(MouseEvent &event){
+        //In most of time,cur_widget always point at the mouse point at
+        if(focus_widget == nullptr and event.is_pressed()){
+            //Try to GainFocus
+            if(cur_widget != nullptr){
+                if(cur_widget->attribute().focus == FocusPolicy::Mouse){
+                    set_focus_widget(cur_widget);
+                }
+            }
+        }
+        else if(event.is_pressed()){
+            //Already has a focused widget
+            if(focus_widget->attribute().focus == FocusPolicy::Mouse){
+                if(not focus_widget->rectangle().has_point(event.position())){
+                    //Out of the widget's range
+                    //Try reset the focus
                     set_focus_widget(nullptr);
                 }
             }
         }
-
-        if(event.state == MouseEvent::Pressed){
-            mouse_pressed = true;
-        }
-        else{
-            //cleanup flags
-            mouse_pressed = false;
-            drag_rejected = false;
-            //Dragging is at end
-            if(drag_widget != nullptr and managed_window){
-                DragEvent ev(Event::DragEnd,x,y,-1,-1);
-                drag_widget->handle(ev);
-                BTK_LOGINFO("(%s)%p DragEnd",get_typename(drag_widget).c_str(),drag_widget);
-                drag_widget = nullptr;
-
-                SDL_CaptureMouse(SDL_FALSE);
-            }
-        }
-
-        if(cur_widget == nullptr){
-            //try to find a new_widget
-            for(auto widget:widgets_list){
-                if(widget->visible() and widget->rect.has_point(x,y)){
-                    cur_widget = widget;
-                    //It can get focus by Click
-                    if(widget->attr.focus == FocusPolicy::Click){
-                        set_focus_widget(cur_widget);
-                    }
-                    break;
-                }
-            }
-            //We didnot find it
-            return true;
-        }
-        //Send the mouse event to it
-        cur_widget->handle(event);
-
-        if(cur_widget != focus_widget){
-            if(cur_widget->attr.focus == FocusPolicy::Click){
-                //It can get focus by click
-                set_focus_widget(cur_widget);
-            }
-        }
-        return true;
+        return dispatch_to_widget(cur_widget,event);
     }
-    bool Container::handle_motion(MotionEvent &event){
-        event.accept();
-        
-        int x = event.x;
-        int y = event.y;
-
-        //only top window can gen DragEvent
-        if(managed_window){
-
-            //Is dragging
-            if(drag_widget != nullptr){
-                DragEvent drag_ev(Event::Drag,event);
-                BTK_LOGINFO("(%s)%p Dragging x=%d y=%d",get_typename(drag_widget).c_str(),drag_widget,x,y);
-                drag_widget->handle(drag_ev);
-            }
-            else if(mouse_pressed == true and 
-                    cur_widget != nullptr and 
-                    not(drag_rejected)){
-                
-
-                //Send Drag Begin
-                DragEvent drag_ev(Event::DragBegin,event);
-                if(cur_widget->handle(drag_ev)){
-                    if(drag_ev.is_accepted()){
-                        //The event is accepted
-                        drag_widget = cur_widget;
-                        BTK_LOGINFO("(%s)%p accepted DragBegin",get_typename(cur_widget).c_str(),cur_widget);
-                        SDL_CaptureMouse(SDL_TRUE);
-                    }
-                    else{
-                        drag_rejected = true;
-                        BTK_LOGINFO("(%s)%p rejected DragBegin",get_typename(cur_widget).c_str(),cur_widget);
-                    }
-                }
-                else{
-                    drag_rejected = true;
-                    BTK_LOGINFO("(%s)%p rejected DragBegin",get_typename(cur_widget).c_str(),cur_widget);
-                }
-            }
-
-        }
-        //We didnot has the widget
-        if(cur_widget != nullptr){
-            if(cur_widget->rect.has_point(x,y)){
-                //It does not change
-                //Dispatch this motion event
-                cur_widget->handle(event);
-                return true;
-            }
-            else{
-                //widget leave
-                event.set_type(Event::Type::Leave);
-                cur_widget->handle(event);
+    bool Group::handle_keyboard(KeyEvent &event){
+        return dispatch_to_widget(focus_widget,event);
+    }
+    bool Group::handle_wheel(WheelEvent &event){
+        //TODO Add Wheel focus there
+        return dispatch_to_widget(focus_widget,event);
+    }
+    bool Group::handle_textinput(TextInputEvent &event){
+        return dispatch_to_widget(focus_widget,event);
+    }
+    bool Group::detach(Widget *w){
+        bool val = Container::detach(w);
+        if(val){
+            if(w == cur_widget){
                 cur_widget = nullptr;
             }
-        }
-        //find new widget which has this point
-        for(auto widget:widgets_list){
-            if(widget->visible() and widget->rect.has_point(x,y)){
-                cur_widget = widget;
-                //widget enter
-                event.set_type(Event::Type::Enter);
-                cur_widget->handle(event);
-                break;
+            if(w == focus_widget){
+                focus_widget = nullptr;
+            }
+            if(w == drag_widget){
+                drag_widget = nullptr;
             }
         }
-        return true;
+        return val;
     }
-    bool Container::handle_keyboard(KeyEvent &event){
-        //event.accept();
-
-        if(focus_widget != nullptr){
-            if(focus_widget->handle(event)){
-                if(event.is_accepted()){
-                    return true;
-                }
-            }
-        }
-        if(cur_widget != nullptr){
-            if(cur_widget->handle(event)){
-                if(event.is_accepted()){
-                    return true;
-                }
-            }
-        }
-        for(auto widget:widgets_list){
-            if(widget != focus_widget and widget != cur_widget){
-                widget->handle(event);
-                if(event.is_accepted()){
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-    bool Container::handle_textinput(TextInputEvent &event){
-        event.accept();
-        if(focus_widget != nullptr){
-            //Send the event to focus event
-            focus_widget->handle(event);
-            if(not event.is_accepted()){
-                //this event is rejected
-                //dispatch it to other widget
-                for(auto widget:widgets_list){
-                    if(widget != focus_widget){
-                        widget->handle(event);
-                        if(event.is_accepted()){
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-    bool Container::handle_whell(WheelEvent &event){
-        if(cur_widget != nullptr){
-            return cur_widget->handle(event);
-        }
-        return false;
-    }
-    void Container::set_focus_widget(Widget *widget){
+    bool Group::set_focus_widget(Widget *w){
         Event event(Event::LostFocus);
-        //We has last widget which has focus
-        if(focus_widget != nullptr){
-            //Send a lose focus
-            
-            BTK_LOGINFO("[Container:%p]'%s' %p lost focus",
-                        this,
-                        get_typename(focus_widget).c_str(),
-                        focus_widget);
-            
-            focus_widget->handle(event);
-        }
-        event.set_type(Event::TakeFocus);
-        focus_widget = widget;
-        
-        if(widget != nullptr){
+        //Reset prev's focus
+        dispatch_to_widget(focus_widget,event);
 
-            BTK_LOGINFO("[Container:%p]'%s' %p take focus",
+        #ifndef NDEBUG
+        if(focus_widget != nullptr){
+            BTK_LOGINFO("[%s->Group:%p]'%s' %p LostFocus",
+                get_typename(this).c_str(),
                 this,
                 get_typename(focus_widget).c_str(),
-                focus_widget);
-
-            
-            focus_widget->handle(event);
+                focus_widget
+            );
         }
+        #endif
 
-    }
-    void Container::window_mouse_leave(){
-        if(cur_widget != nullptr){
-            Event event(Event::Leave);
-            cur_widget->handle(event);
-            cur_widget = nullptr;
+        focus_widget = w;
+        //Set current focus
+        event.set_type(Event::TakeFocus);
+
+        bool val = dispatch_to_widget(focus_widget,event);
+        //Refuse to take focus
+        if(not val or event.is_rejected()){
+            focus_widget = nullptr;
+            return false;
         }
+        #ifndef NDEBUG
+        if(focus_widget != nullptr){
+            BTK_LOGINFO("[%s->Group:%p]'%s' %p TakeFocus",
+                get_typename(this).c_str(),
+                this,
+                get_typename(focus_widget).c_str(),
+                focus_widget
+            );
+        }
+        #endif
+        return true;
     }
 }
-#endif

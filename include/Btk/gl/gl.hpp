@@ -2,6 +2,7 @@
 #define _BTK_GL_HPP_
 
 #include "../defs.hpp"
+#include "../string.hpp"
 
 #ifndef __linux
     #define BTK_NEED_GLAD
@@ -9,9 +10,24 @@
 
 #ifdef BTK_NEED_GLAD
     #include "glad.h"
+    #define BTK_GLAPIENTRY GLAPIENTRY
 #else
     #include <SDL2/SDL_opengles2.h>
+    #define BTK_GLAPIENTRY GL_APIENTRYP
 #endif
+
+/**
+ * @brief OpenGL entry for function pointer
+ * 
+ */
+#if defined(GLAPIENTRY)
+    #define BTK_GLAPIENTRYP GLAPIENTRY
+#elif defined(GL_APIENTRYP)
+    #define BTK_GLAPIENTRYP GL_APIENTRYP
+#else
+    #define BTK_GLAPIENTRYP *
+#endif
+
 namespace Btk{
 namespace GL{
     void Init();
@@ -60,6 +76,54 @@ namespace GL{
         ~Shader(){
             glDeleteShader(shader);
         }
+        /**
+         * @brief compile code
+         * 
+         * @param code 
+         * @return true succeed
+         * @return false 
+         */
+        bool compile(u8string_view code){
+            auto  src = reinterpret_cast<const GLchar*>(code.data());
+            GLint len = code.size() * sizeof(GLchar);
+            glShaderSource(shader,1,&src,&len);
+            glCompileShader(shader);
+
+            GLint status;
+            glGetShaderiv(shader,GL_COMPILE_STATUS,&status);
+            
+            return status == GL_TRUE ? true : false;
+        }
+        /**
+         * @brief Get Shader Info log
+         * 
+         * @return u8string 
+         */
+        u8string infolog() const{
+            u8string msg;
+            GLint len;
+            
+            glGetShaderiv(shader,GL_INFO_LOG_LENGTH,&len);
+            msg.resize(len);
+            glGetShaderInfoLog(shader,msg.size(),nullptr,reinterpret_cast<GLchar*>(msg.data()));
+            msg.shrink_to_fit();
+            return msg;
+        }
+        /**
+         * @brief Get the shader's source code
+         * 
+         * @return u8string 
+         */
+        u8string source() const{
+            u8string code;
+            GLint len;
+            
+            glGetShaderiv(shader,GL_SHADER_SOURCE_LENGTH,&len);
+            code.resize(len);
+            glGetShaderSource(shader,code.size(),nullptr,reinterpret_cast<GLchar*>(code.data()));
+            code.shrink_to_fit();
+            return code;
+        }
         operator GLuint() const noexcept{
             return shader;
         }
@@ -97,14 +161,14 @@ namespace GL{
         return fbo;
     }
     inline GLuint CurrentRBO(){
-        GLint fbo;
-        glGetIntegerv(GL_RENDERBUFFER_BINDING,&fbo);
-        return fbo;
+        GLint rbo;
+        glGetIntegerv(GL_RENDERBUFFER_BINDING,&rbo);
+        return rbo;
     }
-    inline GLuint CurrentTex(){
-        GLint fbo;
-        glGetIntegerv(GL_TEXTURE,&fbo);
-        return fbo;
+    inline GLuint CurrentTex(GLenum tex = GL_TEXTURE_2D){
+        GLint t;
+        glGetIntegerv(tex,&t);
+        return t;
     }
 }
 }

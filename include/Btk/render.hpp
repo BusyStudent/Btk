@@ -469,6 +469,14 @@ namespace Btk{
                 intersest_scissor(rect.x,rect.y,rect.w,rect.h);
             }
             void reset_scissor();
+
+        public:
+            //Transform
+            void scale(float x_factor,float y_factor);
+            void translate(float x,float y);
+            void rotate(float angel);
+            void skew_x(float angle);
+            void skew_y(float angle);
         public:
             /**
              * @brief Flush the data

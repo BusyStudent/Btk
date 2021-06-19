@@ -4,6 +4,7 @@
 
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/render.hpp>
+#include <Btk/impl/debug.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
@@ -18,9 +19,7 @@ namespace Btk{
         //User defined its position
         attr.user_rect = true;
     }
-    ImageView::~ImageView(){
-
-    }
+    ImageView::~ImageView() = default;
     void ImageView::draw(Renderer &render){
         if(dirty){
             //Cleanup
@@ -36,11 +35,18 @@ namespace Btk{
                 //create texture
                 texture = render.create_from(pixelbuf,tex_flags);
             }
+            // if(scale_fact != 1.0f){
+            //     render.save();
+            //     render.scale(scale_fact,scale_fact);
+            // }
             //render image
             FRect dst = rect;
             FRect src = image_rect;
             render.draw_image(texture,&src,&dst);
             //render.restore();
+            // if(scale_fact != 1.0f){
+            //     render.restore();
+            // }
         }
         if(draw_borader){
             render.begin_path();
@@ -98,5 +104,41 @@ namespace Btk{
     void ImageView::set_clip(const Rect &r){
         image_rect = r;
         redraw();
+    }
+    bool ImageView::handle_drag(DragEvent &event){
+        if(not dragable){
+            return event.reject();
+        }
+        // switch(event.type()){
+        //     case Event::DragBegin:{
+        //         break;
+        //     }
+        //     case Event::DragEnd:{
+        //         break;
+        //     }
+        //     case Event::Drag:{
+        //         image_rect.x += event.xrel;
+        //         image_rect.y += event.yrel;
+
+        //         image_rect.w += event.xrel;
+        //         image_rect.h += event.yrel;
+                
+        //         redraw();
+        //         BTK_LOGINFO("image_rect = {%d,%d,%d,%d}",BTK_UNPACK_RECT(image_rect));
+        //         break;
+        //     }
+        //     default:{}
+        // }
+        return event.accept();
+    }
+    bool ImageView::handle_wheel(WheelEvent &event){
+        // if(event.y > 0){
+        //     scale_fact *= 2;
+        // }
+        // else{
+        //     scale_fact /= 2;
+        // }
+        // redraw();
+        return event.accept();
     }
 };

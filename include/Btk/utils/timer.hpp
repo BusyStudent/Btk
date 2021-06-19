@@ -2,6 +2,7 @@
 #define _BTKUTILS_TIMER_HPP_
 #include <tuple>
 #include <chrono>
+#if 0
 #include "../defs.hpp"
 namespace Btk{
     namespace Impl{
@@ -96,6 +97,5 @@ namespace Btk{
     }
     #endif
 }
-
-
+#endif
 #endif // _BTKUTILS_TIMER_HPP_

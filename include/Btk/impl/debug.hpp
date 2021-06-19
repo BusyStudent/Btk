@@ -7,4 +7,6 @@
 #include "../defs.hpp"
 #include "../rect.hpp"
 
+#define BTK_UNPACK_RECT(R) R.x,R.y,R.w,R.h
+
 #endif // _BTK_IMPL_DEBUG_HPP_

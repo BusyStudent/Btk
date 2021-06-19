@@ -28,15 +28,27 @@ namespace Btk{
                 return pixelbuf;
             }
             void set_draw_boarder(bool flags = true);
+            void set_dragable(bool flags = true){
+                dragable = flags;
+                redraw();
+            }
+
+            //Event processing
+            bool handle_drag(DragEvent   &) override;
+            bool handle_wheel(WheelEvent &) override;
         private:
             PixBuf pixelbuf;
             Texture texture;
             Rect image_rect = {0,0,0,0};
             Color boarder_color = {208,208,208,255};
             Color bg_color;
+
             bool draw_borader = false;//< Should we draw the boarder
             bool draw_background = false;//< Should we draw the boarder
+            bool dragable = false;//Enable drag to set the image_rect
             bool dirty = false;
+
+            float scale_fact = 1.0f;
             
             TextureFlags tex_flags = TextureFlags::Linear;//< The flags of the texture
     };

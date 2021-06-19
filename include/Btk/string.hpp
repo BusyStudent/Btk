@@ -26,9 +26,34 @@ namespace Btk{
     struct _U8StringImplIterator<const T>{
         using Iterator = const char *;
     };
+    /**
+     * @brief Get len of a utf8 string
+     * 
+     * @param beg The string's begin
+     * @param end The string's end(could be nullptr)
+     * @return The string's size
+     */
     BTKAPI size_t Utf8Strlen(const char *beg,const char *end = nullptr);
+    /**
+     * @brief Move to the next char begin
+     * 
+     * @param ch The pointer to the char(could not be nullptr)
+     * @return The utf32 encoded codepoint
+     */
     BTKAPI char32_t Utf8Next(const char *&);
+    /**
+     * @brief Move to the prev char begin
+     * 
+     * @param ch The pointer to the char(could not be nullptr)
+     * @return The utf32 encoded codepoint
+     */
     BTKAPI char32_t Utf8Prev(const char *&);
+    /**
+     * @brief Get the utf32 codepoint
+     * 
+     * @param ch The pointer to the char(could not be nullptr)
+     * @return char32_t 
+     */
     inline char32_t Utf8Peek(const char *c){
         return Utf8Next(c);
     }
@@ -37,6 +62,18 @@ namespace Btk{
     }
     inline char32_t Utf8Prev(char *& c){
         return Utf8Prev(const_cast<const char*&>(c));
+    }
+    /**
+     * @brief Get size of a utf8 char
+     * 
+     * @param char 
+     * @return size_t 
+     */
+    inline size_t Utf8CharSize(const char *s){
+        auto n = s;
+        Utf8Next(n);
+
+        return n - s;
     }
     /**
      * @brief Get distance of two utf8 char
@@ -53,7 +90,15 @@ namespace Btk{
             return Utf8Strlen(p1,p2);
         }
     }
-    BTKAPI bool Utf8IsVaild(const char *beg,const char *end);
+    /**
+     * @brief Check the string is invaild utf8 string
+     * 
+     * @param beg The string's begin
+     * @param end The string's end(could be nullptr)
+     * @return true on invaild 
+     * @return false on vaild 
+     */
+    BTKAPI bool Utf8IsVaild(const char *beg,const char *end = nullptr);
     /**
      * @brief Advance in the string
      * 
@@ -61,7 +106,7 @@ namespace Btk{
      * @param end The str end
      * @param cur current position
      * @param n The distance
-     * @return BTKAPI const* (nullptr on out of range)
+     * @return pointer to the char (nullptr on out of range)
      */
     BTKAPI 
     const char *Utf8Advance(const char *beg,const char *end,const char *cur,long n);
@@ -246,7 +291,13 @@ namespace Btk{
             size_t find(char32_t) const;
             size_t find(u8string_view) const;
 
-            u16string to_utf16() const;
+            u16string   to_utf16() const;
+            /**
+             * @brief convert to locale encoding
+             * 
+             * @return std::string 
+             */
+            std::string to_locale() const;
             u8string toupper() const;
             u8string tolower() const;
             /**
@@ -269,14 +320,30 @@ namespace Btk{
              * @param max Max substring(default unlimited)
              * @return List 
              */
-            List    split(u8string_view delim,size_t max = size_t(-1));
-            List    split(char delim,size_t max = size_t(-1)){
+            List    split(u8string_view delim,size_t max = size_t(-1)) const;
+            List    split(char delim,size_t max = size_t(-1)) const{
                 return split(u8string_view(&delim,1),max);
             }
-            RefList split_ref(u8string_view delim,size_t max = size_t(-1));
-            RefList split_ref(char delim,size_t max = size_t(-1)){
+            List    split(char32_t ch,size_t max = size_t(-1)) const;
+            List    split(char16_t ch,size_t max = size_t(-1)) const{
+                return split(char32_t(ch),max);
+            }
+            /**
+             * @brief Split string and push the ref into buffer
+             * 
+             * @param delim 
+             * @param max 
+             * @return RefList 
+             */
+            RefList split_ref(u8string_view delim,size_t max = size_t(-1)) const;
+            RefList split_ref(char delim,size_t max = size_t(-1)) const{
                 return split_ref(u8string_view(&delim,1),max);
             }
+            RefList split_ref(char32_t ch,size_t max = size_t(-1)) const;
+            RefList split_ref(char16_t ch,size_t max = size_t(-1)) const{
+                return split_ref(char32_t(ch),max);
+            }
+
         private:
             _iterator impl_begin(){
                 return _translate_iterator(Base::begin());
@@ -455,6 +522,9 @@ namespace Btk{
              * @return std::string 
              */
             std::string encoode(const char *to) const;
+            std::string to_locale() const{
+                return u8string_view(*this).to_locale();
+            }
 
             CharProxy      operator [](size_type index){
                 return at(index);
@@ -501,6 +571,15 @@ namespace Btk{
                 base() += std::forward<T>(arg);
                 return *this;
             }
+            /**
+             * @brief Create string from
+             * 
+             * @param buf buffer
+             * @param n buffer size
+             * @param encoding the string encoding(default utf8)
+             * @return u8string 
+             */
+            static u8string from(const void *,size_t n,const char *encoding = nullptr);
         public:
             //beg and end
             Iterator begin(){
@@ -708,6 +787,16 @@ namespace Btk{
     inline u8string_view::u8string_view(std::string_view s):
         std::string_view(s){
     }
+    inline auto u8string_view::split(char32_t ch,size_t max) const -> List{
+        u8string tmp;
+        tmp.push_back(ch);
+        return split(tmp,max);
+    }
+    inline auto u8string_view::split_ref(char32_t ch,size_t max) const -> RefList{
+        u8string tmp;
+        tmp.push_back(ch);
+        return split_ref(tmp,max);
+    }
     //u16string_view
     inline u16string_view::u16string_view(std::u16string_view v)
         :std::u16string_view(v){
@@ -779,11 +868,28 @@ namespace Btk{
         return o;
     }
     inline std::ostream &operator <<(std::ostream &o,const u8string &p){
+        #if defined(_WIN32) && !defined(BTK_WIN32_NOLOCALE)
+        //We need to covert to locale
+        o << p.to_locale();
+        #else
         o << std::string_view(p);
+        #endif
         return o;
     }
     inline std::ostream &operator <<(std::ostream &o,u8string_view p){
+        #if defined(_WIN32) && !defined(BTK_WIN32_NOLOCALE)
+        o << p.to_locale();
+        #else
         o << std::string_view(p);
+        #endif
+        return o;
+    }
+    inline std::ostream &operator <<(std::ostream &o,const u16string & p){
+        o << p.to_utf8();
+        return o;
+    }
+    inline std::ostream &operator <<(std::ostream &o,u16string_view p){
+        o << p.to_utf8();
         return o;
     }
     BTK_STRING_OPERATOR(u8string,<);
@@ -846,7 +952,8 @@ namespace Btk{
      * @param fmt 
      * @return BTKAPI 
      */
-    BTKAPI u8string u8vformat(const char *fmt,std::va_list);
+    BTKAPI u8string  u8vformat(const char *fmt,std::va_list);
+    BTKAPI u16string u16vformat(const char16_t *fmt,std::va_list);
     /**
      * @brief Utf8 format string
      * 
@@ -854,10 +961,17 @@ namespace Btk{
      * @param ... 
      * @return u8string 
      */
-    inline u8string u8vformat(const char *fmt,...){
+    inline u8string u8format(const char *fmt,...){
         std::va_list l;
         va_start(l,fmt);
         auto r = u8vformat(fmt,l);
+        va_end(l);
+        return r;
+    }
+    inline u16string u16format(const char16_t *fmt,...){
+        std::va_list l;
+        va_start(l,fmt);
+        auto r = u16vformat(fmt,l);
         va_end(l);
         return r;
     }
@@ -865,5 +979,16 @@ namespace Btk{
     using StringRefList = u8string_view::RefList;
 
     using String = u8string;
+
+    //Hook iconv functions
+    class _iconv;
+    using iconv_t = _iconv *;
+    struct IconvFunctions{
+        iconv_t (BTKCDEL *iconv_open)(const char *tocode,const char *fromcode);
+        int     (BTKCDEL *iconv_close)(iconv_t);
+        size_t  (BTKCDEL *iconv)(iconv_t,const char **,size_t*,char **,size_t*);
+    };
+    BTKAPI void HookIconv(IconvFunctions);
+    BTKAPI void GetIconv(IconvFunctions&);
 }
 #endif // _BTK_STRING_HPP_

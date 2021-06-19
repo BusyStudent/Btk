@@ -1,3 +1,4 @@
+#include <Btk/mixer.hpp>
 #include <Btk/font.hpp>
 #include <Btk/Btk.hpp>
 #include <iostream>
@@ -15,5 +16,5 @@ int main(){
     #endif
     Btk::Font font("Aria",16);
 
-    std::cout << font.size("HelloWorld") << std::endl;
+
 }

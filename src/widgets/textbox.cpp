@@ -86,7 +86,7 @@ namespace Btk{
         //Set current position
         cur_txt = tb_text.begin();
 
-        attr.focus = FocusPolicy::Click;
+        attr.focus = FocusPolicy::Mouse;
 
         //Set timer
         timer.set_interval(500);

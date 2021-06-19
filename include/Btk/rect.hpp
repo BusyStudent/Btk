@@ -2,8 +2,13 @@
 #define _BTK_RECT_HPP_
 #include <SDL2/SDL_rect.h>
 #include <iosfwd>
+#include <cmath>
 #include "defs.hpp"
 namespace Btk{
+    struct Point;
+    struct FPoint;
+    struct Rect;
+    struct FRect;
     /**
      * @brief a SDL_Rect with methods
      * 
@@ -37,6 +42,12 @@ namespace Btk{
             };
             return SDL_PointInRect(&p,this);
         }
+        /**
+         * @brief Get center
+         * 
+         * @return FPoint 
+         */
+        FPoint center() const noexcept;
         //cmp rect
         bool operator ==(const SDL_Rect& r) const noexcept{
             return SDL_RectEquals(this,&r);
@@ -47,10 +58,26 @@ namespace Btk{
     };
     struct FPoint{
         FPoint() = default;
+        FPoint(const FPoint &) = default;
         FPoint(float x,float y){
             this->x = x;
             this->y = y;
         }
+        /**
+         * @brief Get distance of a another point
+         * 
+         * @param a2 
+         * @return float 
+         */
+        float distance(const FPoint &a2) const noexcept{
+            float a = (x - a2.x) * (x - a2.x);
+            float b = (y - a2.y) * (y - a2.y);
+            return std::sqrt(a + b);
+        }
+        float norm() const noexcept{
+            return std::sqrt(x * x + y * y);
+        }
+
         float x,y;
     };
     struct FRect{
@@ -83,6 +110,7 @@ namespace Btk{
             }
             return false;
         }
+        FPoint center() const noexcept;
         operator Rect() const noexcept{
             return Rect{
                 static_cast<int>(x),
@@ -121,6 +149,9 @@ namespace Btk{
         }
         operator FPoint() const noexcept{
             return {float(x),float(y)};
+        }
+        float distance(const FPoint &p) const noexcept{
+            return FPoint(*this).distance(p);
         }
     };
     typedef Point  Vec2;
@@ -161,6 +192,14 @@ namespace Btk{
             };
         }
     };
+    inline FPoint FRect::center() const noexcept{
+        float _x = (x + w) / 2;
+        float _y = (y + h) / 2;
+        return {_x,_y};
+    }
+    inline FPoint Rect::center() const noexcept{
+       return FRect(*this).center();
+    }
 
     BTKAPI std::ostream &operator <<(std::ostream&,const Rect &);
     BTKAPI std::ostream &operator <<(std::ostream&,const FRect &);

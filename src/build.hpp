@@ -28,11 +28,13 @@
 #ifndef NDEBUG
     #define BTK_LOGINFO(...) SDL_Log(__VA_ARGS__)
     #define BTK_LOGWARN(...) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,__VA_ARGS__)
+    #define BTK_LOGDEBUG(...) SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION,__VA_ARGS__)
     #define BTK_DEBUG(...) __VA_ARGS__
 #else
     #define BTK_LOGINFO(...)
     #define BTK_LOGWARN(...)
     #define BTK_DEBUG(...)
+    #define BTK_LOGDEBUG(...)
 #endif
 //Assert
 #ifndef NDEBUG
@@ -44,7 +46,7 @@
     #define BTK_ASSERT(EXP) 
 #endif
 
-
+#define BTK_UNIMPLEMENTED() Btk::throwRuntimeError("unimplemented")
 
 #ifndef NDEBUG
 /**

@@ -76,7 +76,10 @@ namespace Btk{
              */
             bool is_accepted() const noexcept{
                 return _accepted;
-            };
+            }
+            bool is_rejected() const noexcept{
+                return not _accepted;
+            }
             /**
              * @brief Accept the event
              * 
@@ -85,7 +88,7 @@ namespace Btk{
             bool accept() noexcept{
                 _accepted = true;
                 return true;
-            };
+            }
             /**
              * @brief Reject the event
              * 
@@ -94,7 +97,7 @@ namespace Btk{
             bool reject() noexcept{
                 _accepted = false;
                 return false;
-            };
+            }
             /**
              * @brief Chaneg the event type
              * 
@@ -250,7 +253,7 @@ namespace Btk{
         //methods
         Vec2 position() const noexcept{
             return {x,y};
-        };
+        }
     };
     /**
      * @brief A Event of text input
@@ -300,6 +303,10 @@ namespace Btk{
         };
         DragEvent(const DragEvent &) = default;
         ~DragEvent();
+
+        Vec2 position() const noexcept{
+            return {x,y};
+        }
 
         int x;
         int y;
@@ -355,13 +362,6 @@ namespace Btk{
      */
     bool SendEvent(Event &event,Window &receiver);
     bool SendEvent(Event &event,Widget &receiver);
-    /**
-     * @brief This function was called by System to dispatch our event
-     * 
-     * @internal User should not use it
-     * @param ev SDL_Event structure 
-     */
-    void DispatchEvent(const SDL_Event &ev,void *);
 };
 
 

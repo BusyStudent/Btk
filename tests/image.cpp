@@ -18,6 +18,7 @@ int main(){
         std::cout << "Window resized to " << w << ' ' << h << std::endl;
     });
     win.set_resizeable();
+    view.set_dragable();
     
     win.done();
     win.mainloop();

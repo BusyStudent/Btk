@@ -94,7 +94,8 @@ namespace Btk{
         inline void on_mousewheel(const SDL_Event &event);//Handle SDL_MouseWheel
         inline void on_mousemotion(const SDL_Event &event);//Handle SDL_MouseMotion
         inline void on_mousebutton(const SDL_Event &event);//Handle SDL_MouseButton
-        inline void on_textinput(const SDL_Event &event);
+        inline void on_textinput(const SDL_Event &event);//Handle SDL_TextInputEvent
+        inline void on_quit();//Handle SDL_Quit
         //defercall in eventloop
         void defer_call(void(* fn)(void*),void *data = nullptr);
         //Get window from WindowID
@@ -112,7 +113,7 @@ namespace Btk{
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
         std::recursive_mutex map_mtx;
         Uint32 defer_call_ev_id;//defer call Event ID
-        Uint32 dispatch_ev_id;//dispatch our event Event ID
+        Uint32 reservered_ev_id;//Reversered
         //called after a exception was throwed
         //return false to abort program
         bool (*handle_exception)(std::exception *) = nullptr;
@@ -122,15 +123,25 @@ namespace Btk{
 
         std::list<Module> modules_list;
         //<The signal will be init before the window will be removed
-        Signal<void(WindowImpl *)> signal_close_window;
-        Signal<void(WindowImpl *)> signal_create_window;
+        Signal<void(WindowImpl *)> signal_window_closed;
+        Signal<void(WindowImpl *)> signal_window_created;
         Signal<void()> signal_clipboard_update;
+        Signal<void()> signal_audio_device_added;
+        Signal<void()> signal_audio_device_removed;
+        Signal<void()> signal_keymap_changed;
         Signal<void()> signal_quit;
         //std::list<RendererCreateFn> render_list;
         //Init Global
         static int  Init();
         static void Quit();
     };
+    //Iconv functions
+    class  _iconv;
+    using iconv_t = _iconv*;
+    extern iconv_t (BTKCDEL *iconv_open)(const char *tocode,const char *fromcode);
+    extern int     (BTKCDEL *iconv_close)(iconv_t );
+    extern size_t  (BTKCDEL *iconv)(iconv_t ,const char **,size_t*,char **,size_t*);
+
     BTKAPI int  run();
     BTKAPI void Init();
     //Exit the app
@@ -147,6 +158,7 @@ namespace Btk{
      * @return BTKAPI* 
      */
     BTKAPI SDL_Surface *LoadImage(SDL_RWops *rwops,u8string_view type = {});
+    BTKAPI void         SaveImage(SDL_Surface *surf,SDL_RWops *rw,u8string_view type);
     /**
      * @brief Load builtin image adapter
      * 

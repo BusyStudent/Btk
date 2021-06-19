@@ -15,11 +15,29 @@ namespace Btk{
         public:
             Group() = default;
             ~Group() = default;
+        public:
+            void draw(Renderer             &) override;
+            bool handle(Event              &) override;
+            bool handle_drag(DragEvent     &) override;
+            bool handle_mouse(MouseEvent   &) override;
+            bool handle_wheel(WheelEvent   &) override;
+            bool handle_motion(MotionEvent &) override;
+            bool handle_keyboard(KeyEvent  &) override;
+            bool handle_textinput(TextInputEvent &) override;
+
+            bool detach(Widget *w) override;
+            /**
+             * @brief Set the focus widget object
+             * 
+             */
+            bool set_focus_widget(Widget *);
         private:
             //< The current dragging widget
-            Widget *dragg_widget = nullptr;
+            Widget *drag_widget = nullptr;
+            //< The widget which has focus
             Widget *focus_widget = nullptr;
-            Widget *mouse_widget = nullptr;
+            //< Current Widget mouse or finger point at
+            Widget *cur_widget = nullptr;
             bool drag_rejected = false;
     };
     class BTKAPI GroupBox:public Group{

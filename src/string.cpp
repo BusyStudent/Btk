@@ -1,6 +1,7 @@
 #include "build.hpp"
 
 #include <Btk/thirdparty/utf8.h>
+#include <Btk/impl/core.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/string.hpp>
@@ -9,6 +10,134 @@
 #include <cstdlib>
 #include <cctype>
 #include <new>
+
+#define BTK_ICONV_FN(FN) decltype(FN) FN = reinterpret_cast<decltype(FN)>(SDL_##FN);
+//Iconv
+namespace Btk{
+    BTK_ICONV_FN(iconv_open);
+    BTK_ICONV_FN(iconv_close);
+    BTK_ICONV_FN(iconv);
+
+    //I used some sdl iconv codes
+    //Code from SDL_iconv
+    template<class T>
+    void sdl_getlocale(T &buffer){
+        const char *lang;
+        char *ptr;
+
+        lang = SDL_getenv("LC_ALL");
+        if (!lang) {
+            lang = SDL_getenv("LC_CTYPE");
+        }
+        if (!lang) {
+            lang = SDL_getenv("LC_MESSAGES");
+        }
+        if (!lang) {
+            lang = SDL_getenv("LANG");
+        }
+        if (!lang || !*lang || SDL_strcmp(lang, "C") == 0) {
+            lang = "ASCII";
+        }
+
+        /* We need to trim down strings like "en_US.UTF-8@blah" to "UTF-8" */
+        ptr = SDL_strchr(lang, '.');
+        if (ptr != NULL) {
+            lang = ptr + 1;
+        }
+
+        buffer = lang;
+
+        ptr = SDL_strchr(buffer.data(), '@');
+        if (ptr != NULL) {
+            *ptr = '\0';            /* chop end of string. */
+        }
+    }
+    struct BTKHIDDEN IconvHolder{
+        iconv_t icd;
+        IconvHolder(const char *tocode,const char *fromcode){
+            icd = iconv_open(tocode,fromcode);
+            //Err handle
+        }
+        IconvHolder(const IconvHolder &) = delete;
+        ~IconvHolder(){
+            iconv_close(icd);
+        }
+        operator iconv_t() const noexcept{
+            return icd;
+        }
+    };
+
+    template<class T>
+    static void iconv_string(iconv_t cd,T &_buf,const char *inbuf,size_t inbytesleft){
+        //Reset
+        iconv(cd,nullptr,nullptr,nullptr,nullptr);
+        
+        char *string;
+        size_t stringsize;
+        char *outbuf;
+        size_t outbytesleft;
+        size_t retCode = 0;
+
+        stringsize = inbytesleft > 4 ? inbytesleft : 4;
+        
+        //Restore the end
+        //Restore the oldsize
+        size_t _oldsize = _buf.size();
+        ptrdiff_t diff = _buf.end() - _buf.begin();
+        _buf.resize(_buf.size() + stringsize);
+        string = _buf.data() + diff;
+
+        outbuf = string;
+        outbytesleft = stringsize;
+        SDL_memset(outbuf, 0, 4);
+
+        while (inbytesleft > 0) {
+            const size_t oldinbytesleft = inbytesleft;
+            retCode = iconv(cd, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
+            switch (retCode) {
+                case SDL_ICONV_E2BIG:{
+                    char *oldstring = string;
+                    stringsize *= 2;
+
+                    _buf.resize(_oldsize + stringsize);
+                    //string = (char *) SDL_realloc(string, stringsize);
+                    string = _buf.data() + diff;
+
+                    outbuf = string + (outbuf - oldstring);
+                    outbytesleft = stringsize - (outbuf - string);
+                    SDL_memset(outbuf, 0, 4);
+                    }
+                    break;
+                case SDL_ICONV_EILSEQ:
+                    /* Try skipping some input data - not perfect, but... */
+                    ++inbuf;
+                    --inbytesleft;
+                    BTK_LOGWARN("Get EILSEQ at %p",inbuf);
+                    break;
+                case SDL_ICONV_EINVAL:
+                case SDL_ICONV_ERROR:
+                    /* We can't continue... */
+                    inbytesleft = 0;
+                    break;
+            }
+            /* Avoid infinite loops when nothing gets converted */
+            if (oldinbytesleft == inbytesleft){
+                break;
+            }
+        }
+    }
+    void HookIconv(IconvFunctions fns){
+        iconv_open = fns.iconv_open;
+        iconv_close = fns.iconv_close;
+        iconv = fns.iconv;
+    }
+    void GetIconv(IconvFunctions &fns){
+        fns.iconv_open = iconv_open;
+        fns.iconv_close = iconv_close;
+        fns.iconv = iconv;
+    }
+}
+
 namespace Btk{
     u8string::u8string() = default;
     u8string::~u8string() = default;
@@ -69,6 +198,7 @@ namespace Btk{
         p._end = impl_begin() + diff;
         
         Utf8Next(p._end);
+        
     }
     void u8string::impl_replace_ch(CharProxy &p,char ch){
         auto diff = p._beg - impl_begin();
@@ -91,7 +221,7 @@ namespace Btk{
         auto iter = end();
         --iter;
 
-        for(int i = 0;i < iter->size();i++){
+        for(size_t i = 0;i < iter->size();i++){
             std::string::pop_back();
         }
     }
@@ -103,12 +233,24 @@ namespace Btk{
         base().erase(_translate_pointer(iter._beg),_translate_pointer(iter._end));
     }
     std::string u8string::encoode(const char *to) const{
-        char *i = SDL_iconv_string(to,"UTF8",data(),base().size());
+        char *i = SDL_iconv_string(to,"UTF-8",data(),base().size());
         if(i == nullptr){
             throwSDLError();
         }
         std::string s(i);
         SDL_free(i);
+        return s;
+    }
+    u8string u8string::from(const void *buf,size_t n,const char *encoding){
+        if(encoding == nullptr){
+            encoding = "UTF-8";
+        }
+        u8string s;
+        if(buf == nullptr or n == 0){
+            return s;
+        }
+        IconvHolder iconv("UTF-8",encoding);
+        iconv_string<std::string>(iconv,s.base(),static_cast<const char *>(buf),n);
         return s;
     }
 }
@@ -161,6 +303,10 @@ namespace Btk{
         vsprintf(str.data(),fmt,varg);
 
         return str;
+    }
+    //TODO add win32 wsprintf
+    u16string u16vformat(char16_t *fmt,std::va_list varg){
+        return u8vformat(u16string_view(fmt).to_utf8().c_str(),varg).to_utf16();
     }
     char32_t Utf8Next(const char *& ch){
         return utf8::unchecked::next(ch);
@@ -341,10 +487,22 @@ namespace Btk{
         }
         return vec;
     }
-    StringList u8string_view::split(u8string_view delim,size_t max){
+    StringList u8string_view::split(u8string_view delim,size_t max) const{
         return split_impl<u8string>(*this,delim,max);
     }
-    StringRefList u8string_view::split_ref(u8string_view delim,size_t max){
+    StringRefList u8string_view::split_ref(u8string_view delim,size_t max) const{
         return split_impl<u8string_view>(*this,delim,max);
+    }
+    std::string u8string_view::to_locale() const{
+        std::string s;
+        sdl_getlocale<std::string>(s);
+        auto icd = iconv_open(s.c_str(),"UTF-8");
+        if(icd == nullptr){
+            throwSDLError();
+        }
+        s.clear();
+        iconv_string<std::string>(icd,s,data(),size());
+        iconv_close(icd);
+        return s;
     }
 }

@@ -146,7 +146,7 @@ namespace Btk{
     template<class RetT,class ...Args>
     class _Slot:public _SlotBase{
         protected:
-            typedef RetT (*InvokeFn)(const void *self,Args ...args);
+            typedef RetT (*InvokeFn)(void *self,Args ...args);
             InvokeFn invoke_ptr;
             /**
              * @brief Call the slot
@@ -154,7 +154,7 @@ namespace Btk{
              * @param args 
              * @return RetT 
              */
-            RetT invoke(Args ...args) const{
+            RetT invoke(Args ...args){
                 return invoke_ptr(this,std::forward<Args>(args)...);
             }
             _Slot(CleanupFn c,InvokeFn i):_SlotBase(c){
@@ -173,7 +173,7 @@ namespace Btk{
     template<class Callable,class RetT,class ...Args>
     class _MemSlot:public _Slot<RetT,Args...>{
         protected:
-            mutable Callable callable;
+            Callable callable;
             /**
              * @brief Delete self
              * 
@@ -181,12 +181,12 @@ namespace Btk{
             static void Delete(void *self,bool){
                 delete static_cast<_MemSlot*>(self);
             }
-            static RetT Invoke(const void *self,Args ...args){
-                return static_cast<const _MemSlot*>(self)->invoke(
+            static RetT Invoke(void *self,Args ...args){
+                return static_cast<_MemSlot*>(self)->invoke(
                     std::forward<Args>(args)...
                 );
             }
-            RetT invoke(Args ...args) const{
+            RetT invoke(Args ...args){
                 return callable(std::forward<Args>(args)...);
             }
 
@@ -226,12 +226,12 @@ namespace Btk{
                     ptr->object->Object::remove_callback(ptr->location);
                 }
             }
-            static RetT Invoke(const void *self,Args ...args){
-                return static_cast<const _ClassSlot*>(self)->invoke(
+            static RetT Invoke(void *self,Args ...args){
+                return static_cast<_ClassSlot*>(self)->invoke(
                     std::forward<Args>(args)...
                 );
             }
-            RetT invoke(Args ...args) const{
+            RetT invoke(Args ...args){
                 return (object->*method)(std::forward<Args>(args)...);
             }
             _ClassSlot(Class *o,Method m):
@@ -409,6 +409,13 @@ namespace Btk{
             FunctorLocation add_callback(void(*fn)(void*),void *param);
             FunctorLocation add_functor(const Functor &);
             FunctorLocation remove_callback(FunctorLocation location);
+            /**
+             * @brief Remove callback(safe to pass invalid location,but slower)
+             * 
+             * @param location 
+             * @return FunctorLocation 
+             */
+            FunctorLocation remove_callback_safe(FunctorLocation location);
             //Timer
             TimerID add_timer(Uint32 internal);
         public:
@@ -428,7 +435,7 @@ namespace Btk{
                     //NOTE:If we use std::forward<Callable>(callable)
                     //It will have a template argument deduction/substitution failure
                     return signal.connect(
-                        callable,
+                        std::forward<Callable>(callable),
                         static_cast<typename MemberFunctionTraits<Callable>::object_type*>(this)
                     );
                 }
@@ -565,6 +572,197 @@ namespace Btk{
             }
     };
     using HasSlots = Object;
+
+    //Timer
+    
+    struct TimerImpl;
+    class  Timer;
+
+    //Impl
+    struct _TimerInvokerData{
+        Uint32 (*invoke)(Uint32 interval,void *self) = nullptr;
+        void   *invoker = nullptr;
+        void   (*cleanup)(void *) = nullptr;
+    };
+
+
+    template<bool Val>
+    struct _TimerFunctorLocation;
+
+    template<>
+    struct _TimerFunctorLocation<true>{
+        _FunctorLocation location;
+        bool need_remove = true;//< Flags to check if we need remove
+    };
+    template<>
+    struct _TimerFunctorLocation<false>{
+
+    };
+    /**
+     * @brief Invoker for Timer
+     * 
+     * @tparam Callable 
+     * @tparam Args 
+     */
+    template<class Callable,class ...Args>
+    struct _TimerInvoker:public std::tuple<Args...>,
+                         public _TimerFunctorLocation<std::is_member_function_pointer_v<Callable>>{
+
+        
+        _TimerInvoker(Callable &&c,Args &&...args):
+            std::tuple<Args...>(std::forward<Args>(args)...),
+            callable(std::forward<Callable>(c)){
+
+            }
+
+        Callable callable;
+
+        decltype(auto) invoke(Uint32 interval){
+            return std::apply(callable,static_cast<std::tuple<Args...>&&>(*this));
+        }
+
+        Uint32 run(Uint32 interval){
+            if constexpr(std::is_same_v<std::invoke_result_t<Callable,Args...>,void>){
+                //No return value
+                invoke(interval);
+                return interval;
+            }
+            else{
+                return invoke(interval);
+            }
+        }
+        static Uint32 Run(Uint32 interval,void *self){
+            return static_cast<_TimerInvoker*>(self)->run(interval);
+        }
+        static void Delete(void *__self){
+            auto self = static_cast<_TimerInvoker*>(__self);
+            if constexpr(std::is_member_function_pointer_v<Callable>){
+                //Get object and begin remove
+                auto object = std::get<0>(static_cast<std::tuple<Args...>&&>(*self));
+                if(self->need_remove){
+                   object->remove_callback(self->location); 
+                }
+            }
+            delete self;
+        }
+    };
+
+    //Timer Functor
+    struct BTKAPI _TimerFunctor:public _Functor{
+        _TimerFunctor(Btk::Timer &timer,bool &need_remove_ref);
+    };
+    /**
+     * @brief Timer
+     * @todo Fix Memory leak
+     * 
+     */
+    class BTKAPI Timer{
+        public:
+            Timer();
+            Timer(const Timer &) = delete;
+            ~Timer();
+
+
+            void stop();
+            void start();
+
+            bool running() const;
+            /**
+             * @brief Get Timer's interval
+             * 
+             * @return Uint32 
+             */
+            Uint32 interval() const;
+            void set_interval(Uint32 interval);
+
+            /**
+             * @brief Bind to 
+             * 
+             * @tparam Callable 
+             * @tparam Args 
+             * @param callable 
+             * @param args 
+             */
+            template<
+                class Callable,
+                class ...Args,
+                typename _Cond = std::enable_if_t<!std::is_member_function_pointer_v<Callable>>
+            >
+            void bind(Callable &&callable,Args &&...args){
+                using Invoker = _TimerInvoker<Callable,Args...>;
+                _TimerInvokerData data;
+                auto invoker = new Invoker{
+                    std::forward<Callable>(callable),
+                    std::forward<Args>(args)...
+                };
+                data.invoker = invoker;
+                data.invoke  = Invoker::Run;
+                data.cleanup = Invoker::Delete;
+                bind(data);
+            }
+            /**
+             * @brief Bind to Object's member function
+             * 
+             * @tparam Callable 
+             * @tparam Object 
+             * @tparam Args 
+             * @param callable 
+             * @param object 
+             * @param args 
+             */
+            template<
+                class Callable,
+                class Object,
+                class ...Args,
+                typename _Cond = std::enable_if_t<std::is_member_function_pointer_v<Callable>>
+            >
+            void bind(Callable &&callable,Object object,Args &&...args){
+                using Invoker = _TimerInvoker<Callable,Object,Args...>;
+                _TimerInvokerData data;
+                auto invoker = new Invoker{
+                    std::forward<Callable>(callable),
+                    std::forward<Object>(object),std::forward<Args>(args)...
+                };
+                data.invoker = invoker;
+                data.invoke  = Invoker::Run;
+                data.cleanup = Invoker::Delete;
+
+                //Check is based on HasSlots
+                constexpr bool val = std::is_base_of<HasSlots,std::remove_pointer_t<Object>>();
+                static_assert(val,"Object must inhert HasSlots");
+
+                //TODO Add timer functor
+                _TimerFunctor functor(*this,invoker->need_remove);
+                auto    loc = static_cast<HasSlots*>(object)->add_functor(functor);
+
+                invoker->location = loc;
+            
+                bind(data);
+            }
+            /**
+             * @brief Reset the callback
+             * 
+             */
+            void reset(){
+                _TimerInvokerData data = {nullptr,nullptr,nullptr};
+                bind(data);
+            }
+
+            template<class Callable,class ...Args>
+            [[depercated("Using Timer::bind instead")]]
+            Timer &set_callback(Callable &&callable,Args &&...args){
+                bind(std::forward<Callable>(callable),std::forward<Args>(args)...);
+                return *this;
+            }
+        private:
+            /**
+             * @brief Bind invoker
+             * 
+             */
+            void bind(_TimerInvokerData);
+
+            TimerImpl *timer;
+    };
 }
 
 

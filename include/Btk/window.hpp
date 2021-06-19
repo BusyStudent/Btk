@@ -18,6 +18,11 @@ namespace Btk{
         SkipTaskBar = 1 << 2,
     };
     /**
+     * @brief Class for describe native window
+     * 
+     */
+    class NativeWindow;
+    /**
      * @brief A Basic Window 
      * 
      */
@@ -45,7 +50,13 @@ namespace Btk{
              * @param h Thw window height
              */
             //Window(std::string_view title,int w,int h);
-            Window(u8string_view title,int w,int h,Flags f = Flags::None);
+            explicit Window(u8string_view title,int w,int h,Flags f = Flags::None);
+            /**
+             * @brief Construct a new Window object by native window handle
+             * 
+             * @param native_handle (reinterpret_cast<const NativeWindow*>(your_handle))
+             */
+            explicit Window(const NativeWindow *native_handle);
             /**
              * @brief Get window impl
              * 

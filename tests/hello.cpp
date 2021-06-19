@@ -2,6 +2,7 @@
 #include <Btk/msgbox/fselect.hpp>
 #include <Btk/msgbox/msgbox.hpp>
 #include <Btk/utils/timer.hpp>
+#include <Btk/container.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/button.hpp>
@@ -28,14 +29,17 @@ struct Hello:public Btk::Window{
     void on_select(Btk::u8string_view fname);
     void on_defc_call();//Test defer_call
     void on_fullscreen();
+    void on_dump_tree();//Test dump tree
     bool handle(Event &event);
     void show_text();
+    void dump_tree();
 
     Button *close_btn;
     Button *seticon_btn;
     Button *show_btn;
     Button *defc_btn;
     Button *fsc_btn;// full screen
+    Button *dmp_btn;
     TextBox *tbox;
     ImageView *img_view;
     
@@ -50,15 +54,22 @@ Hello::Hello():Window("Hello",500,500){
     tbox = new TextBox();
     defc_btn = new Button("DeferCall");
     fsc_btn = new Button("FullScreen");
+    dmp_btn = new Button("Dump Object Tree");
+    
     img_view = new ImageView();
 
-    add(close_btn);
-    add(seticon_btn);
-    add(show_btn);
-    add(defc_btn);
-    add(tbox);
-    add(fsc_btn);
-    add(img_view);
+    auto group = new Btk::Group;
+
+    group->add(close_btn);
+    group->add(seticon_btn);
+    group->add(show_btn);
+    group->add(defc_btn);
+    group->add(tbox);
+    group->add(fsc_btn);
+    group->add(img_view);
+    group->add(dmp_btn);
+
+    add(group);
     //Set the position
     close_btn->set_rect(0,0,100,40);
     seticon_btn->set_rect(100,100,300,40);
@@ -67,8 +78,13 @@ Hello::Hello():Window("Hello",500,500){
     fsc_btn->set_rect(0,100,100,40);
     defc_btn->set_rect(400,100,100,40);
     img_view->set_rect(0,160,500,370);
+    dmp_btn->set_rect(0,40,200,40);
     //Connect this signal
-    close_btn->signal_clicked().connect(&Hello::onclose,this);
+    //close_btn->signal_clicked().connect(&Hello::onclose,this);
+    //Test HasSlots::connect
+    connect(close_btn->signal_clicked(),&Hello::onclose);
+    connect(dmp_btn->signal_clicked(),&Hello::dump_tree);
+
     seticon_btn->signal_clicked().connect(&Hello::on_set_icon,this);
     show_btn->signal_clicked().connect(&Hello::show_text,this);
     defc_btn->signal_clicked().connect(&Hello::on_defc_call,this);
@@ -114,6 +130,9 @@ bool Hello::handle(Event &event){
         }
     }
     return true;
+}
+void Hello::dump_tree(){
+    Window::dump_tree();
 }
 int main(){
     //Btk::HideConsole();

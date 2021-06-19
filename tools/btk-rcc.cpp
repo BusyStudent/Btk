@@ -14,6 +14,12 @@ extern "C"{
 
 
 namespace{
+    /**
+     * @brief Convert bytes to array
+     * 
+     * @param output 
+     * @param input 
+     */
     void process(std::ostream &output,std::istream &input){
         output << '{';
 

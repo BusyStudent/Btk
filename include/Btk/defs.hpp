@@ -11,7 +11,6 @@
     #ifdef _MSC_VER
         #define BTKEXPORT __declspec(dllexport)
         #define BTKIMPORT __declspec(dllimport)
-        
         #undef not
         #undef and
         #undef or
@@ -23,11 +22,14 @@
         #define BTKEXPORT __attribute__((dllexport))
         #define BTKIMPORT __attribute__((dllimport))
     #endif
+    #define BTKCDEL __cdel
 #elif defined(__GNUC__)
+    #define BTKCDEL //Ignore CDEL call
     #define BTKEXPORT __attribute__((visibility("default")))  
     #define BTKIMPORT 
 #else
     //ignore this
+    #define BTKCDEL
     #define BTKEXPORT 
     #define BTKIMPORT 
 #endif
@@ -37,10 +39,14 @@
     #define BTKWEAK   __attribute__((weak))
     #define BTKHIDDEN __attribute__((visibility("hidden")))
     #define BTKINLINE __attribute__((__always_inline__))
+
+    #define BTK_NODISCARD(MSG) __attribute__((nodiscard(MSG)))
 #elif defined(_MSC_VER)    
     #define BTKWEAK 
     #define BTKHIDDEN  
     #define BTKINLINE __forceinline
+    
+    #define BTK_NODISCARD(MSG) __declspec((nodiscard(MSG)))
 #else
     #define BTKWEAK 
     #define BTKHIDDEN
@@ -113,7 +119,9 @@ namespace Btk{
     using Sint64 = int64_t;
     //end
     //Btk u16string
+    class u16string_view;
     class u16string;
+    class u8string_view;
     class u8string;
     //Generic Align
     

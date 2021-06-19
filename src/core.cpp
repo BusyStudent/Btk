@@ -103,10 +103,8 @@ namespace Btk{
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
         }
         else{
-            dispatch_ev_id = defer_call_ev_id + 1;
             //regitser handler
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
-            regiser_eventcb(dispatch_ev_id,DispatchEvent,nullptr);
         }
         //BMP Adapter
         ImageAdapter adapter;
@@ -175,7 +173,6 @@ namespace Btk{
         //Cleanup platform
         Platform::Quit();
         //Quit SDL
-        Mixer::Quit();
         // TTF_Quit();
         SDL_Quit();
     }
@@ -185,10 +182,11 @@ namespace Btk{
         while(SDL_WaitEvent(&event)){
             switch(event.type){
                 case SDL_QUIT:{
-                    signal_quit();
+                    on_quit();
                     break;
                 }
                 case SDL_CLIPBOARDUPDATE:{
+                    BTK_LOGINFO("[System::Core]Emitting SignalClipboardUpdate");
                     signal_clipboard_update();
                     break;
                 }
@@ -229,6 +227,20 @@ namespace Btk{
                     Platform::HandleSysMsg(*(event.syswm.msg));
                     break;
                 }
+                case SDL_AUDIODEVICEADDED:{
+                    BTK_LOGINFO("[System::Audio] AudioDeviceAdded");
+                    signal_audio_device_added();
+                    break;
+                }
+                case SDL_AUDIODEVICEREMOVED:{
+                    BTK_LOGINFO("[System::Audio] AudioDeviceRemoved");
+                    signal_audio_device_removed();
+                    break;
+                }
+                case SDL_KEYMAPCHANGED:{
+                    signal_keymap_changed();
+                    break;
+                }
                 default:{
                     //get function from event callbacks map
                     auto iter = evcbs_map.find(event.type);
@@ -246,7 +258,8 @@ namespace Btk{
                 }
             }
         }
-    
+        BTK_LOGWARN(SDL_GetError());
+
     }
     //WindowEvent
     inline void System::on_windowev(const SDL_Event &event){
@@ -321,6 +334,33 @@ namespace Btk{
             return;
         }
         win->handle_textinput(ev);
+    }
+    inline void System::on_quit(){
+        if(signal_quit.empty()){
+            //Deafult close all the window and quit
+            BTK_LOGINFO("[System::Core]Try to quit");
+            std::lock_guard<std::recursive_mutex> locker(map_mtx);
+            for(auto i = wins_map.begin(); i != wins_map.end();){
+                //Try to close window
+                if(i->second->on_close()){
+                    //Succeed
+                    BTK_LOGINFO("[System::Core]Succeed to close %p",i->second);
+                    signal_window_closed(i->second);
+                    delete i->second;
+                    i = wins_map.erase(i);
+                }
+                else{
+                    ++i;
+                }
+            }
+            if(wins_map.empty()){
+                Exit();
+            }
+        }
+        else{
+            BTK_LOGINFO("[System::Core]Emitting SignalQuit");
+            signal_quit();
+        }
     }
     void System::register_window(WindowImpl *impl){
         if(impl == nullptr){
@@ -414,7 +454,7 @@ namespace Btk{
             return;
         }
         if(win->on_close()){
-            signal_close_window(win);
+            signal_window_closed(win);
             unregister_window(win);
         }
         if(wins_map.empty()){
@@ -425,7 +465,8 @@ namespace Btk{
         BTK_ASSERT(win != nullptr);
         auto p = new WindowImpl(win);
         register_window(p);
-        signal_create_window(p);
+        SDL_SetWindowData(win,"btk_imp",p);
+        signal_window_created(p);
         return p;
     }
 }

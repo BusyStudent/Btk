@@ -351,6 +351,14 @@ namespace Btk{
         use_font(font.family());
         return true;
     }
+    //Transform
+
+    void Renderer::scale(float x_factor,float y_factor){
+        nvgScale(nvg_ctxt,x_factor,y_factor);
+    }
+    void Renderer::translate(float x,float y){
+        nvgTranslate(nvg_ctxt,x,y);
+    }
 }
 namespace Btk{
     Texture::~Texture(){
