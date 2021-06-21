@@ -1,5 +1,6 @@
 #include "../../build.hpp"
 
+#include <Btk/utils/template.hpp>
 #include <Btk/platform/win32.hpp>
 #include <Btk/msgbox/msgbox.hpp>
 #include <Btk/impl/utils.hpp>
@@ -125,6 +126,36 @@ static LONG CALLBACK seh_exception_handler(_EXCEPTION_POINTERS *exp){
 
 namespace Btk{
 namespace Win32{
+    //For slove WM_SIZING
+    static ObjectHolder<std::map<HWND,WindowImpl*>> hwnd_map;
+    static HIMC ime_handle = nullptr;
+
+    static HWND get_hwnd(SDL_Window *win){
+        SDL_SysWMinfo info;
+        SDL_GetVersion(&info.version);
+        SDL_GetWindowWMInfo(win,&info);
+        return info.info.win.window;
+    }
+    static void on_add_window(WindowImpl *win){
+        HWND h = get_hwnd(win->sdl_window());
+        hwnd_map->emplace(std::make_pair(h,win));
+
+        BTK_LOGINFO("[System::Win32]Reginster window %p HWND %p",win,h);
+    }
+    static void on_del_window(WindowImpl *win){
+        HWND h = get_hwnd(win->sdl_window());
+        hwnd_map->erase(hwnd_map->find(h));
+
+        BTK_LOGINFO("[System::Win32]Remove window %p HWND %p", win, h);
+    }
+    static int SDLCALL event_filter(void *,SDL_Event *event){
+        if(event->type == SDL_SYSWMEVENT){
+            //Handle it right now
+            HandleSysMsg(*(event->syswm.msg));
+            return 0;
+        }
+        return 1;
+    }
     void Init(){
         #ifndef NDEBUG
         signal(SIGABRT,crash_handler);
@@ -136,13 +167,39 @@ namespace Win32{
         #endif
 
         CoInitializeEx(nullptr,COINIT_MULTITHREADED);
-        //SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
+        //Init IME
+        ime_handle = ImmCreateContext();
+        //Init map
+        hwnd_map.construct();
+
+        //Bind to register
+        Instance().signal_window_created.connect(on_add_window);
+        Instance().signal_window_closed.connect(on_del_window);
+
+        SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
+        SDL_SetEventFilter(event_filter,nullptr);
     }
     void Quit(){
         CoUninitialize();
+
+        //Delete map
+        SDL_EventState(SDL_SYSWMEVENT,SDL_DISABLE);
+        SDL_SetEventFilter(nullptr,nullptr);
+        hwnd_map.destroy();
+
+        ImmDestroyContext(ime_handle);
     }
     void HandleSysMsg(const SDL_SysWMmsg &msg){
-
+        auto info = msg.msg.win;
+        WindowImpl *win = GetWindow(info.hwnd);
+        if(win != nullptr){
+            return win->handle_win32(
+                info.hwnd,
+                info.msg,
+                info.wParam,
+                info.lParam
+            );
+        }
     }
     u8string StrMessageA(DWORD errcode){
         char16_t *ret;
@@ -201,6 +258,13 @@ namespace Win32{
         );
         return true;
     }
+    WindowImpl *GetWindow(HWND h){
+        auto iter = hwnd_map->find(h);
+        if(iter == hwnd_map->end()){
+            return nullptr;
+        }
+        return iter->second;
+    }
 }
 }
 namespace Btk{
@@ -226,5 +290,51 @@ namespace Btk{
     }
     bool HideConsole(){
         return FreeConsole();
+    }
+}
+namespace Btk{
+    void WindowImpl::handle_win32(
+        void *hwnd,
+        UINT message,
+        WPARAM wParam,
+        LPARAM lParam){
+        
+        //Process Win32 Evennt
+        switch(message){
+        case WM_SIZING:{
+                RECT *rect = reinterpret_cast<RECT *>(lParam);
+
+                SDL_Event event;
+                event.type = SDL_WINDOWEVENT;
+                event.window.windowID = id();
+                event.window.timestamp = SDL_GetTicks();
+                event.window.event = SDL_WINDOWEVENT_RESIZED;
+                event.window.data1 = rect->right - rect->left;
+                event.window.data2 = rect->bottom - rect->top;
+                try{
+                    handle_windowev(event);
+                    //Limit to draw
+                    auto current = SDL_GetTicks();
+                    //Update it
+
+                    if (fps_limit > 0){
+                        //Has limit
+                        Uint32 durl = 1000 / fps_limit;
+                        if (current - win32_draw_ticks < durl){
+                            //Too fast,ignore it
+                            BTK_LOGINFO("Drawing too fast,ignored");
+                            return;
+                        }
+                    }
+                    win32_draw_ticks = current;
+                    //Execute draw right now
+                    draw();
+                }
+                catch (...){
+                    DeferCall(std::rethrow_exception, std::current_exception());
+                }
+                break;
+            }
+        }
     }
 }

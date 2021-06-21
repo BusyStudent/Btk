@@ -236,6 +236,18 @@ BTK_CAPI void        Btk_SetError(const char *fmt,...);
 BTK_CAPI void Btk_MessageBox(const char *title,const char *message);
 //Debug
 BTK_CAPI char *Btk_typeof(BtkWidget *);
+/**
+ * @brief Dymaic Cast 
+ * 
+ */
+#define Btk_dymaic_cast(TYPE,POINTER) \
+    (Btk##TYPE*)_Btk_dymaic_cast(Btk_Is##TYPE,POINTER)
+inline BtkWidget *_Btk_dymaic_cast(bool(*check)(BtkWidget*),BtkWidget* w){
+    if(check(w)){
+        return w;
+    }
+    return NULL;
+}
 //function end
 
 //hidden api begin

@@ -340,6 +340,10 @@ namespace Btk{
         return dispatch_to_widget(focus_widget,event);
     }
     bool Group::handle_textinput(TextInputEvent &event){
+        //If we donnot find any widget has focus,send to the widget mouse point at
+        if(focus_widget == nullptr){
+            return dispatch_to_widget(cur_widget,event);
+        }
         return dispatch_to_widget(focus_widget,event);
     }
     bool Group::detach(Widget *w){

@@ -49,6 +49,9 @@ namespace Btk{
             ~WindowImpl();
             //Overload the method from widget
             void draw(Renderer &render) override;
+            void draw(){
+                draw(render);
+            }
             /**
              * @brief Send a redraw request
              * 
@@ -78,7 +81,9 @@ namespace Btk{
             Uint32 id() const{
                 return SDL_GetWindowID(win);
             }
-
+            SDL_Window *sdl_window() const noexcept{
+                return win;
+            }
         public:
             //Process Event
             bool handle_mouse(MouseEvent   &) override;
@@ -127,6 +132,19 @@ namespace Btk{
              */
             BTKHIDDEN
             void defered_event(std::unique_ptr<Event> event);
+        public:
+            #ifdef _WIN32
+            //Win32 parts
+            Uint32 win32_draw_ticks = 0;
+            
+            void __stdcall handle_win32(
+                void *hwnd,
+                unsigned int message,
+                Uint64 wParam,
+                Sint64 lParam
+            );
+            
+            #endif
         friend class Window;
         friend class Widget;
         friend class System;

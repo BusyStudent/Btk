@@ -984,9 +984,9 @@ namespace Btk{
     class _iconv;
     using iconv_t = _iconv *;
     struct IconvFunctions{
-        iconv_t (BTKCDEL *iconv_open)(const char *tocode,const char *fromcode);
-        int     (BTKCDEL *iconv_close)(iconv_t);
-        size_t  (BTKCDEL *iconv)(iconv_t,const char **,size_t*,char **,size_t*);
+        iconv_t (*iconv_open)(const char *tocode,const char *fromcode);
+        int     (*iconv_close)(iconv_t);
+        size_t  (*iconv)(iconv_t,const char **,size_t*,char **,size_t*);
     };
     BTKAPI void HookIconv(IconvFunctions);
     BTKAPI void GetIconv(IconvFunctions&);

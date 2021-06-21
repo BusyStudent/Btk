@@ -182,7 +182,7 @@ const char *Btk_SetLableText(BtkLabel *label,const char *text){
 //Window
 BtkWindow *Btk_NewWindow(const char *title,int w,int h){
     BTK_BEGIN_CATCH();
-    auto *win = new Btk::Window(title,w,h);
+    auto win = new Btk::Window(title,w,h);
     win->impl()->on_destroy([win](){
         delete win;
     });

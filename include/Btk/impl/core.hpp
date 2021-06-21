@@ -138,9 +138,9 @@ namespace Btk{
     //Iconv functions
     class  _iconv;
     using iconv_t = _iconv*;
-    extern iconv_t (BTKCDEL *iconv_open)(const char *tocode,const char *fromcode);
-    extern int     (BTKCDEL *iconv_close)(iconv_t );
-    extern size_t  (BTKCDEL *iconv)(iconv_t ,const char **,size_t*,char **,size_t*);
+    extern iconv_t (*iconv_open)(const char *tocode, const char *fromcode);
+    extern int     (*iconv_close)(iconv_t );
+    extern size_t  (*iconv)(iconv_t ,const char **,size_t*,char **,size_t*);
 
     BTKAPI int  run();
     BTKAPI void Init();
