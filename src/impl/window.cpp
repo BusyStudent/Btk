@@ -18,15 +18,26 @@
 #include <algorithm>
 
 namespace Btk{
-
+    static RendererDevice *create_device(SDL_Window *_win){
+        auto dev = Instance().create_device(_win);
+        if(dev == nullptr){
+            throwRendererError("Couldnot create device");
+        }
+        BTK_LOGINFO("[Window::Device] Create Device %s",get_typename(dev).c_str());
+        return dev;
+    }
     WindowImpl::WindowImpl(SDL_Window *_win):
-         win(_win),
-         render(win){
+        win(_win),
+        _device(create_device(_win)),
+        render(*_device){
         //Set theme
-        theme = Themes::GetDefault();
+        set_theme(Themes::GetDefault());
         //Set background color
-        bg_color = theme[Theme::Window];        
+        bg_color = theme()[Theme::Window];        
         attr.window = true;
+
+        //Configure widget
+        set_font(Font(theme().font_name(),theme().font_size()));
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -34,6 +45,8 @@ namespace Btk{
         SDL_FreeCursor(cursor);
         //destroy the render before destroy the window
         render.destroy();
+        //destroy Device
+        delete _device;
 
         SDL_DestroyWindow(win);
     }
@@ -447,6 +460,9 @@ namespace Btk{
     }
     void Window::dump_tree(FILE *output) const{
         pimpl->dump_tree(output);
+    }
+    Container &Window::container() const{
+        return *pimpl;
     }
 }
 namespace Btk{

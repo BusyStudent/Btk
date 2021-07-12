@@ -11,55 +11,14 @@
 #include <list>
 
 #include "thread.hpp"
+#include "codec.hpp"
 #include "../module.hpp"
 #include "../string.hpp"
 #include "../object.hpp"
 
 namespace Btk{
     class WindowImpl;
-    /**
-     * @brief Image Adpater for Laoding or Saving Image
-     * 
-     */
-    struct ImageAdapter{
-        /**
-         * @brief Load the image
-         * @param rwops
-         * @return nullptr on failure
-         */
-        SDL_Surface *(*fn_load)(SDL_RWops *);
-        /**
-         * @brief Save the image
-         * 
-         * @param rwops
-         * @param surf 
-         * @param quality
-         * @return true 
-         * @return false 
-         */
-        bool (*fn_save)(SDL_RWops *,SDL_Surface *surf,int quality);
-        /**
-         * @brief Is the image
-         * 
-         * @return true 
-         * @return false 
-         */
-        bool (*fn_is)(SDL_RWops *);
-
-        SDL_Surface *load(SDL_RWops *rw) const{
-            if(fn_load != nullptr){
-                return fn_load(rw);
-            }
-            return nullptr;
-        }
-        bool is(SDL_RWops *rwops){
-            if(fn_is != nullptr){
-                return fn_is(rwops);
-            }
-            return false;
-        }
-        const char *name;
-    };
+    class RendererDevice;
     struct BTKHIDDEN System{
         struct ExitHandler{
             //Function pointer
@@ -78,6 +37,8 @@ namespace Btk{
                 fn(ev,data);
             }
         };
+        using Device = RendererDevice;
+        typedef Device *(*CreateDeviceFn)(SDL_Window*);
         System();
         ~System();
         static System *instance;//instance of system
@@ -108,6 +69,12 @@ namespace Btk{
 
         void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data = nullptr);
         bool try_handle_exception(std::exception *exp);
+        /**
+         * @brief Create a device object
+         * 
+         * @return Device* 
+         */
+        Device *create_device(SDL_Window*);
 
         std::unordered_map<Uint32,WindowImpl*> wins_map;//Windows map
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
@@ -120,7 +87,7 @@ namespace Btk{
         //called atexit
         std::list<ExitHandler> atexit_handlers;
         std::list<ImageAdapter> image_adapters;
-
+        std::list<CreateDeviceFn> devices_list;
         std::list<Module> modules_list;
         //<The signal will be init before the window will be removed
         Signal<void(WindowImpl *)> signal_window_closed;
@@ -146,7 +113,6 @@ namespace Btk{
     BTKAPI void Init();
     //Exit the app
     BTKAPI void Exit(int code);
-    BTKAPI void RegisterImageAdapter(const ImageAdapter &);
     inline System &Instance(){
         return *(System::instance);
     }
@@ -159,6 +125,13 @@ namespace Btk{
      */
     BTKAPI SDL_Surface *LoadImage(SDL_RWops *rwops,u8string_view type = {});
     BTKAPI void         SaveImage(SDL_Surface *surf,SDL_RWops *rw,u8string_view type);
+    /**
+     * @brief Register your device
+     * 
+     * @param fn 
+     * @return BTKAPI 
+     */
+    BTKAPI void RegisterDevice(System::CreateDeviceFn fn);
     /**
      * @brief Load builtin image adapter
      * 

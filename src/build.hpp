@@ -126,27 +126,31 @@ namespace Btk{
      * @return std::string 
      */
     inline u8string cformat(const char *fmt,...){
-        int strsize;
+        // int strsize;
 
-        //Get the size of the string
+        // //Get the size of the string
+        // va_list varg;
+        // va_start(varg,fmt);
+        // #ifdef _WIN32
+        // strsize = _vscprintf(fmt,varg);
+        // #else
+        // strsize = vsnprintf(nullptr,0,fmt,varg);
+        // #endif
+        // va_end(varg);
+        
+        // u8string str;
+        // str.resize(strsize);
+
+        // //start formatting
+        // va_start(varg,fmt);
+        // vsprintf(&str[0],fmt,varg);
+        // va_end(varg);
+
         va_list varg;
         va_start(varg,fmt);
-        #ifdef _WIN32
-        strsize = _vscprintf(fmt,varg);
-        #else
-        strsize = vsnprintf(nullptr,0,fmt,varg);
-        #endif
+        u8string s = u8vformat(fmt,varg);
         va_end(varg);
-        
-        u8string str;
-        str.resize(strsize);
-
-        //start formatting
-        va_start(varg,fmt);
-        vsprintf(&str[0],fmt,varg);
-        va_end(varg);
-
-        return str;
+        return s;
     }
     /**
      * @brief Append text to the string
@@ -156,24 +160,29 @@ namespace Btk{
      * @param ... The args you want to format
      */
     inline void cformat(u8string &str,const char *fmt,...){
-        int strsize;
-        //Get the size of the string
+        // int strsize;
+        // //Get the size of the string
+        // va_list varg;
+        // va_start(varg,fmt);
+        // #ifdef _WIN32
+        // strsize = _vscprintf(fmt,varg);
+        // #else
+        // strsize = vsnprintf(nullptr,0,fmt,varg);
+        // #endif
+        // va_end(varg);
+        // //Get the '\0'
+        // size_t length = str.length();
+        
+        // str.resize(strsize + str.size());
+        // char *end = &str[length];
+        // //start formatting
+        // va_start(varg,fmt);
+        // vsprintf(end,fmt,varg);
+        // va_end(varg);
+        
         va_list varg;
         va_start(varg,fmt);
-        #ifdef _WIN32
-        strsize = _vscprintf(fmt,varg);
-        #else
-        strsize = vsnprintf(nullptr,0,fmt,varg);
-        #endif
-        va_end(varg);
-        //Get the '\0'
-        size_t length = str.length();
-        
-        str.resize(strsize + str.size());
-        char *end = &str[length];
-        //start formatting
-        va_start(varg,fmt);
-        vsprintf(end,fmt,varg);
+        str.append_vfmt(fmt,varg);
         va_end(varg);
     }
 };

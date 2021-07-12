@@ -469,6 +469,16 @@ namespace Btk{
         signal_window_created(p);
         return p;
     }
+    RendererDevice *System::create_device(SDL_Window *w){
+        Device *dev;
+        for(auto fn:devices_list){
+            dev = fn(w);
+            if(dev != nullptr){
+                return dev;
+            }
+        }
+        return nullptr;
+    }
 }
 namespace Btk{
     static inline void exit_impl_cb(void *args){
@@ -522,6 +532,12 @@ namespace Btk{
     void RegisterImageAdapter(const ImageAdapter & a){
         Instance().image_adapters.push_front(a);
         BTK_LOGINFO("[System::Core]Register ImageAdapter %s",a.name);
+    }
+    void RegisterDevice(System::CreateDeviceFn fn){
+        if(fn == nullptr){
+            return;
+        }
+        Instance().devices_list.emplace_front(fn);
     }
     SDL_Surface *LoadImage(SDL_RWops *rwops,u8string_view type){
         BTK_ASSERT(rwops != nullptr);

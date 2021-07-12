@@ -27,24 +27,19 @@ extern "C"{
 namespace Btk{
     void Renderer::end(){
         if(is_drawing){
-            nvgEndFrame(nvg_ctxt);
-            swap_buffer();
+            device()->end_frame(nvg_ctxt);
+            device()->swap_buffer();
             //Too many caches
             if(t_caches.size() > max_caches){
                 int n = t_caches.size() - max_caches;
                 BTK_LOGINFO("Clear %d textures",n);
                 for(int i = 0;i < n;i++){
-                    nvgDeleteImage(nvg_ctxt,t_caches.front());
+                    device()->destroy_texture(nvg_ctxt,t_caches.front());
                     t_caches.pop_front();
                 }
             }
             is_drawing = false;
         }
-    }
-    Size Renderer::screen_size(){
-        Size size;
-        SDL_GetWindowSize(window,&size.w,&size.h);
-        return size;
     }
     Texture Renderer::load(u8string_view fname,TextureFlags flags){
         return create_from(PixBuf::FromFile(fname),flags);
@@ -76,8 +71,9 @@ namespace Btk{
             _dst = *dst;
         }
         else{
-            int w,h;
-            SDL_GetWindowSize(window,&w,&h);
+            //Get current screnn output size
+            auto [w,h] = device()->logical_size();
+            // SDL_GetWindowSize(window,&w,&h);
             _dst.x = 0;
             _dst.y = 0;
             _dst.w = w;
@@ -337,18 +333,19 @@ namespace Btk{
     //Begin or end Frame
     void Renderer::begin_frame(float w,float h,float ratio){
         if(not is_drawing){
-            nvgBeginFrame(nvg_ctxt,w,h,ratio);
+            device()->begin_frame(nvg_ctxt,w,h,ratio);
             is_drawing = true;
         }
     }
     void Renderer::end_frame(){
         if(is_drawing){
-            nvgEndFrame(nvg_ctxt);
+            device()->end_frame(nvg_ctxt);
             is_drawing = false;
         }
     }
     bool Renderer::use_font(const Font &font){
         use_font(font.family());
+        text_size(font.ptsize());
         return true;
     }
     //Transform
@@ -358,6 +355,67 @@ namespace Btk{
     }
     void Renderer::translate(float x,float y){
         nvgTranslate(nvg_ctxt,x,y);
+    }
+}
+namespace Btk{
+    Renderer::Renderer(RendererDevice &dev,bool val){
+        _device = &dev;
+        free_device = val;
+
+        nvg_ctxt = device()->create_context();
+        //Add default font
+        nvgFontFace(nvg_ctxt,"");
+        nvgFontBlur(nvg_ctxt,0);
+    }
+    Renderer::~Renderer(){
+        destroy();
+    }
+    void Renderer::destroy(){
+        if(device() == nullptr){
+            return;
+        }
+        //Cleanup buffer
+        for(auto iter = t_caches.begin();iter != t_caches.end();){
+            device()->destroy_texture(nvg_ctxt,*iter);
+            iter = t_caches.erase(iter);
+        }
+        device()->destroy_context(nvg_ctxt);
+
+        if(free_device){
+            delete device();
+        }
+
+        //Set pointer
+        _device = nullptr;
+        nvg_ctxt = nullptr;
+    }
+    Texture Renderer::create(int w,int h,TextureFlags f){
+        TextureID id = device()->create_texture(nvg_ctxt,w,h,f);
+        return Texture(id,this);
+    }
+    Texture Renderer::create_from(const PixBuf &buf,TextureFlags f){
+        if(buf.empty()){
+            return {};
+        }
+        if(buf->format->format != SDL_PIXELFORMAT_RGBA32){
+            return create_from(buf.convert(SDL_PIXELFORMAT_RGBA32),f);
+        }
+        if(buf.must_lock()){
+            buf.lock();
+        }
+        TextureID id = device()->create_texture(nvg_ctxt,buf->w,buf->h,f,buf->pixels);
+        if(buf.must_lock()){
+            buf.unlock();
+        }
+        return Texture(id,this);
+    }
+
+    void Renderer::begin(){
+        auto [w,h] = device()->logical_size();
+        //Init viewport
+        device()->set_viewport(nullptr);
+        //Begin frame
+        begin_frame(w,h,float(device()->physical_size().w) / float(w));
     }
 }
 namespace Btk{
@@ -374,7 +432,7 @@ namespace Btk{
         if(empty()){
             return;
         }
-        render->free_texture(texture);
+        render->destroy_texture(texture);
         texture = 0;
         render = nullptr;        
     }
@@ -444,24 +502,24 @@ namespace Btk{
         }
         return Texture(render->clone_texture(texture),render);
     }
-    PixBuf  Texture::dump() const{
-        if(empty()){
-            throwRuntimeError("empty texture");
-        }
-        return render->dump_texture(texture);
-    }
+    // PixBuf  Texture::dump() const{
+    //     if(empty()){
+    //         throwRuntimeError("empty texture");
+    //     }
+    //     return render->dump_texture(texture);
+    // }
     TextureFlags Texture::flags() const{
         if(empty()){
             throwRuntimeError("empty texture");
         }
         return render->get_texture_flags(texture);
     }
-    void Texture::set_flags(TextureFlags flags){
-        if(empty()){
-            throwRuntimeError("empty texture");
-        }
-        render->set_texture_flags(texture,flags);
-    }
+    // void Texture::set_flags(TextureFlags flags){
+    //     if(empty()){
+    //         throwRuntimeError("empty texture");
+    //     }
+    //     render->set_texture_flags(texture,flags);
+    // }
     Texture &Texture::operator =(Texture &&t){
         if(&t == this){
             return *this;

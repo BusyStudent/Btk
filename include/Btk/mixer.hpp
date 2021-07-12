@@ -2,42 +2,15 @@
 #define _BTK_MIXER_HPP_
 #include <SDL2/SDL_audio.h>
 #include <stdexcept>
+
 #include "defs.hpp"
 #include "signal.hpp"
 #include "string.hpp"
+#include "function.hpp"
 
 #define BTK_AUDIO_FMT(X) X = AUDIO_##X
 
-namespace Btk::Mixer{
-    struct MusicImpl;
-    struct AudioPlayerImpl;
-    /**
-     * @brief Music
-     * 
-     */
-    class BTKAPI Music{
-        public:
-            ~Music();
-            static Music FromFile(u8string_view fname);
-        private:
-            MusicImpl *pimpl;
-    };
-    class BTKAPI AudioPlayer{
-        public:
-            AudioPlayer();
-            AudioPlayer(const AudioPlayer &) = delete;
-            ~AudioPlayer();
-        private:
-            AudioPlayerImpl *pimpl;
-    };
-    BTKAPI void Init();
-    BTKAPI void Quit();
-    BTKAPI bool WasInit();
-}
-
-
 namespace Btk{
-    struct AudioDeviceImpl;
     /**
      * @brief Audio exception
      * 
@@ -98,8 +71,20 @@ namespace Btk{
      * 
      */
     struct AudioInfo{
+        AudioInfo() = default;
+        AudioInfo(const AudioInfo &) = default;
+        AudioInfo(const SDL_AudioSpec &spec){
+            format = AudioFormat(spec.format);
+            channels = spec.channels;
+            samples = spec.samples;
+            frequency = spec.freq;
+        }
         AudioFormat format;
+        //How many channels
         Uint8 channels;
+        //Samples
+        Uint16 samples = 4096;
+        //The frequency (44100 is a good default value)
         int frequency;
     };
     /**
@@ -110,6 +95,11 @@ namespace Btk{
         AudioDeviceName name;
         AudioDeviceType type = Output;
 
+    };
+    enum class AudioStatus{
+        Stoped,
+        Paused,
+        Playing
     };
     class BTKAPI AudioDevice{
         public:
@@ -133,18 +123,67 @@ namespace Btk{
              * 
              */
             void close();
+            /**
+             * @brief Write data into device buffer
+             * 
+             * @param buf The data buffer
+             * @param n The size
+             */
+            void write(const void *buf,size_t n);
+            /**
+             * @brief flush the data out
+             * 
+             */
+            void flush();
+            /**
+             * @brief Clear the data in buffer
+             * 
+             */
+            void clear();
+            /**
+             * @brief How many byte available in the device buffer
+             * 
+             * @return size_t 
+             */
+            size_t available();
+            /**
+             * @brief Get status
+             * 
+             * @return AudioStatus 
+             */
+            AudioStatus status();
 
+            void lock();
+            void unlock();
+            void pause(bool val = true);
+            void play(){
+                pause(false);
+            }
+            /**
+             * @brief Change the audio callback
+             * 
+             * @return Function<void(AudioDevice*,int)>& 
+             */
+            Function<void(AudioDevice&,int)> &callback(){
+                return _callback;
+            }
         private:
-            AudioDeviceImpl *device;
-        friend Mixer::Music;
+            void SDLCALL run(Uint8 *entry,int len);
+
+            SDL_AudioSpec dev_spec;
+            SDL_AudioSpec user_spec;
+            SDL_AudioStream *stream = nullptr;
+            SDL_AudioDeviceID dev = 0;
+            //Wait for Data callback
+            Function<void(AudioDevice&,int)> _callback;
+            //Tmp buffer for mixing
+            Uint8 *buffer = nullptr;
+            int    buflen = 0;
+            float  volume = 100;
+
+            //Is output / input
+            AudioDeviceType type;
     };
-    #if 0
-    using MixerMusic = Mixer::Music;
-    using MixerAudio = Mixer::Music;
-    using MixerChunk = Mixer::Chunk;
-    using MixerChannal = Mixer::Channal;
-    #endif
-    using Mixer::AudioPlayer;
     [[noreturn]] void BTKAPI throwAudioError(const char *msg);
     [[noreturn]] void BTKAPI throwAudioError();
 
@@ -181,6 +220,12 @@ namespace Btk{
         }
         return devices;
     }
+}
+
+namespace Btk::Mixer{
+    class AudioPlayer{
+        
+    };
 }
 
 #endif // _BTK_MIXER_HPP_

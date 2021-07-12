@@ -2,7 +2,14 @@
 #define _BTKIMPL_SCOPE_HPP_
 #include <SDL2/SDL_stdinc.h>
 #include <cstdarg>
-#define Btk_defer Btk::Impl::ScopeGuard __GUARD__ = [&]()
+#include <memory>
+
+#ifdef __COUNTER__
+    #define Btk_defer Btk::Impl::ScopeGuard __GUARD__##__COUNTER__ = [&]()
+#else
+    #define Btk_defer Btk::Impl::ScopeGuard __GUARD__ = [&]()
+#endif
+
 namespace Btk{
 namespace Impl{
     //ScopeGuard

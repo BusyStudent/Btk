@@ -90,6 +90,8 @@ namespace Btk{
             bool handle_motion(MotionEvent &) override;
         private:
             SDL_Window *win = nullptr;
+            //Render's device
+            RendererDevice *_device = nullptr;
             Renderer    render;
             //Signals
             Signal<void()> sig_leave;//mouse leave
@@ -109,12 +111,10 @@ namespace Btk{
             Uint32 last_redraw_ticks = 0;
             //FPS limit(0 on unlimited)
             Uint32 fps_limit = 60;
-            //Window theme
-            Theme theme;
             //The draw callback
             //It will be called at last
             std::list<DrawCallback> draw_cbs;
-
+            
             //Methods for Widget impl
         private:
             /**

@@ -25,10 +25,10 @@ namespace Btk::Ft{
         //Try to use the cache
         if(face->family_name != nullptr){
             auto iter = faces.find(face->family_name);
-            if(iter != faces.end() and iter->second->face_index != idx){
+            if(iter != faces.end() and iter->second->face_index == idx){
                 //It is exists and hit the cache
                 face = iter->second;
-                BTK_LOGINFO("[System::Font]HitCache %s in openfont %s %u",filename,idx);
+                BTK_LOGINFO("[System::Font]HitCache %s in openfont %s %u",face->family_name,filename,idx);
             }
             else{
                 //Add into cache

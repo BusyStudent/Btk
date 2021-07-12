@@ -3,6 +3,9 @@
 
 #ifdef __cplusplus
     #include <cstdint>
+    #if __cplusplus < 201703L
+    #error We need a C++17 to compile btk
+    #endif
 #else
     #include <stdint.h>
 #endif

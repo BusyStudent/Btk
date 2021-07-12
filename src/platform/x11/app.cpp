@@ -2,8 +2,11 @@
 
 #include <Btk/impl/application.hpp>
 #include <Btk/platform/dbus.hpp>
+#include <Btk/platform/x11.hpp>
 #include <Btk/application.hpp>
 #include <Btk/exception.hpp>
+
+
 //App implment
 namespace Btk{
     ApplicationImpl::ApplicationImpl(){        
@@ -105,5 +108,9 @@ namespace Btk{
         iter.close();
         con.send(msg,nullptr);
         return true;
+    }
+    bool Application::openurl(u8string_view _url){
+        u8string url(_url);
+        return X11::Execute("xdg-open",url);
     }
 }

@@ -12,6 +12,7 @@
     adapter.fn_is = [](SDL_RWops *rwops) -> bool{\
         return IMG_is##NAME(rwops);\
     };\
+    adapter.vendor = "sdlimage";\
     Btk::RegisterImageAdapter(adapter);\
 }
 namespace Btk{

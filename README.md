@@ -27,6 +27,14 @@ int main(){
 
 ----
 
+## TODO List  
+
+- Rewrite font system to get buffer performence  
+- Add more useful widgets  
+- Add Btk::Bind(...) to bind object and functions  
+
+----
+
 ## Building prerequisites
 
 ### Linux

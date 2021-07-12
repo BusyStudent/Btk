@@ -33,7 +33,8 @@
             return dynamic_cast<Btk##NAME*>(\
                 reinterpret_cast<Btk::Widget*>(widget)\
             ) != nullptr;\
-        }
+        }\
+        BTK_CAPI Btk##NAME* Btk_New##NAME(); 
 #else
     #define BTK_CAPI BTK_CLINKAGE BTK_C_IMPORT
     //Define Widget and function
@@ -60,18 +61,16 @@
 #if !defined(__cplusplus)
 typedef struct BtkWindow BtkWindow;
 typedef struct BtkWidget BtkWidget;
-typedef struct BtkContainer BtkContainer;
+#define nullptr NULL
 #include <stdbool.h>
 #elif defined(_BTK_SOURCE)
 #include <Btk/window.hpp>
 #include <Btk/widget.hpp>
 typedef Btk::Window BtkWindow;
 typedef Btk::Widget BtkWidget;
-typedef Btk::Container BtkContainer;
 #else
 struct BtkWindow{};
 struct BtkWidget{};
-struct BtkContainer{};
 #endif
 
 typedef struct BtkPixBuf BtkPixBuf;
@@ -99,6 +98,14 @@ typedef BtkPixBuf BtkBitmap;
 //headers
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+
+struct Btk_typeinfo{
+    const char *name;
+    const char *raw_name;
+    size_t hash_code;
+};
+
 
 //name casttinh macro
 #define BTK_WIDGET(PTR) ((BtkWidget*)PTR)
@@ -124,6 +131,9 @@ BTK_DEF_WIDGET(Label,Widget);
 //ImageView
 BTK_DEF_WIDGET(ImageView,Widget);
 BTK_DEF_WIDGET(ScrollBar,Widget);
+//Container
+BTK_DEF_WIDGET(Container,Widget);
+BTK_DEF_WIDGET(Group,Container);
 
 #ifndef BTK_NGIF
 BTK_DEF_WIDGET(GifView,Widget);
@@ -201,10 +211,15 @@ BTK_CAPI void Btk_ForChildrens(BtkWidget *w,Btk_foreach_t fn,void *p);
 BTK_CAPI BtkPixBuf *Btk_LoadImage(const char *filename);
 BTK_CAPI void Btk_FreeImage(BtkPixBuf *);
 //window
+BTK_CAPI BtkContainer *Btk_GetContainer(BtkWindow*);
 BTK_CAPI BtkWindow *Btk_NewWindow(const char *title,int w,int h);
 BTK_CAPI void Btk_ShowWindow(BtkWindow *);
 BTK_CAPI void Btk_SetWindowTitle(BtkWindow*,const char *title);
 BTK_CAPI void Btk_SetWindowResizeable(BtkWindow*,bool resizeable);
+//Container
+
+BTK_CAPI void Btk_ContainerAdd(BtkContainer *c,BtkWidget *w);
+BTK_CAPI void Btk_DumpTree(BtkWidget *w,FILE *output);
 /**
  * @brief Add a widget into a window
  * 
@@ -235,7 +250,7 @@ BTK_CAPI void        Btk_SetError(const char *fmt,...);
 //MessageBox
 BTK_CAPI void Btk_MessageBox(const char *title,const char *message);
 //Debug
-BTK_CAPI char *Btk_typeof(BtkWidget *);
+BTK_CAPI char *Btk_typename(BtkWidget *);
 /**
  * @brief Dymaic Cast 
  * 
@@ -248,6 +263,10 @@ inline BtkWidget *_Btk_dymaic_cast(bool(*check)(BtkWidget*),BtkWidget* w){
     }
     return NULL;
 }
+//Type
+BTK_CAPI bool  Btk_issame(BtkWidget *,BtkWidget *);
+BTK_CAPI Btk_typeinfo Btk_typeof(BtkWidget *w);
+BTK_CAPI void Btk_freetype(Btk_typeinfo);
 //function end
 
 //hidden api begin

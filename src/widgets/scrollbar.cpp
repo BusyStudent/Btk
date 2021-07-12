@@ -1,7 +1,6 @@
 #include "../build.hpp"
 
 #include <Btk/impl/window.hpp>
-#include <Btk/impl/debug.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/scrollbar.hpp>
 

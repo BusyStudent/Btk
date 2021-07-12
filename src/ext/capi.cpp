@@ -232,6 +232,24 @@ bool Btk_MainLoop(BtkWindow *win){
     return win->mainloop();
     BTK_END_CATCH2(false);
 }
+BtkContainer *Btk_GetContainer(BtkWindow *w){
+    BTK_NUL_CHK2(w,nullptr);
+    return &(w->container());
+}
+void Btk_ForChildrens(BtkWidget *w,Btk_foreach_t c,void *p){
+    BTK_NUL_CHK(w);
+    BTK_NUL_CHK(c);
+   for(auto i:w->get_childrens()){
+       c(i,p);
+   }
+}
+void Btk_ContainerAdd(BtkContainer *c,BtkWidget *w){
+    BTK_NUL_CHK(c);
+    c->add(w);
+}
+void Btk_DumpTree(BtkWidget *w,FILE *f){
+    w->dump_tree(f);
+}
 //ImageView
 BtkImageView *Btk_NewImageView(){
     return new BtkImageView();
@@ -275,7 +293,7 @@ void Btk_SetError(const char *fmt,...){
     vsprintf(&global_error[0],fmt,varg);
     va_end(varg);
 }
-char *Btk_typeof(BtkWidget *w){
+char *Btk_typename(BtkWidget *w){
     BTK_NUL_CHK2(w,nullptr);
     auto s = Btk::get_typename(w);
     char *mem = (char*)Btk_malloc(s.size() + 1);
@@ -284,6 +302,34 @@ char *Btk_typeof(BtkWidget *w){
     }
     strcpy(mem,s.c_str());
     return mem;
+}
+Btk_typeinfo Btk_typeof(BtkWidget *w){
+    Btk_typeinfo info = {nullptr};
+    if(w != nullptr){
+        const std::type_info &type = typeid(*w);
+        info.hash_code = type.hash_code();
+        #ifdef __GNUC__
+        info.raw_name = type.name();
+        info.name = abi::__cxa_demangle(
+            type.name(),
+            nullptr,
+            nullptr,
+            nullptr
+        );
+        #elif defined(_MSC_VER)
+        info.name = type.name();
+        info.raw_name = type.raw_name();
+        #else
+        info.name = nullptr;
+        info.raw_name = type.name();
+        #endif
+    }
+    return info;
+}
+void Btk_typefree(Btk_typeinfo info){
+    #ifdef __GNUC__
+    std::free(const_cast<char*>(info.name));
+    #endif
 }
 //Memory
 void *Btk_malloc(size_t byte){
@@ -345,6 +391,9 @@ BtkPixBuf *Btk_LoadImage(const char *filename){
 }
 void Btk_FreeImage(BtkPixBuf *b){
     SDL_FreeSurface(reinterpret_cast<SDL_Surface*>(b));
+}
+bool Btk_issame(BtkWidget *w1,BtkWidget *w2){
+    return typeid(*w1) == typeid(*w2);
 }
 //Format
 size_t _Btk_impl_fmtargs(const char *fmt,...){

@@ -17,6 +17,17 @@
 //Cast to the implment
 
 namespace Btk{
+    static u8string find_font(u8string_view name){
+        if(name.find('/')  != name.npos or 
+           name.find('\\') != name.npos){
+
+            //Is filename
+            return name;
+        }
+        else{
+            return FontUtils::GetFileByName(name);
+        }
+    }
     Font::~Font(){
         close();
     }
@@ -30,13 +41,14 @@ namespace Btk{
             pimpl = nullptr;
         }
     }
+    //TODO Improve Cache proformance
     Font::Font(u8string_view fontname,int ptsize){
-        pimpl = new Ft::Font(FontUtils::GetFileByName(fontname).c_str(),0);
-        pimpl->set_ptsize(ptsize);
+        pimpl = nullptr;
+        open(fontname,ptsize);
     }
     //Open font by name
     void Font::open(u8string_view fontname,int ptsize){
-        auto *new_font = new Ft::Font(fontname.data(),0);
+        auto *new_font = Ft::GlobalCache().load_font(fontname,0);
         close();
         pimpl = new_font;
         pimpl->set_ptsize(ptsize);

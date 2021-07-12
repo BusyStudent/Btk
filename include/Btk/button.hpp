@@ -30,7 +30,6 @@ namespace Btk{
             virtual void onleave();
             bool is_entered = false;//< Is mouse on the button?
             bool is_pressed = false;//< Is mouse pressed the button?
-            Theme theme;//< current theme
             float ptsize = 0;//< fontsize
             
             Signal<void()> clicked;
@@ -68,18 +67,33 @@ namespace Btk{
     };
     class RadioButton:public AbstractButton{
         public:
+            using Widget::set_rect;
+
             RadioButton();
+            RadioButton(u8string_view text):RadioButton(){
+                btext = text;
+            }
             ~RadioButton();
 
             void draw(Renderer &) override;
             bool is_checked() const noexcept{
                 return checked;
             }
+            void set_rect(const Rect &r) override;
+        protected:
+            bool handle_motion(MotionEvent &event) override;
+            bool handle_mouse(MouseEvent &event) override;
         private:
             bool checked = false;
             bool checkable = true;
 
-            FRect circle_rect;
+            FPoint circle_center = {0,0};
+            float  circle_r = 0;
+            /**
+             * @brief Text center
+             * 
+             */
+            FPoint text_center;
             u8string btext;
     };
 };

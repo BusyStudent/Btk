@@ -18,7 +18,7 @@ extern "C"{
 //Active OpenGL Macro
 //Active it
 #define BTK_GL_BEGIN() \
-    Btk::GL::GLGuard _glguard(device->glctxt,window);
+    Btk::GL::GLGuard _glguard(this);
 //Reset to prev context
 #define BTK_GL_END() 
 
@@ -53,33 +53,15 @@ namespace Btk::GL{
      * 
      */
     struct BTKHIDDEN GLGuard{
-        GLGuard(SDL_GLContext ctxt,SDL_Window *win){
-            this->ctxt = ctxt;
-            this->win = win;
-
-            //Get current ctxt
-            cur_ctxt = SDL_GL_GetCurrentContext();
-
-            if(cur_ctxt == ctxt){
-                //We donnot need set the ctxt
-                cur_win = nullptr;
-            }
-            else{
-                cur_win = SDL_GL_GetCurrentWindow();
-                SDL_GL_MakeCurrent(win,ctxt);
-            }
+        GLGuard(GLDevice *device){
+            dev = device;
+            dev->gl_begin();
         }
         GLGuard(const GLGuard &) = delete;
         ~GLGuard(){
-            if(cur_win != nullptr){
-                SDL_GL_MakeCurrent(cur_win,cur_ctxt);
-            }
+            dev->gl_end();
         }
-        SDL_GLContext cur_ctxt;//< Current context
-        SDL_GLContext ctxt;//<Context
-
-        SDL_Window *cur_win;//< Current Window
-        SDL_Window *win;//Window
+        GLDevice *dev;
     };
 }
 namespace Btk{
@@ -87,18 +69,18 @@ namespace Btk{
      * @brief The renderer device impl
      * 
      */
-    struct BTKHIDDEN RendererDevice{
-        RendererDevice(SDL_Window *win);
-        RendererDevice(const RendererDevice &) = delete;
-        ~RendererDevice();
-        SDL_GLContext glctxt;//< OpenGL Context
-        SDL_Window *window;
+    // struct BTKHIDDEN RendererDevice{
+    //     RendererDevice(SDL_Window *win);
+    //     RendererDevice(const RendererDevice &) = delete;
+    //     ~RendererDevice();
+    //     SDL_GLContext glctxt;//< OpenGL Context
+    //     SDL_Window *window;
         
-        GLuint screen_fbo;//< The fbo to the screen
-        GLuint screen_rbo;//< The rbo to the screen    
-        //TODO:Add a cache in there
-        GL::FrameBuffer *buffer = nullptr;
-    };
+    //     GLuint screen_fbo;//< The fbo to the screen
+    //     GLuint screen_rbo;//< The rbo to the screen    
+    //     //TODO:Add a cache in there
+    //     GL::FrameBuffer *buffer = nullptr;
+    // };
 
     /**
      * @brief Get Texture from nanovg
@@ -116,19 +98,8 @@ namespace Btk{
         }
         return texture;
     }
-    void Renderer::get_texture_handle(int texture_id,void *p_handle){
-        //Get GLuint from nanovg-GLES2
-        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
-        if(p_handle != nullptr){
-            *static_cast<GLuint*>(p_handle) = texture->tex;
-        }
-    }
-    TextureFlags Renderer::get_texture_flags(int texture_id){
-        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
-        return static_cast<TextureFlags>(texture->flags);
-    }
     void Renderer::set_texture_flags(int texture_id,TextureFlags flags){
-        BTK_GL_BEGIN();
+
         auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
         BTK_ASSERT(texture != nullptr);
         //Get cur texture
@@ -192,64 +163,360 @@ namespace Btk{
         BTK_GL_CHECK();
         //Reset
         glBindTexture(GL_TEXTURE_2D,cur_tex);
-        BTK_GL_END();
+
     }
 }
 namespace Btk{
-    //Create OpenGLES2 NanoVG Context
-    Renderer::Renderer(SDL_Window *win){
-        window = win;
-        device = new RendererDevice(win);
+    //CloneTexture
+    // int Renderer::clone_texture(int texture_id){
+    //     BTK_GL_BEGIN();
+    //     auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
 
-        //SDL_GL_MakeCurrent(win,device->glctxt);
+    //     int w = texture->width;
+    //     int h = texture->height;
+        
+    //     int dst_tex = nvgCreateImageRGBA(nvg_ctxt,w,h,texture->flags,nullptr);
+    //     BTK_GL_CHECK();
 
+    //     auto *dst_texture = glnvgFindTexture(nvg_ctxt,dst_tex);
+    //     //GL Texture
+    //     GLuint tex = dst_texture->tex;
+    //     //Current texture
+    //     GLint cur_tex;
+    //     GLint cur_fbo;
+    //     glGetIntegerv(GL_TEXTURE_2D,&cur_tex);
+    //     glGetIntegerv(GL_FRAMEBUFFER_BINDING,&cur_fbo);
+    //     //Create a fbo
+    //     GLuint fbo;
+    //     glGenFramebuffers(1,&fbo);
+    //     glBindFramebuffer(GL_FRAMEBUFFER,fbo);
+    //     BTK_GL_CHECK();
+    //     //Attach
+    //     glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,texture->tex,0);
+
+    //     BTK_GL_CHECK();
+    //     //Bind
+    //     glBindTexture(GL_TEXTURE_2D,tex);
+    //     BTK_GL_CHECK();
+    //     glCopyTexSubImage2D(GL_TEXTURE_2D,0,0,0,0,0,w,h);
+    //     BTK_GL_CHECK();
+
+    //     //Reset to prev
+    //     glBindTexture(GL_TEXTURE_2D,cur_tex);
+    //     glBindFramebuffer(GL_FRAMEBUFFER,cur_fbo);
+    //     //Delete fbo
+    //     glDeleteFramebuffers(1,&fbo);
+
+    //     BTK_GL_END();
+
+    //     return dst_tex;
+    // }
+    //Dump texture
+    // PixBuf Renderer::dump_texture(int texture_id){
+    //     BTK_GL_BEGIN();
+    //     auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
+    //     int w = texture->width;
+    //     int h = texture->height;
+    //     PixBuf buf(w,h,SDL_PIXELFORMAT_RGBA32);
+
+    //     //Current texture and fbo
+    //     GLint cur_fbo;
+    //     glGetIntegerv(GL_FRAMEBUFFER_BINDING,&cur_fbo);
+
+    //     GLuint fbo;
+    //     glGenFramebuffers(1,&fbo);
+    //     glBindFramebuffer(GL_FRAMEBUFFER,fbo);
+    //     BTK_GL_CHECK();
+
+    //     //Copy into fbo
+    //     glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,texture->tex,0);
+    //     BTK_GL_CHECK();
+    //     //Do copy
+    //     //Read pixels glGetTexImage doesnnot exists in opengles
+    //     glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,buf->pixels);
+    //     //glGetTexImage();
+        
+    //     BTK_GL_CHECK();
+    //     //Cleanup
+    //     glBindFramebuffer(GL_FRAMEBUFFER,cur_fbo);
+    //     glDeleteFramebuffers(1,&fbo);
+    //     BTK_GL_END();
+    //     return buf;
+    // }
+    // void Renderer::update_texture(int texture,const void *pixels){
+    //     BTK_GL_BEGIN();
+    //     nvgUpdateImage(nvg_ctxt,texture,static_cast<const Uint8*>(pixels));
+    //     BTK_GL_END();
+    // }
+    // void Renderer::update_texture(int texture_id,const Rect &r,const void *pixels){
+    //     BTK_ASSERT(not r.empty());
+    //     BTK_GL_BEGIN();
+    //     auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
+    //     int w = texture->width;
+    //     int h = texture->height;
+
+    //     GLint cur_tex;
+    //     glGetIntegerv(GL_TEXTURE_2D,&cur_tex);
+
+    //     glBindTexture(GL_TEXTURE_2D,texture->tex);
+    //     glTexSubImage2D(GL_TEXTURE_2D,0,r.x,r.y,r.w,r.h,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+    //     BTK_GL_CHECK();
+
+    //     glBindTexture(GL_TEXTURE_2D,cur_tex);
+    //     BTK_GL_END();
+    // }
+    // //create texture from pixbuf
+    // Texture Renderer::create_from(const PixBuf &pixbuf,TextureFlags flags){
+    //     if(pixbuf.empty()){
+    //         throw RuntimeError("The pixbuf is empty");
+    //     }
+    //     //Convert the pixels
+    //     if(pixbuf->format->format != SDL_PIXELFORMAT_RGBA32){
+    //         return create_from(pixbuf.convert(SDL_PIXELFORMAT_RGBA32));
+    //     }
+    //     if(SDL_MUSTLOCK(pixbuf.get())){
+    //         SDL_LockSurface(pixbuf.get());
+    //     }
+        
+    //     BTK_GL_BEGIN();
+    //     int t = nvgCreateImageRGBA(
+    //         nvg_ctxt,
+    //         pixbuf->w,
+    //         pixbuf->h,
+    //         int(flags),
+    //         static_cast<const Uint8*>(pixbuf->pixels)
+    //     );
+    //     BTK_GL_END();
+        
+    //     if(SDL_MUSTLOCK(pixbuf.get())){
+    //         SDL_UnlockSurface(pixbuf.get());
+    //     }
+    //     return Texture(t,this);
+    // }
+    // Texture Renderer::create_from_handle(const void *p_handle,int w,int h,TextureFlags flags){
+    //     if(p_handle == nullptr){
+    //         return Texture();
+    //     }
+    //     GLuint tex;
+    //     tex = *static_cast<const GLuint*>(p_handle);
+    //     int t = nvglCreateImageFromHandleGLES2(nvg_ctxt,tex,w,h,int(flags));
+    //     return Texture(t,this);
+    // }
+    // Texture Renderer::create(int w,int h,TextureFlags flags){
+    //     BTK_GL_BEGIN();
+    //     int texture = nvgCreateImageRGBA(
+    //         nvg_ctxt,
+    //         w,
+    //         h,
+    //         int(flags),
+    //         nullptr
+    //     );
+    //     BTK_GL_END();
+    //     return Texture(texture,this);
+    // }
+    // RendererBackend Renderer::backend() const{
+    //     return RendererBackend::OpenGL;
+    // }
+    // Size Renderer::output_size(){
+    //     Size size;
+
+    //     BTK_GL_BEGIN();
+    //     SDL_GL_GetDrawableSize(window,&size.w,&size.h);
+    //     BTK_GL_END();
+    //     return size;
+    // }
+    // //Target
+    // void Renderer::set_target(Texture &texture){
+    //     GLuint tex;
+    //     texture.native_handle(&tex);
+    //     auto size = texture.size();
+
+    //     BTK_GL_BEGIN();
+    //     //Flush it
+    //     end_frame();
+    //     //Make a framebuffer
+    //     device->buffer = new GL::FrameBuffer(size.w,size.h,tex);
+    //     //Bind it
+    //     device->buffer->bind();
+    //     //Drawing at the texture
+    //     glViewport(0,0,size.w,size.h);
+    //     //ClearStencil
+    //     glClearStencil(0);
+    //     glClear(GL_STENCIL_BUFFER_BIT);
+
+    //     begin_frame(size.w,size.h,1);
+    //     //Make it flip
+    //     //Because opengl framebuffer's x,y begin at
+    //     //|
+    //     //|
+    //     //.here
+        
+    //     save();
+        
+    //     nvgTranslate(nvg_ctxt,0,size.h);
+    //     nvgScale(nvg_ctxt,1,-1);
+
+    //     BTK_GL_END();
+    // }
+    // void Renderer::reset_target(){
+    //     BTK_GL_BEGIN();
+    //     //Flsuh the nanovg stack
+    //     restore();
+    //     end_frame();
+    //     //Bind the the screen
+    //     device->buffer->unbind();
+    //     delete device->buffer;
+    //     device->buffer = nullptr;
+    //     //Begin the new frame
+    //     begin();
+
+    //     BTK_GL_END();
+    // }
+    void Renderer::make_current(){
+        dynamic_cast<GLDevice&>(*device()).make_current();
+    }
+    #if 0
+    //DumpTexture
+    PixBuf Renderer::dump_texture(const Texture &texture){
+        //Check the opengl context is actived
+        bool is_actived;
+        SDL_GLContext cur = SDL_GL_GetCurrentContext();
+        SDL_Window *cur_win;
+        if(cur == device){
+            is_actived = true;
+        }
+        else{
+            is_actived = false;
+            SDL_GL_MakeCurrent(window,device);
+            cur_win = SDL_GL_GetCurrentWindow();
+        }
+        //do our 
+
+
+        if(not is_actived){
+            //Reset to prev context
+            SDL_GL_MakeCurrent(cur_win,cur);
+        }
+    }
+    #endif
+}
+//RendererDevice
+namespace Btk{
+    GLDevice::~GLDevice(){
+        //Delete OpenGL context
+        BTK_GL_BEGIN();
+        //Clear target stack
+        while(not targets_stack.empty()){
+            targets_stack.pop();
+        }
+        SDL_GL_DeleteContext(_context);
+        BTK_GL_END();
+    }
+    GLDevice::GLDevice(SDL_Window *win){
+        //Create context
+        _context = SDL_GL_CreateContext(win);
+        if(_context == nullptr){
+            throwSDLError();
+        }
+        _window = win;
+        //Configure
         SDL_GL_SetSwapInterval(1);
 
-        nvg_ctxt = nvgCreateGLES2(
-            NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG
-        );
-        //Add default font
-        //int face_id = nvgCreateFont(nvg_ctxt,"",FontUtils::GetFileByName("").c_str());
-        //nvgFontFaceId(nvg_ctxt,face_id);
-        //Using default font from cache
-        nvgFontFace(nvg_ctxt,"");
-        nvgFontBlur(nvg_ctxt,0);
+        set_backend(RendererBackend::OpenGL);
+        
+        #ifdef BTK_NEED_GLAD
+        //Init glad
+        static bool glad_wasinit = false;
+        if(not glad_wasinit){
+            if(BtkLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress))){
+                glad_wasinit = true;
+            }
+        }
+        #endif
+        //Save env
+        screen_fbo = GL::CurrentFBO();
+        screen_rbo = GL::CurrentRBO();
     }
-    Renderer::~Renderer(){
-        destroy();
-    }
-    //Begin rendering
-    void Renderer::begin(){
-        if(not is_drawing){
-            SDL_GL_MakeCurrent(window,device->glctxt);
-            
-            int w,h;
-            int pix_w,pix_h;
-
-            SDL_GetWindowSize(window,&w,&h);
-            SDL_GL_GetDrawableSize(window,&pix_w,&pix_h);
-
-            glViewport(0,0,w,h);
-
-            nvgBeginFrame(nvg_ctxt,w,h,float(pix_w) / float(w));
-            is_drawing = true;
+    //GL Context
+    void GLDevice::make_current(){
+        //Already set up the context
+        if(SDL_GL_GetCurrentContext() == _context){
+            return;
+        }
+        if(SDL_GL_MakeCurrent(_window,_context) != 0){
+            throwSDLError();
         }
     }
-    void Renderer::destroy(){
-        for(auto iter = t_caches.begin();iter != t_caches.end();){
-            nvgDeleteImage(nvg_ctxt,*iter);
-            iter = t_caches.erase(iter);
+    void GLDevice::gl_begin(){
+        _cur_ctxt = SDL_GL_GetCurrentContext();
+        if(_cur_ctxt == _context){
+            //We donnot setup The context
+            _cur_win = nullptr;
         }
-        
-        nvgDeleteGLES2(nvg_ctxt);
-        
-        delete device;
-
-        nvg_ctxt = nullptr;
-        device   = nullptr;
+        else{
+            _cur_win = SDL_GL_GetCurrentWindow();
+            //Setup
+            SDL_GL_MakeCurrent(_window,_context);
+        }
     }
-    //Clear the buffer
-    void Renderer::clear(Color c){
+    void GLDevice::gl_end(){
+        //We need to reset to prev
+        if(_cur_win != nullptr){
+            SDL_GL_MakeCurrent(_cur_win,_cur_ctxt);
+            _cur_win = nullptr;
+        }
+    }
+    //Frame
+    void GLDevice::begin_frame(Context ctxt,float w,float h,float ratio){
+        make_current();
+        nvgBeginFrame(ctxt,w,h,ratio);
+    }
+    void GLDevice::cancel_frame(Context ctxt){
+        make_current();
+        nvgCancelFrame(ctxt);
+    }
+    void GLDevice::end_frame(Context ctxt){
+        make_current();
+        nvgEndFrame(ctxt);
+    }
+    //Ctxt
+    NVGcontext *GLDevice::create_context(){
+        BTK_GL_BEGIN();
+        return nvgCreateGLES2(NVG_ANTIALIAS | NVG_DEBUG | NVG_STENCIL_STROKES);
+        BTK_GL_END();
+    }
+    void GLDevice::destroy_context(Context ctxt){
+        BTK_GL_BEGIN();
+        nvgDeleteGLES2(ctxt);
+        BTK_GL_END();
+    }
+    //Output size
+    bool GLDevice::output_size(Size *logical_size,Size *physical_size){
+        bool val = true;
+        if(logical_size != nullptr){
+            SDL_GetWindowSize(
+                _window,
+                &(logical_size->w),
+                &(logical_size->h)
+            );
+        }
+        if(physical_size != nullptr){
+            BTK_GL_BEGIN();
+            SDL_GL_GetDrawableSize(
+                _window,
+                &(physical_size->w),
+                &(physical_size->h)
+            );
+            BTK_GL_END();
+        }
+        return val;
+    }
+    //Buffer
+    void GLDevice::swap_buffer(){
+        SDL_GL_SwapWindow(_window);
+    }
+    void GLDevice::clear_buffer(Color c){
+        BTK_GL_BEGIN();
         
         glClearStencil(0);
         glClearColor(
@@ -258,22 +525,30 @@ namespace Btk{
             1.0f / 255 * c.b,
             1.0f / 255 * c.a
         );
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        
+        BTK_GL_END();
     }
-    void Renderer::swap_buffer(){
-        SDL_GL_SwapWindow(window);
-    }
-    //Delete texture
-    void Renderer::free_texture(int texture){
+    void GLDevice::set_viewport(const Rect *r){
         BTK_GL_BEGIN();
-
-        nvgDeleteImage(nvg_ctxt,texture);
+        Rect rect = {0,0,0,0};
+        if(r == nullptr){
+            SDL_GetWindowSize(_window,&(rect.w),&(rect.h));
+        }
+        else{
+            rect = *r;
+        }
+        glViewport(rect.x,rect.y,rect.w,rect.h);
 
         BTK_GL_END();
     }
-    //CloneTexture
-    int Renderer::clone_texture(int texture_id){
+    //Texture
+    TextureID GLDevice::create_texture(Context ctxt,int w,int h,TextureFlags f,const void *pix){
+        BTK_GL_BEGIN();
+        return nvgCreateImageRGBA(ctxt,w,h,int(f),static_cast<const unsigned char*>(pix));
+        BTK_GL_END();
+    }
+    TextureID GLDevice::clone_texture(Context nvg_ctxt,TextureID texture_id){
         BTK_GL_BEGIN();
         auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
 
@@ -316,259 +591,92 @@ namespace Btk{
 
         return dst_tex;
     }
-    //Dump texture
-    PixBuf Renderer::dump_texture(int texture_id){
-        BTK_GL_BEGIN();
-        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
-        int w = texture->width;
-        int h = texture->height;
-        PixBuf buf(w,h,SDL_PIXELFORMAT_RGBA32);
-
-        //Current texture and fbo
-        GLint cur_fbo;
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING,&cur_fbo);
-
-        GLuint fbo;
-        glGenFramebuffers(1,&fbo);
-        glBindFramebuffer(GL_FRAMEBUFFER,fbo);
-        BTK_GL_CHECK();
-
-        //Copy into fbo
-        glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,texture->tex,0);
-        BTK_GL_CHECK();
-        //Do copy
-        //Read pixels glGetTexImage doesnnot exists in opengles
-        glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,buf->pixels);
-        //glGetTexImage();
-        
-        BTK_GL_CHECK();
-        //Cleanup
-        glBindFramebuffer(GL_FRAMEBUFFER,cur_fbo);
-        glDeleteFramebuffers(1,&fbo);
-        BTK_GL_END();
-        return buf;
-    }
-    void Renderer::update_texture(int texture,const void *pixels){
-        BTK_GL_BEGIN();
-        nvgUpdateImage(nvg_ctxt,texture,static_cast<const Uint8*>(pixels));
-        BTK_GL_END();
-    }
-    void Renderer::update_texture(int texture_id,const Rect &r,const void *pixels){
-        BTK_ASSERT(not r.empty());
-        BTK_GL_BEGIN();
-        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
-        int w = texture->width;
-        int h = texture->height;
-
-        GLint cur_tex;
-        glGetIntegerv(GL_TEXTURE_2D,&cur_tex);
-
-        glBindTexture(GL_TEXTURE_2D,texture->tex);
-        glTexSubImage2D(GL_TEXTURE_2D,0,r.x,r.y,r.w,r.h,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
-        BTK_GL_CHECK();
-
-        glBindTexture(GL_TEXTURE_2D,cur_tex);
-        BTK_GL_END();
-    }
-    //create texture from pixbuf
-    Texture Renderer::create_from(const PixBuf &pixbuf,TextureFlags flags){
-        if(pixbuf.empty()){
-            throw RuntimeError("The pixbuf is empty");
+    bool GLDevice::query_texture(Context ctxt,
+                                 TextureID id,
+                                 Size *size,
+                                 void *nt_h,
+                                 TextureFlags *f){
+        auto tex = glnvgFindTexture(ctxt,id);
+        if(tex == nullptr){
+            return false;
         }
-        //Convert the pixels
-        if(pixbuf->format->format != SDL_PIXELFORMAT_RGBA32){
-            return create_from(pixbuf.convert(SDL_PIXELFORMAT_RGBA32));
+        //Found texture
+        //Set data
+        if(size != nullptr){
+            size->w = tex->width;
+            size->h = tex->height;
         }
-        if(SDL_MUSTLOCK(pixbuf.get())){
-            SDL_LockSurface(pixbuf.get());
+        if(nt_h != nullptr){
+            *static_cast<GLuint*>(nt_h) = tex->tex;
         }
-        
+        if(f != nullptr){
+            *f = TextureFlags(tex->flags);
+        }
+        return true;
+    }
+    void GLDevice::destroy_texture(Context ctxt,TextureID id){
         BTK_GL_BEGIN();
-        int t = nvgCreateImageRGBA(
-            nvg_ctxt,
-            pixbuf->w,
-            pixbuf->h,
-            int(flags),
-            static_cast<const Uint8*>(pixbuf->pixels)
-        );
+        nvgDeleteImage(ctxt,id);
         BTK_GL_END();
-        
-        if(SDL_MUSTLOCK(pixbuf.get())){
-            SDL_UnlockSurface(pixbuf.get());
-        }
-        return Texture(t,this);
     }
-    Texture Renderer::create_from_handle(const void *p_handle,int w,int h,TextureFlags flags){
-        if(p_handle == nullptr){
-            return Texture();
-        }
-        GLuint tex;
-        tex = *static_cast<const GLuint*>(p_handle);
-        int t = nvglCreateImageFromHandleGLES2(nvg_ctxt,tex,w,h,int(flags));
-        return Texture(t,this);
-    }
-    Texture Renderer::create(int w,int h,TextureFlags flags){
+    void GLDevice::update_texture(Context ctxt,TextureID id,const Rect *r,const void *pix){
         BTK_GL_BEGIN();
-        int texture = nvgCreateImageRGBA(
-            nvg_ctxt,
-            w,
-            h,
-            int(flags),
-            nullptr
-        );
+        RendererDevice::update_texture(ctxt,id,r,pix);
         BTK_GL_END();
-        return Texture(texture,this);
-    }
-    RendererBackend Renderer::backend() const{
-        return RendererBackend::OpenGL;
-    }
-    Size Renderer::output_size(){
-        Size size;
-
-        BTK_GL_BEGIN();
-        SDL_GL_GetDrawableSize(window,&size.w,&size.h);
-        BTK_GL_END();
-        return size;
     }
     //Target
-    void Renderer::set_target(Texture &texture){
-        GLuint tex;
-        texture.native_handle(&tex);
-        auto size = texture.size();
-
-        BTK_GL_BEGIN();
-        //Flush it
-        end_frame();
-        //Make a framebuffer
-        device->buffer = new GL::FrameBuffer(size.w,size.h,tex);
+    void GLDevice::set_target(Context ctxt,TextureID id){
+        //Add new target
+        auto [w,h] = texture_size(ctxt,id);
+        targets_stack.emplace(w,h,id);
+        //Check is ok
+        if(not targets_stack.top().ok){
+            targets_stack.pop();
+            throwRendererError("Failed to set fbo");
+        }
         //Bind it
-        device->buffer->bind();
-        //Drawing at the texture
-        glViewport(0,0,size.w,size.h);
-        //ClearStencil
-        glClearStencil(0);
-        glClear(GL_STENCIL_BUFFER_BIT);
+        targets_stack.top().bind();
+    }
+    void GLDevice::reset_target(Context){
+        if(not targets_stack.empty()){
+            targets_stack.top().unbind();
+            targets_stack.pop();
+        }
+    }
+    GLTarget::GLTarget(int w,int h,GLuint tex){
+        this->tex = tex;
 
-        begin_frame(size.w,size.h,1);
-        //Make it flip
-        //Because opengl framebuffer's x,y begin at
-        //|
-        //|
-        //.here
+        //Save status
+        prev_fbo = GL::CurrentRBO();
+        prev_rbo = GL::CurrentFBO();
+        //Create ours fbo and rbo
+        glGenFramebuffers(1,&fbo);
+        glGenRenderbuffers(1,&rbo);
+        //Bind it
+        bind();
+        //Code from nanovg_gl_utils.h
+	    // combine all
+
+	    glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, w, h);
+	    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+	    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
         
-        save();
-        
-        nvgTranslate(nvg_ctxt,0,size.h);
-        nvgScale(nvg_ctxt,1,-1);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 
-        BTK_GL_END();
-    }
-    void Renderer::reset_target(){
-        BTK_GL_BEGIN();
-        //Flsuh the nanovg stack
-        restore();
-        end_frame();
-        //Bind the the screen
-        device->buffer->unbind();
-        delete device->buffer;
-        device->buffer = nullptr;
-        //Begin the new frame
-        begin();
+        #ifdef GL_DEPTH24_STENCIL8
+            // If GL_STENCIL_INDEX8 is not supported, try GL_DEPTH24_STENCIL8 as a fallback.
+            // Some graphics cards require a depth buffer along with a stencil.
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
-        BTK_GL_END();
-    }
-    void Renderer::make_current(){
-        SDL_GL_MakeCurrent(window,device->glctxt);
-    }
-    #if 0
-    //DumpTexture
-    PixBuf Renderer::dump_texture(const Texture &texture){
-        //Check the opengl context is actived
-        bool is_actived;
-        SDL_GLContext cur = SDL_GL_GetCurrentContext();
-        SDL_Window *cur_win;
-        if(cur == device){
-            is_actived = true;
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        #endif // GL_DEPTH24_STENCIL8
+                ok = false;
         }
-        else{
-            is_actived = false;
-            SDL_GL_MakeCurrent(window,device);
-            cur_win = SDL_GL_GetCurrentWindow();
-        }
-        //do our 
+        ok = true;
 
-
-        if(not is_actived){
-            //Reset to prev context
-            SDL_GL_MakeCurrent(cur_win,cur);
-        }
-    }
-    #endif
-    int  Renderer::set_viewport(const Rect *r){
-        Rect rect;
-        if(r == nullptr){
-            rect.x = 0;
-            rect.y = 0;
-            SDL_GetWindowSize(window,&rect.w,&rect.h);
-        }
-        else if(r->empty()){
-            rect.x = 0;
-            rect.y = 0;
-            SDL_GetWindowSize(window,&rect.w,&rect.h);
-        }
-        else{
-            rect = *r;
-        }
-        glViewport(rect.x,rect.y,rect.w,rect.h);
-        return glGetError() == GL_NO_ERROR ? 0 : 1;
-    }
-    Rect Renderer::get_viewport(){
-        return viewport;
-    }
-}
-//RendererDevice
-namespace Btk{
-    RendererDevice::RendererDevice(SDL_Window *win){
-        glctxt = SDL_GL_CreateContext(win);
-        if(glctxt == nullptr){
-            throwSDLError();
-        }
-        window = win;
-        
-        //Failed to create
-        if(glctxt == nullptr){
-            throwSDLError();
-        }
-        SDL_GL_MakeCurrent(window,glctxt);
-
-        #ifdef BTK_NEED_GLAD
-        //Init glad
-        static bool glad_wasinit = false;
-        if(not glad_wasinit){
-            if(BtkLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress))){
-                glad_wasinit = true;
-            }
-        }
-        #endif
-
-        //Get fbo and rbo
-
-        GLint fbo,rbo;
-
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING,&fbo);
-        glGetIntegerv(GL_RENDERBUFFER_BINDING,&rbo);
-
-        screen_fbo = fbo;
-        screen_rbo = rbo;
-
-        BTK_LOGINFO("Create OpenGL Device version:%s",glGetString(GL_VERSION));
-        //Makeframebuffer
-    }
-    RendererDevice::~RendererDevice(){
-        if(glctxt != nullptr){
-            delete buffer;
-            SDL_GL_DeleteContext(glctxt);
-        }
+        unbind();
     }
 }
 //GLCanvas
@@ -579,6 +687,9 @@ namespace Btk{
         //End the frame
         //nvgEndFrame(ctxt);
         //Restore prev ViewPort
+        if(render.backend() != RendererBackend::OpenGL){
+            return;
+        }
         render.end_frame();
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT,viewport);

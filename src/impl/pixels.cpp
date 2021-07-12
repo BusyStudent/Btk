@@ -124,12 +124,26 @@ namespace Btk{
             throwSDLError();
         }
         return surf;
-
     }
     void PixBuf::bilt(const PixBuf &buf,const Rect *src,Rect *dst){
-        
         if(SDL_BlitSurface(buf.get(),src,surf,dst) != 0){
             throwSDLError();
+        }
+    }
+    void PixBuf::begin_mut(){
+        if(empty()){
+            return;
+        }
+        if(surf->refcount != 1){
+            //Copy it and unref
+            SDL_Surface *new_surf = SDL_DuplicateSurface(
+                surf
+            );
+            if(new_surf == nullptr){
+                throwSDLError();
+            }
+            SDL_FreeSurface(surf);
+            surf = new_surf;
         }
     }
     //static method

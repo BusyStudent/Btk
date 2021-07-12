@@ -56,7 +56,6 @@ namespace Btk{
             void add_string(u8string_view);
             //Font  tb_font;//Text Font
             float ptsize;//< Font ptsize
-            Theme theme;
             
             std::u16string tb_text;//Text
             //PixBuf  tb_buf;//Rendered text

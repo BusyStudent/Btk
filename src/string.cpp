@@ -253,6 +253,32 @@ namespace Btk{
         iconv_string<std::string>(iconv,s.base(),static_cast<const char *>(buf),n);
         return s;
     }
+    void u8string::append_vfmt(const char *fmt,std::va_list varg){
+        int strsize;
+        //Get the size of the string
+        va_list v;
+        va_copy(v,varg);
+
+        #ifdef _WIN32
+        strsize = _vscprintf(fmt,v);
+        #else
+        strsize = vsnprintf(nullptr,0,fmt,v);
+        #endif
+        va_end(v);
+        
+        //Get the '\0'
+        size_t length = base().length();
+        base().resize(strsize + base().size());
+
+        char *end = &base()[length];
+        //start formatting
+        vsprintf(end,fmt,varg);
+
+    }
+    void u8string::append_from(const void *buf,size_t n,const char *encoding){
+        IconvHolder i("UTF-8",encoding);
+        iconv_string<std::string>(i,base(),static_cast<const char*>(buf),n);
+    }
 }
 namespace Btk{
     u16string u8string_view::to_utf16() const{

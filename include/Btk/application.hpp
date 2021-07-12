@@ -28,6 +28,14 @@ namespace Btk{
              */
             bool notify(u8string_view title = {},u8string_view msg = {});
             bool mainloop();
+            /**
+             * @brief OpenURL in the user's preferred application
+             * 
+             * @param url 
+             * @return true 
+             * @return false 
+             */
+            bool openurl(u8string_view url);
             int  run();
             /**
              * @brief Get the signal which will be emit 

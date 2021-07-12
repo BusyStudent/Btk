@@ -24,16 +24,23 @@ namespace Btk{
      * @brief Class for set or get the color from it
      * 
      */
+    template<class T>
     struct _PaletteProxy{
-        Palette *palette;
+        T *palette;
         u8string_view key;
         /**
          * @brief load the color
          * 
          * @return Color 
          */
-        operator Color() const;
-        void operator =(Color c) const;
+        operator Color() const{
+            return palette->get(key);
+        }
+
+        template<class C>
+        void operator =(C &&c) const{
+            return palette->set(key,std::forward<C>(c));
+        }
     };
 
     /**
@@ -47,7 +54,7 @@ namespace Btk{
             Palette(Palette &&);
             ~Palette();
 
-            using Proxy = _PaletteProxy;
+            using Proxy = _PaletteProxy<Palette>;
 
 
             void  set(u8string_view key,Color c);
@@ -84,13 +91,6 @@ namespace Btk{
             std::map<u8string,Color> colors;
         friend BTKAPI std::ostream &operator <<(std::ostream &,const Palette &);
     };
-
-    inline _PaletteProxy::operator Color() const{
-        return palette->get(key);
-    }
-    inline void _PaletteProxy::operator =(Color c) const{
-        palette->set(key,c);
-    }
 
     class BTKAPI Theme{
         public:
@@ -148,7 +148,7 @@ namespace Btk{
              * @param v 
              * @return decltype(auto) 
              */
-            decltype(auto) operator [](u8string_view v){
+            decltype(auto) operator [](u8string_view v) const{
                 return normal()[v];
             }
             Theme &operator =(const Theme &t);
@@ -164,6 +164,9 @@ namespace Btk{
             }
             void set_font_name(u8string_view name){
                 ptr->font = name;
+            }
+            bool empty() const noexcept{
+                return ptr == nullptr;
             }
             /**
              * @brief Create an empty theme

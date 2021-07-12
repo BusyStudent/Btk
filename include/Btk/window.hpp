@@ -7,6 +7,7 @@
 #include <cstdio>
 namespace Btk{
     class WindowImpl;
+    class Container;
     class PixBuf;
     class Widget;
     class Event;
@@ -228,6 +229,7 @@ namespace Btk{
              * 
              */
             void dump_tree(FILE *output = stderr) const;
+            Container &container() const;
         private:
             WindowImpl *pimpl;
             Uint32 winid;

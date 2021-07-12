@@ -193,12 +193,17 @@ namespace Btk{
         }
     };
     inline FPoint FRect::center() const noexcept{
-        float _x = (x + w) / 2;
-        float _y = (y + h) / 2;
+        float _x = x + w / 2;
+        float _y = y + h / 2;
         return {_x,_y};
     }
     inline FPoint Rect::center() const noexcept{
        return FRect(*this).center();
+    }
+
+    //Utils
+    inline bool PointInCircle(const FPoint &center,float r,const FPoint &point){
+        return center.distance(point) <= r;
     }
 
     BTKAPI std::ostream &operator <<(std::ostream&,const Rect &);

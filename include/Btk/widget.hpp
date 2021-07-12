@@ -4,6 +4,8 @@
 #include <list>
 #include "function.hpp"
 #include "signal.hpp"
+#include "themes.hpp"
+#include "font.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
 namespace Btk{
@@ -75,6 +77,9 @@ namespace Btk{
              */
             virtual bool handle(Event &);
             virtual void set_rect(const Rect &rect);
+            //Hide and show
+            void hide();
+            void show();
 
             bool visible() const noexcept{
                 return not attr.hide;
@@ -175,23 +180,32 @@ namespace Btk{
              */
             Renderer *renderer() const;
             /**
-             * @brief Get the default font
-             * 
-             * @return Font 
-             */
-            Font default_font() const;
-            /**
-             * @brief Get the theme of the current window
-             * 
-             * @return Theme& 
-             */
-            Theme &window_theme() const;
-            /**
              * @brief Find children by position
              * 
              * @return Widget* 
              */
             Widget *find_children(const Vec2 position) const;
+            /**
+             * @brief Set theme and font from parent
+             * 
+             */
+            void inhert_style();
+
+            const Font &font() const noexcept{
+                return _font;
+            }
+            const Theme &theme() const noexcept{
+                return _theme;
+            }
+
+            void set_font(const Font &font){
+                _font = font;
+                redraw();
+            }
+            void set_theme(const Theme &theme){
+                _theme = theme;
+                redraw();
+            }
         public:
             //Event Handle Method,It will be called in Widget::handle()
             /**
@@ -213,8 +227,10 @@ namespace Btk{
 
             std::list<Widget*> childrens;
         private:
-             void dump_tree_impl(FILE *output,int depth);
+            void dump_tree_impl(FILE *output,int depth);
 
+            Font _font;
+            Theme _theme;
             Widget *_parent = nullptr;//< Parent
             mutable WindowImpl *_window = nullptr;//<Window pointer
         friend class Window;

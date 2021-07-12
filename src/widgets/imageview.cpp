@@ -4,7 +4,6 @@
 
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/render.hpp>
-#include <Btk/impl/debug.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>

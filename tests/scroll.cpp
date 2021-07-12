@@ -1,3 +1,4 @@
+#include <Btk/progressbar.hpp>
 #include <Btk/scrollbar.hpp>
 #include <Btk.hpp>
 int main(){
@@ -6,5 +7,12 @@ int main(){
     auto &bar = win.add<Btk::ScrollBar>(Btk::Orientation::V);
     auto &bar1 = win.add<Btk::ScrollBar>(Btk::Orientation::H);
     // bar.set_rect({0,0,600,10});
+    auto &b = win.add<Btk::ProgressBar>();
+    b.set_rect(0,0,200,20);
+
+    bar.signal_moved().connect([&b](int v){
+        b.set_value(v);
+    });
+
     win.mainloop();
 }

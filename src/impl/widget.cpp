@@ -45,6 +45,11 @@ namespace Btk{
         this->_parent = parent;
         //Reset the cache
         _window = nullptr;
+
+        //Inhert style if empty
+        if(_theme.empty() and _font.empty()){
+            inhert_style();
+        }
     }
     void Widget::set_rect(const Rect &rect){
         this->rect = rect;    
@@ -75,19 +80,6 @@ namespace Btk{
             return nullptr;
         }
         return &(window()->render);
-    }
-    //Get the default font
-    //TODO create a global default font
-    Font Widget::default_font() const{
-        BTK_ASSERT(parent() != nullptr);
-        //return window()->font();
-        throwRuntimeError("Unimpl yet");
-    }
-    Theme &Widget::window_theme() const{
-        if(window() == nullptr){
-            return Themes::GetDefault();
-        }
-        return window()->theme;
     }
     //Try to find the window
     WindowImpl *Widget::window() const noexcept{
@@ -136,6 +128,37 @@ namespace Btk{
             ch->dump_tree_impl(output,depth + 1);
         }
     }
+    //Hide and show
+    void Widget::hide(){
+        attr.hide = true;
+        Event event(Event::Hide);
+        handle(event);
+    }
+    void Widget::show(){
+        attr.hide = false;
+        Event event(Event::Show);
+        handle(event);
+    }
+
+    void Widget::inhert_style(){
+        if(parent() != nullptr){
+            if( not parent()->_font.empty() and 
+                not parent()->_theme.empty()){
+                //Use parent
+                set_font(parent()->font());
+                set_theme(parent()->theme());
+                return;
+            }
+        }
+        if(window() != nullptr){
+            //User window
+            set_font(window()->font());
+            set_theme(window()->theme());
+            return;
+        }
+        set_theme(Themes::GetDefault());
+        set_font(Font(theme().font_name(),theme().font_size()));
+    }
     bool Container::add(Widget *w){
         if(w == nullptr){
             return false;
@@ -178,6 +201,7 @@ namespace Btk{
     }
 }
 namespace Btk{
+    //TODO Improve The Event dispatch
     /**
      * @brief Dispatch event to widget
      * 
@@ -201,6 +225,14 @@ namespace Btk{
         }
     }
     bool Group::handle(Event &event){
+        //Broadcast to all widgets
+        if(event.is_broadcast()){
+            //Dispatch to children
+            for(auto widget:childrens){
+                widget->handle(event);
+            }
+            return true;
+        }
         if(Widget::handle(event)){
             return true;
         }
@@ -214,12 +246,6 @@ namespace Btk{
             default:
                 break;
         }
-        //Dispatch to children
-        // for(auto widget:childrens){
-        //     if(widget->handle(event)){
-        //         return true;
-        //     }
-        // }
         return false;
     }
     bool Group::handle_drag(DragEvent &event){
@@ -307,6 +333,10 @@ namespace Btk{
                 cur_widget->handle(levent);
             }
         }
+        if(not cur_widget->visible()){
+            //The widget is hided
+            return false;
+        }
         //Dispatch the motion
         return cur_widget->handle(event);
     }
@@ -330,13 +360,23 @@ namespace Btk{
                 }
             }
         }
+        if(not cur_widget->visible()){
+            //The widget is hided
+            return false;
+        }
         return dispatch_to_widget(cur_widget,event);
     }
     bool Group::handle_keyboard(KeyEvent &event){
+        if(focus_widget == nullptr){
+            return dispatch_to_widget(cur_widget,event);
+        }
         return dispatch_to_widget(focus_widget,event);
     }
     bool Group::handle_wheel(WheelEvent &event){
         //TODO Add Wheel focus there
+        if(focus_widget == nullptr){
+            return dispatch_to_widget(cur_widget,event);
+        }
         return dispatch_to_widget(focus_widget,event);
     }
     bool Group::handle_textinput(TextInputEvent &event){

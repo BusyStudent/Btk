@@ -12,6 +12,7 @@
 #include <Btk/label.hpp>
 #include <iostream>
 using Btk::Button;
+using Btk::RadioButton;
 using Btk::Label;
 using Btk::Event;
 using Btk::TextBox;
@@ -40,6 +41,9 @@ struct Hello:public Btk::Window{
     Button *defc_btn;
     Button *fsc_btn;// full screen
     Button *dmp_btn;
+
+    RadioButton *rad_btn;
+
     TextBox *tbox;
     ImageView *img_view;
     
@@ -55,10 +59,13 @@ Hello::Hello():Window("Hello",500,500){
     defc_btn = new Button("DeferCall");
     fsc_btn = new Button("FullScreen");
     dmp_btn = new Button("Dump Object Tree");
+    rad_btn = new RadioButton("RadioButton");
     
     img_view = new ImageView();
 
     auto group = new Btk::Group;
+
+    add(group);
 
     group->add(close_btn);
     group->add(seticon_btn);
@@ -68,8 +75,8 @@ Hello::Hello():Window("Hello",500,500){
     group->add(fsc_btn);
     group->add(img_view);
     group->add(dmp_btn);
+    group->add(rad_btn);
 
-    add(group);
     //Set the position
     close_btn->set_rect(0,0,100,40);
     seticon_btn->set_rect(100,100,300,40);
@@ -79,6 +86,7 @@ Hello::Hello():Window("Hello",500,500){
     defc_btn->set_rect(400,100,100,40);
     img_view->set_rect(0,160,500,370);
     dmp_btn->set_rect(0,40,200,40);
+    rad_btn->set_rect(200,40,200,40);
     //Connect this signal
     //close_btn->signal_clicked().connect(&Hello::onclose,this);
     //Test HasSlots::connect

@@ -9,6 +9,10 @@
 #include "defs.hpp"
 #include "rect.hpp"
 struct SDL_Surface;
+
+#define BTK_MAKE_FMT(NAME) static constexpr Uint32 NAME = \
+    SDL_PIXELFORMAT_##NAME
+
 namespace Btk{
     class RWops;
     class Renderer;
@@ -153,6 +157,11 @@ namespace Btk{
             //Set RLE
             void set_rle(bool val = true);
             /**
+             * @brief Make sure the pixbuf is unique
+             * 
+             */
+            void begin_mut();
+            /**
              * @brief Convert a pixbuf's format
              * 
              * @param fmt The format
@@ -187,7 +196,23 @@ namespace Btk{
     struct PixelFormat{
         PixelFormat() = default;
         PixelFormat(Uint32 val):fmt(val){}
-        
+
+        BTK_MAKE_FMT(UNKNOWN);
+        BTK_MAKE_FMT(RGB332);
+        BTK_MAKE_FMT(RGB555);
+        BTK_MAKE_FMT(BGR555);
+        BTK_MAKE_FMT(RGB565);
+        BTK_MAKE_FMT(RGBA32);
+
+        //YUV
+        BTK_MAKE_FMT(YV12);
+        BTK_MAKE_FMT(IYUV);
+        BTK_MAKE_FMT(YUY2);
+        BTK_MAKE_FMT(YVYU);
+        BTK_MAKE_FMT(UYVY);
+        BTK_MAKE_FMT(NV12);
+        BTK_MAKE_FMT(NV21);
+
         operator Uint32() const noexcept{
             return fmt;
         }
@@ -273,6 +298,7 @@ namespace Btk{
     // }
     BTK_FLAGS_OPERATOR(TextureFlags,int);
     //RendererTexture
+    using TextureID = int;
     class BTKAPI Texture{
         public:
             /**
@@ -407,6 +433,15 @@ namespace Btk{
              * @param pixbuf 
              */
             void update(const PixBuf &pixbuf);
+            
+            void update_yuv(
+                const Rect *rect,
+                const Uint8 *y_plane, int y_pitch,
+                const Uint8 *u_plane, int u_pitch,
+                const Uint8 *v_plane, int v_pitch,
+                void *convert_buf = nullptr
+            );
+
             void clear();
             /**
              * @brief Get the texture's native handler,

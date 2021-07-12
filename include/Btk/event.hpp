@@ -25,6 +25,7 @@ namespace Btk{
                 Motion = 4,//Mouse motion in Widget
                 //MouseEvent
                 Click = 5,//Mouse Click
+                Mouse = 5,
 
                 DragBegin = 6,//The drag is begin
                 Drag = 7,//Is draging now
@@ -47,6 +48,14 @@ namespace Btk{
                 WindowLeave = 16,//The mouse leave the window
                 Resize = 17,//< The widget is be resized
 
+                //Drop
+                DropBegin = 18,
+                DropEnd = 19,
+                Drop = 20,
+                //Hide / Show
+                Hide = 21,
+                Show = 22,
+
                 User = 10000,
                 UserMax = UINT32_MAX - 1,
                 Error = UINT32_MAX
@@ -63,10 +72,12 @@ namespace Btk{
         public:
             Event(Type t):
                 _type(t),
-                _accepted(false){};
+                _accepted(false),
+                _broadcast(false){};
             Event(const Event &ev):
                 _type(ev._type),
-                _accepted(false){};
+                _accepted(false),
+                _broadcast(ev._broadcast){};
             virtual ~Event() = default;
             /**
              * @brief is accepted
@@ -79,6 +90,12 @@ namespace Btk{
             }
             bool is_rejected() const noexcept{
                 return not _accepted;
+            }
+            bool is_broadcast() const noexcept{
+                return _broadcast;
+            }
+            void set_broadcast(bool val = true) noexcept{
+                _broadcast = val;
             }
             /**
              * @brief Accept the event
@@ -111,6 +128,7 @@ namespace Btk{
             //Event type
             Type _type;
             bool _accepted;
+            bool _broadcast;
         friend class Window;
     };
     /**
@@ -324,6 +342,21 @@ namespace Btk{
         Uint32 which;//< Which mouse
         Sint64 x;//< Vertical scroll,postive for scroll right
         Sint64 y;//< Horizontal scroll,postive for scroll up
+    };
+    /**
+     * @brief A event of drog
+     * 
+     */
+    struct BTKAPI DropEvent:public Event{
+        DropEvent(Type t):Event(t){};
+        DropEvent(const DropEvent &) = default;
+        ~DropEvent() = default;
+
+        enum {
+            File,
+            Text
+        }type;
+        u8string_view text;
     };
     /**
      * @brief a generic struct for updating data

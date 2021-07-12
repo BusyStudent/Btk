@@ -7,6 +7,12 @@
 #include <type_traits>
 #include <cstdarg>
 #include "defs.hpp"
+
+#ifdef _WIN32
+    #include <ostream>
+#endif
+
+
 /**
  * @brief Macro to generate operator
  * 
@@ -410,6 +416,7 @@ namespace Btk{
     class BTKAPI u8string:protected std::string{
         public:
             u8string();
+            u8string(std::string &&);
             u8string(const std::string &);
             u8string(u8string_view view);
             u8string(std::string_view view);
@@ -525,6 +532,16 @@ namespace Btk{
             std::string to_locale() const{
                 return u8string_view(*this).to_locale();
             }
+
+            void append_from(const void *buf,size_t n,const char *encoding);
+            /**
+             * @brief Append string by formatting
+             * 
+             * @param fmt 
+             * @param varg 
+             */
+            void append_vfmt(const char *fmt,std::va_list varg);
+            void append_fmt(const char *fmt,...);
 
             CharProxy      operator [](size_type index){
                 return at(index);
@@ -758,6 +775,9 @@ namespace Btk{
     inline u8string::u8string(const std::string &s):
         std::string(s){
     }
+    inline u8string::u8string(std::string &&s):
+        std::string(std::move(s)){
+    }
     inline u8string::u8string(const_iterator beg,const_iterator end):
         std::string(beg._beg,end._end){
 
@@ -776,6 +796,12 @@ namespace Btk{
     }
     inline u16string u8string::to_utf16() const{
         return u8string_view(*this).to_utf16();   
+    }
+    inline void u8string::append_fmt(const char *fmt,...){
+        va_list varg;
+        va_start(varg,fmt);
+        append_vfmt(fmt,varg);
+        va_end(varg);
     }
     //u8string_view
     inline u8string_view::u8string_view(const std::string &s):
@@ -975,6 +1001,22 @@ namespace Btk{
         va_end(l);
         return r;
     }
+    /**
+     * @brief Convert a number to string
+     * 
+     * @tparam T 
+     * @tparam _Cond 
+     * @param value 
+     * @return u8string 
+     */
+    template<
+        class T,
+        typename _Cond = std::enable_if_t<std::is_arithmetic_v<T>>
+    >
+    u8string ToString(const T &value){
+        return std::to_string(value);
+    }
+
     using StringList = u8string_view::List;
     using StringRefList = u8string_view::RefList;
 
