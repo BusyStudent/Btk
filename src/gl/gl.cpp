@@ -1,5 +1,6 @@
 #include "../build.hpp"
 
+#include <Btk/impl/core.hpp>
 #include <Btk/gl/gl.hpp>
 #include <Btk/Btk.hpp>
 #include <SDL2/SDL.h>
@@ -21,7 +22,6 @@ namespace Btk::GL{
         SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
@@ -37,6 +37,14 @@ namespace Btk::GL{
             AtExit(GL::Quit);
         }
         #endif
+        //Register our Device
+        RegisterDevice([](SDL_Window *win) -> RendererDevice*{
+            //Check is OpenGL Window
+            if((SDL_GetWindowFlags(win) & SDL_WINDOW_OPENGL) == SDL_WINDOW_OPENGL){
+                return new GLDevice(win);
+            }
+            return nullptr;
+        });
     }
     void Quit(){
         #ifdef BTK_NEED_GLAD

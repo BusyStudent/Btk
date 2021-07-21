@@ -17,12 +17,10 @@ namespace Btk{
     }
 }
 namespace Btk{
-    #if 0
     GridLayout::GridLayout() = default;
     GridLayout::~GridLayout() = default;
 
     void GridLayout::update(){
         
     }
-    #endif
 }

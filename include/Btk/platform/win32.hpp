@@ -3,11 +3,16 @@
 #define NOMINMAX
 #include <windows.h>
 #include <SDL2/SDL_events.h>
-#include <string>
 #include "../defs.hpp"
+#include "../string.hpp"
 #include "../exception.hpp"
 
 #undef MessageBox
+#undef LoadImage
+
+namespace Btk{
+    class WindowImpl;
+}
 
 namespace Btk{
 namespace Win32{
@@ -20,14 +25,14 @@ namespace Win32{
      * @param errcode Windows error code
      * @return std::string
      */
-    BTKAPI std::string   StrMessageA(DWORD errcode);
+    BTKAPI u8string  StrMessageA(DWORD errcode);
     /**
      * @brief Errcode to string
      * 
      * @param errcode Windows error code
      * @return std::u16string
      */
-    BTKAPI std::u16string StrMessageW(DWORD errcode);
+    BTKAPI u16string StrMessageW(DWORD errcode);
     /**
      * @brief Win32 native MessageBox
      * 
@@ -37,6 +42,14 @@ namespace Win32{
      * @return BTKAPI 
      */
     BTKAPI bool MessageBox(std::string_view title,std::string_view msg,int flag = 0);
+    /**
+     * @brief Get the Window object by hwnd
+     * 
+     * @param hwnd description
+     * 
+     * @return nullptr on error
+     */
+    BTKAPI WindowImpl *GetWindow(HWND hwnd);
 }
 }
 namespace Btk{

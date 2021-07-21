@@ -12,31 +12,6 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
-namespace{
-    //internal function to push event
-    using Btk::Event;
-    using Btk::Window;
-    using Btk::Widget;
-    using Btk::System;
-    using Btk::WindowImpl;
-    void internal_pushevent(Event *ev,WindowImpl *win,Widget *widget){
-        Uint32 winid = win->id();
-        SDL_Event sdl_ev;
-        SDL_zero(sdl_ev);
-
-        sdl_ev.type = Btk::Instance().dispatch_ev_id;
-        sdl_ev.user.timestamp = SDL_GetTicks();
-        sdl_ev.user.windowID = winid;
-        sdl_ev.user.data1 = ev;
-        sdl_ev.user.data2 = widget;
-
-        if(SDL_PushEvent(&sdl_ev) != 1){
-            //Queue is full or Something error happened
-            //delete it
-            delete ev;
-        }
-    }
-};
 namespace Btk{
     static std::atomic<Event::Type> current_type = Event::User;
     //Register a event
@@ -56,52 +31,15 @@ namespace Btk{
         }
         return current_type;
     }
-    //PushEvent in event queue
-    void PushEvent(Event *ev,Window &receiver){
-        if(ev != nullptr){
-            internal_pushevent(ev,receiver.impl(),nullptr);
-        }
-    }
-    void PushEvent(Event *ev,Widget &receiver){
-        if(ev != nullptr){
-            internal_pushevent(ev,receiver.window(),&receiver);
-        }
-    }
+
     //Send event directly
     bool SendEvent(Event &ev,Window &receiver){
-        return receiver.impl()->dispatch(ev);
+        return receiver.impl()->handle(ev);
     }
     bool SendEvent(Event &ev,Widget &receiver){
         return receiver.handle(ev);
     }
-    //Dispatch our event to window or widgets
-    void DispatchEvent(const SDL_Event &ev,void*){
-        WindowImpl *win = Instance().get_window_s(ev.user.windowID);
-        if(win == nullptr){
-            //Window is not exists
-            //ignore it
-            return;
-        }
-        Event *event = static_cast<Event*>(ev.user.data1);
-        Widget *widget = static_cast<Widget*>(ev.user.data2);
-        std::unique_ptr<Event> ptr(event);
-        if(widget == nullptr){
-            //Dispatch it on windows
-            win->dispatch(*event);
-        }
-        else{
-            //Dispatch it on Widgets
-            if(not widget->handle(*event)){
-                //It doesnnot accept it
-                if(not event->is_accepted()){
-                    if(not win->sig_event.empty()){
-                        win->sig_event(*event);
-                    }
-                }
-            }
-        }
-    }
-};
+}
 namespace Btk{
     //Another Event
     
@@ -169,6 +107,34 @@ namespace Btk{
         ev.keymode = static_cast<Keymode>(event.keysym.mod);
 
         ev.repeat = event.repeat;
+        return ev;
+    }
+    DropEvent TranslateEvent(const SDL_DropEvent &event){
+        Event::Type type;
+        DropEvent ev(Event::None);
+
+        switch(event.type){
+            case SDL_DROPBEGIN:
+                ev.set_type(Event::DropBegin);
+                BTK_LOGINFO("DropBegin");
+                break;
+            case SDL_DROPCOMPLETE:
+                ev.set_type(Event::DropEnd);
+                BTK_LOGINFO("DropEnd");
+                break;
+            case SDL_DROPFILE:
+                ev.set_type(Event::DropFile);
+                ev.text = event.file;
+                BTK_LOGINFO("DropFile");
+                break;
+            case SDL_DROPTEXT:
+                ev.set_type(Event::DropText);
+                ev.text = event.file;
+                BTK_LOGINFO("DropText");
+                break;
+            default:
+                BTK_ASSERT(!"");
+        }
         return ev;
     }
 };

@@ -1,14 +1,19 @@
 #if !defined(_BTK_PIXELS_HPP_)
 #define _BTK_PIXELS_HPP_
-#include <string_view>
 #include <cstdlib>
 #include <cstddef>
 #include <iosfwd>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_surface.h>
+#include "string.hpp"
+#include "rwops.hpp"
 #include "defs.hpp"
 #include "rect.hpp"
 struct SDL_Surface;
+
+#define BTK_MAKE_FMT(NAME) static constexpr Uint32 NAME = \
+    SDL_PIXELFORMAT_##NAME
+
 namespace Btk{
     class RWops;
     class Renderer;
@@ -81,7 +86,7 @@ namespace Btk{
             PixBuf(SDL_Surface *s = nullptr):surf(s){};//empty 
             PixBuf(int w,int h,Uint32 format);//Create a buffer
             //LoadFromFile
-            PixBuf(std::string_view file);
+            PixBuf(u8string_view file);
             //Move construct
             PixBuf(const PixBuf &) = delete;
             PixBuf(PixBuf && s){
@@ -102,9 +107,9 @@ namespace Btk{
             void save_jpg(RWops &,int quality);
             void save_bmp(RWops &);
 
-            void save_png(std::string_view fname,int quality);
-            void save_jpg(std::string_view fname,int quality);
-            void save_bmp(std::string_view fname);
+            void save_png(u8string_view fname,int quality);
+            void save_jpg(u8string_view fname,int quality);
+            void save_bmp(u8string_view fname);
             
             PixBuf &operator =(SDL_Surface *);//assign
             PixBuf &operator =(PixBuf &&);//assign
@@ -153,6 +158,11 @@ namespace Btk{
             //Set RLE
             void set_rle(bool val = true);
             /**
+             * @brief Make sure the pixbuf is unique
+             * 
+             */
+            void begin_mut();
+            /**
              * @brief Convert a pixbuf's format
              * 
              * @param fmt The format
@@ -172,7 +182,7 @@ namespace Btk{
              */
             void bilt(const PixBuf &buf,const Rect *src,Rect *dst);
             //Some static method to load image
-            static PixBuf FromFile(std::string_view file);
+            static PixBuf FromFile(u8string_view file);
             static PixBuf FromFile(FILE *f);
             static PixBuf FromMem(const void *mem,size_t size);
             static PixBuf FromRWops(RWops &);
@@ -187,7 +197,23 @@ namespace Btk{
     struct PixelFormat{
         PixelFormat() = default;
         PixelFormat(Uint32 val):fmt(val){}
-        
+
+        BTK_MAKE_FMT(UNKNOWN);
+        BTK_MAKE_FMT(RGB332);
+        BTK_MAKE_FMT(RGB555);
+        BTK_MAKE_FMT(BGR555);
+        BTK_MAKE_FMT(RGB565);
+        BTK_MAKE_FMT(RGBA32);
+
+        //YUV
+        BTK_MAKE_FMT(YV12);
+        BTK_MAKE_FMT(IYUV);
+        BTK_MAKE_FMT(YUY2);
+        BTK_MAKE_FMT(YVYU);
+        BTK_MAKE_FMT(UYVY);
+        BTK_MAKE_FMT(NV12);
+        BTK_MAKE_FMT(NV21);
+
         operator Uint32() const noexcept{
             return fmt;
         }
@@ -229,7 +255,7 @@ namespace Btk{
                 );
             };
             //Get its name
-            std::string_view name() const;
+            u8string_view name() const;
             SDL_PixelFormat *operator ->() const noexcept{
                 return fmt;
             }
@@ -265,13 +291,15 @@ namespace Btk{
         Nearest			 = 1<<5,	 // Image interpolation is Nearest instead Linear
     };
     //TextureFlags operators
-    inline TextureFlags operator |(TextureFlags a,TextureFlags b){
-        return static_cast<TextureFlags>(int(a) | int(b));
-    }
-    inline TextureFlags operator +(TextureFlags a,TextureFlags b){
-        return static_cast<TextureFlags>(int(a) | int(b));
-    }
+    // inline TextureFlags operator |(TextureFlags a,TextureFlags b){
+    //     return static_cast<TextureFlags>(int(a) | int(b));
+    // }
+    // inline TextureFlags operator +(TextureFlags a,TextureFlags b){
+    //     return static_cast<TextureFlags>(int(a) | int(b));
+    // }
+    BTK_FLAGS_OPERATOR(TextureFlags,int);
     //RendererTexture
+    using TextureID = int;
     class BTKAPI Texture{
         public:
             /**
@@ -406,6 +434,15 @@ namespace Btk{
              * @param pixbuf 
              */
             void update(const PixBuf &pixbuf);
+            
+            void update_yuv(
+                const Rect *rect,
+                const Uint8 *y_plane, int y_pitch,
+                const Uint8 *u_plane, int u_pitch,
+                const Uint8 *v_plane, int v_pitch,
+                void *convert_buf = nullptr
+            );
+
             void clear();
             /**
              * @brief Get the texture's native handler,
@@ -489,10 +526,77 @@ namespace Btk{
 
             GifImage &operator =(GifImage &&);
             static GifImage FromRwops(RWops &);
-            static GifImage FromFile(std::string_view fname);
+            static GifImage FromFile(u8string_view fname);
         private:
             void *pimpl;
     };
+    /**
+     * @brief Decoder Interface like WIC
+     * 
+     */
+    class ImageDecoder{
+        public:
+            virtual inline ~ImageDecoder(){};
+
+            /**
+             * @brief Get information of images
+             * 
+             * 
+             * @param p_n_frame Point to the count of frames
+             * @param p_size Point to size
+             */
+            virtual void query_info(
+                size_t *p_n_frame,
+                PixelFormat *p_fmt
+            ) = 0;
+            virtual void query_frame(
+                size_t frame_index
+            ) = 0;
+            virtual void read_pixels(
+                size_t frame_index,
+                void *pixelss
+            ) = 0;
+            /**
+             * @brief Open a stream
+             * 
+             * @param rwops The point to SDL_RWops
+             * @param autoclose Should we close the SDL_RWops when the stream is closed
+             */
+            virtual void open(SDL_RWops *rwops,bool autoclose = false) = 0;
+            /**
+             * @brief Close the stream
+             * 
+             */
+            virtual void close() = 0;
+
+            void open(RWops &rwops){
+                open(rwops.get());
+            }
+
+            PixelFormat image_format(){
+                PixelFormat fmt;
+                query_info(nullptr,&fmt);
+                return fmt;
+            }
+
+
+            //Create by type and vendor
+            static ImageDecoder *Create(u8string_view type,u8string_view vendor = {});
+        private:
+            SDL_RWops *fstream = nullptr;
+            bool       auto_close = false;
+    };
+    //TODO
+    class ImageEncoder{
+
+    };
+    /**
+     * @brief Convert string to color
+     * 
+     * @param text 
+     * @return BTKAPI 
+     */
+    BTKAPI Color ParseColor(u8string_view text);
     BTKAPI std::ostream &operator <<(std::ostream &,Color c);
 };
 

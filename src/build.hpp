@@ -11,6 +11,7 @@
 //Is sourse
 #define _BTK_SOURCE
 #include <Btk/defs.hpp>
+#include <Btk/string.hpp>
 
 #if defined(_MSC_VER)
     //MSVC
@@ -27,9 +28,13 @@
 #ifndef NDEBUG
     #define BTK_LOGINFO(...) SDL_Log(__VA_ARGS__)
     #define BTK_LOGWARN(...) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,__VA_ARGS__)
+    #define BTK_LOGDEBUG(...) SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION,__VA_ARGS__)
+    #define BTK_DEBUG(...) __VA_ARGS__
 #else
     #define BTK_LOGINFO(...)
     #define BTK_LOGWARN(...)
+    #define BTK_DEBUG(...)
+    #define BTK_LOGDEBUG(...)
 #endif
 //Assert
 #ifndef NDEBUG
@@ -41,7 +46,7 @@
     #define BTK_ASSERT(EXP) 
 #endif
 
-
+#define BTK_UNIMPLEMENTED() Btk::throwRuntimeError("unimplemented")
 
 #ifndef NDEBUG
 /**
@@ -93,7 +98,7 @@ namespace Btk{
      * @param info The typeinfo
      * @return The name of the typeinfo(no demangled)
      */
-    inline std::string get_typename(const std::type_info &info){
+    inline u8string get_typename(const std::type_info &info){
         #ifdef __GNUC__
         char *ret = abi::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
         if(ret == nullptr){
@@ -101,7 +106,7 @@ namespace Btk{
             return info.name();
         }
         else{
-            std::string name(ret);
+            u8string name(ret);
             free(ret);
             return name;
         }
@@ -110,7 +115,7 @@ namespace Btk{
         #endif
     }
     template<class T>
-    inline std::string get_typename(const T *ptr){
+    inline u8string get_typename(const T *ptr){
         return get_typename(typeid(*ptr));
     }
     /**
@@ -120,28 +125,32 @@ namespace Btk{
      * @param ... The args you want to format
      * @return std::string 
      */
-    inline std::string cformat(const char *fmt,...){
-        int strsize;
+    inline u8string cformat(const char *fmt,...){
+        // int strsize;
 
-        //Get the size of the string
+        // //Get the size of the string
+        // va_list varg;
+        // va_start(varg,fmt);
+        // #ifdef _WIN32
+        // strsize = _vscprintf(fmt,varg);
+        // #else
+        // strsize = vsnprintf(nullptr,0,fmt,varg);
+        // #endif
+        // va_end(varg);
+        
+        // u8string str;
+        // str.resize(strsize);
+
+        // //start formatting
+        // va_start(varg,fmt);
+        // vsprintf(&str[0],fmt,varg);
+        // va_end(varg);
+
         va_list varg;
         va_start(varg,fmt);
-        #ifdef _WIN32
-        strsize = _vscprintf(fmt,varg);
-        #else
-        strsize = vsnprintf(nullptr,0,fmt,varg);
-        #endif
+        u8string s = u8vformat(fmt,varg);
         va_end(varg);
-        
-        std::string str;
-        str.resize(strsize);
-
-        //start formatting
-        va_start(varg,fmt);
-        vsprintf(&str[0],fmt,varg);
-        va_end(varg);
-
-        return str;
+        return s;
     }
     /**
      * @brief Append text to the string
@@ -150,25 +159,30 @@ namespace Btk{
      * @param fmt The c-style fmt string
      * @param ... The args you want to format
      */
-    inline void cformat(std::string &str,const char *fmt,...){
-        int strsize;
-        //Get the size of the string
+    inline void cformat(u8string &str,const char *fmt,...){
+        // int strsize;
+        // //Get the size of the string
+        // va_list varg;
+        // va_start(varg,fmt);
+        // #ifdef _WIN32
+        // strsize = _vscprintf(fmt,varg);
+        // #else
+        // strsize = vsnprintf(nullptr,0,fmt,varg);
+        // #endif
+        // va_end(varg);
+        // //Get the '\0'
+        // size_t length = str.length();
+        
+        // str.resize(strsize + str.size());
+        // char *end = &str[length];
+        // //start formatting
+        // va_start(varg,fmt);
+        // vsprintf(end,fmt,varg);
+        // va_end(varg);
+        
         va_list varg;
         va_start(varg,fmt);
-        #ifdef _WIN32
-        strsize = _vscprintf(fmt,varg);
-        #else
-        strsize = vsnprintf(nullptr,0,fmt,varg);
-        #endif
-        va_end(varg);
-        //Get the '\0'
-        size_t length = str.length();
-        
-        str.resize(strsize + str.size());
-        char *end = &str[length];
-        //start formatting
-        va_start(varg,fmt);
-        vsprintf(end,fmt,varg);
+        str.append_vfmt(fmt,varg);
         va_end(varg);
     }
 };

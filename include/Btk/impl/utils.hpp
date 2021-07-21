@@ -3,6 +3,7 @@
 //This headers provide some utils
 #include <SDL2/SDL_events.h>
 #include "../utils/mem.hpp"
+#include "../string.hpp"
 #include "../widget.hpp"
 #include "../event.hpp"
 #include "../rect.hpp"
@@ -77,6 +78,7 @@ namespace Btk{
     MotionEvent TranslateEvent(const SDL_MouseMotionEvent &event);
     MouseEvent  TranslateEvent(const SDL_MouseButtonEvent &event);
     WheelEvent  TranslateEvent(const SDL_MouseWheelEvent &event);
+    DropEvent   TranslateEvent(const SDL_DropEvent       &event);
     KeyEvent    TranslateEvent(const SDL_KeyboardEvent &event);
     
     TextInputEvent TranslateEvent(const SDL_TextInputEvent &event);
@@ -85,25 +87,25 @@ namespace Btk{
      * 
      * @return BTKAPI& 
      */
-    BTKAPI std::string&    InternalU8Buffer();
+    BTKAPI u8string& InternalU8Buffer();
     /**
      * @brief Internal Utf16 string buffer(thread_local)
      * 
      * @return BTKAPI& 
      */
-    BTKAPI std::u16string& InternalU16Buffer();
+    BTKAPI u16string& InternalU16Buffer();
     /**
      * @brief Fill the internal u8buffer(thread_local)
      * 
      * @param view 
      * @return std::string& 
      */
-    inline std::string& FillInternalU8Buffer(std::string_view view){
+    inline u8string& FillInternalU8Buffer(u8string_view view){
         auto &buf = InternalU8Buffer();
         buf = view;
         return buf;
     }
-    inline std::string& FillInternalU8Buffer(std::string &&text){
+    inline u8string& FillInternalU8Buffer(u8string &&text){
         auto &buf = InternalU8Buffer();
         buf = std::move(text);
         return buf;
@@ -114,7 +116,7 @@ namespace Btk{
      * @param view 
      * @return std::string& 
      */
-    inline std::string& FillInternalU8Buffer(std::u16string_view view){
+    inline u8string& FillInternalU8Buffer(u16string_view view){
         auto &buf = InternalU8Buffer();
         buf.clear();
         Utf16To8(buf,view);

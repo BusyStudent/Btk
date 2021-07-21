@@ -1,17 +1,28 @@
 #if !defined(_BTK_WINDOW_HPP_)
 #define _BTK_WINDOW_HPP_
-#include <string_view>
-#include <string>
-#include <cstdio>
+#include "string.hpp"
 #include "signal.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
+#include <cstdio>
 namespace Btk{
     class WindowImpl;
+    class Container;
     class PixBuf;
     class Widget;
     class Event;
     class Font;
+    enum class WindowFlags:Uint32{
+        None        = 0,
+        OpenGL      = 1 << 0,
+        Vulkan      = 1 << 1,
+        SkipTaskBar = 1 << 2,
+    };
+    /**
+     * @brief Class for describe native window
+     * 
+     */
+    class NativeWindow;
     /**
      * @brief A Basic Window 
      * 
@@ -22,7 +33,9 @@ namespace Btk{
             typedef Signal<bool()> SignalClose;
             typedef Signal<bool(Event&)> SignalEvent;
             typedef Signal<void(int w,int h)> SignalResize;
-            typedef Signal<void(std::string_view)> SignalDropFile;
+            typedef Signal<void(u8string_view)> SignalDropFile;
+            //Flags
+            using Flags = WindowFlags;
         public:
             Window():pimpl(nullptr){};
             Window(const Window &) = delete;
@@ -37,7 +50,14 @@ namespace Btk{
              * @param w The window width
              * @param h Thw window height
              */
-            Window(std::string_view title,int w,int h);
+            //Window(std::string_view title,int w,int h);
+            explicit Window(u8string_view title,int w,int h,Flags f = Flags::None);
+            /**
+             * @brief Construct a new Window object by native window handle
+             * 
+             * @param native_handle (reinterpret_cast<const NativeWindow*>(your_handle))
+             */
+            explicit Window(const NativeWindow *native_handle);
             /**
              * @brief Get window impl
              * 
@@ -137,13 +157,13 @@ namespace Btk{
              * 
              * @param title The new title
              */
-            void set_title(std::string_view title);
+            void set_title(u8string_view title);
             /**
              * @brief Set the icon 
              * 
              * @param file The image file name
              */
-            void set_icon(std::string_view file);
+            void set_icon(u8string_view file);
             /**
              * @brief Set the icon 
              * 
@@ -209,6 +229,7 @@ namespace Btk{
              * 
              */
             void dump_tree(FILE *output = stderr) const;
+            Container &container() const;
         private:
             WindowImpl *pimpl;
             Uint32 winid;
@@ -219,5 +240,14 @@ namespace Btk{
      * @return BTKAPI 
      */
     BTKAPI Size GetScreenSize(int display = 0);
+    inline WindowFlags operator +(WindowFlags a,WindowFlags b){
+        return WindowFlags(Uint32(a) | Uint32(b));
+    }
+    inline WindowFlags operator |(WindowFlags a,WindowFlags b){
+        return WindowFlags(Uint32(a) | Uint32(b));
+    }
+    inline WindowFlags operator &(WindowFlags a,WindowFlags b){
+        return WindowFlags(Uint32(a) & Uint32(b));
+    }
 }
 #endif // _BTK_WINDOW_HPP_

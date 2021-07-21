@@ -8,6 +8,7 @@
 #include <Btk/impl/atomic.hpp>
 #include <Btk/impl/scope.hpp>
 #include <Btk/window.hpp>
+#include <Btk/string.hpp>
 #include <Btk/button.hpp>
 #include <Btk/async.hpp>
 #include <Btk/Btk.hpp>
@@ -18,7 +19,7 @@ namespace Btk{
         //We use zenity or kdialog to impl it
         PStream pfd;
         //gen command line
-        std::string cmd("zenity --file-selection");
+        u8string cmd("zenity --file-selection");
         if(not title.empty()){
             cformat(cmd," --title '%s'",title.c_str());
         }

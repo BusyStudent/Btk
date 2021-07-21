@@ -1,9 +1,11 @@
 #include "../../build.hpp"
 
+#include <Btk/utils/template.hpp>
 #include <Btk/platform/win32.hpp>
 #include <Btk/msgbox/msgbox.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
+#include <Btk/string.hpp>
 #include <Btk/Btk.hpp>
 #include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL.h>
@@ -23,7 +25,7 @@ namespace{
     //Format strng to text
     class WalkerToString:public StackWalker{
         public:
-            WalkerToString(std::string &s):msg(s){
+            WalkerToString(Btk::u8string &s):msg(s){
 
             }
             virtual void OnCallstackEntry(CallstackEntryType,CallstackEntry &addr){
@@ -42,7 +44,7 @@ namespace{
                         int(addr.lineNumber));
                 }
             }
-        std::string &msg;
+        Btk::u8string &msg;
     };
 }
 
@@ -58,7 +60,7 @@ static void crash_handler(int sig){
         signame = "SIGSEGV";
     }
     _Btk_Backtrace();
-    std::string msg = Btk::cformat("Error: Caught signal %s",signame);
+    Btk::u8string msg = Btk::cformat("Error: Caught signal %s",signame);
 
     #ifdef _MSC_VER
     msg += "\nCurrent CallStack =>\n";
@@ -102,7 +104,7 @@ static LONG CALLBACK seh_exception_handler(_EXCEPTION_POINTERS *exp){
 
     fflush(stderr);
     
-    std::string msg = Btk::cformat("Exception at address %p\n",exp->ExceptionRecord->ExceptionAddress);
+    Btk::u8string msg = Btk::cformat("Exception at address %p\n",exp->ExceptionRecord->ExceptionAddress);
 
     #ifdef _MSC_VER
     msg += "\nCurrent CallStack =>\n";
@@ -124,6 +126,36 @@ static LONG CALLBACK seh_exception_handler(_EXCEPTION_POINTERS *exp){
 
 namespace Btk{
 namespace Win32{
+    //For slove WM_SIZING
+    static ObjectHolder<std::map<HWND,WindowImpl*>> hwnd_map;
+    static HIMC ime_handle = nullptr;
+
+    static HWND get_hwnd(SDL_Window *win){
+        SDL_SysWMinfo info;
+        SDL_GetVersion(&info.version);
+        SDL_GetWindowWMInfo(win,&info);
+        return info.info.win.window;
+    }
+    static void on_add_window(WindowImpl *win){
+        HWND h = get_hwnd(win->sdl_window());
+        hwnd_map->emplace(std::make_pair(h,win));
+
+        BTK_LOGINFO("[System::Win32]Reginster window %p HWND %p",win,h);
+    }
+    static void on_del_window(WindowImpl *win){
+        HWND h = get_hwnd(win->sdl_window());
+        hwnd_map->erase(hwnd_map->find(h));
+
+        BTK_LOGINFO("[System::Win32]Remove window %p HWND %p", win, h);
+    }
+    static int SDLCALL event_filter(void *,SDL_Event *event){
+        if(event->type == SDL_SYSWMEVENT){
+            //Handle it right now
+            HandleSysMsg(*(event->syswm.msg));
+            return 0;
+        }
+        return 1;
+    }
     void Init(){
         #ifndef NDEBUG
         signal(SIGABRT,crash_handler);
@@ -135,16 +167,41 @@ namespace Win32{
         #endif
 
         CoInitializeEx(nullptr,COINIT_MULTITHREADED);
-        //SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
-        SDL_SetWindowsMessageHook(MessageHook,nullptr);
+        //Init IME
+        ime_handle = ImmCreateContext();
+        //Init map
+        hwnd_map.construct();
+
+        //Bind to register
+        Instance().signal_window_created.connect(on_add_window);
+        Instance().signal_window_closed.connect(on_del_window);
+
+        SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
+        SDL_SetEventFilter(event_filter,nullptr);
     }
     void Quit(){
         CoUninitialize();
+
+        //Delete map
+        SDL_EventState(SDL_SYSWMEVENT,SDL_DISABLE);
+        SDL_SetEventFilter(nullptr,nullptr);
+        hwnd_map.destroy();
+
+        ImmDestroyContext(ime_handle);
     }
     void HandleSysMsg(const SDL_SysWMmsg &msg){
-
+        auto info = msg.msg.win;
+        WindowImpl *win = GetWindow(info.hwnd);
+        if(win != nullptr){
+            return win->handle_win32(
+                info.hwnd,
+                info.msg,
+                info.wParam,
+                info.lParam
+            );
+        }
     }
-    std::string StrMessageA(DWORD errcode){
+    u8string StrMessageA(DWORD errcode){
         char16_t *ret;
         DWORD result = FormatMessageW(
             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
@@ -158,12 +215,12 @@ namespace Win32{
         if(result == 0){
             throwWin32Error();
         }
-        std::string s;
+        u8string s;
         Utf16To8(s,ret);
         LocalFree(ret);
         return s;
     }
-    std::u16string StrMessageW(DWORD errcode){
+    u16string StrMessageW(DWORD errcode){
         char16_t *ret;
         DWORD result = FormatMessageW(
             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
@@ -177,7 +234,7 @@ namespace Win32{
         if(result == 0){
             throwWin32Error();
         }
-        std::u16string s(ret);
+        u16string s(ret);
         LocalFree(ret);
         return s;
     }
@@ -201,21 +258,12 @@ namespace Win32{
         );
         return true;
     }
-    Context GetContext(SDL_Window *win){
-        SDL_SysWMinfo info;
-        SDL_GetVersion(&info.version);
-        SDL_GetWindowWMInfo(win, &info);
-
-        BTK_ASSERT(info.subsystem == SDL_SYSWM_WINDOWS);
-
-        HWND window = info.info.win.window;
-        HINSTANCE instance = info.info.win.hinstance;
-        HDC hdc = info.info.win.hdc;
-        return {
-            window,
-            hdc,
-            instance
-        };
+    WindowImpl *GetWindow(HWND h){
+        auto iter = hwnd_map->find(h);
+        if(iter == hwnd_map->end()){
+            return nullptr;
+        }
+        return iter->second;
     }
 }
 }
@@ -245,8 +293,48 @@ namespace Btk{
     }
 }
 namespace Btk{
-    void Window::set_transparent(float){
-        auto ctxt = Win32::GetContext(pimpl->win);
-        SetLayeredWindowAttributes(ctxt.window,RGB(0,0,0),0, LWA_ALPHA);
+    void WindowImpl::handle_win32(
+        void *hwnd,
+        UINT message,
+        WPARAM wParam,
+        LPARAM lParam){
+        
+        //Process Win32 Evennt
+        switch(message){
+        case WM_SIZING:{
+                RECT *rect = reinterpret_cast<RECT *>(lParam);
+
+                SDL_Event event;
+                event.type = SDL_WINDOWEVENT;
+                event.window.windowID = id();
+                event.window.timestamp = SDL_GetTicks();
+                event.window.event = SDL_WINDOWEVENT_RESIZED;
+                event.window.data1 = rect->right - rect->left;
+                event.window.data2 = rect->bottom - rect->top;
+                try{
+                    handle_windowev(event);
+                    //Limit to draw
+                    auto current = SDL_GetTicks();
+                    //Update it
+
+                    if (fps_limit > 0){
+                        //Has limit
+                        Uint32 durl = 1000 / fps_limit;
+                        if (current - win32_draw_ticks < durl){
+                            //Too fast,ignore it
+                            BTK_LOGINFO("Drawing too fast,ignored");
+                            return;
+                        }
+                    }
+                    win32_draw_ticks = current;
+                    //Execute draw right now
+                    draw();
+                }
+                catch (...){
+                    DeferCall(std::rethrow_exception, std::current_exception());
+                }
+                break;
+            }
+        }
     }
 }

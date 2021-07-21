@@ -9,7 +9,7 @@
 #include <SDL2/SDL_timer.h>
 #include <exception>
 #include <mutex>
-
+#if 0
 namespace Btk{
     struct TimerInvoker{
         void (*entry)(void*);
@@ -152,3 +152,4 @@ namespace Btk{
         return SDL_GetTicks();
     }
 }
+#endif

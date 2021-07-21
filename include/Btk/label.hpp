@@ -14,7 +14,7 @@ namespace Btk{
     class BTKAPI Label:public Widget{
         public:
             Label();
-            Label(std::string_view text);
+            Label(u8string_view text);
             /**
              * @brief Construct a new Label object
              * 
@@ -25,15 +25,15 @@ namespace Btk{
              */
             Label(int x,int y,int w,int h);
             ~Label();
-            std::string text() const{
+            u8string text() const{
                 return text_;
-            };
+            }
             //Set Label text
-            void set_text(std::string_view text);
+            void set_text(u8string_view text);
             void set_parent(Widget *) override;
-            void draw(Renderer&);
+            void draw(Renderer&) override;
         private:
-            std::string text_;//text
+            u8string text_;//text
             //Font font_;//font
             float ptsize = 0;
             

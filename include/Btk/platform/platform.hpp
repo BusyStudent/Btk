@@ -13,15 +13,9 @@
 namespace Btk{
     namespace Platform{
         #ifdef BTK_WIN32
-        using Win32::Init;
-        using Win32::Quit;
-        using Win32::HandleSysMsg;
-        using Win32::MessageBox;
+        using namespace Win32;
         #elif defined(BTK_X11)
-        using X11::Init;
-        using X11::Quit;
-        using X11::HandleSysMsg;
-        using X11::MessageBox;
+        using namespace X11;
         #endif
     }
 }

@@ -75,8 +75,8 @@ namespace Btk{
         return false;
     }
     TextBox::TextBox(){
-        //Set theme
-        //theme =   window()->theme;
+        //Set theme()
+        //theme() =   window()->theme();
         //tb_font = window()->font();
 
         //Get rendered text's h
@@ -86,7 +86,7 @@ namespace Btk{
         //Set current position
         cur_txt = tb_text.begin();
 
-        attr.focus = FocusPolicy::Click;
+        attr.focus = FocusPolicy::Mouse;
 
         //Set timer
         timer.set_interval(500);
@@ -97,18 +97,17 @@ namespace Btk{
     }
     void TextBox::set_parent(Widget *w){
         Widget::set_parent(w);
-        theme =  window_theme();
-        ptsize = theme.font_size();
+        ptsize = theme().font_size();
     }
     void TextBox::draw(Renderer &render){
-        render.box(rect,theme[Theme::Background]);
+        render.box(rect,theme()[Theme::Background]);
         
         //BTK_LOGINFO("RendererLineH %f,ft_h %d",render.font_height(),ft_h);
         ft_h = render.font_height();
         if(not tb_text.empty()){
             /*
             if(tb_buf.empty()){
-                tb_buf = tb_font.render_blended(tb_text,theme.text_color);
+                tb_buf = tb_font.render_blended(tb_text,theme().text_color);
             }
             texture = render.create_from(tb_buf);
             */
@@ -128,13 +127,13 @@ namespace Btk{
 
             render.text_size(ptsize);
             render.text_align(TextAlign::Middle | TextAlign::Left);
-            render.fill_color(theme[Theme::Text]);
+            render.fill_color(theme()[Theme::Text]);
             
             //plus 2 make it look better
             render.text(
                 float(rect.x + tb_boarder),
                 float(rect.y + float(rect.h) / 2) + 2,
-                tb_text
+                u16string_view(tb_text)
             );
 
             render.fill();
@@ -154,7 +153,7 @@ namespace Btk{
                     line_x = txt_rect.x + render.text_size(view).w;
                 }
                 
-                render.line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme[Theme::Text]);
+                render.line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme()[Theme::Text]);
             }
 
             render.set_cliprect(cliprect);
@@ -167,19 +166,20 @@ namespace Btk{
                         line_y,
                         rect.x + tb_boarder,
                         line_y + ft_h,
-                        theme[Theme::Text]
+                        theme()[Theme::Text]
                         );
         }
 
         if(has_focus){
-            render.rounded_rect(rect,1,theme[Theme::Highlight]);
+            render.rounded_rect(rect,1,theme()[Theme::Highlight]);
         }
         else{
-            render.rounded_rect(rect,1,theme[Theme::Border]);
+            render.rounded_rect(rect,1,theme()[Theme::Border]);
         }
         render.restore();
     }
     bool TextBox::handle_keyboard(KeyEvent &event){
+        event.accept();
         if(event.state == KeyEvent::Pressed){
             switch(event.keycode){
                 case Keycode::Backspace:{
@@ -264,7 +264,7 @@ namespace Btk{
         }
         return event.accept();
     }
-    bool TextBox::handle_click(ClickEvent &event){
+    bool TextBox::handle_mouse(ClickEvent &event){
         return event.accept();
     }
     void TextBox::u8text(std::string &s) const{
@@ -276,15 +276,16 @@ namespace Btk{
         cur_txt = tb_text.begin();
         redraw();
     }
-    void TextBox::set_text(std::string_view txt){
+    void TextBox::set_text(u8string_view _txt){
         tb_text.clear();
+        auto txt = _txt.base();
         utf8to16(txt.begin(),txt.end(),back_inserter(tb_text));
         //tb_buf = nullptr;
         cur_txt = tb_text.begin();
         redraw();
     }
-    void TextBox::add_string(std::string_view text){
-        if(text.length() == 0){
+    void TextBox::add_string(u8string_view _text){
+        if(_text.length() == 0){
             return;
         }
         std::u16string::iterator iter;
@@ -300,8 +301,8 @@ namespace Btk{
             }
         }
         //Check the string is valid
-        BTK_ASSERT(utf8::is_valid(text.begin(),text.end()));
-
+        BTK_ASSERT(_text.is_vaild());
+        auto text = _text.base();
         auto end = utf8to16(text.begin(),text.end(),TextBoxInserter{*this,iter});
         cur_txt = --(end.cur);
         #ifndef NDEBUG

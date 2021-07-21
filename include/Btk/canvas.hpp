@@ -43,6 +43,16 @@ namespace Btk{
              */
             virtual void gl_draw() = 0;
     };
+    /**
+     * @brief Basic class for using Direct3D 11
+     * 
+     */
+    class BTKAPI DxCanvas{
+        public:
+            virtual void draw(Renderer&) final;
+            virtual void dx_draw() = 0;
+
+    };
 }
 
 #endif // _BTK_CANVAS_HPP_

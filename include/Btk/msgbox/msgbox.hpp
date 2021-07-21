@@ -21,15 +21,15 @@ namespace Btk{
              * @param txt The messageBox message
              * @param flags The messagebox flag
              */
-            MessageBox(std::string_view title = {},
-                       std::string_view txt = {},
+            MessageBox(u8string_view title = {},
+                       u8string_view txt = {},
                        Flag flags = Info);
             MessageBox(const MessageBox &);
             ~MessageBox();
 
             SignalAsync &signal_async();
-            void set_title(std::string_view title);
-            void set_message(std::string_view message);
+            void set_title(u8string_view title);
+            void set_message(u8string_view message);
             void set_flag(Flag flag);
             bool show(bool focus_async = false);
         private:

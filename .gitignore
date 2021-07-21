@@ -44,3 +44,4 @@
 *.cbin
 #vs
 /.vs/
+/docs/

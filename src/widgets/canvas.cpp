@@ -12,12 +12,12 @@ namespace Btk{
     Canvas::~Canvas() = default;
     void Canvas::draw(Renderer &renderer){
         if(not draw_fn.empty()){
-            auto viewport = renderer.get_viewport();
-            renderer.set_viewport(rect);
+            // auto viewport = renderer.get_viewport();
+            // renderer.set_viewport(rect);
             
             draw_fn(renderer);
 
-            renderer.set_viewport(viewport);
+            // renderer.set_viewport(viewport);
         }
     }
     bool Canvas::handle(Event &event){

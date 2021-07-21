@@ -2,7 +2,6 @@
 
 #ifdef _WIN32
 
-#include <Btk/thirdparty/utf8.h>
 #include <Btk/msgbox/fselect.hpp>
 #include <Btk/msgbox/impl.hpp>
 #include <Btk/impl/atomic.hpp>
@@ -17,8 +16,6 @@
 //Win32 native FSelectBox impl
 namespace Btk{
     void FSelectBoxImpl::Run(){
-        using utf8::unchecked::utf16to8;
-        using std::back_inserter;
         using Win32::ComInstance;
         using Win32::ComMemPtr;
 
@@ -44,9 +41,7 @@ namespace Btk{
                     
                     if(SUCCEEDED(hr)){
                         //Store the name
-                        value.clear();
-                        std::wstring_view view(fname);
-                        utf16to8(view.begin(),view.end(),back_inserter(value));
+                        value = u16string_view(fname).to_utf8();
 
                         BTK_LOGINFO("GetPath:%s",value.c_str());
 

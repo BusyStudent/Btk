@@ -3,8 +3,10 @@
 #include <Btk/platform/x11.hpp>
 #include <Btk/platform/fs.hpp>
 #include <Btk/impl/window.hpp>
+#include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
+#include <Btk/widget.hpp>
 #include <Btk/Btk.hpp>
 #include <csignal>
 
@@ -83,6 +85,23 @@ namespace Btk{
 namespace X11{
     bool has_zenity = false;
     bool has_kdialog = false;
+    //Map X11's window to btk's wiondow
+    static ObjectHolder<std::map<XWindow,WindowImpl*>> wins_map;
+
+    static void on_add_window(WindowImpl *win){
+        //set window 
+        auto [display,window] = GetXContext(win->sdl_window());
+
+        win->x_window = window;
+        win->x_display = display;
+        //Add to map
+        wins_map->emplace(std::make_pair(window,win));
+    }
+    static void on_del_window(WindowImpl *win){
+        //Remove it
+        wins_map->erase(BTK_X_WINDOW(win->x_window));
+    }
+
     void Init(){
         #ifndef NDEBUG
         //Debug crash handler
@@ -92,9 +111,9 @@ namespace X11{
         _Xdebug = 1;
         #endif
         XSetErrorHandler(XErrorHandler);
-        std::string buf;
+        u8string buf;
         //Find zenity and kdialog
-        ForPath([&](std::string_view fdir){
+        ForPath([&](u8string_view fdir){
             buf = fdir;
             //add it
             if(buf.back() != '/'){
@@ -112,12 +131,21 @@ namespace X11{
             }
             return true;
         });
+        //Hook window create
+        wins_map.construct();
+
+        Instance().signal_window_created.connect(on_add_window);
+
+        SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
     }
     void Quit(){
-
+        wins_map.destroy();
     }
-    void HandleSysMsg(const SDL_SysWMmsg &){
+    void HandleSysMsg(const SDL_SysWMmsg &msg){
+        const XEvent &event = msg.msg.x11.event;
+        switch(event.type){
 
+        }
     }
     //Exec
     int VExecute(size_t argc,...){
@@ -199,7 +227,13 @@ namespace X11{
             }
             close(err_fds[0]);
             std::signal(SIGPIPE,handler);
-            return fdopen(fds[0],"r");
+            //Convert it to STD FILE*
+            FILE *fptr = fdopen(fds[0],"r");
+            if(fptr == nullptr){
+                //Error,close the fd
+                close(fds[0]);
+            }
+            return fptr;
         }
     }
 }
@@ -226,5 +260,15 @@ namespace Btk{
     }
     bool HideConsole(){
         return daemon(1,0) == 0;
+    }
+
+    void EmbedWindow::set_window(void *u_display,unsigned long u_win){
+        //TODO 
+        X11::XWindow xwin = BTK_X_WINDOW(u_win);
+        //Get display and window
+        // XReparentWindow(display,p_win,xwin,0,0);
+        XFlush(BTK_X_DISPLAY(_display));
+
+        
     }
 }

@@ -22,8 +22,8 @@ namespace Btk{
         }
         MessageBoxW(
             GetForegroundWindow(),
-            reinterpret_cast<const wchar_t*>(Utf8To16(message).c_str()),
-            reinterpret_cast<const wchar_t*>(Utf8To16(title).c_str()),
+            reinterpret_cast<const wchar_t*>(message.to_utf16().c_str()),
+            reinterpret_cast<const wchar_t*>(title.to_utf16().c_str()),
             type);
     }
     void MessageBoxImpl::unref(){

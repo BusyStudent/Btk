@@ -1,11 +1,17 @@
 #if !defined(_BOX_FONT_HPP_)
 #define _BOX_FONT_HPP_
 #include <cstddef>
-#include <string>
-#include <string_view>
+#include "string.hpp"
 #include "pixels.hpp"
 #include "defs.hpp"
 namespace Btk{
+    namespace Ft{
+        /**
+         * @brief Font impl
+         * 
+         */
+        struct Font;
+    }
     struct Size;
     /**
      * @brief FontStyle from SDL_ttf
@@ -37,7 +43,7 @@ namespace Btk{
              * @param fontname Font name
              * @param ptsize Font ptsize
              */
-            Font(std::string_view fontname,int ptsize);
+            Font(u8string_view fontname,int ptsize);
             ~Font();
             /**
              * @brief Render solid text
@@ -47,8 +53,8 @@ namespace Btk{
              * @param color Text color
              * @return PixBuf 
              */
-            PixBuf render_solid(std::string_view text,Color color);
-            PixBuf render_solid(std::u16string_view text,Color color);
+            PixBuf render_solid(u8string_view text,Color color);
+            PixBuf render_solid(u16string_view text,Color color);
             /**
              * @brief Render shaded text
              * 
@@ -58,8 +64,8 @@ namespace Btk{
              * @param bg BackGround color
              * @return PixBuf 
              */
-            PixBuf render_shaded(std::string_view text,Color fg,Color bg);
-            PixBuf render_shaded(std::u16string_view text,Color fg,Color bg);
+            PixBuf render_shaded(u8string_view text,Color fg,Color bg);
+            PixBuf render_shaded(u16string_view text,Color fg,Color bg);
             /**
              * @brief Render blended text
              * 
@@ -68,8 +74,8 @@ namespace Btk{
              * @param color Text color
              * @return PixBuf 
              */
-            PixBuf render_blended(std::string_view text,Color color);
-            PixBuf render_blended(std::u16string_view text,Color color);
+            PixBuf render_blended(u8string_view text,Color color);
+            PixBuf render_blended(u16string_view text,Color color);
             /**
              * @brief Get Kerning Size in two chars
              * 
@@ -116,8 +122,8 @@ namespace Btk{
              * @param text The text
              * @return w and h (-1 if failed)
              */
-            Size size(std::string_view text);
-            Size size(std::u16string_view text);
+            Size size(u8string_view text);
+            Size size(u16string_view text);
             /**
              * @brief Close font
              * 
@@ -129,14 +135,14 @@ namespace Btk{
              * @param fontname Font name
              * @param ptsize Font ptsize
              */
-            void open(std::string_view fontname,int ptsize);
+            void open(u8string_view fontname,int ptsize);
             /**
              * @brief Open font by its filename
              * 
              * @param filename Font filename
              * @param ptsize Font ptsize
              */
-            void openfile(std::string_view filename,int ptsize);
+            void openfile(u8string_view filename,int ptsize);
             /**
              * @brief Clone a font
              * 
@@ -160,8 +166,8 @@ namespace Btk{
              * 
              * @return family name
              */
-            std::string family() const;
-            std::string style_name() const;
+            u8string family() const;
+            u8string style_name() const;
             /**
              * @brief Assign font
              * 
@@ -179,10 +185,10 @@ namespace Btk{
              * @param ptsize Font ptsize
              * @return Font 
              */
-            static Font FromFile(std::string_view filename,int ptsize);
+            static Font FromFile(u8string_view filename,int ptsize);
         private:
-            Font(void *i):pimpl(i){};
-            void *pimpl;
+            Font(Ft::Font *i):pimpl(i){};
+            Ft::Font *pimpl;
         friend class Renderer;
     };
     class BTKAPI FontSet{
@@ -217,9 +223,9 @@ namespace Btk{
                  *       If you want to use it after destroying the fontset,
                  *       Please make a copy of the string_view
                  */
-                std::string_view family() const;
-                std::string_view style() const;
-                std::string_view file() const;
+                u8string_view family() const;
+                u8string_view style() const;
+                u8string_view file() const;
                 void  *font;
             };
             /**
@@ -317,14 +323,14 @@ namespace Btk{
          * @param name font name
          * @return std::string 
          */
-        BTKAPI std::string GetFileByName(std::string_view name);
+        BTKAPI u8string GetFileByName(u8string_view name);
         /**
          * @brief Get the File By font face name
          * 
          * @param name font name
          * @return utf16 encoded filename string
          */
-        BTKAPI   u16string GetFileByName(std::u16string_view name);
+        BTKAPI u16string GetFileByName(u16string_view name);
         /**
          * @brief Init font utils
          * 
@@ -342,24 +348,26 @@ namespace Btk{
          * 
          * @return Utf encoded font name
          */
-        BTKAPI std::string GetDefaultFont();
+        BTKAPI u8string GetDefaultFont();
     };
+    BTKAPI void AddMemFont(u8string_view name,const void *buf,size_t bufsize,bool dup = true);
     //operators for FontStyle
-    inline FontStyle operator |(FontStyle s1,FontStyle s2) noexcept{
-        return static_cast<FontStyle>(int(s1) | int(s2));
-    }
-    inline FontStyle operator +(FontStyle s1,FontStyle s2) noexcept{
-        return static_cast<FontStyle>(int(s1) | int(s2));
-    }
-    inline FontStyle operator &(FontStyle s1,FontStyle s2) noexcept{
-        return static_cast<FontStyle>(int(s1) & int(s2));
-    }
-    inline FontStyle operator +=(FontStyle s1,FontStyle s2) noexcept{
-        return static_cast<FontStyle>(int(s1) | int(s2));
-    }
-    inline FontStyle operator |=(FontStyle s1,FontStyle s2) noexcept{
-        return static_cast<FontStyle>(int(s1) | int(s2));
-    }
+    // inline FontStyle operator |(FontStyle s1,FontStyle s2) noexcept{
+    //     return static_cast<FontStyle>(int(s1) | int(s2));
+    // }
+    // inline FontStyle operator +(FontStyle s1,FontStyle s2) noexcept{
+    //     return static_cast<FontStyle>(int(s1) | int(s2));
+    // }
+    // inline FontStyle operator &(FontStyle s1,FontStyle s2) noexcept{
+    //     return static_cast<FontStyle>(int(s1) & int(s2));
+    // }
+    // inline FontStyle operator +=(FontStyle s1,FontStyle s2) noexcept{
+    //     return static_cast<FontStyle>(int(s1) | int(s2));
+    // }
+    // inline FontStyle operator |=(FontStyle s1,FontStyle s2) noexcept{
+    //     return static_cast<FontStyle>(int(s1) | int(s2));
+    // }
+    BTK_FLAGS_OPERATOR(FontStyle,int);
 };
 
 

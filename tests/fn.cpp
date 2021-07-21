@@ -10,6 +10,10 @@ struct Test:public Btk::HasSlots{
     void fn(){
         std::cout << "Hello World from Class Test" << std::endl;
     };
+    template<class T>
+    void con(T &signal){
+        connect(signal,&Test::fn);
+    }
 };
 int main(){
     int i = 0;
@@ -38,10 +42,14 @@ int main(){
     {
         //It should auto disconnect 
         Test t;
+        t.con(signal);
         signal.connect(&Test::fn,&t);
         t.on_destroy([&t](){
             std::cout << "Object Test was destroyed" << std::endl; 
         });
+        signal.dump_slots();
+        t.dump_functors();
+        signal.emit();
     }
     signal.emit();
 }

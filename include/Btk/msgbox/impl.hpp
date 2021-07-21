@@ -28,8 +28,8 @@ namespace Btk{
         using SignalAsync = FSelectBox::SignalAsync;
         
         //< The return value of the box
-        std::string value;
-        std::string title;
+        u8string value;
+        u8string title;
         //< The title
         Atomic refcount = 1;
         
@@ -44,8 +44,8 @@ namespace Btk{
     struct MessageBoxImpl{
         using SignalAsync = MessageBox::SignalAsync;
                 
-        std::string title;
-        std::string message;
+        u8string title;
+        u8string message;
         SignalAsync signal;
         //messagebox flag
         int    flag;

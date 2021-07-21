@@ -4,6 +4,11 @@
 #include <Btk/platform/x11.hpp>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
+
+#define BTK_X_WINDOW(V) reinterpret_cast<Btk::X11::XWindow>(V) 
+#define BTK_X_DISPLAY(V) reinterpret_cast<Btk::X11::XDisplay*>(V) 
+
+
 namespace Btk{
 namespace X11{
     using XColorMap = ::Colormap;

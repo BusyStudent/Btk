@@ -14,7 +14,7 @@ namespace Btk{
              ++(pimpl->refcount);
         }
     }
-    FSelectBox::FSelectBox(std::string_view title){
+    FSelectBox::FSelectBox(u8string_view title){
         pimpl = new FSelectBoxImpl;
         pimpl->title = title;
     }

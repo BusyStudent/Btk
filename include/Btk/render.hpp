@@ -1,8 +1,10 @@
 #if !defined(_BTK_RENDERER_HPP_)
 #define _BTK_RENDERER_HPP_
 #include "pixels.hpp"
+#include "string.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
+#include <vector>
 #include <list>
 struct SDL_Window;
 
@@ -30,25 +32,191 @@ namespace Btk{
         Middle	 = 1<<4,	// Align text vertically to middle.
         Bottom	 = 1<<5,	// Align text vertically to bottom.
         Baseline = 1<<6, // Default, align text vertically to baseline.
+        //Vertical center
+        VCenter = Middle,
+        // Horizontal center
+        HCenter = Center
     };
     //TextAlign operator
-    inline TextAlign operator |(TextAlign a,TextAlign b){
-        return static_cast<TextAlign>(int(a) | int(b));
-    }
-    inline TextAlign operator +(TextAlign a,TextAlign b){
-        return static_cast<TextAlign>(int(a) | int(b));
-    }
+    // inline TextAlign operator |(TextAlign a,TextAlign b){
+    //     return static_cast<TextAlign>(int(a) | int(b));
+    // }
+    // inline TextAlign operator +(TextAlign a,TextAlign b){
+    //     return static_cast<TextAlign>(int(a) | int(b));
+    // }
+    BTK_FLAGS_OPERATOR(TextAlign,int);
     /**
      * @brief The renderer backend
      * 
      */
     enum class RendererBackend{
+        Unknown = 0,
         OpenGL,
         Metail,
         Dx11,
         Software
     };
-    struct RendererDevice;
+    /**
+     * @brief Glyph position from nanovg
+     * 
+     */
+    struct GlyphPosition{
+        char32_t glyph;     // The glyph 
+        const char* str;	// Position of the glyph in the input string.
+        float x;			// The x-coordinate of the logical glyph position.
+        float minx, maxx;	// The bounds of the glyph shape.
+    };
+    /**
+     * @brief Abstruct Graphics Device
+     * 
+     */
+    class BTKAPI RendererDevice{
+    public:
+        using Context = NVGcontext*;
+
+        virtual ~RendererDevice(){};
+        /**
+         * @brief Create a nanovg context object
+         * 
+         * @return Context* 
+         */
+        virtual Context create_context() = 0;
+        virtual void    destroy_context(Context) = 0;
+        //Frame operations
+        virtual void begin_frame(Context ctxt,
+                                 float w,
+                                 float h,
+                                 float pixel_ratio);
+        virtual void cancel_frame(Context ctxt);
+        virtual void end_frame(Context ctxt);
+        //Buffer or Screen
+        /**
+         * @brief Clear the screen
+         * 
+         * @param bg The background color
+         */
+        virtual void clear_buffer(Color bg) = 0;
+        virtual void swap_buffer(){};
+        /**
+         * @brief Set the viewport object
+         * 
+         * @param r The viewport(nullptr on reset)
+         */
+        virtual void set_viewport(const Rect *r) = 0;
+        /**
+         * @brief Set the target object
+         * 
+         * @param ctxt 
+         * @param id 
+         */
+        virtual void set_target(Context ctxt,TextureID id) = 0;
+        /**
+         * @brief Reset
+         * 
+         * @param ctxt 
+         */
+        virtual void reset_target(Context ctxt) = 0;
+        //Texture
+        virtual TextureID create_texture(Context ctxt,
+                                         int w,
+                                         int h,
+                                         TextureFlags,
+                                         const void *pix = nullptr);
+        virtual TextureID clone_texture(Context ctxt,TextureID) = 0;
+        virtual void      destroy_texture(Context ctxt,TextureID t);
+        virtual void      update_texture(Context ctxt,
+                                         TextureID t,
+                                         const Rect *r,
+                                         const void *pixels);
+        /**
+         * @brief Query texture information
+         * 
+         * @param ctxt The render context
+         * @param id The texture id
+         * @param p_size The pointer to size(could be nullptr)
+         * @param p_handle The pointer to native_handle(could be nullptr)
+         */
+        virtual bool      query_texture(Context ctxt,
+                                        TextureID id,
+                                        Size *p_size,
+                                        void *p_handle,
+                                        TextureFlags *p_flags) = 0;
+        /**
+         * @brief Get output size
+         * 
+         * @param p_logical_size 
+         * @param p_physical_size 
+         * @return true 
+         * @return false 
+         */
+        virtual bool output_size(
+            Size *p_logical_size,
+            Size *p_physical_size
+        ) = 0;
+        /**
+         * @brief Get logical output size
+         * 
+         * @return Size 
+         */
+        Size logical_size(){
+            Size s;
+            output_size(&s,nullptr);
+            return s;
+        }
+        /**
+         * @brief Get physical output size
+         * 
+         * @return Size 
+         */
+        Size physical_size(){
+            Size s;
+            output_size(nullptr,&s);
+            return s;
+        }
+        /**
+         * @brief Get texture size
+         * 
+         * @param ctxt 
+         * @param id 
+         * @return Size 
+         */
+        Size texture_size(Context ctxt,TextureID id){
+            Size s;
+            query_texture(ctxt,id,&s,nullptr,nullptr);
+            return s;
+        }
+        /**
+         * @brief Get texture flags
+         * 
+         * @param ctxt 
+         * @param id 
+         * @return TextureFlags 
+         */
+        TextureFlags texture_flags(Context ctxt,TextureID id){
+            TextureFlags flags;
+            query_texture(ctxt,id,nullptr,nullptr,&flags);
+            return flags;
+        }
+        /**
+         * @brief Get texture native handle
+         * 
+         * @param ctxt 
+         * @param id 
+         * @param p_handle 
+         */
+        void texture_native_handle(Context ctxt,TextureID id,void *p_handle){
+            query_texture(ctxt,id,nullptr,p_handle,nullptr);
+        }
+        RendererBackend backend() const noexcept{
+            return _backend;
+        }
+    protected:
+        void set_backend(RendererBackend bac){
+            _backend = bac;
+        }
+    private:
+        RendererBackend _backend = RendererBackend::Unknown;
+    };
     /**
      * @brief Abstruct Renderer
      * 
@@ -56,8 +224,13 @@ namespace Btk{
     class BTKAPI Renderer{
         public:
             using Device = RendererDevice;
-            
-            Renderer(SDL_Window *win);
+            /**
+             * @brief Construct a new Renderer object
+             * 
+             * @param dev The device
+             * @param owned Shoud we delete the device?
+             */
+            Renderer(Device &dev,bool owned = false);
             Renderer(const Renderer &) = delete;
             ~Renderer();
 
@@ -148,7 +321,7 @@ namespace Btk{
              * @param fname The filename
              * @return Texture 
              */
-            Texture load(std::string_view fname,TextureFlags flags = TextureFlags::Linear);
+            Texture load(u8string_view fname,TextureFlags flags = TextureFlags::Linear);
             Texture load(RWops &,TextureFlags flags = TextureFlags::Linear);
             /**
              * @brief Draw text
@@ -160,7 +333,8 @@ namespace Btk{
              * 
              * @return 0 on success
              */
-            int  text(Font &,int x,int y,Color c,std::string_view u8);
+            int  text(Font &,int x,int y,Color c,u8string_view u8);
+            int  text(Font &,int x,int y,Color c,u16string_view u16);
             /**
              * @brief Draw text by using c-tyle format string
              * 
@@ -171,9 +345,8 @@ namespace Btk{
              * @param ... The format args
              * @return 0 on success
              */
-            int  text(Font &,int x,int y,Color c,std::string_view fmt,...);
-            int  text(Font &,int x,int y,Color c,std::u16string_view u16);
-            int  text(Font &,int x,int y,Color c,std::u16string_view fmt,...);
+            int  vtext(Font &,int x,int y,Color c,u8string_view fmt,...);
+            int  vtext(Font &,int x,int y,Color c,u16string_view fmt,...);
             /**
              * @brief Draw a image
              * 
@@ -247,28 +420,37 @@ namespace Btk{
              * 
              * @param c 
              */
-            void clear(Color c);
+            void clear(Color c){
+                device()->clear_buffer(c);
+            }
             void clear(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
                 clear({r,g,b,a});
             }
+            void flush();
             /**
              * @brief Get the backend
              * 
              * @return RendererBackend 
              */
-            RendererBackend backend() const;
+            RendererBackend backend() const{
+                device()->backend();
+            }
             /**
              * @brief Get the logical drawable size
              * 
              * @return Size 
              */
-            Size screen_size();
+            Size screen_size(){
+                return device()->logical_size();
+            }
             /**
              * @brief Get the physical drawable size
              * 
              * @return Size 
              */
-            Size output_size();
+            Size output_size(){
+                return device()->physical_size();
+            }
             /**
              * @brief For HDPI Device 
              * 
@@ -390,8 +572,14 @@ namespace Btk{
              * @param y The Text's buttom
              * @param text 
              */
-            void text(float x,float y,std::string_view text);
-            void text(float x,float y,std::u16string_view text);
+            void text(float x,float y,u8string_view text);
+            void text(float x,float y,u16string_view text);
+            void text(const FVec2 &p,u8string_view text){
+                this->text(p.x,p.y,text);
+            }
+            void text(const FVec2 &p,u16string_view text){
+                this->text(p.x,p.y,text);
+            }
             /**
              * @brief Draw text(if the text's width > width)
              *        it will be drawed in next line
@@ -401,14 +589,14 @@ namespace Btk{
              * @param width 
              * @param text 
              */
-            void textbox(float x,float y,float width,std::string_view text);
-            void textbox(float x,float y,float width,std::u16string_view text);
+            void textbox(float x,float y,float width,u8string_view text);
+            void textbox(float x,float y,float width,u16string_view text);
             /**
              * @brief Get the size of the rendered string
              * 
              * @return FSize 
              */
-            FSize text_size(std::string_view);
+            FSize text_size(u8string_view);
             FSize text_size(std::u16string_view);
             /**
              * @brief Set the text's size
@@ -421,7 +609,25 @@ namespace Btk{
              * 
              * @return Size 
              */
-            FSize glyph_size(char16_t );
+            FSize  glyph_size(char16_t );
+            /**
+             * @brief Get position of glyph
+             * 
+             * @note It is low level a operation
+             * 
+             * @param x The text's x
+             * @param y The text's y
+             * @param text The utf8 encoding string
+             * @param callback The callback(return false to stop)
+             * @param user The userdata
+             * @return size_t 
+             */
+            size_t glyph_position(
+                float x,float y,
+                u8string_view text,
+                bool (*callback)(const GlyphPosition &,void *user),
+                void *user    
+            );
             /**
              * @brief Get the height of the current font
              * 
@@ -436,13 +642,19 @@ namespace Btk{
              * @return true On the font is exist
              * @return false On the font is not exist
              */
-            bool use_font(std::string_view fontname) noexcept;
+            bool use_font(u8string_view fontname) noexcept;
             bool use_font(const Font &font);
             /**
              * @brief Add font
              * 
              */
             void add_font(const char *fontname,const char *filename);
+            /**
+             * @brief Get current font
+             * 
+             * @return Font 
+             */
+            Font cur_font();
             /**
              * @brief Set Text Alignment
              * 
@@ -461,12 +673,28 @@ namespace Btk{
                 intersest_scissor(rect.x,rect.y,rect.w,rect.h);
             }
             void reset_scissor();
+
+        public:
+            //Transform
+            void scale(float x_factor,float y_factor);
+            void translate(float x,float y);
+            void rotate(float angel);
+            void skew_x(float angle);
+            void skew_y(float angle);
         public:
             /**
              * @brief Flush the data
              * 
              */
             void swap_buffer();
+            /**
+             * @brief Get device
+             * 
+             * @return RendererDevice& 
+             */
+            RendererDevice *device() const noexcept{
+                return _device;
+            }
         private:
             /**
              * @brief Item for Texture
@@ -482,30 +710,41 @@ namespace Btk{
              * 
              * @param texture_id 
              */
-            BTKHIDDEN void free_texture(int texture_id);
-            BTKHIDDEN int  clone_texture(int texture_id);
-            BTKHIDDEN PixBuf dump_texture(int texture_id);
+            void destroy_texture(int texture_id){
+                device()->destroy_texture(nvg_ctxt,texture_id);
+            }
+            int  clone_texture(int texture_id){
+                return device()->clone_texture(nvg_ctxt,texture_id);
+            }
+            PixBuf dump_texture(int texture_id);
             /**
              * @brief Update a texture pixels
              * 
              * @param texture_id 
              * @param pixels 
              */
-            BTKHIDDEN void update_texture(int texture_id,const void *pixels);
-            BTKHIDDEN void update_texture(int texture_id,const Rect&,const void *pixels);
+            void update_texture(int texture_id,const void *pixels){
+                device()->update_texture(nvg_ctxt,texture_id,nullptr,pixels);
+            }
+            void update_texture(int texture_id,const Rect&r,const void *pixels){
+                device()->update_texture(nvg_ctxt,texture_id,&r,pixels);
+            }
             /**
              * @brief Get the texture's native handler
              * 
              * @param texture_id 
              * @param native_handle_ptr
              */
-            BTKHIDDEN void get_texture_handle(int texture_id,void *native_handle_ptr);
-            BTKHIDDEN void set_texture_flags(int texture_id,TextureFlags);
-            BTKHIDDEN TextureFlags get_texture_flags(int texture_id);
+            void get_texture_handle(int texture_id,void *native_handle_ptr){
+                device()->texture_native_handle(nvg_ctxt,texture_id,native_handle_ptr);
+            }
+            void set_texture_flags(int texture_id,TextureFlags);
+            TextureFlags get_texture_flags(int texture_id){
+                return device()->texture_flags(nvg_ctxt,texture_id);
+            }
 
             NVGcontext *nvg_ctxt = nullptr;//<NanoVG Context
-            SDL_Window *window = nullptr;
-            Device     *device = nullptr;//<Render device data
+            Device     *_device = nullptr;//<Render device data
             
             Rect  viewport = {0,0,0,0};//< cached viewport
             FRect cliprect = {0,0,0,0};//< cached cliprect
@@ -514,6 +753,7 @@ namespace Btk{
             int max_caches = 20;//< Max cache
 
             bool is_drawing = false;//< Is nanovg Has BeginFrame
+            bool free_device = false;
         friend class Texture;
     };
 

@@ -43,20 +43,19 @@ namespace Btk{
              * @param txt The UTF16 encoded string 
              */
             void set_text(std::u16string_view txt);
-            void set_text(std::string_view txt);
+            void set_text(u8string_view txt);
             void set_parent(Widget *w);
         private:
             void timeout();
             //Process keyboard event
             bool handle_drag(DragEvent    &) override;
-            bool handle_click(MouseEvent  &) override;
+            bool handle_mouse(MouseEvent  &) override;
             bool handle_keyboard(KeyEvent &) override;
             bool handle_textinput(TextInputEvent&) override;
             //Add string in where the cur_text point
-            void add_string(std::string_view);
+            void add_string(u8string_view);
             //Font  tb_font;//Text Font
             float ptsize;//< Font ptsize
-            Theme theme;
             
             std::u16string tb_text;//Text
             //PixBuf  tb_buf;//Rendered text
@@ -76,6 +75,29 @@ namespace Btk{
             float ft_h;//Rendered Text's h
             float tb_boarder = 4;//The text boarder
         friend struct TextBoxInserter;
+    };
+    class BTKAPI TextEdit:public Widget{
+        private:
+            u8string cur_text;
+    };
+    /**
+     * @brief Just edit single line
+     * 
+     */
+    class BTKAPI LineEdit:public Widget{
+        public:
+            LineEdit();
+            LineEdit(u8string_view text);
+            ~LineEdit();
+
+        private:
+            u8string placeholder;//< Show if the string is empty
+            u8string cur_text;
+            Align    align;//< Text align
+            bool     clear_btn = false;//Has clear button?
+    };
+    class BTKAPI TextBroser:public Widget{
+        
     };
 };
 

@@ -1,5 +1,4 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_loadso.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_filesystem.h>
@@ -25,6 +24,8 @@
 #include <Btk/event.hpp>
 #include <Btk/defs.hpp>
 #include <Btk/Btk.hpp>
+
+
 namespace{
     void defer_call_cb(const SDL_Event &ev,void *){
         //defer call
@@ -65,7 +66,7 @@ namespace Btk{
             //double call or call from another thread
             return -1;
         }
-       
+        int retvalue = EXIT_SUCCESS;
         //resume from error
         resume:
             Instance().is_running = true;
@@ -76,33 +77,27 @@ namespace Btk{
         catch(int i){
             //Exit
             Instance().is_running = false;
-            return i;
+            retvalue = i;
         }
         catch(std::exception &exp){
+            
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::GetException] %s",exp.what());
-            //call handler
-            if(System::instance->handle_exception != nullptr){
-                if(System::instance->handle_exception(&exp)){
-                    goto resume;
-                }
+            if(Instance().try_handle_exception(&exp)){
+                goto resume;
             }
             Instance().is_running = false;
-
             throw;
         }
         catch(...){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::GetException]Unknown");
-            if(System::instance->handle_exception != nullptr){
-                if(System::instance->handle_exception(nullptr)){
-                    goto resume;
-                }
+            if(Instance().try_handle_exception(nullptr)){
+                goto resume;
             }
             Instance().is_running = false;
-
             throw;
         }
         Instance().is_running = false;
-        return 0;
+        return retvalue;
     }
     System::System(){
         AsyncInit();
@@ -111,11 +106,32 @@ namespace Btk{
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
         }
         else{
-            dispatch_ev_id = defer_call_ev_id + 1;
             //regitser handler
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
-            regiser_eventcb(dispatch_ev_id,DispatchEvent,nullptr);
         }
+        //Builtin BMP Adapter
+        ImageAdapter adapter;
+        adapter.name = "bmp";
+        adapter.fn_load = [](SDL_RWops *rwops){
+            return SDL_LoadBMP_RW(rwops,SDL_FALSE);
+        };
+        adapter.fn_save = [](SDL_RWops *rwops,SDL_Surface *s,int) -> bool{
+            return SDL_SaveBMP_RW(s,rwops,SDL_FALSE);
+        };
+        adapter.fn_is = [](SDL_RWops *rwops) -> bool{
+            //Check magic is bm
+            char magic[2] = {0};
+            //Save cur
+            auto cur = SDL_RWtell(rwops);
+            //Read magic
+            SDL_RWread(rwops,magic,sizeof(magic),1);
+            //Reset to the position
+            SDL_RWseek(rwops,cur,RW_SEEK_SET);
+            //Check magic
+            return magic[0] == 'B' and magic[1] == 'M';
+        };
+        image_adapters.emplace_back(adapter);
+
         //First stop text input
         SDL_StopTextInput();
     }
@@ -146,11 +162,9 @@ namespace Btk{
             #ifndef NDEBUG
             //show detail version
             SDL_version ver;
-            const SDL_version *iver = IMG_Linked_Version();
             SDL_GetVersion(&ver);
             SDL_Log("[System::Core]Init SDL2 Platfrom %s",SDL_GetPlatform());
             SDL_Log("[System::Core]SDL2 version: %d.%d.%d",ver.major,ver.major,ver.patch);
-            SDL_Log("[System::Core]SDL2 image version: %d.%d.%d",iver->major,iver->major,iver->patch);
             #endif
             //Create instance
             instance = new System();
@@ -159,6 +173,8 @@ namespace Btk{
             //Init platform
             Platform::Init();
             GL::Init();
+            //Image Adapter
+            InitImageAdapter();
         }
         return 1;
     }
@@ -171,8 +187,6 @@ namespace Btk{
         //Cleanup platform
         Platform::Quit();
         //Quit SDL
-        Mixer::Quit();
-        IMG_Quit();
         // TTF_Quit();
         SDL_Quit();
     }
@@ -182,30 +196,22 @@ namespace Btk{
         while(SDL_WaitEvent(&event)){
             switch(event.type){
                 case SDL_QUIT:{
-                    #ifndef NDEBUG
-                    SDL_Log("[System::EventDispather] Got SDL_QUIT");
-                    #endif
-                    std::lock_guard<std::recursive_mutex> locker(map_mtx);
-                    for(auto &win:wins_map){
-                        if(win.second->on_close()){
-                            //Close Window
-                            
-                            unregister_window(win.second);
-                        }
-                    }
-                    if(wins_map.empty()){
-                        return;
-                    }
+                    on_quit();
+                    break;
+                }
+                case SDL_CLIPBOARDUPDATE:{
+                    BTK_LOGINFO("[System::Core]Emitting SignalClipboardUpdate");
+                    signal_clipboard_update();
                     break;
                 }
                 case SDL_WINDOWEVENT:{
                     on_windowev(event);
                     break;
                 }
+                case SDL_DROPCOMPLETE:
+                case SDL_DROPBEGIN:
+                case SDL_DROPTEXT:
                 case SDL_DROPFILE:{
-                    #ifndef NDEBUG
-                    SDL_Log("[System::EventDispather] Got SDL_DROPFILE");
-                    #endif
                     on_dropev(event);
                     break;
                 }
@@ -235,6 +241,20 @@ namespace Btk{
                     Platform::HandleSysMsg(*(event.syswm.msg));
                     break;
                 }
+                case SDL_AUDIODEVICEADDED:{
+                    BTK_LOGINFO("[System::Audio] AudioDeviceAdded");
+                    signal_audio_device_added();
+                    break;
+                }
+                case SDL_AUDIODEVICEREMOVED:{
+                    BTK_LOGINFO("[System::Audio] AudioDeviceRemoved");
+                    signal_audio_device_removed();
+                    break;
+                }
+                case SDL_KEYMAPCHANGED:{
+                    signal_keymap_changed();
+                    break;
+                }
                 default:{
                     //get function from event callbacks map
                     auto iter = evcbs_map.find(event.type);
@@ -252,7 +272,8 @@ namespace Btk{
                 }
             }
         }
-    
+        BTK_LOGWARN(SDL_GetError());
+
     }
     //WindowEvent
     inline void System::on_windowev(const SDL_Event &event){
@@ -278,7 +299,7 @@ namespace Btk{
             return;
         }
         auto click = TranslateEvent(event.button);
-        win->handle_click(click);
+        win->handle_mouse(click);
     }
     //MouseWheel
     inline void System::on_mousewheel(const SDL_Event &event){
@@ -302,7 +323,9 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        win->on_dropfile(event.drop.file);
+        //Translate event and send
+        auto drop = TranslateEvent(event.drop);
+        win->handle_drop(drop);
     }
     //KeyBoardEvent
     inline void System::on_keyboardev(const SDL_Event &event){
@@ -327,6 +350,33 @@ namespace Btk{
             return;
         }
         win->handle_textinput(ev);
+    }
+    inline void System::on_quit(){
+        if(signal_quit.empty()){
+            //Deafult close all the window and quit
+            BTK_LOGINFO("[System::Core]Try to quit");
+            std::lock_guard<std::recursive_mutex> locker(map_mtx);
+            for(auto i = wins_map.begin(); i != wins_map.end();){
+                //Try to close window
+                if(i->second->on_close()){
+                    //Succeed
+                    BTK_LOGINFO("[System::Core]Succeed to close %p",i->second);
+                    signal_window_closed(i->second);
+                    delete i->second;
+                    i = wins_map.erase(i);
+                }
+                else{
+                    ++i;
+                }
+            }
+            if(wins_map.empty()){
+                Exit();
+            }
+        }
+        else{
+            BTK_LOGINFO("[System::Core]Emitting SignalQuit");
+            signal_quit();
+        }
     }
     void System::register_window(WindowImpl *impl){
         if(impl == nullptr){
@@ -409,13 +459,60 @@ namespace Btk{
             return iter->second;
         }
     }
-};
+    bool System::try_handle_exception(std::exception *exp){
+        if(handle_exception == nullptr){
+            return false;
+        }
+        return handle_exception(exp);
+    }
+    void System::close_window(WindowImpl *win){
+        if(win == nullptr){
+            return;
+        }
+        if(win->on_close()){
+            signal_window_closed(win);
+            unregister_window(win);
+        }
+        if(wins_map.empty()){
+            Exit(EXIT_SUCCESS);
+        }
+    }
+    WindowImpl *System::create_window(SDL_Window *win){
+        BTK_ASSERT(win != nullptr);
+        auto p = new WindowImpl(win);
+        register_window(p);
+        SDL_SetWindowData(win,"btk_imp",p);
+        signal_window_created(p);
+        return p;
+    }
+    RendererDevice *System::create_device(SDL_Window *w){
+        Device *dev;
+        for(auto fn:devices_list){
+            dev = fn(w);
+            if(dev != nullptr){
+                return dev;
+            }
+        }
+        return nullptr;
+    }
+}
 namespace Btk{
+    static inline void exit_impl_cb(void *args){
+        int v = *reinterpret_cast<int*>(&args);
+        throw v;
+    }
     void Exit(int code){
-        //FIXME possible memory leak on here
-        DeferCall([code](){
-            throw code;
-        });
+        if constexpr(sizeof(void *) < sizeof(int)){
+            //FIXME possible memory leak on here
+            DeferCall([code](){
+                throw code;
+            });
+        }
+        else{
+            void *args;
+            *reinterpret_cast<int*>(&args) = code;
+            DeferCall(exit_impl_cb,args);
+        }
     }
     ExceptionHandler SetExceptionHandler(ExceptionHandler handler){
         ExceptionHandler current = System::instance->handle_exception;
@@ -448,6 +545,57 @@ namespace Btk{
     bool CouldBlock(){
         return not Instance().is_running or not IsMainThread();
     }
+    void RegisterImageAdapter(const ImageAdapter & a){
+        Instance().image_adapters.push_front(a);
+        BTK_LOGINFO("[System::Core]Register ImageAdapter %s",a.name);
+    }
+    void RegisterDevice(System::CreateDeviceFn fn){
+        if(fn == nullptr){
+            return;
+        }
+        Instance().devices_list.emplace_front(fn);
+    }
+    SDL_Surface *LoadImage(SDL_RWops *rwops,u8string_view type){
+        BTK_ASSERT(rwops != nullptr);
+        SDL_Surface *ret;
+        if(type.empty()){
+            //Didnot provide the type
+            for(auto &adapter:Instance().image_adapters){
+                if(adapter.fn_is == nullptr){
+                    //It cannot check the type
+                    //Try load it directly
+                    ret = adapter.load(rwops);
+                }
+                //Is the type
+                else if(adapter.is(rwops)){
+                    ret = adapter.load(rwops);
+                }
+                else{
+                    continue;
+                }
+                if(ret == nullptr){
+                    throwRuntimeError(SDL_GetError());
+                }
+                else{
+                    return ret;
+                }
+            }
+            throwRuntimeError("Unsupport format");
+        }
+        SDL_SetError("Unsupport format");
+        for(auto &adapter:Instance().image_adapters){
+            if(SDL_strncasecmp(adapter.name,type.data(),type.size()) == 0){
+                ret = adapter.load(rwops);
+                if(ret == nullptr){
+                    continue;
+                }
+                else{
+                    return ret;
+                }
+            }
+        }
+        throwRuntimeError(SDL_GetError());
+    }
 };
 namespace Btk{
     void Module::unload(){
@@ -456,7 +604,7 @@ namespace Btk{
         }
         SDL_UnloadObject(handle);
     }
-    void LoadModule(std::string_view module_name){
+    void LoadModule(u8string_view module_name){
         void *handle = SDL_LoadObject(module_name.data());
         if(handle == nullptr){
             throwSDLError();
@@ -487,7 +635,7 @@ namespace Btk{
 
         Instance().modules_list.push_back(mod);
     }
-    bool HasModule(std::string_view name){
+    bool HasModule(u8string_view name){
         for(auto &mod:Instance().modules_list){
             if(mod.name == name){
                 return true;
@@ -497,13 +645,13 @@ namespace Btk{
     }
 }
 namespace Btk{
-    static thread_local std::string u8buf; 
-    static thread_local std::u16string u16buf;
+    static thread_local u8string u8buf; 
+    static thread_local u16string u16buf;
 
-    std::string&    InternalU8Buffer(){
+    u8string&  InternalU8Buffer(){
         return u8buf;
     }
-    std::u16string& InternalU16Buffer(){
+    u16string& InternalU16Buffer(){
         return u16buf;
     }
 }

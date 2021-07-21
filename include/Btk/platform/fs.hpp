@@ -1,7 +1,6 @@
 #if !defined(_BTK_PLATFORM_FS_HPP_)
 #define _BTK_PLATFORM_FS_HPP_
 
-#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <string>
@@ -24,6 +23,7 @@
     #define BTK_F_OK F_OK
 #endif
 #include "../exception.hpp"
+#include "../string.hpp"
 namespace Btk{
     /**
      * @brief Get current working dir
@@ -54,7 +54,7 @@ namespace Btk{
      * @return true 
      * @return false 
      */
-    inline bool exists(std::string_view fname){
+    inline bool exists(u8string_view fname){
         return BTK_ACCESS(fname.data(),BTK_F_OK) == 0;
     }
     /**
@@ -64,7 +64,7 @@ namespace Btk{
      * @return true 
      * @return false 
      */
-    inline bool chdir(std::string_view path){
+    inline bool chdir(u8string_view path){
         return BTK_CHDIR(path.data()) == 0;
     }
     /**
@@ -83,14 +83,14 @@ namespace Btk{
         constexpr bool has_retvalue = not 
         std::is_same_v<
             void,
-            std::invoke_result_t<Callable,std::string_view,Args...>
+            std::invoke_result_t<Callable,u8string_view,Args...>
         >;
 
         char *path = std::getenv("PATH");
         if(path == nullptr){
             return false;
         }
-        std::string_view dir;
+        u8string_view dir;
         #ifdef _WIN32
         char delim = ';';
         #else
@@ -100,10 +100,10 @@ namespace Btk{
         do{
             end = strchr(cur,delim);
             if(end != nullptr){
-                dir = std::string_view(cur,end - cur);
+                dir = u8string_view(cur,end - cur);
             }
             else{
-                dir = std::string_view(cur);
+                dir = u8string_view(cur);
             }
             if constexpr(has_retvalue){
                 if(not callable(dir,std::forward<Args>(args)...)){
@@ -118,6 +118,39 @@ namespace Btk{
         }
         while(end != nullptr);
         return true;
+    }
+    /**
+     * @brief Check a file in path
+     * 
+     * @return true 
+     * @return false 
+     */
+    inline bool FileInPath(u8string_view fname){
+        u8string buffer;
+        bool in_path = false;
+        ForPath([&](u8string_view dir){
+            buffer = dir;
+            #ifdef __WIN32
+            //Win32 add \\ or /
+            char back = buffer.back();
+            if(back != '/' or back != '\\'){
+                buffer.push_back('/');
+            }
+            #else
+            //Add '/
+            if(buffer.back() != '/'){
+                buffer.push_back('/');
+            }
+            #endif
+            buffer += dir;
+            in_path = exists(buffer);
+            if(in_path = true){
+                //End the loop
+                return false;
+            }
+            return true;
+        });
+        return in_path;
     }
 }
 

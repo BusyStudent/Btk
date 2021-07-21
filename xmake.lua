@@ -1,8 +1,11 @@
 add_rules("mode.debug", "mode.release")
 --add SDL require
-if not is_plat("windows") then
+if is_plat("linux") then
     add_defines("USE_MMX")
     add_requires("SDL2","SDL2_image","SDL2_ttf")
+    --Linux X11
+    add_requires("dbus-1")
+
     --try add extensions
     add_requires("gif",{optional = true})
     --add_requires("freetype2",{optional = true})
@@ -30,6 +33,7 @@ else
     --add_requires("SDL2","SDL2_ttf","SDL2_image")
     --VS UTF8
     add_cxxflags("/utf-8")
+    add_cxxflags("/std:c++latest")
     add_cflags("/utf-8")
 end
 set_languages("c++17")
@@ -45,15 +49,22 @@ if is_plat("linux") then
     add_defines("BTK_USE_FONTCONFIG")
     --Check modes
     if is_mode("release") then
-        add_cxxflags("-fvisibility=hidden")
-        add_cflags("-fvisibility=hidden")
+        add_cxxflags("-fvisibility=hidden","-march=native")
+        add_cflags("-fvisibility=hidden","-march=native")
     end
 end
+
+if is_mode("release") then
+    add_defines("NDEBUG")
+end
+
 target("btk")
     add_defines("BTK_USE_GFX")
     
     if is_plat("linux") then
         add_files("./src/platform/x11/*.cpp")
+        --Dbus
+        add_packages("dbus-1")
         add_links("fontconfig")
     elseif is_plat("windows") or is_plat("mingw") then
         --xmake repo
@@ -71,6 +82,36 @@ target("btk")
     else
         add_defines("BTK_NGIF")
     end
+
+    -- Install copy the headers
+
+    after_install(
+        function(target)
+            if is_plat("linux") then 
+                os.cp("$(scriptdir)/include/*","/usr/local/include")
+            end
+        end
+    )
+
+    --Uninstall 
+
+    after_uninstall(
+        function(target)
+            if is_plat("linux") then 
+                os.rm("/usr/local/include/Btk.hpp")
+                os.rm("/usr/local/include/Btk.h")
+                os.rm("/usr/local/include/Btk")
+            end
+        end
+    )
+
+    -- Package
+
+    -- after_package(
+    --     function(target)
+    --         -- os.cp("$(scriptdir)/include/Btk","$(buildir)/Btk")
+    --     end
+    -- )
 
     add_links("SDL2","SDL2_image")
     set_kind("shared")
@@ -101,8 +142,15 @@ target("btk")
     add_files("./src/render/nanovg.cpp")
     --Font
     add_files("./src/font/fontstash.cpp")
-    add_files("./src/font/core.cpp")
-    add_files("./src/font/ft2.cpp")
+    add_files("./src/font/cache.cpp")
+    add_files("./src/font/ft_font.cpp")
+    --Image
+    add_files("./src/images/adapter.cpp")
+    --SDL_image support
+    if has_package("libsdl_image") or has_package("SDL2_image") then
+        add_defines("BTK_HAS_SDLIMG")
+        add_files("./src/images/sdl_image.cpp")
+    end
 if is_mode("debug") then
     target("hello")
         set_kind("binary")
@@ -146,7 +194,7 @@ target("btk-rcc")
     add_files("./tools/btk-rcc.cpp")
 --Do you need CAPI
 --If not,omit it
-if false  then 
+if true and not is_plat("windows")then 
     target("btk_capi")
         if not has_package("gif") then
             add_defines("BTK_NGIF")

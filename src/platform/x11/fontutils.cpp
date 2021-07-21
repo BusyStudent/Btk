@@ -3,7 +3,6 @@
 
 #include "../../build.hpp"
 #include <Btk/platform/x11.hpp>
-#include <Btk/utils/string.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/exception.hpp>
@@ -63,7 +62,7 @@ namespace FontUtils{
 }
 namespace FontUtils{
     //Get font file
-    std::string GetFileByName(std::string_view fontname){
+    u8string GetFileByName(u8string_view fontname){
         if(not was_init){
             Init();
         }
@@ -91,20 +90,53 @@ namespace FontUtils{
             throwRuntimeError("Failed to match font");
         }
         BTK_LOGINFO("FcMatch %s => %s",fontname.data(),str);
-        std::string s(reinterpret_cast<char*>(str));
+        u8string s(reinterpret_cast<char*>(str));
+        FcPatternDestroy(font);
+        FcPatternDestroy(pat);
+        return s;
+    }
+    u16string GetFileByName(u16string_view fontname){
+        if(not was_init){
+            Init();
+        }
+        FcPattern* font;
+        FcPattern* pat = FcNameParse(
+            reinterpret_cast<const FcChar8*>(fontname.to_utf8().c_str())   
+        );
+        LockGuard locker;//Lock the library
+        //Config substitute
+        FcConfigSubstitute(config, pat, FcMatchPattern);
+        FcDefaultSubstitute(pat);
+        //Begin match
+        FcResult result;
+        font = FcFontMatch(config,pat,&result);
+        
+        if(font == nullptr){
+            FcPatternDestroy(pat);
+            throwRuntimeError("Failed to match font");
+        }
+        FcChar8 *str;
+        if(FcPatternGetString(font,FC_FILE,0,&str) != FcResultMatch){
+            //Get String
+            FcPatternDestroy(font);
+            FcPatternDestroy(pat);
+            throwRuntimeError("Failed to match font");
+        }
+        BTK_LOGINFO("FcMatch %s => %s",fontname.data(),str);
+        u16string s(reinterpret_cast<char*>(str));
         FcPatternDestroy(font);
         FcPatternDestroy(pat);
         return s;
     }
     //Utf16 get font name
-    u16string  GetFileByName(std::u16string_view name){
-        auto &u8buf = InternalU8Buffer();
-        u8buf.clear();//clear the buffer
-        Utf16To8(u8buf,name);
+    // u16string  GetFileByName(std::u16string_view name){
+    //     auto &u8buf = InternalU8Buffer();
+    //     u8buf.clear();//clear the buffer
+    //     Utf16To8(u8buf,name);
 
-        return GetFileByName(u8buf);
-    }
-    std::string GetDefaultFont(){
+    //     return GetFileByName(u8buf);
+    // }
+    u8string GetDefaultFont(){
         char *lan = nl_langinfo(_NL_IDENTIFICATION_LANGUAGE);
         return GetFileByName("");
     }
@@ -165,7 +197,7 @@ namespace FontUtils{
     }
 
     //FontSet::Font
-    std::string_view FontSet::Font::family() const{
+    u8string_view FontSet::Font::family() const{
         FcChar8 *str = nullptr;
         auto pat = static_cast<FcPattern*>(font);
         if(FcPatternGetString(pat,FC_FAMILY,0,&str) != FcResultMatch){
@@ -175,7 +207,7 @@ namespace FontUtils{
             return reinterpret_cast<char*>(str);
         }
     }
-    std::string_view FontSet::Font::style() const{
+    u8string_view FontSet::Font::style() const{
         FcChar8 *str = nullptr;
         auto pat = static_cast<FcPattern*>(font);
         if(FcPatternGetString(pat,FC_STYLE,0,&str) != FcResultMatch){
@@ -185,7 +217,7 @@ namespace FontUtils{
             return reinterpret_cast<char*>(str);
         }
     }
-    std::string_view FontSet::Font::file() const{
+    u8string_view FontSet::Font::file() const{
         FcChar8 *str = nullptr;
         auto pat = static_cast<FcPattern*>(font);
         if(FcPatternGetString(pat,FC_FILE,0,&str) != FcResultMatch){

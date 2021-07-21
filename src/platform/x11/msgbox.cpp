@@ -1,9 +1,9 @@
 #include "../../build.hpp"
+#include <Btk/msgbox/impl.hpp>
 #include "internal.hpp"
 
 #include <Btk/platform/popen.hpp>
 #include <Btk/platform/x11.hpp>
-#include <Btk/msgbox/impl.hpp>
 namespace Btk{
     void MessageBoxImpl::Run(){
         Impl::RefDeleter deleter(this);
@@ -43,13 +43,13 @@ namespace Btk{
 }
 namespace Btk::X11{
     //Native MessageBox
-    bool MessageBox(std::string_view _title,std::string_view _msg,int flag){
+    bool MessageBox(u8string_view _title,u8string_view _msg,int flag){
         //Copy into buffer;
-        std::string title(_title);
-        std::string msg(_msg);
+        u8string title(_title);
+        u8string msg(_msg);
         
         if(has_zenity){
-            std::string_view cmd;
+            u8string_view cmd;
             switch(flag){
                 case MessageBox::Info:
                     cmd = "--info";

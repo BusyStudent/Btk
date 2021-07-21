@@ -6,19 +6,25 @@
 #include <atomic>
 #include <mutex>
 #include <list>
+#include "../container.hpp"
+#include "../render.hpp"
+#include "../string.hpp"
 #include "../signal.hpp"
 #include "../widget.hpp"
 #include "../themes.hpp"
 #include "../render.hpp"
 #include "../event.hpp"
 #include "../font.hpp"
+#include "../font.hpp"
 #include "atomic.hpp"
 namespace Btk{
+    class Window;
     class Event;
     //Impl for Window
-    struct Renderer;
-    struct Widget;
-    struct Theme;
+    class Renderer;
+    class Widget;
+    class Theme;
+    class Menu;
     /**
      * @brief The Internal Window Draw Callback
      */
@@ -37,19 +43,23 @@ namespace Btk{
             return draw_fn(render,widget,userdata);
         }
     };
-    class BTKAPI WindowImpl:public Container{
+    class BTKAPI WindowImpl:public Group{
         //Init SDL Window
         public:
-            WindowImpl(const char *title,int x,int y,int w,int h,int flags);
+            explicit WindowImpl(SDL_Window *);
+            WindowImpl(const WindowImpl &) = delete;
             ~WindowImpl();
             //Overload the method from widget
-            void draw(Renderer &render);
+            void draw(Renderer &render) override;
+            void draw(){
+                draw(render);
+            }
             /**
              * @brief Send a redraw request
              * 
              */
             void redraw();
-            bool handle(Event &);
+            bool handle(Event &) override;
             
             void pixels_size(int *w,int *h);//GetWindowSize
             /**
@@ -63,11 +73,9 @@ namespace Btk{
             
             bool on_close();
             void on_resize(int new_w,int new_h);
-            void on_dropfile(std::string_view file);
+            void on_dropfile(u8string_view file);
             //handle event 
             void handle_windowev(const SDL_Event &event);
-            //Dispatch Event to Widgets
-            bool dispatch(Event &event);
             
             //update wingets postions
             void update_postion();
@@ -80,19 +88,19 @@ namespace Btk{
             }
         public:
             //Process Event
-            bool handle_click(MouseEvent   &);
-            bool handle_wheel(WheelEvent   &);
-            bool handle_motion(MotionEvent &);
-            bool handle_keyboard(KeyEvent  &);
-            bool handle_textinput(TextInputEvent &);
+            bool handle_drop(DropEvent     &) override;
+            bool handle_mouse(MouseEvent   &) override;
+            bool handle_motion(MotionEvent &) override;
         private:
             SDL_Window *win = nullptr;
+            //Render's device
+            RendererDevice *_device = nullptr;
             Renderer    render;
             //Signals
             Signal<void()> sig_leave;//mouse leave
             Signal<void()> sig_enter;//mouse enter
             Signal<bool()> sig_close;//CloseWIndow
-            Signal<void(std::string_view)> sig_dropfile;//DropFile
+            Signal<void(u8string_view)> sig_dropfile;//DropFile
             Signal<void(int new_w,int new_h)> sig_resize;//WindowResize
             Signal<bool(Event &)> sig_event;//Process Unhandled Event
             //BackGroud Color
@@ -106,20 +114,15 @@ namespace Btk{
             Uint32 last_redraw_ticks = 0;
             //FPS limit(0 on unlimited)
             Uint32 fps_limit = 60;
-            //Window theme
-            Theme theme;
             //The draw callback
             //It will be called at last
             std::list<DrawCallback> draw_cbs;
 
+            //Current menu bar
+            Menu *menu_bar = nullptr;
+            
             //Methods for Widget impl
         private:
-            //A helper for set the current focus widget
-            void set_focus_widget(Widget *);
-            void window_mouse_leave();
-            Widget *focus_widget = nullptr;//The widget which has focus
-            Widget *drag_widget = nullptr;//The Dragging event
-            Widget *cur_widget = nullptr;//Mouse point widget
             /**
              * @brief The mouse is pressed
              * 
@@ -127,10 +130,47 @@ namespace Btk{
              */
             bool mouse_pressed = false;
             bool drag_rejected = false;
+            bool dragging = false;
+            /**
+             * @brief For impl Btk::PushEvent
+             * 
+             * @param event 
+             */
+            BTKHIDDEN
+            void defered_event(std::unique_ptr<Event> event);
+        public:
+            #ifdef _WIN32
+            //Win32 parts
+            Uint32 win32_draw_ticks = 0;
+            
+            void __stdcall handle_win32(
+                void *hwnd,
+                unsigned int message,
+                Uint64 wParam,
+                Sint64 lParam
+            );
+            
+            #endif
+
+            #ifdef __gnu_linux__
+            //X11 parts
+            unsigned long x_window;
+            void         *x_display;
+
+            /**
+             * @brief Method for process XEvent
+             * 
+             * @param p_xevent const pointer to XEvent
+             * @return BTKHIDDEN 
+             */
+            BTKHIDDEN
+            void handle_x11(const void *p_xevent);
+            #endif
+        friend class Menu;
         friend class Window;
         friend class Widget;
         friend class System;
-        friend void DispatchEvent(const SDL_Event &ev,void*);
+        friend void PushEvent(Event *,Window &);
     };
 }
 

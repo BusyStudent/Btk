@@ -17,6 +17,7 @@ namespace Btk{
     class BTKAPI Event{
         public:
             enum Type:Uint32{
+                None = 0,
                 KeyBoard = 1,//Key pressed or released
 
                 //MotionEvent
@@ -25,6 +26,7 @@ namespace Btk{
                 Motion = 4,//Mouse motion in Widget
                 //MouseEvent
                 Click = 5,//Mouse Click
+                Mouse = 5,
 
                 DragBegin = 6,//The drag is begin
                 Drag = 7,//Is draging now
@@ -47,6 +49,15 @@ namespace Btk{
                 WindowLeave = 16,//The mouse leave the window
                 Resize = 17,//< The widget is be resized
 
+                //Drop
+                DropBegin = 18,
+                DropEnd = 19,
+                DropText = 20,
+                DropFile = 21,
+                //Hide / Show
+                Hide = 22,
+                Show = 23,
+
                 User = 10000,
                 UserMax = UINT32_MAX - 1,
                 Error = UINT32_MAX
@@ -63,10 +74,12 @@ namespace Btk{
         public:
             Event(Type t):
                 _type(t),
-                _accepted(false){};
+                _accepted(false),
+                _broadcast(false){};
             Event(const Event &ev):
                 _type(ev._type),
-                _accepted(false){};
+                _accepted(false),
+                _broadcast(ev._broadcast){};
             virtual ~Event() = default;
             /**
              * @brief is accepted
@@ -76,7 +89,16 @@ namespace Btk{
              */
             bool is_accepted() const noexcept{
                 return _accepted;
-            };
+            }
+            bool is_rejected() const noexcept{
+                return not _accepted;
+            }
+            bool is_broadcast() const noexcept{
+                return _broadcast;
+            }
+            void set_broadcast(bool val = true) noexcept{
+                _broadcast = val;
+            }
             /**
              * @brief Accept the event
              * 
@@ -85,7 +107,7 @@ namespace Btk{
             bool accept() noexcept{
                 _accepted = true;
                 return true;
-            };
+            }
             /**
              * @brief Reject the event
              * 
@@ -94,7 +116,7 @@ namespace Btk{
             bool reject() noexcept{
                 _accepted = false;
                 return false;
-            };
+            }
             /**
              * @brief Chaneg the event type
              * 
@@ -108,6 +130,7 @@ namespace Btk{
             //Event type
             Type _type;
             bool _accepted;
+            bool _broadcast;
         friend class Window;
     };
     /**
@@ -250,7 +273,7 @@ namespace Btk{
         //methods
         Vec2 position() const noexcept{
             return {x,y};
-        };
+        }
     };
     /**
      * @brief A Event of text input
@@ -258,7 +281,7 @@ namespace Btk{
      */
     struct BTKAPI TextInputEvent:Event{
         TextInputEvent():Event(TextInput){};
-        std::string_view text;//<Text input buffer(utf-8 encoded)
+        u8string_view text;//<Text input buffer(utf-8 encoded)
         /**
          * @brief Get length of the string
          * 
@@ -301,6 +324,10 @@ namespace Btk{
         DragEvent(const DragEvent &) = default;
         ~DragEvent();
 
+        Vec2 position() const noexcept{
+            return {x,y};
+        }
+
         int x;
         int y;
         int xrel;//< Note It cannot be used at DragEnd
@@ -317,6 +344,22 @@ namespace Btk{
         Uint32 which;//< Which mouse
         Sint64 x;//< Vertical scroll,postive for scroll right
         Sint64 y;//< Horizontal scroll,postive for scroll up
+    };
+    /**
+     * @brief A event of drop
+     * 
+     */
+    struct BTKAPI DropEvent:public Event{
+        DropEvent(Type t):Event(t){};
+        DropEvent(const DropEvent &) = default;
+        ~DropEvent() = default;
+
+        u8string_view text;
+
+        int x = -1,y = -1;
+        Vec2 position() const noexcept{
+            return {x,y};
+        }
     };
     /**
      * @brief a generic struct for updating data
@@ -355,13 +398,6 @@ namespace Btk{
      */
     bool SendEvent(Event &event,Window &receiver);
     bool SendEvent(Event &event,Widget &receiver);
-    /**
-     * @brief This function was called by System to dispatch our event
-     * 
-     * @internal User should not use it
-     * @param ev SDL_Event structure 
-     */
-    void DispatchEvent(const SDL_Event &ev,void *);
 };
 
 

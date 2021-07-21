@@ -4,6 +4,8 @@
 #include <list>
 #include "function.hpp"
 #include "signal.hpp"
+#include "themes.hpp"
+#include "font.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
 namespace Btk{
@@ -21,17 +23,18 @@ namespace Btk{
 
     struct KeyEvent;
     struct DragEvent;
+    struct DropEvent;
     struct MouseEvent;
     struct WheelEvent;
     struct MotionEvent;
     struct ResizeEvent;
     struct TextInputEvent;
 
-    enum class FocusPolicy{
-        None,
-        KeyBoard,
-        Click,
-        Wheel
+    enum class FocusPolicy:Uint8{
+        None = 0,
+        KeyBoard = 1,
+        Mouse = 2,//< The widget will get focus by mouse and lost focus by mouse
+        Wheel = 3
     };
     //Alignment
     enum class Align:unsigned int{
@@ -44,6 +47,11 @@ namespace Btk{
         Right,
         Left
     };
+    inline constexpr auto AlignCenter = Align::Center;
+    inline constexpr auto AlignBottom = Align::Bottom;
+    inline constexpr auto AlignRight = Align::Right;
+    inline constexpr auto AlignLeft = Align::Left;
+    inline constexpr auto AlignTop = Align::Top;
 
     //Attribute for Widget
     struct WidgetAttr{
@@ -54,53 +62,6 @@ namespace Btk{
         bool disable = false;//<The widget is disabled?
         FocusPolicy focus = FocusPolicy::None;//<Default the widget couldnot get focus
     };
-    /**
-     * @brief Helper class for store data
-     * 
-     */
-    struct WidgetHolder{
-        WidgetHolder() = default;
-        WidgetHolder(const WidgetHolder &) = default;
-        WidgetHolder(Widget *w):widget(w){};
-        Widget *widget = nullptr;
-        void *userdata = nullptr;
-        void (*cleanup)(WidgetHolder&) = nullptr;
-
-        void _cleanup(){
-            if(cleanup == nullptr){
-                return;
-            }
-            cleanup(*this);
-        }
-        operator Widget*() const noexcept{
-            return widget;
-        }
-        Widget *operator ->() const noexcept{
-            return widget;
-        }
-        Widget *get() const noexcept{
-            return widget;
-        }
-
-        template<class T>
-        static void DeleteHelper(WidgetHolder &h){
-            delete static_cast<T*>(h.userdata);
-        }
-        template<class T>
-        void set_userdata(){
-            userdata = new T;
-            cleanup = DeleteHelper<T>;
-        }
-        template<class T>
-        void set_userdata(T &&t){
-            userdata = new T(std::forward<T>(t));
-            cleanup = DeleteHelper<T>;
-        }
-        template<class T>
-        T &get_userdata(){
-            return *static_cast<T*>(userdata);
-        }
-    };
     class BTKAPI Widget:public HasSlots{
         public:
             /**
@@ -108,9 +69,6 @@ namespace Btk{
              * @note All data will be inited to 0
              */
             Widget();
-            Widget(Widget *parent);
-            Widget(Widget &parent):Widget(&parent){}
-
             Widget(const Widget &) = delete;
             virtual ~Widget();
             virtual void draw(Renderer &render) = 0;
@@ -122,6 +80,9 @@ namespace Btk{
              */
             virtual bool handle(Event &);
             virtual void set_rect(const Rect &rect);
+            //Hide and show
+            void hide();
+            void show();
 
             bool visible() const noexcept{
                 return not attr.hide;
@@ -141,6 +102,12 @@ namespace Btk{
             //Set widget rect
             void set_rect(int x,int y,int w,int h){
                  set_rect({x,y,w,h});
+            }
+            void set_rectangle(int x,int y,int w,int h){
+                 set_rect({x,y,w,h});
+            }
+            void set_rectangle(const Rect &r){
+                set_rect(r);
             }
             void set_position(const Vec2 &vec2){
                 set_rect(vec2.x,vec2.y,rect.w,rect.h);
@@ -196,6 +163,13 @@ namespace Btk{
              * 
              */
             void clear_childrens();
+            
+            auto &get_childrens(){
+                return childrens;
+            }
+            WidgetAttr attribute() const noexcept{
+                return attr;
+            }
         protected:
             /**
              * @brief Send a redraw request to the window
@@ -215,19 +189,32 @@ namespace Btk{
              */
             Renderer *renderer() const;
             /**
-             * @brief Get the default font
+             * @brief Find children by position
              * 
-             * @return Font 
+             * @return Widget* 
              */
-            Font default_font() const;
+            Widget *find_children(const Vec2 position) const;
             /**
-             * @brief Get the theme of the current window
+             * @brief Set theme and font from parent
              * 
-             * @return Theme& 
              */
-            Theme &window_theme() const;
+            void inhert_style();
 
-            
+            const Font &font() const noexcept{
+                return _font;
+            }
+            const Theme &theme() const noexcept{
+                return _theme;
+            }
+
+            void set_font(const Font &font){
+                _font = font;
+                redraw();
+            }
+            void set_theme(const Theme &theme){
+                _theme = theme;
+                redraw();
+            }
         public:
             //Event Handle Method,It will be called in Widget::handle()
             /**
@@ -237,7 +224,8 @@ namespace Btk{
              * @return false 
              */
             virtual bool handle_drag(DragEvent     &){return false;}
-            virtual bool handle_click(MouseEvent   &){return false;}
+            virtual bool handle_drop(DropEvent     &){return false;}
+            virtual bool handle_mouse(MouseEvent   &){return false;}
             virtual bool handle_wheel(WheelEvent   &){return false;}
             virtual bool handle_motion(MotionEvent &){return false;}
             virtual bool handle_keyboard(KeyEvent  &){return false;}
@@ -249,8 +237,10 @@ namespace Btk{
 
             std::list<Widget*> childrens;
         private:
-             void dump_tree_impl(FILE *output,int depth);
+            void dump_tree_impl(FILE *output,int depth);
 
+            Font _font;
+            Theme _theme;
             Widget *_parent = nullptr;//< Parent
             mutable WindowImpl *_window = nullptr;//<Window pointer
         friend class Window;
@@ -332,6 +322,14 @@ namespace Btk{
     template<>
     inline FRect Widget::rectangle<float,FRect>() const noexcept{
         return FRect(rect);
+    }
+    inline Widget *Widget::find_children(Vec2 position) const{
+        for(auto widget:childrens){
+            if(widget->rect.has_point(position)){
+                return widget;
+            }
+        }
+        return nullptr;
     }
 
     class BTKAPI Line:public Widget{

@@ -1,11 +1,13 @@
 #if !defined(_BTK_HPP_)
 #define _BTK_HPP_
+#include <type_traits>
 #include <exception>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
 #include <tuple>
 #include "defs.hpp"
+#include "utils/traits.hpp"
 #include "impl/invoker.hpp"
 #include "window.hpp"
 namespace Btk{
@@ -46,8 +48,19 @@ namespace Btk{
      */
     BTKAPI void DeferCall(void(* fn)(void*),void *data);
     BTKAPI void DeferCall(void(* fn)());
-    
-    template<class Callable,class ...Args>
+    /**
+     * @brief This function will be called in main EventLoop
+     * 
+     * @tparam Callable 
+     * @tparam Args 
+     * @param callable 
+     * @param args 
+     */
+    template<
+        class Callable,
+        class ...Args,
+        typename _Cond = std::enable_if_t<!std::is_member_function_pointer_v<Callable>>
+    >
     void DeferCall(Callable &&callable,Args ...args){
         auto *invoker = new Impl::Invoker<Callable,Args...>{
             {std::forward<Args>(args)...},
@@ -56,6 +69,29 @@ namespace Btk{
         void *data = invoker;
         void (*fn)(void*) = Impl::Invoker<Callable,Args...>::Run;
         DeferCall(fn,data);
+    }
+    /**
+     * @brief Defercall for Object member function
+     * 
+     * @tparam Callable 
+     * @tparam Object 
+     * @tparam Args 
+     * @tparam _Cond 
+     * @param callable 
+     * @param object 
+     * @param args 
+     */
+    template<
+        class Callable,
+        class Object,
+        class ...Args,
+        typename _Cond = std::enable_if_t<std::is_member_function_pointer_v<Callable>>
+    >
+    void DeferCall(Callable &&callable,Object *object,Args ...args){
+        static_cast<HasSlots*>(object)->defer_call(
+            std::forward<Callable>(callable),
+            std::forward<Args>(args)...
+        );
     }
     /**
      * @brief Check is main thread(which call Btk::run)

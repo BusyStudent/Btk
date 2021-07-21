@@ -4,6 +4,7 @@
 #include <string>
 #include "../defs.hpp"
 #include "../signal.hpp"
+#include "../string.hpp"
 namespace Btk{
     //The impl of the box
     struct FSelectBoxImpl;
@@ -13,9 +14,9 @@ namespace Btk{
      */
     class BTKAPI FSelectBox{
         public:
-            typedef Signal<void(std::string_view txt)> SignalAsync;
+            typedef Signal<void(u8string_view txt)> SignalAsync;
         public:
-            FSelectBox(std::string_view title = std::string_view());
+            FSelectBox(u8string_view title = {});
             FSelectBox(const FSelectBox &);
             ~FSelectBox();
             /**

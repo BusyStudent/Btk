@@ -13,14 +13,14 @@ namespace Btk{
     Palette &Palette::operator =(Palette &&) = default;
 }
 namespace Btk{
-    void Palette::set(std::string_view key,Color c){
-        colors[std::string(key)] = c;
+    void Palette::set(u8string_view key,Color c){
+        colors[u8string(key)] = c;
     }
-    Color Palette::get(std::string_view key) const{
-        return colors.at(std::string(key));
+    Color Palette::get(u8string_view key) const{
+        return colors.at(u8string(key));
     }
-    bool Palette::has_color(std::string_view key) const{
-        return colors.find(std::string(key)) != colors.end();
+    bool Palette::has_color(u8string_view key) const{
+        return colors.find(u8string(key)) != colors.end();
     }
     size_t Palette::size() const{
         return colors.size();

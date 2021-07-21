@@ -14,7 +14,7 @@ namespace Btk{
     class BTKAPI AbstractButton:public Widget{
         public:
             //Process event
-            bool handle(Event &);
+            bool handle(Event &) override;
             
             template<class ...T>
             void on_click(T &&...args){
@@ -23,16 +23,30 @@ namespace Btk{
             Signal<void()> &signal_clicked(){
                 return clicked;
             }
-
+            /**
+             * @brief Get the button text
+             * 
+             * @return u8string_view 
+             */
+            u8string_view text() const{
+                return btext;
+            }
+            bool is_checked() const noexcept{
+                return checked;
+            }
         protected:
-            virtual void set_parent(Widget *);
+            virtual void set_parent(Widget *) override;
             virtual void onenter();
             virtual void onleave();
             bool is_entered = false;//< Is mouse on the button?
             bool is_pressed = false;//< Is mouse pressed the button?
-            Theme theme;//< current theme
             float ptsize = 0;//< fontsize
-            
+            //For RadioButton and CheckButton
+            bool checked = false;
+            bool checkable = true;
+
+            u8string btext;//< Button text
+
             Signal<void()> clicked;
     };
     /**
@@ -42,47 +56,71 @@ namespace Btk{
     class BTKAPI Button:public AbstractButton{
         public:
             Button();
-            Button(std::string_view text);
+            Button(u8string_view text);
             Button(int x,int y,int w,int h);
             ~Button();
-            void draw(Renderer &);
-            void set_text(std::string_view text);
-            /**
-             * @brief Get the button text
-             * 
-             * @return std::string_view 
-             */
-            std::string_view text() const{
-                return btext;
-            }
+            void draw(Renderer &) override;
+            void set_text(u8string_view text);
         protected:
-            bool handle_click(MouseEvent &) override;
+            bool handle_mouse(MouseEvent &) override;
             void onleave() override;
-
-
-            //Button text
-            std::string btext;
             //PixBuf  textbuf;
             //Texture texture;
             //Font    textfont;
     };
     class RadioButton:public AbstractButton{
         public:
+            using Widget::set_rect;
+
             RadioButton();
+            RadioButton(u8string_view text):RadioButton(){
+                btext = text;
+            }
             ~RadioButton();
 
-            void draw(Renderer &);
-            bool is_checked() const noexcept{
-                return checked;
+            void draw(Renderer &) override;
+            void set_rect(const Rect &r) override;
+            /**
+             * @brief Config the circle's r
+             * 
+             * @param r 
+             */
+            void set_cirlce_r(float r){
+                circle_r = r;
+                redraw();
             }
+        protected:
+            bool handle_motion(MotionEvent &event) override;
+            bool handle_mouse(MouseEvent &event) override;
         private:
-            bool checked = false;
-            bool checkable = true;
-
-            FRect circle_rect;
-            std::string btext;
+            FPoint circle_center = {0,0};
+            float  circle_r = 0;
+            /**
+             * @brief Text center
+             * 
+             */
+            FPoint text_center;
     };
-};
-
-
+    class BTKAPI CheckButton:public AbstractButton{
+        public:
+            using Widget::set_rect;
+            
+            CheckButton();
+            CheckButton(u8string_view text){
+                btext = text;
+            }
+            ~CheckButton();
+            void draw(Renderer &) override;
+            //Event handle
+            void set_rect(const Rect &r) override;
+            bool handle_motion(MotionEvent &event) override;
+            bool handle_mouse(MouseEvent &event) override;
+        private:
+            //The rect to check
+            FRect  check_rect;
+            FPoint text_center;
+            bool   tristate = false;
+            Uint8  status;
+    };
+}
 #endif // _BTK_BUTTON_HPP_

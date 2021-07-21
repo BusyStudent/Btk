@@ -4,6 +4,17 @@
 #include "pixels.hpp"
 #include "widget.hpp"
 namespace Btk{
+    /**
+     * @brief AbstructeSlider
+     * 
+     */
+    class BTKAPI AbstructSlider:public Widget{
+        public:
+
+        protected:
+            Signal<void(float)> _signal_change;
+
+    };
     class BTKAPI ScrollBar:public Widget{
         public:
             using Widget::set_rect;
@@ -16,8 +27,8 @@ namespace Btk{
             ScrollBar(const ScrollBar &) = delete;
             ~ScrollBar();
 
-            bool handle(Event &);
-            void draw(Renderer&);
+            bool handle(Event &) override;
+            void draw(Renderer&) override;
             /**
              * @brief Get the value of the scrollbar
              * 

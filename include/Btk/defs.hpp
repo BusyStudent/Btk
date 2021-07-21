@@ -3,6 +3,9 @@
 
 #ifdef __cplusplus
     #include <cstdint>
+    #if __cplusplus < 201703L
+    #error We need a C++17 to compile btk
+    #endif
 #else
     #include <stdint.h>
 #endif
@@ -11,7 +14,6 @@
     #ifdef _MSC_VER
         #define BTKEXPORT __declspec(dllexport)
         #define BTKIMPORT __declspec(dllimport)
-        
         #undef not
         #undef and
         #undef or
@@ -23,12 +25,15 @@
         #define BTKEXPORT __attribute__((dllexport))
         #define BTKIMPORT __attribute__((dllimport))
     #endif
+    #define BTKCDEL __cdel
 #elif defined(__GNUC__)
+    #define BTKCDEL //Ignore CDEL call
     #define BTKEXPORT __attribute__((visibility("default")))  
     #define BTKIMPORT 
 #else
     //ignore this
-    #define BTKEXPORT     
+    #define BTKCDEL
+    #define BTKEXPORT 
     #define BTKIMPORT 
 #endif
 
@@ -37,10 +42,14 @@
     #define BTKWEAK   __attribute__((weak))
     #define BTKHIDDEN __attribute__((visibility("hidden")))
     #define BTKINLINE __attribute__((__always_inline__))
+
+    #define BTK_NODISCARD(MSG) __attribute__((nodiscard(MSG)))
 #elif defined(_MSC_VER)    
     #define BTKWEAK 
     #define BTKHIDDEN  
     #define BTKINLINE __forceinline
+    
+    #define BTK_NODISCARD(MSG) __declspec((nodiscard(MSG)))
 #else
     #define BTKWEAK 
     #define BTKHIDDEN
@@ -48,16 +57,49 @@
 #endif
 //rename macro
 #define BTK_PRIVATE(NAME) __BtkPriv_##NAME
-
-
-
+/**
+ * @brief Generate operator for enum
+ * @param ENUM The enum type
+ * @param BASE The enum base type
+ * @param OP The operator you want to impl
+ */
+#define BTK_ENUM_OPERATOR(ENUM,BASE,OP) \
+    inline ENUM operator OP(ENUM a1,ENUM a2) noexcept{\
+        return static_cast<ENUM>(\
+            static_cast<BASE>(a1) OP static_cast<BASE>(a2)\
+        );\
+    }
+#define BTK_ENUM_OPERATOR2(ENUM,BASE,OP) \
+    inline ENUM operator OP##=(ENUM a1,ENUM a2) noexcept{\
+        return static_cast<ENUM>(\
+            static_cast<BASE>(a1) OP static_cast<BASE>(a2)\
+        );\
+    }
+#define BTK_ENUM_ALIAS(ENUM,ALIAS,OP) \
+    inline ENUM operator ALIAS(ENUM a1,ENUM a2) noexcept{\
+        return a1 OP a2;\
+    }
+/**
+ * @brief Generate flags' operators
+ * 
+ */
+#define BTK_FLAGS_OPERATOR(ENUM,BASE) \
+    BTK_ENUM_OPERATOR(ENUM,BASE, &);\
+    BTK_ENUM_OPERATOR(ENUM,BASE, |);\
+    BTK_ENUM_OPERATOR(ENUM,BASE, ^);\
+    BTK_ENUM_OPERATOR2(ENUM,BASE, &);\
+    BTK_ENUM_OPERATOR2(ENUM,BASE, |);\
+    BTK_ENUM_OPERATOR2(ENUM,BASE, ^);\
+    BTK_ENUM_ALIAS(ENUM,+,|);\
+    BTK_ENUM_ALIAS(ENUM,+=,|=);
 
 
 #ifdef _BTK_SOURCE
     //source file
     #define BTKAPI BTKEXPORT
 #else
-    #define BTKAPI BTKIMPORT
+    //#define BTKAPI BTKIMPORT
+    #define BTKAPI
 #endif
 
 #ifdef __cplusplus
@@ -80,8 +122,10 @@ namespace Btk{
     using Sint64 = int64_t;
     //end
     //Btk u16string
-    class String;
-    using u16string = String;
+    class u16string_view;
+    class u16string;
+    class u8string_view;
+    class u8string;
     //Generic Align
     
     enum class Orientation:unsigned int{

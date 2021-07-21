@@ -27,14 +27,38 @@ int main(){
 
 ----
 
+## TODO List  
+
+- Rewrite font system to get better performence  
+- Add more useful widgets  
+- Add Btk::Bind(...) to bind object and functions  
+
+----
+
+## Widgets List
+
+|  Widgets  |  Done?  | TODO | Description |
+|  ---      |  ---    | ---  | ---         |
+|  Button   |         |      |             |
+|  ImageView|         |      |             |
+|  TextBox  |         |      |             |
+|  ProgressBar  |         |      |             |
+|  EmbedWindow  | No      |      |             |
+|  ScrollBar|        |      |             |
+|  Canvas   |         |      |             |
+|  GLCanvas |         |      |             |
+|  Label    |         |      |             |
+|  Line     |         |      |             |
+
+----
+
 ## Building prerequisites
 
 ### Linux
 
 - G++ with C++17 support  
 - SDL2  
-- SDL2-ttf  
-- SDL2-image  
+- SDL2-image  (optional)  
 - fontconfig (optional,for select font)  
 - libgif (optional,for display gif)  
 - scons or xmake
@@ -43,8 +67,7 @@ int main(){
 
 - MINGW or vs2017  
 - SDL2  
-- SDL2-ttf  
-- SDL2-image  
+- SDL2-image (optional)  
 - libgif (optional)  
 - scons or xmake
 
@@ -59,6 +82,12 @@ int main(){
 ```console
 btk@btk:sudo apt install libsdl2-dev
 btk@btk:scons
+```
+
+or
+
+```console
+xmake
 ```
 
 ## License

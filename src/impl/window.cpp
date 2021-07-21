@@ -1,6 +1,7 @@
-#include <SDL2/SDL_image.h>
-
 #include "../build.hpp"
+
+#include <SDL2/SDL_video.h>
+#include <SDL2/SDL_timer.h>
 
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/utils.hpp>
@@ -17,24 +18,26 @@
 #include <algorithm>
 
 namespace Btk{
-    static SDL_Window *CreateWindow(const char *title,int x,int y,int w,int h,int flags){
-        SDL_Window *win = SDL_CreateWindow(title,x,y,w,h,flags);
-        if(win == nullptr){
-            const char *err = SDL_GetError();
-            BTK_LOGINFO("%s",err);
-            throwSDLError(err);
+    static RendererDevice *create_device(SDL_Window *_win){
+        auto dev = Instance().create_device(_win);
+        if(dev == nullptr){
+            throwRendererError("Couldnot create device");
         }
-        return win;
+        BTK_LOGINFO("[Window::Device] Create Device %s",get_typename(dev).c_str());
+        return dev;
     }
-
-    WindowImpl::WindowImpl(const char *title,int x,int y,int w,int h,int flags):
-         win(CreateWindow(title,x,y,w,h,flags)),
-         render(win){
+    WindowImpl::WindowImpl(SDL_Window *_win):
+        win(_win),
+        _device(create_device(_win)),
+        render(*_device){
         //Set theme
-        theme = Themes::GetDefault();
+        set_theme(Themes::GetDefault());
         //Set background color
-        bg_color = theme[Theme::Window];        
+        bg_color = theme()[Theme::Window];        
         attr.window = true;
+
+        //Configure widget
+        set_font(Font(theme().font_name(),theme().font_size()));
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -42,6 +45,8 @@ namespace Btk{
         SDL_FreeCursor(cursor);
         //destroy the render before destroy the window
         render.destroy();
+        //destroy Device
+        delete _device;
 
         SDL_DestroyWindow(win);
     }
@@ -54,12 +59,7 @@ namespace Btk{
         render.begin();
         render.clear(bg_color);
         //Draw each widget
-        for(auto widget:childrens){
-            //check widgets
-            if((widget->visible()) and not(widget->rect.empty())){
-                widget->draw(render);
-            }
-        }
+        Group::draw(render);
         //Run the draw callback
         auto iter = draw_cbs.begin();
         while(iter != draw_cbs.end()){
@@ -104,7 +104,7 @@ namespace Btk{
         return true;
     }
     //DropFilecb
-    void WindowImpl::on_dropfile(std::string_view file){
+    void WindowImpl::on_dropfile(u8string_view file){
         if(not sig_dropfile.empty()){
             sig_dropfile(file);
         }
@@ -158,31 +158,14 @@ namespace Btk{
             }
         }
     }
-    //Dispatch Event
-    bool WindowImpl::dispatch(Event &event){
-        if(Widget::handle(event)){
-            if(event.is_accepted()){
-                return true;
-            }
-            return false;
-        }
-        else{
-            //Using the EventSignal
-            if(sig_event.empty()){
-                return false;
-            }
-            return sig_event(event);
-        }
-    }
 }
 //Event Processing
 namespace Btk{
     bool WindowImpl::handle(Event &event){
-        if(not Widget::handle(event)){
-            //The widget doesnnot process it
-            return sig_event(event);
+        if(Group::handle(event)){
+            return true;
         }
-        return true;
+        return sig_event(event);
     }
     void WindowImpl::handle_windowev(const SDL_Event &event){
         switch(event.window.event){
@@ -201,19 +184,12 @@ namespace Btk{
             }
             case SDL_WINDOWEVENT_CLOSE:{
                 //Close window;
-                if(on_close()){
-                    //success to close
-                    //Delete Wnidow;
-                    System::instance->unregister_window(this);
-                    if(System::instance->wins_map.empty()){
-                        //No window exist
-                        Btk::Exit(0);
-                    }
-                }
+                Instance().close_window(this);
                 break;
             }
             case SDL_WINDOWEVENT_RESIZED:{
                 //window resize
+                set_rect(0,0,event.window.data1,event.window.data2);
                 on_resize(event.window.data1,event.window.data2);
                 break;
             }
@@ -239,7 +215,8 @@ namespace Btk{
                 }
                 //Event leave(Event::WindowLeave);
                 //container.handle(leave);
-                window_mouse_leave();
+                Event event(Event::Leave);
+                handle(event);
                 if(not sig_leave.empty()){
                     sig_leave();
                 }
@@ -247,245 +224,110 @@ namespace Btk{
             }
         }
     }
-    bool WindowImpl::handle_click(MouseEvent &event){
-        event.accept();
-        
-        int x = event.x;
-        int y = event.y;
+    bool WindowImpl::handle_motion(MotionEvent &event){
+        if(mouse_pressed and not drag_rejected){
+            //Is dragging
+            DragEvent drag(Event::DragBegin,event);
 
-        //If the focus_widget get focus by click
-        if(focus_widget != nullptr){
-            if(focus_widget->attr.focus == FocusPolicy::Click){
-                //Is not dragging
-                if(focus_widget != drag_widget and not focus_widget->rect.has_point(x,y)){
-                    set_focus_widget(nullptr);
-                }
+            if(not Group::handle_drag(drag) or drag.is_rejected()){
+                //Rejected
+                drag_rejected = true;
+            }
+            else{
+                //Is dragging and the widget accepted it
+                SDL_CaptureMouse(SDL_TRUE);
+                dragging = true;
             }
         }
-
+        if(dragging){
+            DragEvent drag(Event::Drag,event);
+            handle_drag(drag);
+        }
+        return Group::handle_motion(event);
+    }
+    bool WindowImpl::handle_mouse(MouseEvent &event){
         if(event.state == MouseEvent::Pressed){
             mouse_pressed = true;
         }
         else{
-            //cleanup flags
-            mouse_pressed = false;
-            drag_rejected = false;
-            //Dragging is at end
-            if(drag_widget != nullptr){
-                DragEvent ev(Event::DragEnd,x,y,-1,-1);
-                drag_widget->handle(ev);
-                BTK_LOGINFO("(%s)%p DragEnd",get_typename(drag_widget).c_str(),drag_widget);
-                drag_widget = nullptr;
-
+            if(dragging){
                 SDL_CaptureMouse(SDL_FALSE);
+                DragEvent drag(Event::DragEnd,event.x,event.y,0,0);
+                Group::handle_drag(drag);
             }
+            //Clear the flags
+            mouse_pressed = false;
+            dragging = false;
+            drag_rejected = false;
         }
-
-        if(cur_widget == nullptr){
-            //try to find a new_widget
-            for(auto widget:childrens){
-                if(widget->visible() and widget->rect.has_point(x,y)){
-                    cur_widget = widget;
-                    //It can get focus by Click
-                    if(widget->attr.focus == FocusPolicy::Click){
-                        set_focus_widget(cur_widget);
-                    }
-                    break;
-                }
-            }
-            //We didnot find it
-            return true;
-        }
-        //Send the mouse event to it
-        cur_widget->handle(event);
-
-        if(cur_widget != focus_widget){
-            if(cur_widget->attr.focus == FocusPolicy::Click){
-                //It can get focus by click
-                set_focus_widget(cur_widget);
-            }
-        }
-        return true;
+        return Group::handle_mouse(event);
     }
-    bool WindowImpl::handle_motion(MotionEvent &event){
-        event.accept();
+    bool WindowImpl::handle_drop(DropEvent &event){
+        //TODO Send to current widget
+        Group::handle_drop(event);
         
-        int x = event.x;
-        int y = event.y;
-
-
-        //Is dragging
-        if(drag_widget != nullptr){
-            DragEvent drag_ev(Event::Drag,event);
-            BTK_LOGINFO("(%s)%p Dragging x=%d y=%d",get_typename(drag_widget).c_str(),drag_widget,x,y);
-            drag_widget->handle(drag_ev);
-        }
-        else if(mouse_pressed == true and 
-                cur_widget != nullptr and 
-                not(drag_rejected)){
-            //Send Drag Begin
-            DragEvent drag_ev(Event::DragBegin,event);
-            if(cur_widget->handle(drag_ev)){
-                if(drag_ev.is_accepted()){
-                    //The event is accepted
-                    drag_widget = cur_widget;
-                    BTK_LOGINFO("(%s)%p accepted DragBegin",get_typename(cur_widget).c_str(),cur_widget);
-                    SDL_CaptureMouse(SDL_TRUE);
-                }
-                else{
-                    drag_rejected = true;
-                    BTK_LOGINFO("(%s)%p rejected DragBegin",get_typename(cur_widget).c_str(),cur_widget);
-                }
-            }
-            else{
-                drag_rejected = true;
-                BTK_LOGINFO("(%s)%p rejected DragBegin",get_typename(cur_widget).c_str(),cur_widget);
-            }
-        }
-
-        
-        //We didnot has the widget
-        if(cur_widget != nullptr){
-            if(cur_widget->rect.has_point(x,y)){
-                //It does not change
-                //Dispatch this motion event
-                cur_widget->handle(event);
-                return true;
-            }
-            else{
-                //widget leave
-                event.set_type(Event::Type::Leave);
-                cur_widget->handle(event);
-                cur_widget = nullptr;
-            }
-        }
-        //find new widget which has this point
-        for(auto widget:childrens){
-            if(widget->visible() and widget->rect.has_point(x,y)){
-                cur_widget = widget;
-                //widget enter
-                event.set_type(Event::Type::Enter);
-                cur_widget->handle(event);
-                break;
-            }
-        }
-        return true;
-    }
-    bool WindowImpl::handle_keyboard(KeyEvent &event){
-        //event.accept();
-
-        if(focus_widget != nullptr){
-            if(focus_widget->handle(event)){
-                if(event.is_accepted()){
-                    return true;
-                }
-            }
-        }
-        if(cur_widget != nullptr){
-            if(cur_widget->handle(event)){
-                if(event.is_accepted()){
-                    return true;
-                }
-            }
-        }
-        for(auto widget:childrens){
-            if(widget != focus_widget and widget != cur_widget){
-                widget->handle(event);
-                if(event.is_accepted()){
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-    bool WindowImpl::handle_textinput(TextInputEvent &event){
-        event.accept();
-        if(focus_widget != nullptr){
-            //Send the event to focus event
-            focus_widget->handle(event);
-            if(not event.is_accepted()){
-                //this event is rejected
-                //dispatch it to other widget
-                for(auto widget:childrens){
-                    if(widget != focus_widget){
-                        widget->handle(event);
-                        if(event.is_accepted()){
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-    bool WindowImpl::handle_wheel(WheelEvent &event){
-        if(cur_widget != nullptr){
-            return cur_widget->handle(event);
-        }
-        return false;
-    }
-    void WindowImpl::set_focus_widget(Widget *widget){
-        Event event(Event::LostFocus);
-        //We has last widget which has focus
-        if(focus_widget != nullptr){
-            //Send a lose focus
-            
-            BTK_LOGINFO("[Container:%p]'%s' %p lost focus",
-                        this,
-                        get_typename(focus_widget).c_str(),
-                        focus_widget);
-            
-            focus_widget->handle(event);
-        }
-        event.set_type(Event::TakeFocus);
-        focus_widget = widget;
-        
-        if(widget != nullptr){
-
-            BTK_LOGINFO("[Container:%p]'%s' %p take focus",
-                this,
-                get_typename(focus_widget).c_str(),
-                focus_widget);
-
-            
-            focus_widget->handle(event);
-        }
-
-    }
-    void WindowImpl::window_mouse_leave(){
-        if(cur_widget != nullptr){
-            Event event(Event::Leave);
-            cur_widget->handle(event);
-            cur_widget = nullptr;
+        if(event.type() == Event::DropFile){
+            on_dropfile(event.text);
         }
     }
-
-    
+    void WindowImpl::defered_event(std::unique_ptr<Event> event){
+        handle(*event);
+    }
+    void PushEvent(Event *event,Window &window){
+        if(event == nullptr){
+            return;
+        }
+        auto w = window.impl();
+        w->defer_call(&WindowImpl::defered_event,std::unique_ptr<Event>(event));
+    }
 }
 namespace Btk{
-    Window::Window(std::string_view title,int w,int h){
+    Window::Window(u8string_view title,int w,int h,Flags f){
         Init();
         #ifdef __ANDROID__
         //Android need full screen
-        constexpr Uint32 flags = 
+        Uint32 flags = 
             SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL;
         #else
-        constexpr Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
+        Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
         #endif
-        pimpl = new WindowImpl(
+
+        if((f & Flags::OpenGL) == Flags::OpenGL){
+            flags |= SDL_WINDOW_OPENGL;
+        }
+        if((f & Flags::Vulkan) == Flags::Vulkan){
+            flags |= SDL_WINDOW_VULKAN;
+        }
+        if((f & Flags::SkipTaskBar) == Flags::SkipTaskBar){
+            flags |= SDL_WINDOW_SKIP_TASKBAR;
+        }
+        SDL_Window *sdl_window = SDL_CreateWindow(
             title.data(),
             SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED,
-            w,
-            h,
+            w,h,
             flags
         );
+        if(sdl_window == nullptr){
+            pimpl = nullptr;
+            throwSDLError();
+        }
+
+        pimpl = Instance().create_window(sdl_window);
         // pimpl->container.window = pimpl;
         SDL_SetWindowData(pimpl->win,"btk_win",this);
-        SDL_SetWindowData(pimpl->win,"btk_imp",pimpl);
         winid = SDL_GetWindowID(pimpl->win);
-        System::instance->register_window(pimpl);
+    }
+    Window::Window(const NativeWindow *native_handle){
+        SDL_Window *sdl_window = SDL_CreateWindowFrom(native_handle);
+        if(sdl_window == nullptr){
+            pimpl = nullptr;
+            throwSDLError();
+        }
+        pimpl = Instance().create_window(sdl_window);
+        // pimpl->container.window = pimpl;
+        SDL_SetWindowData(pimpl->win,"btk_win",this);
+        winid = SDL_GetWindowID(pimpl->win);
     }
     bool Window::mainloop(){
         done();
@@ -503,7 +345,7 @@ namespace Btk{
     Window::SignalDropFile& Window::signal_dropfile(){
         return pimpl->sig_dropfile;
     }
-    void Window::set_title(std::string_view title){
+    void Window::set_title(u8string_view title){
         SDL_SetWindowTitle(pimpl->win,title.data());
     }
     void Window::draw(){
@@ -523,13 +365,8 @@ namespace Btk{
         SDL_SetWindowPosition(pimpl->win,x,y);
     }
     
-    void Window::set_icon(std::string_view file){
-        SDL_Surface *image = IMG_Load(file.data());
-        if(image == nullptr){
-            throwSDLError(IMG_GetError());
-        }
-        SDL_SetWindowIcon(pimpl->win,image);
-        SDL_FreeSurface(image);
+    void Window::set_icon(u8string_view file){
+        return set_icon(PixBuf::FromFile(file));
     }
     void Window::set_icon(const PixBuf &pixbuf){
         SDL_SetWindowIcon(pimpl->win,pixbuf.get());
@@ -631,6 +468,9 @@ namespace Btk{
     }
     void Window::dump_tree(FILE *output) const{
         pimpl->dump_tree(output);
+    }
+    Container &Window::container() const{
+        return *pimpl;
     }
 }
 namespace Btk{

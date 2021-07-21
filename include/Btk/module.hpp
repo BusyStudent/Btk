@@ -1,6 +1,6 @@
 #if !defined(_BTK_MODULE_HPP_)
 #define _BTK_MODULE_HPP_
-#include <string_view>
+#include "string.hpp"
 #include "defs.hpp"
 
 #define BTK_MODULE_INIT() extern "C" void BtkModule_Init(Btk::Module& mod)
@@ -15,11 +15,11 @@ namespace Btk{
 
         void *data = nullptr;//< Private data for Module
         void *handle = nullptr;
-        std::string_view name;
+        u8string_view name;
         void unload();
     };
-    BTKAPI void LoadModule(std::string_view module_name);
-    BTKAPI bool HasModule(std::string_view module_name);
+    BTKAPI void LoadModule(u8string_view module_name);
+    BTKAPI bool HasModule(u8string_view module_name);
 };
 
 
