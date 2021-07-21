@@ -53,7 +53,9 @@ namespace Btk{
             x,y,w,h
         };
     }
-    Button::Button(u8string_view text):btext(text){}
+    Button::Button(u8string_view text){
+        btext = text;
+    }
     Button::~Button() = default;
     //draw button
     void Button::draw(Renderer &render){
@@ -187,16 +189,23 @@ namespace Btk{
         }
         
         Color circle_c;
-        if(checked or is_entered){
+        Color circle_b;
+        if(checked){
             circle_c = theme()[Theme::Highlight];
         }
         else{
             circle_c = theme()[Theme::Background];
         }
+        if(is_entered){
+            circle_b = theme()[Theme::Highlight];
+        }
+        else{
+            circle_b = theme()[Theme::Border];
+        }
         //Make circle
         render.fill_circle(circle_center,circle_r - 2,circle_c);
         //Make boarder
-        render.draw_circle(circle_center,circle_r,theme()[Theme::Border]);
+        render.draw_circle(circle_center,circle_r,circle_b);
     }
     void RadioButton::set_rect(const Rect &r){
         Widget::set_rect(r);
@@ -236,10 +245,81 @@ namespace Btk{
     }
     bool RadioButton::handle_mouse(MouseEvent &event){
         //Click in circle
-        if(not event.is_pressed()){
+        if(event.is_released() or (not event.button.is_left())){
+            //The button is not left
             return event.reject();
         }
         if(PointInCircle(circle_center,circle_r,event.position())){
+            //Check in the center
+            if(checkable){
+                checked = ! checked;
+                redraw();
+            }
+            signal_clicked();
+        }
+        return event.accept();
+    }
+}
+namespace Btk{
+    //TODO It has not finished yet
+    CheckButton::CheckButton() = default;
+    CheckButton::~CheckButton() = default;
+
+    void CheckButton::set_rect(const Rect &r){
+        //Calc the rect
+        Widget::set_rect(r);
+
+    }
+    void CheckButton::draw(Renderer &render){
+        if(not btext.empty()){
+            //Draw the text
+            render.begin_path();
+            render.use_font(theme().font_name());
+            render.text_size(theme().font_size());
+            render.text_align(TextAlign::Middle);
+            render.fill_color(theme()[Theme::Text]);
+            render.text(text_center,btext);
+            render.fill();
+        }
+        //Select color
+        Color hight_light = theme()[Theme::Highlight];
+        Color rect_boarder;
+
+        if(is_entered){
+            rect_boarder = hight_light;
+        }
+        else{
+            //Normal boarder
+            rect_boarder = theme()[Theme::Border];
+        }
+        //Draw rect
+        render.draw_rect(check_rect,rect_boarder);
+        //Do we need to draw the 
+        
+    }
+    bool CheckButton::handle_motion(MotionEvent &event){
+        //Check the status and redraw
+        if(check_rect.has_point(event.position())){
+            //Check in the center
+            if(not is_entered){
+                is_entered = true;
+                redraw();
+            }
+        }
+        else{
+            if(is_entered){
+                is_entered = false;
+                redraw();
+            }
+        }
+        return event.accept();
+    }
+    bool CheckButton::handle_mouse(MouseEvent &event){
+        if(event.is_released() or (not event.button.is_left())){
+            //The button is not left
+            return event.reject();
+        }
+        if(check_rect.has_point(event.position())){
             //Check in the center
             if(checkable){
                 checked = ! checked;

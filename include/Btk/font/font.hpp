@@ -160,6 +160,9 @@ namespace Btk::Ft{
          * @return CharIndex 0 on failure
          */
         CharIndex index_char(Char ch);
+        u8string_view family_name() const{
+            return face->family_name;
+        }
         //operation for fontstash in nanovg
         void  fs_get_vmetrics(int *ascent,int *descent,int *lineGap);
         float fs_get_pixel_height_scale(float size);

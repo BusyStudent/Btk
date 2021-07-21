@@ -4,6 +4,17 @@
 #include "pixels.hpp"
 #include "widget.hpp"
 namespace Btk{
+    /**
+     * @brief AbstructeSlider
+     * 
+     */
+    class BTKAPI AbstructSlider:public Widget{
+        public:
+
+        protected:
+            Signal<void(float)> _signal_change;
+
+    };
     class BTKAPI ScrollBar:public Widget{
         public:
             using Widget::set_rect;

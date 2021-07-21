@@ -14,7 +14,7 @@ namespace Btk{
     class BTKAPI AbstractButton:public Widget{
         public:
             //Process event
-            bool handle(Event &);
+            bool handle(Event &) override;
             
             template<class ...T>
             void on_click(T &&...args){
@@ -23,7 +23,17 @@ namespace Btk{
             Signal<void()> &signal_clicked(){
                 return clicked;
             }
-
+            /**
+             * @brief Get the button text
+             * 
+             * @return u8string_view 
+             */
+            u8string_view text() const{
+                return btext;
+            }
+            bool is_checked() const noexcept{
+                return checked;
+            }
         protected:
             virtual void set_parent(Widget *) override;
             virtual void onenter();
@@ -31,7 +41,12 @@ namespace Btk{
             bool is_entered = false;//< Is mouse on the button?
             bool is_pressed = false;//< Is mouse pressed the button?
             float ptsize = 0;//< fontsize
-            
+            //For RadioButton and CheckButton
+            bool checked = false;
+            bool checkable = true;
+
+            u8string btext;//< Button text
+
             Signal<void()> clicked;
     };
     /**
@@ -46,21 +61,9 @@ namespace Btk{
             ~Button();
             void draw(Renderer &) override;
             void set_text(u8string_view text);
-            /**
-             * @brief Get the button text
-             * 
-             * @return u8string_view 
-             */
-            u8string_view text() const{
-                return btext;
-            }
         protected:
             bool handle_mouse(MouseEvent &) override;
             void onleave() override;
-
-
-            //Button text
-            u8string btext;
             //PixBuf  textbuf;
             //Texture texture;
             //Font    textfont;
@@ -76,17 +79,20 @@ namespace Btk{
             ~RadioButton();
 
             void draw(Renderer &) override;
-            bool is_checked() const noexcept{
-                return checked;
-            }
             void set_rect(const Rect &r) override;
+            /**
+             * @brief Config the circle's r
+             * 
+             * @param r 
+             */
+            void set_cirlce_r(float r){
+                circle_r = r;
+                redraw();
+            }
         protected:
             bool handle_motion(MotionEvent &event) override;
             bool handle_mouse(MouseEvent &event) override;
         private:
-            bool checked = false;
-            bool checkable = true;
-
             FPoint circle_center = {0,0};
             float  circle_r = 0;
             /**
@@ -94,9 +100,27 @@ namespace Btk{
              * 
              */
             FPoint text_center;
-            u8string btext;
     };
-};
-
-
+    class BTKAPI CheckButton:public AbstractButton{
+        public:
+            using Widget::set_rect;
+            
+            CheckButton();
+            CheckButton(u8string_view text){
+                btext = text;
+            }
+            ~CheckButton();
+            void draw(Renderer &) override;
+            //Event handle
+            void set_rect(const Rect &r) override;
+            bool handle_motion(MotionEvent &event) override;
+            bool handle_mouse(MouseEvent &event) override;
+        private:
+            //The rect to check
+            FRect  check_rect;
+            FPoint text_center;
+            bool   tristate = false;
+            Uint8  status;
+    };
+}
 #endif // _BTK_BUTTON_HPP_

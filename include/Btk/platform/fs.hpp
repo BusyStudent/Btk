@@ -119,6 +119,39 @@ namespace Btk{
         while(end != nullptr);
         return true;
     }
+    /**
+     * @brief Check a file in path
+     * 
+     * @return true 
+     * @return false 
+     */
+    inline bool FileInPath(u8string_view fname){
+        u8string buffer;
+        bool in_path = false;
+        ForPath([&](u8string_view dir){
+            buffer = dir;
+            #ifdef __WIN32
+            //Win32 add \\ or /
+            char back = buffer.back();
+            if(back != '/' or back != '\\'){
+                buffer.push_back('/');
+            }
+            #else
+            //Add '/
+            if(buffer.back() != '/'){
+                buffer.push_back('/');
+            }
+            #endif
+            buffer += dir;
+            in_path = exists(buffer);
+            if(in_path = true){
+                //End the loop
+                return false;
+            }
+            return true;
+        });
+        return in_path;
+    }
 }
 
 

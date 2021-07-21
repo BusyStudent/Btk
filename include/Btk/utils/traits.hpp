@@ -5,11 +5,11 @@
 namespace Btk{
 
     template<size_t Index,class T,class ...Args>
-    struct _TieArgsPackImpl{
-        using type = typename _TieArgsPackImpl<Index - 1,Args...>::type;
+    struct _IndexArgsPackImpl{
+        using type = typename _IndexArgsPackImpl<Index - 1,Args...>::type;
     };
     template<class T,class ...Args>
-    struct _TieArgsPackImpl<0,T,Args...>{
+    struct _IndexArgsPackImpl<0,T,Args...>{
         using type = T;
     };
     /**
@@ -19,9 +19,9 @@ namespace Btk{
      * @tparam Args 
      */
     template<size_t Index,class ...Args>
-    struct TieArgsPack{
+    struct IndexArgsPack{
         static_assert(Index < sizeof ...(Args),"Out of range");
-        using type = typename _TieArgsPackImpl<Index,Args...>::type;
+        using type = typename _IndexArgsPackImpl<Index,Args...>::type;
     };
     // /**
     //  * @brief Helper for Unpack 
@@ -62,7 +62,7 @@ namespace Btk{
         static constexpr size_t args_count = sizeof ...(Args);
 
         template<size_t Index>
-        using arg_type = typename TieArgsPack<Index,Args...>::type;
+        using arg_type = typename IndexArgsPack<Index,Args...>::type;
     };
     /**
      * @brief Get info of a function
@@ -76,7 +76,7 @@ namespace Btk{
         static constexpr size_t args_count = sizeof ...(Args);
 
         template<size_t Index>
-        using arg_type = typename TieArgsPack<Index,Args...>::type;
+        using arg_type = typename IndexArgsPack<Index,Args...>::type;
     };
 
     template<class T>
@@ -96,7 +96,7 @@ namespace Btk{
         static constexpr bool is_const = false;
 
         template<size_t Index>
-        using arg_type = typename TieArgsPack<Index,Args...>::type;
+        using arg_type = typename IndexArgsPack<Index,Args...>::type;
     };
     //for const method
     template<class RetT,class Class,class ...Args>
@@ -107,7 +107,7 @@ namespace Btk{
         static constexpr bool is_const = true;
         
         template<size_t Index>
-        using arg_type = typename TieArgsPack<Index,Args...>::type;
+        using arg_type = typename IndexArgsPack<Index,Args...>::type;
     };
 }
 

@@ -99,6 +99,7 @@ Hello::Hello():Window("Hello",500,500){
     fsc_btn->signal_clicked().connect(&Hello::on_fullscreen,this);
     //Config
     img_view->set_draw_boarder();
+    rad_btn->set_cirlce_r(10);
 
     signal_event().connect(&Hello::handle,this);
 }

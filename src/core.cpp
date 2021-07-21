@@ -106,7 +106,7 @@ namespace Btk{
             //regitser handler
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
         }
-        //BMP Adapter
+        //Builtin BMP Adapter
         ImageAdapter adapter;
         adapter.name = "bmp";
         adapter.fn_load = [](SDL_RWops *rwops){
@@ -115,7 +115,18 @@ namespace Btk{
         adapter.fn_save = [](SDL_RWops *rwops,SDL_Surface *s,int) -> bool{
             return SDL_SaveBMP_RW(s,rwops,SDL_FALSE);
         };
-        adapter.fn_is = nullptr;
+        adapter.fn_is = [](SDL_RWops *rwops) -> bool{
+            //Check magic is bm
+            char magic[2] = {0};
+            //Save cur
+            auto cur = SDL_RWtell(rwops);
+            //Read magic
+            SDL_RWread(rwops,magic,sizeof(magic),1);
+            //Reset to the position
+            SDL_RWseek(rwops,cur,RW_SEEK_SET);
+            //Check magic
+            return magic[0] == 'B' and magic[1] == 'M';
+        };
         image_adapters.emplace_back(adapter);
 
         //First stop text input
@@ -194,10 +205,10 @@ namespace Btk{
                     on_windowev(event);
                     break;
                 }
+                case SDL_DROPCOMPLETE:
+                case SDL_DROPBEGIN:
+                case SDL_DROPTEXT:
                 case SDL_DROPFILE:{
-                    #ifndef NDEBUG
-                    SDL_Log("[System::EventDispather] Got SDL_DROPFILE");
-                    #endif
                     on_dropev(event);
                     break;
                 }
@@ -309,7 +320,9 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        win->on_dropfile(event.drop.file);
+        //Translate event and send
+        auto drop = TranslateEvent(event.drop);
+        win->handle_drop(drop);
     }
     //KeyBoardEvent
     inline void System::on_keyboardev(const SDL_Event &event){

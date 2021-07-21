@@ -7,6 +7,7 @@
 #include "defs.hpp"
 #include "widget.hpp"
 namespace Btk{
+    class NativeWindow;
     /**
      * @brief A Interface for manage widget
      * 
@@ -45,6 +46,46 @@ namespace Btk{
     };
     class BTKAPI DockWidget:public Group{
         
+    };
+    class BTKAPI ToolWidget:public Group{
+        
+    };
+    class BTKAPI ScrollArea:public Group{
+        
+    };
+    class BTKAPI TabWidget:public Group{
+        
+    };
+    class BTKAPI StackedWidget:public Group{
+
+    };
+    /**
+     * @brief Embed Native Window on here
+     * 
+     */
+    class BTKAPI EmbedWindow:public Widget{
+        public:
+            EmbedWindow() = default;
+            
+            void set_rect(const Rect &r) override;
+
+            #ifdef _WIN32
+
+            void set_window(NativeWindow *win);
+
+            #elif defined(__gnu_linux__)
+            void set_window(void *display,unsigned long window);
+            #endif
+        private:
+            #ifdef _WIN32
+            NativeWindow *winptr = nullptr;
+
+            #else defined(__gnu_linux__)
+
+            void *_display;
+            void *_window;
+
+            #endif
     };
 }
 

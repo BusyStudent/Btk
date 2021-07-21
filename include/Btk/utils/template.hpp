@@ -10,7 +10,7 @@
  */
 namespace Btk{
     struct adopt_lock_t{};
-    constexpr auto adopt_lock = adopt_lock_t{};
+    inline constexpr auto adopt_lock = adopt_lock_t{};
     /**
      * @brief Lock Guard
      * 
@@ -264,7 +264,7 @@ namespace Btk{
     };
 
     struct nullopt_t{};
-    constexpr auto nullopt = nullopt_t{};
+    inline constexpr auto nullopt = nullopt_t{};
     /**
      * @brief Optional value
      * 

@@ -6,6 +6,7 @@
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_surface.h>
 #include "string.hpp"
+#include "rwops.hpp"
 #include "defs.hpp"
 #include "rect.hpp"
 struct SDL_Surface;
@@ -529,6 +530,73 @@ namespace Btk{
         private:
             void *pimpl;
     };
+    /**
+     * @brief Decoder Interface like WIC
+     * 
+     */
+    class ImageDecoder{
+        public:
+            virtual inline ~ImageDecoder(){};
+
+            /**
+             * @brief Get information of images
+             * 
+             * 
+             * @param p_n_frame Point to the count of frames
+             * @param p_size Point to size
+             */
+            virtual void query_info(
+                size_t *p_n_frame,
+                PixelFormat *p_fmt
+            ) = 0;
+            virtual void query_frame(
+                size_t frame_index
+            ) = 0;
+            virtual void read_pixels(
+                size_t frame_index,
+                void *pixelss
+            ) = 0;
+            /**
+             * @brief Open a stream
+             * 
+             * @param rwops The point to SDL_RWops
+             * @param autoclose Should we close the SDL_RWops when the stream is closed
+             */
+            virtual void open(SDL_RWops *rwops,bool autoclose = false) = 0;
+            /**
+             * @brief Close the stream
+             * 
+             */
+            virtual void close() = 0;
+
+            void open(RWops &rwops){
+                open(rwops.get());
+            }
+
+            PixelFormat image_format(){
+                PixelFormat fmt;
+                query_info(nullptr,&fmt);
+                return fmt;
+            }
+
+
+            //Create by type and vendor
+            static ImageDecoder *Create(u8string_view type,u8string_view vendor = {});
+        private:
+            SDL_RWops *fstream = nullptr;
+            bool       auto_close = false;
+    };
+    //TODO
+    class ImageEncoder{
+
+    };
+    /**
+     * @brief Convert string to color
+     * 
+     * @param text 
+     * @return BTKAPI 
+     */
+    BTKAPI Color ParseColor(u8string_view text);
     BTKAPI std::ostream &operator <<(std::ostream &,Color c);
 };
 

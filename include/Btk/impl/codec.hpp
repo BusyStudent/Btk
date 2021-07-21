@@ -4,17 +4,6 @@
 #include "../defs.hpp"
 #include "../pixels.hpp"
 namespace Btk{
-    struct ImageDecoderImpl{
-        Size   (*image_size)();
-        size_t (*frame_count)();
-        PixBuf (*frame_pixbuf)();
-        void   (*frame_pixels)();
-        void   (*destroy)();
-        bool   (*control)(Uint32 opcode,std::va_list varg);
-    };
-    struct ImageEncoderImpl{
-
-    };
     /**
      * @brief Image Adpater for Laoding or Saving Image
      * 
@@ -25,7 +14,7 @@ namespace Btk{
          * @param rwops
          * @return nullptr on failure
          */
-        SDL_Surface *(*fn_load)(SDL_RWops *);
+        SDL_Surface *(*fn_load)(SDL_RWops *) = nullptr;
         /**
          * @brief Save the image
          * 
@@ -35,17 +24,17 @@ namespace Btk{
          * @return true 
          * @return false 
          */
-        bool (*fn_save)(SDL_RWops *,SDL_Surface *surf,int quality);
+        bool (*fn_save)(SDL_RWops *,SDL_Surface *surf,int quality) = nullptr;
         /**
          * @brief Is the image
          * 
          * @return true 
          * @return false 
          */
-        bool (*fn_is)(SDL_RWops *);
+        bool (*fn_is)(SDL_RWops *) = nullptr;
 
-        ImageEncoderImpl *(*create_encoder)();
-        ImageDecoderImpl *(*create_decoder)();
+        ImageEncoder *(*create_encoder)() = nullptr;
+        ImageDecoder *(*create_decoder)() = nullptr;
 
         SDL_Surface *load(SDL_RWops *rw) const{
             if(fn_load != nullptr){
@@ -59,8 +48,8 @@ namespace Btk{
             }
             return false;
         }
-        const char *name;
-        const char *vendor;
+        const char *name = nullptr;
+        const char *vendor = nullptr;
     };
     BTKAPI void RegisterImageAdapter(const ImageAdapter &);
 }

@@ -11,6 +11,81 @@ extern "C"{
     #include "../libs/nanovg.c"
     #include "../libs/fontstash.h"
 }
+
+
+//Our nvg method
+
+namespace Btk{
+    //USE The nvg
+    static size_t BtkTextGlyphPositions(
+        NVGcontext* ctx,
+        float x,float y,
+        u8string_view str,
+        bool (*callback)(const GlyphPosition &,void *user),
+        void *user
+    ){
+	NVGstate* state = nvg__getState(ctx);
+	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+	float invscale = 1.0f / scale;
+	FONStextIter iter, prevIter;
+	FONSquad q;
+    GlyphPosition pos;//Our position
+	size_t npos = 0;
+
+	if (state->fontId == FONS_INVALID) return 0;
+
+    const char *string = &*str.base().begin();
+    const char *end = &*str.base().end();
+
+	if (string == end)
+		return 0;
+
+	fonsSetSize(ctx->fs, state->fontSize*scale);
+	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
+	fonsSetBlur(ctx->fs, state->fontBlur*scale);
+	fonsSetAlign(ctx->fs, state->textAlign);
+	fonsSetFont(ctx->fs, state->fontId);
+
+	fonsTextIterInit(ctx->fs, &iter, x*scale, y*scale, string, end, FONS_GLYPH_BITMAP_OPTIONAL);
+	prevIter = iter;
+	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
+		if (iter.prevGlyphIndex < 0 && nvg__allocTextAtlas(ctx)) { // can not retrieve glyph?
+			iter = prevIter;
+			fonsTextIterNext(ctx->fs, &iter, &q); // try again
+		}
+		prevIter = iter;
+		pos.str = iter.str;
+		pos.x = iter.x * invscale;
+		pos.minx = nvg__minf(iter.x, q.x0) * invscale;
+		pos.maxx = nvg__maxf(iter.nextx, q.x1) * invscale;
+        pos.glyph = iter.codepoint;
+		npos++;
+        //Call the callback
+		if (callback(pos,user) == false)
+			break;
+	}
+	return npos;
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 namespace Btk{
     Font Renderer::cur_font(){
         int idx = nvg__getState(nvg_ctxt)->fontId;
@@ -27,6 +102,22 @@ namespace Btk{
     }
     void Renderer::flush(){
         nvg_ctxt->params.renderFlush(nvg_ctxt->params.userPtr);
+    }
+    //Our text method
+    size_t Renderer::glyph_position(
+        float x,float y,
+        u8string_view text,
+        bool (*callback)(const GlyphPosition &,void *user),
+        void *user
+        ){
+        
+        return BtkTextGlyphPositions(
+            nvg_ctxt,
+            x,y,
+            text,
+            callback,
+            user
+        );
     }
     //Default device operations
     void RendererDevice::begin_frame(Context ctxt,float w,float h,float ratio){

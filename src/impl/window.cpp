@@ -262,6 +262,14 @@ namespace Btk{
         }
         return Group::handle_mouse(event);
     }
+    bool WindowImpl::handle_drop(DropEvent &event){
+        //TODO Send to current widget
+        Group::handle_drop(event);
+        
+        if(event.type() == Event::DropFile){
+            on_dropfile(event.text);
+        }
+    }
     void WindowImpl::defered_event(std::unique_ptr<Event> event){
         handle(*event);
     }

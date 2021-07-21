@@ -1,8 +1,10 @@
 #if !defined(_BTKSIGNAL_FUNCTION_HPP_)
 #define _BTKSIGNAL_FUNCTION_HPP_
+#include <tuple>
 #include <cstddef>
 #include <utility>
 #include <type_traits>
+#include "utils/traits.hpp"
 #include "defs.hpp"
 namespace Btk{
     //Impl
@@ -209,5 +211,55 @@ namespace Btk{
         private:
             InvokeFn invoke_ptr;
     };
-};
+}
+
+namespace Btk{
+    //Bind
+    struct _Bounded{
+
+    };
+    struct _BoundedFunction{
+
+    };
+    template<class Callable,class Ext>
+    struct _Bind:public Ext{
+        Callable callable;
+
+
+        
+    };
+
+    struct Placeholders{
+        template<size_t n>
+        struct Holder{};
+
+        #define BTK_MAKE_HOLDER(N) \
+            static constexpr Holder<N - 1> _##N = {};
+
+        BTK_MAKE_HOLDER(1);
+        BTK_MAKE_HOLDER(2);
+        BTK_MAKE_HOLDER(3);
+        BTK_MAKE_HOLDER(4);
+        BTK_MAKE_HOLDER(5);
+        BTK_MAKE_HOLDER(6);
+        BTK_MAKE_HOLDER(7);
+        BTK_MAKE_HOLDER(8);
+        BTK_MAKE_HOLDER(9);
+        BTK_MAKE_HOLDER(10);
+        BTK_MAKE_HOLDER(11);
+        BTK_MAKE_HOLDER(12);
+        BTK_MAKE_HOLDER(13);
+        BTK_MAKE_HOLDER(14);
+        BTK_MAKE_HOLDER(15);
+        BTK_MAKE_HOLDER(16);
+        BTK_MAKE_HOLDER(17);
+        BTK_MAKE_HOLDER(18);
+        BTK_MAKE_HOLDER(19);
+        BTK_MAKE_HOLDER(20);
+
+        #undef BTK_MAKE_HOLDER
+    };
+
+}
+
 #endif // _BTKSIGNAL_FUNCTION_HPP_

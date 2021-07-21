@@ -23,6 +23,7 @@ namespace Btk{
 
     struct KeyEvent;
     struct DragEvent;
+    struct DropEvent;
     struct MouseEvent;
     struct WheelEvent;
     struct MotionEvent;
@@ -32,7 +33,7 @@ namespace Btk{
     enum class FocusPolicy:Uint8{
         None = 0,
         KeyBoard = 1,
-        Mouse = 2,
+        Mouse = 2,//< The widget will get focus by mouse and lost focus by mouse
         Wheel = 3
     };
     //Alignment
@@ -46,6 +47,11 @@ namespace Btk{
         Right,
         Left
     };
+    inline constexpr auto AlignCenter = Align::Center;
+    inline constexpr auto AlignBottom = Align::Bottom;
+    inline constexpr auto AlignRight = Align::Right;
+    inline constexpr auto AlignLeft = Align::Left;
+    inline constexpr auto AlignTop = Align::Top;
 
     //Attribute for Widget
     struct WidgetAttr{
@@ -63,9 +69,6 @@ namespace Btk{
              * @note All data will be inited to 0
              */
             Widget();
-            Widget(Widget *parent);
-            Widget(Widget &parent):Widget(&parent){}
-
             Widget(const Widget &) = delete;
             virtual ~Widget();
             virtual void draw(Renderer &render) = 0;
@@ -99,6 +102,12 @@ namespace Btk{
             //Set widget rect
             void set_rect(int x,int y,int w,int h){
                  set_rect({x,y,w,h});
+            }
+            void set_rectangle(int x,int y,int w,int h){
+                 set_rect({x,y,w,h});
+            }
+            void set_rectangle(const Rect &r){
+                set_rect(r);
             }
             void set_position(const Vec2 &vec2){
                 set_rect(vec2.x,vec2.y,rect.w,rect.h);
@@ -215,6 +224,7 @@ namespace Btk{
              * @return false 
              */
             virtual bool handle_drag(DragEvent     &){return false;}
+            virtual bool handle_drop(DropEvent     &){return false;}
             virtual bool handle_mouse(MouseEvent   &){return false;}
             virtual bool handle_wheel(WheelEvent   &){return false;}
             virtual bool handle_motion(MotionEvent &){return false;}

@@ -104,8 +104,6 @@ namespace Btk{
         if(dev == 0){
             throwAudioError();
         }
-        //TODOMake audio stream
-
         stream = SDL_NewAudioStream(
             info.format,
             info.channels,

@@ -76,6 +76,29 @@ namespace Btk{
             float tb_boarder = 4;//The text boarder
         friend struct TextBoxInserter;
     };
+    class BTKAPI TextEdit:public Widget{
+        private:
+            u8string cur_text;
+    };
+    /**
+     * @brief Just edit single line
+     * 
+     */
+    class BTKAPI LineEdit:public Widget{
+        public:
+            LineEdit();
+            LineEdit(u8string_view text);
+            ~LineEdit();
+
+        private:
+            u8string placeholder;//< Show if the string is empty
+            u8string cur_text;
+            Align    align;//< Text align
+            bool     clear_btn = false;//Has clear button?
+    };
+    class BTKAPI TextBroser:public Widget{
+        
+    };
 };
 
 

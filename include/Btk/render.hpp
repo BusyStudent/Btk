@@ -4,6 +4,7 @@
 #include "string.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
+#include <vector>
 #include <list>
 struct SDL_Window;
 
@@ -31,6 +32,10 @@ namespace Btk{
         Middle	 = 1<<4,	// Align text vertically to middle.
         Bottom	 = 1<<5,	// Align text vertically to bottom.
         Baseline = 1<<6, // Default, align text vertically to baseline.
+        //Vertical center
+        VCenter = Middle,
+        // Horizontal center
+        HCenter = Center
     };
     //TextAlign operator
     // inline TextAlign operator |(TextAlign a,TextAlign b){
@@ -50,6 +55,16 @@ namespace Btk{
         Metail,
         Dx11,
         Software
+    };
+    /**
+     * @brief Glyph position from nanovg
+     * 
+     */
+    struct GlyphPosition{
+        char32_t glyph;     // The glyph 
+        const char* str;	// Position of the glyph in the input string.
+        float x;			// The x-coordinate of the logical glyph position.
+        float minx, maxx;	// The bounds of the glyph shape.
     };
     /**
      * @brief Abstruct Graphics Device
@@ -594,7 +609,25 @@ namespace Btk{
              * 
              * @return Size 
              */
-            FSize glyph_size(char16_t );
+            FSize  glyph_size(char16_t );
+            /**
+             * @brief Get position of glyph
+             * 
+             * @note It is low level a operation
+             * 
+             * @param x The text's x
+             * @param y The text's y
+             * @param text The utf8 encoding string
+             * @param callback The callback(return false to stop)
+             * @param user The userdata
+             * @return size_t 
+             */
+            size_t glyph_position(
+                float x,float y,
+                u8string_view text,
+                bool (*callback)(const GlyphPosition &,void *user),
+                void *user    
+            );
             /**
              * @brief Get the height of the current font
              * 

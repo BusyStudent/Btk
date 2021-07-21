@@ -286,12 +286,6 @@ namespace Btk{
         Utf8To16(s,*this);
         return s;
     }
-    bool u8string_view::casecmp(u8string_view s) const{
-        if(size() != s.size()){
-            return false;
-        }
-        return SDL_strncasecmp(data(),s.data(),size()) == 0;
-    }
 }
 namespace Btk{
     u16string::u16string() = default;
@@ -401,9 +395,6 @@ namespace Btk{
     }
 }
 namespace Btk{
-    static bool u32ncmp(const char32_t *s1,const char32_t *s2,size_t n){
-
-    }
     size_t u8string_view::find(char32_t ch) const{
         size_t n = 0;
         auto iter = impl_begin();

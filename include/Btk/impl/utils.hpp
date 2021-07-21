@@ -78,6 +78,7 @@ namespace Btk{
     MotionEvent TranslateEvent(const SDL_MouseMotionEvent &event);
     MouseEvent  TranslateEvent(const SDL_MouseButtonEvent &event);
     WheelEvent  TranslateEvent(const SDL_MouseWheelEvent &event);
+    DropEvent   TranslateEvent(const SDL_DropEvent       &event);
     KeyEvent    TranslateEvent(const SDL_KeyboardEvent &event);
     
     TextInputEvent TranslateEvent(const SDL_TextInputEvent &event);

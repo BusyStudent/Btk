@@ -23,6 +23,7 @@ namespace Btk{
     class Renderer;
     class Widget;
     class Theme;
+    class Menu;
     /**
      * @brief The Internal Window Draw Callback
      */
@@ -86,6 +87,7 @@ namespace Btk{
             }
         public:
             //Process Event
+            bool handle_drop(DropEvent     &) override;
             bool handle_mouse(MouseEvent   &) override;
             bool handle_motion(MotionEvent &) override;
         private:
@@ -114,6 +116,9 @@ namespace Btk{
             //The draw callback
             //It will be called at last
             std::list<DrawCallback> draw_cbs;
+
+            //Current menu bar
+            Menu *menu_bar = nullptr;
             
             //Methods for Widget impl
         private:
@@ -145,6 +150,22 @@ namespace Btk{
             );
             
             #endif
+
+            #ifdef __gnu_linux__
+            //X11 parts
+            unsigned long x_window;
+            void         *x_display;
+
+            /**
+             * @brief Method for process XEvent
+             * 
+             * @param p_xevent const pointer to XEvent
+             * @return BTKHIDDEN 
+             */
+            BTKHIDDEN
+            void handle_x11(const void *p_xevent);
+            #endif
+        friend class Menu;
         friend class Window;
         friend class Widget;
         friend class System;

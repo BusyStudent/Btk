@@ -17,6 +17,7 @@ namespace Btk{
     class BTKAPI Event{
         public:
             enum Type:Uint32{
+                None = 0,
                 KeyBoard = 1,//Key pressed or released
 
                 //MotionEvent
@@ -51,10 +52,11 @@ namespace Btk{
                 //Drop
                 DropBegin = 18,
                 DropEnd = 19,
-                Drop = 20,
+                DropText = 20,
+                DropFile = 21,
                 //Hide / Show
-                Hide = 21,
-                Show = 22,
+                Hide = 22,
+                Show = 23,
 
                 User = 10000,
                 UserMax = UINT32_MAX - 1,
@@ -344,7 +346,7 @@ namespace Btk{
         Sint64 y;//< Horizontal scroll,postive for scroll up
     };
     /**
-     * @brief A event of drog
+     * @brief A event of drop
      * 
      */
     struct BTKAPI DropEvent:public Event{
@@ -352,11 +354,12 @@ namespace Btk{
         DropEvent(const DropEvent &) = default;
         ~DropEvent() = default;
 
-        enum {
-            File,
-            Text
-        }type;
         u8string_view text;
+
+        int x = -1,y = -1;
+        Vec2 position() const noexcept{
+            return {x,y};
+        }
     };
     /**
      * @brief a generic struct for updating data

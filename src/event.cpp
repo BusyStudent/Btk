@@ -109,4 +109,32 @@ namespace Btk{
         ev.repeat = event.repeat;
         return ev;
     }
+    DropEvent TranslateEvent(const SDL_DropEvent &event){
+        Event::Type type;
+        DropEvent ev(Event::None);
+
+        switch(event.type){
+            case SDL_DROPBEGIN:
+                ev.set_type(Event::DropBegin);
+                BTK_LOGINFO("DropBegin");
+                break;
+            case SDL_DROPCOMPLETE:
+                ev.set_type(Event::DropEnd);
+                BTK_LOGINFO("DropEnd");
+                break;
+            case SDL_DROPFILE:
+                ev.set_type(Event::DropFile);
+                ev.text = event.file;
+                BTK_LOGINFO("DropFile");
+                break;
+            case SDL_DROPTEXT:
+                ev.set_type(Event::DropText);
+                ev.text = event.file;
+                BTK_LOGINFO("DropText");
+                break;
+            default:
+                BTK_ASSERT(!"");
+        }
+        return ev;
+    }
 };

@@ -5,6 +5,7 @@
 #include <vector>
 #include <string_view>
 #include <type_traits>
+#include <cstring>
 #include <cstdarg>
 #include "defs.hpp"
 
@@ -23,6 +24,15 @@
     }
 
 namespace Btk{
+    #ifdef _WIN32
+    inline constexpr auto strncasecmp = _strnicmp;
+    #else
+    inline constexpr auto strncasecmp = ::strncasecmp;
+    #endif
+
+    inline constexpr auto CaseSensitive = false;
+    inline constexpr auto CaseInSensitive = true;
+
     //Get iterator type
     template<class T>
     struct _U8StringImplIterator{
@@ -318,7 +328,9 @@ namespace Btk{
              * @return true 
              * @return false 
              */
-            bool casecmp(u8string_view) const;
+            bool casecmp(u8string_view view) const{
+                return compare(view,CaseInSensitive);
+            }
             /**
              * @brief Split string and copy them into buffer
              * 
@@ -348,6 +360,39 @@ namespace Btk{
             RefList split_ref(char32_t ch,size_t max = size_t(-1)) const;
             RefList split_ref(char16_t ch,size_t max = size_t(-1)) const{
                 return split_ref(char32_t(ch),max);
+            }
+            /**
+             * @brief Check the string is begin with
+             * 
+             * @param text 
+             * @return true 
+             * @return false 
+             */
+            bool begin_with(u8string_view text) const{
+                if(text.raw_length() > raw_length()){
+                    //Is longger
+                    return false;
+                }
+                return substr(0,text.raw_length()) == text.base();
+            }
+            bool end_with(u8string_view text) const{
+                if(text.raw_length() > raw_length()){
+                    //Is longger
+                    return false;
+                }
+                return substr(raw_length() - text.raw_length(),text.raw_length()) == text.base();
+            }
+            bool compare(u8string_view view,bool casecmp = CaseSensitive) const noexcept{
+                //Length is diffent
+                if(raw_length() != view.raw_length()){
+                    return false;
+                }
+                if(casecmp == CaseSensitive){
+                    return strncmp(data(),view.data(),raw_length());
+                }
+                else{
+                    return strncasecmp(data(),view.data(),raw_length());
+                }
             }
 
         private:
@@ -588,6 +633,14 @@ namespace Btk{
                 base() += std::forward<T>(arg);
                 return *this;
             }
+            u8string &operator +=(u8string_view view){
+                base() += view.base();
+                return *this;
+            }
+
+            void swap(u8string &us){
+                base().swap(us.base());
+            }
             /**
              * @brief Create string from
              * 
@@ -745,6 +798,10 @@ namespace Btk{
             }
             u8string to_utf8() const{
                 return u16string_view(*this).to_utf8();
+            }
+
+            void swap(u16string &us){
+                base().swap(us.base());
             }
         public:
             //Cast
@@ -1016,6 +1073,24 @@ namespace Btk{
     u8string ToString(const T &value){
         return std::to_string(value);
     }
+    // /**
+    //  * @brief UTF8 String List
+    //  * 
+    //  */
+    // class StringList_:public std::vector<u8string>{
+    //     public:
+    //         using std::vector<u8string>::vector;
+            
+    //         u8string &operator [](size_type idx){
+    //             return at(idx);
+    //         }
+    //         const u8string &operator [](size_type idx) const{
+    //             return at(idx);
+    //         }
+    // };
+    // class StringRefList_:public std::vector<u8string_view>{
+        
+    // };
 
     using StringList = u8string_view::List;
     using StringRefList = u8string_view::RefList;
@@ -1032,5 +1107,15 @@ namespace Btk{
     };
     BTKAPI void HookIconv(IconvFunctions);
     BTKAPI void GetIconv(IconvFunctions&);
+    //Std
+    // inline std::ostream &operator <<(std::ostream &os,const char *s){
+    //     os << u8string_view(s);
+    //     return os;
+    // }
+    // inline std::ostream &operator <<(std::ostream &os,const StringList &strlist){
+    //     for(auto &str:strlist){
+
+    //     }
+    // }
 }
 #endif // _BTK_STRING_HPP_

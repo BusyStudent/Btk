@@ -11,9 +11,6 @@
 
 namespace Btk{
     Widget::Widget() = default;
-    Widget::Widget(Widget *parent):Widget(){
-        set_parent(parent);
-    }
     Widget::~Widget(){
         //Delete each children
         clear_childrens();
@@ -36,6 +33,11 @@ namespace Btk{
                 return handle_drag(event_cast<DragEvent&>(ev));
             case Event::TextInput:
                 return handle_textinput(event_cast<TextInputEvent&>(ev));
+            case Event::DropBegin:
+            case Event::DropEnd:
+            case Event::DropFile:
+            case Event::DropText:
+                return handle_drop(event_cast<DropEvent&>(ev));
             default:
                 return false;
         }
@@ -169,7 +171,9 @@ namespace Btk{
             w->set_parent(this);
         }
         catch(...){
+            //Detach it
             childrens.pop_back();
+            w->set_parent(nullptr);
             throw;
         }
         return true;
@@ -332,10 +336,12 @@ namespace Btk{
                 levent.set_type(Event::Enter);
                 cur_widget->handle(levent);
             }
-        }
-        if(not cur_widget->visible()){
-            //The widget is hided
-            return false;
+        }    
+        if(cur_widget != nullptr){
+            if(not cur_widget->visible()){
+                //The widget is hided
+                return false;
+            }
         }
         //Dispatch the motion
         return cur_widget->handle(event);
@@ -360,9 +366,11 @@ namespace Btk{
                 }
             }
         }
-        if(not cur_widget->visible()){
-            //The widget is hided
-            return false;
+        if(cur_widget != nullptr){
+            if(not cur_widget->visible()){
+                //The widget is hided
+                return false;
+            }
         }
         return dispatch_to_widget(cur_widget,event);
     }

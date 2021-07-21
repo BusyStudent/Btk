@@ -48,10 +48,15 @@ if is_plat("linux") then
     add_defines("BTK_USE_FONTCONFIG")
     --Check modes
     if is_mode("release") then
-        add_cxxflags("-fvisibility=hidden")
-        add_cflags("-fvisibility=hidden")
+        add_cxxflags("-fvisibility=hidden","-march=native")
+        add_cflags("-fvisibility=hidden","-march=native")
     end
 end
+
+if is_mode("release") then
+    add_defines("NDEBUG")
+end
+
 target("btk")
     add_defines("BTK_USE_GFX")
     
@@ -76,6 +81,36 @@ target("btk")
     else
         add_defines("BTK_NGIF")
     end
+
+    -- Install copy the headers
+
+    after_install(
+        function(target)
+            if is_plat("linux") then 
+                os.cp("$(scriptdir)/include/*","/usr/local/include")
+            end
+        end
+    )
+
+    --Uninstall 
+
+    after_uninstall(
+        function(target)
+            if is_plat("linux") then 
+                os.rm("/usr/local/include/Btk.hpp")
+                os.rm("/usr/local/include/Btk.h")
+                os.rm("/usr/local/include/Btk")
+            end
+        end
+    )
+
+    -- Package
+
+    -- after_package(
+    --     function(target)
+    --         -- os.cp("$(scriptdir)/include/Btk","$(buildir)/Btk")
+    --     end
+    -- )
 
     add_links("SDL2","SDL2_image")
     set_kind("shared")
