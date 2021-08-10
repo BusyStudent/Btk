@@ -9,6 +9,7 @@
 #include "../build.hpp"
 
 #include <Btk/impl/core.hpp>
+#include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <Btk/pixels.hpp>
@@ -16,6 +17,9 @@
 #include <Btk/rect.hpp>
 #include <ostream>
 namespace Btk{
+    //Load XPM DATA
+    static inline PixBuf load_xpm_from(const char *const*);
+
     PixBuf::~PixBuf(){
         SDL_FreeSurface(surf);
     }
@@ -76,29 +80,32 @@ namespace Btk{
             throwSDLError();
         }
     }
-    // void PixBuf::save_jpg(RWops &rw,int quality){
-    //     if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
-    //         throwSDLError();
-    //     }
-    // }
-    // void PixBuf::save_png(RWops &rw,int quality){
-    //     if(IMG_SaveJPG_RW(surf,rw.get(),false,quality) == -1){
-    //         throwSDLError();
-    //     }
-    // }
-
     void PixBuf::save_bmp(u8string_view fname){
         auto rw = RWops::FromFile(fname.data(),"wb");
         PixBuf::save_bmp(rw);
     }
-    // void PixBuf::save_jpg(u8string_view fname,int quality){
-    //     auto rw = RWops::FromFile(fname.data(),"wb");
-    //     PixBuf::save_jpg(rw,quality);
-    // }
-    // void PixBuf::save_png(u8string_view fname,int quality){
-    //     auto rw = RWops::FromFile(fname.data(),"wb");
-    //     PixBuf::save_png(rw,quality);
-    // }
+    void PixBuf::save(RWops &rw,u8string_view type,int quality){
+        if(surf == nullptr){
+            throwSDLError("empty pixbuf");
+        }
+        SaveImage(rw.get(),surf,type,quality);
+    }
+    void PixBuf::save(u8string_view filename,u8string_view type,int quality){
+        auto rw = RWops::FromFile(filename.data(),"wb");
+        if(type.empty()){
+            //TODO add code to detect type from filename
+            size_t pos = filename.rfind('.');
+            if(pos != filename.npos){
+                //try to get the ext name
+                auto ntype = filename.substr(pos + 1).strip();
+                BTK_LOGINFO("Get extension name '%s'",ntype.c_str());
+                PixBuf::save(rw,ntype,quality);
+                return;
+            }
+            //No ext name abliable
+        }
+        PixBuf::save(rw,type,quality);
+    }
     //operators
     PixBuf &PixBuf::operator =(SDL_Surface *sf){
         SDL_FreeSurface(surf);
@@ -119,11 +126,15 @@ namespace Btk{
         return surf;
     }
     PixBuf PixBuf::zoom(double w_f,double_t h_f){
+        #ifdef BTK_USE_GFX
         SDL_Surface *surf = zoomSurface(this->surf,w_f,h_f,SMOOTHING_ON);
         if(surf == nullptr){
             throwSDLError();
         }
         return surf;
+        #else
+        BTK_UNIMPLEMENTED();
+        #endif
     }
     void PixBuf::bilt(const PixBuf &buf,const Rect *src,Rect *dst){
         if(SDL_BlitSurface(buf.get(),src,surf,dst) != 0){
@@ -159,16 +170,7 @@ namespace Btk{
         return FromRWops(rw);
     }
     PixBuf PixBuf::FromXPMArray(const char *const*da){
-        #ifdef BTK_HAS_SDLIMG
-        SDL_Surface *surf = IMG_ReadXPMFromArray(const_cast<char**>(da));
-        if(surf == nullptr){
-            throwSDLError(IMG_GetError());
-        }
-        return PixBuf(surf);
-        #else
-        SDL_Unsupported();
-        throwSDLError();
-        #endif
+        return load_xpm_from(da);
     }
     PixBuf PixBuf::FromRWops(RWops &rwops){
         SDL_Surface *surf = LoadImage(rwops.get());
@@ -204,4 +206,153 @@ namespace Btk{
         os << '(' << int(c.r) << ',' << int(c.g) << ',' << int(c.b) << ',' << int(c.a) << ')';
         return os;
     }
+    Color ParseColor(u8string_view view){
+        auto base = view.base();
+        Color c;
+        if(base[0] == '#'){
+            //Like #RRGGBBAA
+            base = base.substr(1);
+        }
+        if(base.length() != 6 and base.length() != 8){
+            //bad color
+            throwRuntimeError("Bad color");
+        }
+        c.r = ParseHex(base.substr(0,2));
+        c.g = ParseHex(base.substr(2,2));
+        c.b = ParseHex(base.substr(4,2));
+        if(base.length() == 8){
+            c.a = ParseHex(base.substr(6,2));
+        }
+        else{
+            c.a = 255;
+        }
+        return c;
+    }
+}
+//XPM
+#include <unordered_map>
+#include <string_view>
+namespace Btk{
+    // #ifdef BTK_HAS_SDLIMG
+    #ifdef BTK_HAS_SDLIMGa
+    static inline PixBuf load_xpm_from(const char *const*v){
+        auto surf = IMG_ReadXPMFromArray(const_cast<char**>(v));
+        if(surf == nullptr){
+            throwSDLError();
+        }
+        return surf;
+    }
+    #else
+    static inline PixBuf load_xpm_from(const char *const*arr){
+        //using our's parser
+        if(arr == nullptr){
+            throwRuntimeError("Null array");
+        }
+        //First read xpm info
+        int w,h,colors_count,cpp;
+        if(sscanf(arr[0],"%d %d %d %d",&w,&h,&colors_count,&cpp) != 4){
+            throwRuntimeError("Bad xpm");
+        }
+        //Cpp is the len of color name
+
+        //Make map
+        std::unordered_map<std::string_view,Color> colormap = {
+            //builtin color
+            {"none" ,Color(0,0,0,0)},
+            {"white" ,Color(255,255,255)},
+            {"black",Color(0,0,0)},
+            {"red",Color(255,0,0)},
+            {"green",Color(0,255,0)},
+            {"blue",Color(0,0,255)},
+        };
+        colormap.rehash(colormap.size() + colors_count);
+
+        //For array add all colors
+        size_t max_line = colors_count + h;
+        for(size_t idx = 1;idx < max_line + 1;idx++){
+            const char *line = arr[idx];
+            if(line[cpp + 1] != 'c'){
+                //COLOR c 0x...
+                //Is not color
+                continue;
+            }
+            std::string_view view(line,cpp);
+            std::string_view colorinfo(&(line[cpp + 3]));
+            //Got it color
+            Color color;
+            if(colorinfo[0] != '#'){
+                //Using the color in the table
+                auto iter = colormap.find(colorinfo);
+                if(iter != colormap.end()){
+                    //founded
+                    color = iter->second;
+                    continue;
+                }
+                //Not founded,Try ignore the case
+                for(auto &par:colormap){
+                    if(par.first.length() == colorinfo.length()){
+                        //Same length,Compare ignore the case
+                        int ret = strncasecmp(
+                            par.first.data(),
+                            colorinfo.data(),
+                            colorinfo.length()
+                        );
+                        if(ret == 0){
+                            //Founded
+                            color = par.second;
+                        }
+                    }
+                }
+                //Not founded
+                throwRuntimeError("Bad xpm");
+            }
+            else{
+                color = ParseColor(colorinfo);
+                colormap.insert(std::make_pair(view,color));
+            }
+        }
+        //Convert pixel callback
+        auto map_rgba32 = [](Color c) -> Uint32{
+            Uint32 pixel;
+            #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+            //Big endian RGBA8888
+            reinterpret_cast<Uint8*>(&pixel)[0] = c.a;
+            reinterpret_cast<Uint8*>(&pixel)[1] = c.b;
+            reinterpret_cast<Uint8*>(&pixel)[2] = c.g;
+            reinterpret_cast<Uint8*>(&pixel)[3] = c.r;
+            #else
+            //little endian ABGR8888
+            reinterpret_cast<Uint8*>(&pixel)[0] = c.r;
+            reinterpret_cast<Uint8*>(&pixel)[1] = c.g;
+            reinterpret_cast<Uint8*>(&pixel)[2] = c.b;
+            reinterpret_cast<Uint8*>(&pixel)[3] = c.a;
+            #endif
+            return pixel;
+        };
+        //Begin parse the pixels
+        int x = 0,y = 0;
+        //Make pixbuf
+        PixBuf buffer(w,h,PixelFormat::RGBA32);
+        Uint32 *pixels = static_cast<Uint32*>(buffer->pixels);
+        for(size_t idx = 1;idx < max_line + 1;idx++){
+            const char *line = arr[idx];
+            if(line[cpp + 1] == 'c'){
+                //COLOR c 0x...
+                //Is not color
+                continue;
+            }
+            for(size_t n = 0;n < w * cpp;n += cpp){
+                std::string_view pix(line + n,cpp);
+                //Get pixel string
+                auto color = colormap.at(pix);
+                pixels[w * y + x] = map_rgba32(color);
+                x += 1;
+            }
+            //Reset x,increase y to next line
+            x  = 0;
+            y += 1;
+        }
+        return buffer;
+    }
+    #endif
 }

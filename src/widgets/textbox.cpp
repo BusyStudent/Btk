@@ -319,3 +319,14 @@ namespace Btk{
         redraw();
     }
 }
+//LineEdit Impl
+namespace Btk{
+    // LineEdit::LineEdit(){
+    //     attr.focus = FocusPolicy::Mouse;
+    // }
+    // LineEdit::~LineEdit() = default;
+    // //Draw
+    // void LineEdit::draw(Renderer &render){
+
+    // }
+}

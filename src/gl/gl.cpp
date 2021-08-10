@@ -3,29 +3,30 @@
 #include <Btk/impl/core.hpp>
 #include <Btk/gl/gl.hpp>
 #include <Btk/Btk.hpp>
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_video.h>
 
 namespace Btk::GL{
     void Init(){
         #ifdef __ANDROID__
         //Tell the sdl,We want to use OPENGLES
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES | SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_ES | SDL_GL_CONTEXT_PROFILE_CORE);
         #else
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_CORE);
         #endif
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+        //Use OpenGL 3.0
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,0);
         
-        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+        SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
+        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,8);
+        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,8);
+        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,8);
+        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE,8);
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,24);
 
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,8);
 
 
         //Load library

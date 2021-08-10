@@ -69,7 +69,7 @@ namespace Btk::Impl{
             return reinterpret_cast<T*>(this);
         }
         const T *operator ->() const{
-            return reinterpret_cast<T*>(this);
+            return reinterpret_cast<const T*>(this);
         }
     };
 
@@ -89,6 +89,6 @@ namespace Btk::Impl{
     static constexpr auto FUNC = ::FUNC
 
 #define BTK_MAKE_DYLIB(TYPE,NAME) Btk::Impl::LibHolder<TYPE> NAME;
-#define BTK_MAKE_STLIB(TYPE,NAME) Btk::Impl::ConstLibHolder<TYPE> NAME;
+#define BTK_MAKE_STLIB(TYPE,NAME) inline constexpr Btk::Impl::ConstLibHolder<TYPE> NAME;
 
 #endif // _BTK_IMPL_LOADSO_HPP_

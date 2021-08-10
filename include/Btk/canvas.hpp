@@ -29,7 +29,10 @@ namespace Btk{
         private:
             EventFn event_fn;
             DrawFn  draw_fn;
+            //Save / Restore before / after draw
+            bool protect_context = true;
     };
+    class GLDevice;
     /**
      * @brief Basic class for using OpenGL
      * 
@@ -42,6 +45,12 @@ namespace Btk{
              * 
              */
             virtual void gl_draw() = 0;
+            /**
+             * @brief Get the OpenGL Device 
+             * 
+             * @return GLDevice* 
+             */
+            GLDevice *gl_device();
     };
     /**
      * @brief Basic class for using Direct3D 11
@@ -52,6 +61,11 @@ namespace Btk{
             virtual void draw(Renderer&) final;
             virtual void dx_draw() = 0;
 
+    };
+    class BTKAPI VkCanvas{
+        public:
+            virtual void draw(Renderer&) final;
+            virtual void vk_draw() = 0;
     };
 }
 

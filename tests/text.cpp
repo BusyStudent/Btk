@@ -41,4 +41,5 @@ int main(){
         std::cout << str << std::endl;
     }
     std::cout << Btk::u8string_view("你好").to_locale() << std::endl;
+    std::cout << Btk::u8string_view("你好 哈哈哈 Hello ").substr(4) << std::endl;
 }

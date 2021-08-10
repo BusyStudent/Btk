@@ -14,9 +14,13 @@ namespace Btk{
         if(not draw_fn.empty()){
             // auto viewport = renderer.get_viewport();
             // renderer.set_viewport(rect);
-            
+            if(protect_context){
+                renderer.save();
+            }
             draw_fn(renderer);
-
+            if(protect_context){
+                renderer.restore();
+            }
             // renderer.set_viewport(viewport);
         }
     }

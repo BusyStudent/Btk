@@ -1,5 +1,6 @@
 #include "./build.hpp"
 
+#include <Btk/platform/popen.hpp>
 #include <Btk/impl/thread.hpp>
 #include <Btk/impl/atomic.hpp>
 #include <Btk/async.hpp>
@@ -47,6 +48,7 @@ namespace Btk{
     struct BTKHIDDEN ThreadPool{
         static ThreadPool *instance;
 
+        // MessageChannal<Task> tasks_channal;
         std::list<Worker> workers_list;
         std::queue<Task>  tasks_queue;
         std::condition_variable condvar;

@@ -5,12 +5,28 @@
 #include <memory>
 namespace Btk{
     namespace Impl{
+        /**
+         * @brief Call and delete self
+         * 
+         * @tparam Callable 
+         * @tparam Args 
+         */
         template<class Callable,class ...Args>
-        struct Invoker:public std::tuple<Args...>{
+        struct OnceInvoker:public std::tuple<Args...>{
             Callable callable;
             static void Run(void *__self){
-                Invoker *self = static_cast<Invoker*>(__self);
-                std::unique_ptr<Invoker> ptr(self);
+                OnceInvoker *self = static_cast<OnceInvoker*>(__self);
+                std::unique_ptr<OnceInvoker> ptr(self);
+                std::apply(std::forward<Callable>(ptr->callable),
+                           std::forward<std::tuple<Args...>&&>(*ptr));
+                
+            }
+        };
+        template<class Callable,class ...Args>
+        struct GenericInvoker:public std::tuple<Args...>{
+            Callable callable;
+            static void Run(void *__self){
+                GenericInvoker *ptr = static_cast<GenericInvoker*>(__self);
                 std::apply(std::forward<Callable>(ptr->callable),
                            std::forward<std::tuple<Args...>&&>(*ptr));
                 

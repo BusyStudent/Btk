@@ -32,14 +32,44 @@ namespace Btk{
 
     template<class Callable,class ...Args>
     void AtExit(Callable &&callable,Args ...args){
-        auto *invoker = new Impl::Invoker<Callable,Args...>{
+        auto *invoker = new Impl::OnceInvoker<Callable,Args...>{
             {std::forward<Args>(args)...},
             std::forward<Callable>(callable)
         };
         void *data = invoker;
-        void (*fn)(void*) = Impl::Invoker<Callable,Args...>::Run;
+        void (*fn)(void*) = Impl::OnceInvoker<Callable,Args...>::Run;
         AtExit(fn,data);
     }
+
+    /**
+     * @brief Register a callback which will be called in idle
+     * 
+     * @param fn 
+     * @param data 
+     * @return BTKAPI 
+     */
+    BTKAPI void AtIdle(void(* fn)(void*),void *data);
+    BTKAPI void AtIdle(void(* fn)());
+
+    BTKAPI void AsyncCall(void (*fn)(void*),void *data);
+    
+
+    template<class Callable,class ...Args>
+    void AtIdle(Callable &&callable,Args ...args){
+        auto *invoker = new Impl::GenericInvoker<Callable,Args...>{
+            {std::forward<Args>(args)...},
+            std::forward<Callable>(callable)
+        };
+        void *data = invoker;
+        void (*fn)(void*) = Impl::GenericInvoker<Callable,Args...>::Run;
+        AtIdle(fn,data);
+        //We need to destroy the object
+        void(* cleanup)(void*) = [](void *invoker){
+            delete static_cast<Impl::GenericInvoker<Callable,Args...>*>(invoker);
+        };
+        AtExit(cleanup,data);
+    }
+
     /**
      * @brief This function will be called in main EventLoop
      * 
@@ -62,12 +92,12 @@ namespace Btk{
         typename _Cond = std::enable_if_t<!std::is_member_function_pointer_v<Callable>>
     >
     void DeferCall(Callable &&callable,Args ...args){
-        auto *invoker = new Impl::Invoker<Callable,Args...>{
+        auto *invoker = new Impl::OnceInvoker<Callable,Args...>{
             {std::forward<Args>(args)...},
             std::forward<Callable>(callable)
         };
         void *data = invoker;
-        void (*fn)(void*) = Impl::Invoker<Callable,Args...>::Run;
+        void (*fn)(void*) = Impl::OnceInvoker<Callable,Args...>::Run;
         DeferCall(fn,data);
     }
     /**

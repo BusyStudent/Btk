@@ -146,10 +146,22 @@ target("btk")
     add_files("./src/font/ft_font.cpp")
     --Image
     add_files("./src/images/adapter.cpp")
+    --Check Image Library
+    
+    if has_package("libpng") then
+        add_defines("BTK_HAS_PNG")
+        add_packages("libpng")
+        add_files("./src/images/png.cpp")
+    end
+
     --SDL_image support
     if has_package("libsdl_image") or has_package("SDL2_image") then
         add_defines("BTK_HAS_SDLIMG")
         add_files("./src/images/sdl_image.cpp")
+    else
+        --No SDL_image use stb_image instead
+        add_defines("BTK_HAS_STBII")
+        add_files("./src/images/stb_image.cpp")
     end
 if is_mode("debug") then
     target("hello")

@@ -2,11 +2,12 @@
 #include <SDL2/SDL_loadso.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_filesystem.h>
+#include <unordered_map>
+#include <algorithm>
 #include <cstdlib>
 #include <csignal>
 #include <thread>
 #include <mutex>
-#include <unordered_map>
 
 #include "build.hpp"
 
@@ -116,7 +117,7 @@ namespace Btk{
             return SDL_LoadBMP_RW(rwops,SDL_FALSE);
         };
         adapter.fn_save = [](SDL_RWops *rwops,SDL_Surface *s,int) -> bool{
-            return SDL_SaveBMP_RW(s,rwops,SDL_FALSE);
+            return SDL_SaveBMP_RW(s,rwops,SDL_FALSE) == 0;
         };
         adapter.fn_is = [](SDL_RWops *rwops) -> bool{
             //Check magic is bm
@@ -175,6 +176,17 @@ namespace Btk{
             GL::Init();
             //Image Adapter
             InitImageAdapter();
+            
+            //Load module by env
+            #ifndef BTK_NO_AUTOLOAD
+            const char *mods = SDL_getenv("BTK_MODULES");
+            if(mods != nullptr){
+                u8string_view view(mods);
+                for(auto &name:view.split(';')){
+                    LoadModule(name);
+                }
+            }
+            #endif
         }
         return 1;
     }
@@ -193,7 +205,8 @@ namespace Btk{
     //EventLoop
     void System::run(){
         SDL_Event event;
-        while(SDL_WaitEvent(&event)){
+        while(true){
+            wait_event(&event);
             switch(event.type){
                 case SDL_QUIT:{
                     on_quit();
@@ -273,7 +286,19 @@ namespace Btk{
             }
         }
         BTK_LOGWARN(SDL_GetError());
-
+    }
+    inline void System::wait_event(SDL_Event *event){
+        while(SDL_PollEvent(event) == 0){
+            //Wait for event
+            on_idle();
+            SDL_Delay(1);
+        }
+    }
+    inline void System::on_idle(){
+        // BTK_LOGINFO("IDLE");
+        for(auto &handler:idle_handlers){
+            handler();
+        }
     }
     //WindowEvent
     inline void System::on_windowev(const SDL_Event &event){
@@ -440,6 +465,27 @@ namespace Btk{
             //Warn
             //maybe the window is closed
             SDL_LogWarn(SDL_LOG_CATEGORY_SYSTEM,"[System::WindowsManager]cannot get window %d",winid);
+            #ifndef NDEBUG
+            //Debug info
+            SDL_Window *win = SDL_GetWindowFromID(winid);
+            if(win == nullptr){
+                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION,"[SDL2]:%u Invalid SDLWindowID",winid);
+            }
+            else{
+                int w,h;
+                int x,y;
+                SDL_GetWindowPosition(win,&x,&y);
+                SDL_GetWindowSize(win,&w,&h);
+                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION,
+                    "[SDL2]%u => %p title '%s' position (%d,%d) size (%d,%d)",
+                    winid,
+                    win,
+                    SDL_GetWindowTitle(win),
+                    x,y,
+                    w,h
+                );
+            }
+            #endif
             return nullptr;
         }
         else{
@@ -448,16 +494,7 @@ namespace Btk{
     }
     WindowImpl *System::get_window_s(Uint32 winid){
         std::lock_guard locker(map_mtx);
-        auto iter = wins_map.find(winid);
-        if(iter == wins_map.end()){
-            //Warn
-            //maybe the window is closed
-            SDL_LogWarn(SDL_LOG_CATEGORY_SYSTEM,"[System::WindowsManager]cannot get window %d",winid);
-            return nullptr;
-        }
-        else{
-            return iter->second;
-        }
+        return get_window(winid);
     }
     bool System::try_handle_exception(std::exception *exp){
         if(handle_exception == nullptr){
@@ -527,6 +564,13 @@ namespace Btk{
     void AtExit(void(* fn)()){
         System::instance->atexit(fn);
     }
+    void AtIdle(void(*fn)(void*),void *data){
+        Instance().idle_handlers.push_back({fn,data});
+    }
+    void AtIdle(void(*fn)()){
+        AtIdle(callback_wrapper,reinterpret_cast<void*>(fn));
+    }
+
     void DeferCall(void(*fn)(void*),void *userdata){
         BTK_ASSERT(System::instance != nullptr);
         
@@ -595,6 +639,32 @@ namespace Btk{
             }
         }
         throwRuntimeError(SDL_GetError());
+    }
+    void SaveImage(SDL_RWops *rw,SDL_Surface *surf,u8string_view type,int quality){
+        quality = std::clamp(quality,0,10);
+        if(type.empty()){
+            throwRuntimeError("empty type");
+        }
+        for(auto &adapter:Instance().image_adapters){
+            if(SDL_strncasecmp(adapter.name,type.data(),type.size()) == 0){
+                //Got Adapter
+                if(adapter.fn_save == nullptr){
+                    //Ignore it
+                    continue;
+                }
+                else if(SDL_strncasecmp(adapter.name,type.data(),type.size()) != 0){
+                    //Is not the type we wanted 
+                    continue;
+                }
+                if(adapter.save(rw,surf,quality)){
+                    //OK
+                    return;
+                }
+                //Failed
+                throwRuntimeError(SDL_GetError());
+            }
+        }
+        throwRuntimeError("Unsupport format");
     }
 };
 namespace Btk{

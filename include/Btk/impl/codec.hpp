@@ -42,7 +42,13 @@ namespace Btk{
             }
             return nullptr;
         }
-        bool is(SDL_RWops *rwops){
+        bool save(SDL_RWops *rw,SDL_Surface *surf,int quality) const{
+            if(fn_save != nullptr){
+                return fn_save(rw,surf,quality);
+            }
+            return false;
+        }
+        bool is(SDL_RWops *rwops) const{
             if(fn_is != nullptr){
                 return fn_is(rwops);
             }
@@ -51,6 +57,7 @@ namespace Btk{
         const char *name = nullptr;
         const char *vendor = nullptr;
     };
+    //TODO ADD Audio Codec here
     BTKAPI void RegisterImageAdapter(const ImageAdapter &);
 }
 

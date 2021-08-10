@@ -10,11 +10,13 @@
     #define BTK_NEED_GLAD
 #endif
 
+//Should we load the function dymaic
 #ifdef BTK_NEED_GLAD
+    #define GLAD_GLAPI_EXPORT
     #include "glad.h"
     #define BTK_GLAPIENTRY GLAPIENTRY
 #else
-    #include <SDL2/SDL_opengles2.h>
+    #include <GLES3/gl3.h>
     #define BTK_GLAPIENTRY GL_APIENTRYP
 #endif
 
@@ -178,6 +180,8 @@ namespace GL{
         return Rect(viewport[0],viewport[1],viewport[2],viewport[3]);
     }
 }
+using GLShader = GL::Shader;
+using GLProgram = GL::Program;
 }
 
 struct SDL_Window;
@@ -214,6 +218,7 @@ namespace Btk{
         GLuint rbo;
         GLuint fbo;
         GLuint tex;
+        int w,h;
         //Is ok
         bool ok;
     };
@@ -253,6 +258,23 @@ namespace Btk{
                                      int h,
                                      TextureFlags f,
                                      const void *pix) override;
+            /**
+             * @brief Create a texture object from native handle
+             * 
+             * @param ctxt 
+             * @param tex 
+             * @param w 
+             * @param h 
+             * @param f 
+             * @param owned 
+             * @return TextureID 
+             */
+            TextureID create_texture(Context ctxt,
+                                     GLuint tex,
+                                     int w,
+                                     int h,
+                                     TextureFlags f,
+                                     bool owned = true);
             TextureID clone_texture(Context ctxt,TextureID) override;
             void      update_texture(Context ctxt,TextureID,const Rect *r,const void *pix) override;
             void      destroy_texture(Context ctxt,TextureID id) override;
@@ -261,6 +283,21 @@ namespace Btk{
                                     Size *size,
                                     void *nt_h,
                                     TextureFlags *f) override;
+            
+            //Pixels
+            /**
+             * @brief Read Pixels
+             * 
+             * @param ctxt The context(nullptr on screen)
+             * @param id The texture(will be ignored when ctxt = nullptr)
+             */
+            void read_pixels(
+                Context ctxt,
+                TextureID id,
+                PixelFormat fmt,
+                const Rect *r,
+                void *pix
+            );
             //Target
         public:
             //OpenGL operations
@@ -276,10 +313,36 @@ namespace Btk{
              */
             void gl_end();
             /**
-             * @brief Get current viewport
+             * @brief Enable/Disable MSAA
+             * @note You would be better to check the return value
+             * @param val true on enable
              * 
-             * @return Rect 
+             * @return true on Support
+             * @return false on Unsupport
              */
+            [[nodiscard]]
+            bool set_msaa(bool val = true);
+            /**
+             * @brief Check current context has msaa
+             * 
+             * @return true 
+             * @return false 
+             */
+            bool has_msaa();
+            /**
+             * @brief Check the Env support 
+             * 
+             * @param ext_name 
+             */
+            bool  has_extension(const char *ext_name);
+            /**
+             * @brief Get the address object
+             * 
+             * @param proc The function name
+             * @return void* 
+             */
+            void *load_proc(const char *proc);
+
             Rect viewport(){
                 make_current();
                 return GL::CurrentViewPort();
@@ -294,6 +357,23 @@ namespace Btk{
             //Env
             GLuint screen_fbo;
             GLuint screen_rbo;
+            //Enable /disable by glEnable(GL_MULTISAMPLE_ARB);
+            bool has_arb_multisample = false;
+            bool has_arb_copy_image  = false;
+            bool is_gles = true;
+            //Function ptr
+            bool (*has_msaa_fn)() = nullptr;//< Check has msaa
+            bool (*set_msaa_fn)(bool) = nullptr;//Enable / disable msaa
+            //Ext
+            using GLGetTexImage = void(BTK_GLAPIENTRYP )(
+                GLenum target,
+                GLint level,
+                GLenum format,
+                GLenum type,
+                void * pixels);
+
+            GLGetTexImage gl_get_tex_image = nullptr;
+
         private:
             std::stack<GLTarget> targets_stack;
     };

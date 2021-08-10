@@ -183,6 +183,12 @@ namespace Btk{
              */
             void set_resizeable(bool val = true);
             /**
+             * @brief Set the boardered 
+             * 
+             * @param val The boarder
+             */
+            void set_boardered(bool val = true);
+            /**
              * @brief Set the background transparent
              * 
              * @note Some platform unsupport it

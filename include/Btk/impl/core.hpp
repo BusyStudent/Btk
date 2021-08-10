@@ -19,8 +19,12 @@
 namespace Btk{
     class WindowImpl;
     class RendererDevice;
+    /**
+     * @brief Btk System
+     * 
+     */
     struct BTKHIDDEN System{
-        struct ExitHandler{
+        struct GenericHandler{
             //Function pointer
             typedef void (*FnPtr)(void*);
             FnPtr fn;
@@ -29,6 +33,7 @@ namespace Btk{
                 fn(data);
             }
         };
+        using  ExitHandler = GenericHandler;
         struct EventHandler{
             typedef void (*FnPtr)(const SDL_Event &ev,void *data);
             FnPtr fn;
@@ -39,16 +44,28 @@ namespace Btk{
         };
         using Device = RendererDevice;
         typedef Device *(*CreateDeviceFn)(SDL_Window*);
+        
         System();
+        System(const System &) = delete;
         ~System();
+        
         static System *instance;//instance of system
         static bool    is_running;
+        
         void run();
         //Window Register
         void register_window(WindowImpl *impl);
         void unregister_window(WindowImpl *impl);
         void close_window(WindowImpl *impl);
         //Handle event
+        /**
+         * @brief Wait for SDL_Event
+         * 
+         * @param event 
+         * @return int 
+         */
+        inline void wait_event(SDL_Event *event);
+        inline void on_idle();//< When there is no event avliable
         inline void on_dropev(const SDL_Event &event);//Handle SDL_DropEvent
         inline void on_windowev(const SDL_Event &event);//Handle SDL_WINDOWEVENT
         inline void on_keyboardev(const SDL_Event &event);//Handle SDL_KeyboardEvent
@@ -57,6 +74,11 @@ namespace Btk{
         inline void on_mousebutton(const SDL_Event &event);//Handle SDL_MouseButton
         inline void on_textinput(const SDL_Event &event);//Handle SDL_TextInputEvent
         inline void on_quit();//Handle SDL_Quit
+        /**
+         * @brief Pump native Event
+         * @todo .
+         */
+        void nt_pump(){};
         //defercall in eventloop
         void defer_call(void(* fn)(void*),void *data = nullptr);
         //Get window from WindowID
@@ -88,6 +110,7 @@ namespace Btk{
         std::list<ExitHandler> atexit_handlers;
         std::list<ImageAdapter> image_adapters;
         std::list<CreateDeviceFn> devices_list;
+        std::list<GenericHandler> idle_handlers;//< Called on idle
         std::list<Module> modules_list;
         //<The signal will be init before the window will be removed
         Signal<void(WindowImpl *)> signal_window_closed;
@@ -124,7 +147,16 @@ namespace Btk{
      * @return BTKAPI* 
      */
     BTKAPI SDL_Surface *LoadImage(SDL_RWops *rwops,u8string_view type = {});
-    BTKAPI void         SaveImage(SDL_Surface *surf,SDL_RWops *rw,u8string_view type);
+    /**
+     * @brief Save a image
+     * 
+     * @param rw The Ouput Rwops
+     * @param surf The target surface
+     * @param type The image type
+     * @param qulity Compress quality(0 - 10) default(0)
+     * @return BTKAPI 
+     */
+    BTKAPI void         SaveImage(SDL_RWops *rw,SDL_Surface *surf,u8string_view type,int quality = 0);
     /**
      * @brief Register your device
      * 

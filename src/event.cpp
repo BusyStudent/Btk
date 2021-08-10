@@ -137,4 +137,14 @@ namespace Btk{
         }
         return ev;
     }
-};
+}
+namespace Btk{
+    std::ostream &operator <<(std::ostream &ostream,Keycode code){
+        ostream << SDL_GetKeyName(SDL_Keycode(code));
+        return ostream;
+    }
+    std::ostream &operator <<(std::ostream &ostream,Scancode code){
+        ostream << SDL_GetScancodeName(SDL_Scancode(code));
+        return ostream;
+    }
+}

@@ -385,7 +385,7 @@ namespace Btk{
 
             template<class Callable,class ...Args>
             void on_destroy(Callable &&callable,Args &&...args){
-                using Invoker = Impl::Invoker<Callable,Args...>;
+                using Invoker = Impl::OnceInvoker<Callable,Args...>;
                 add_callback(
                     Invoker::Run,
                     new Invoker{

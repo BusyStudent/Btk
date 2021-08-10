@@ -7,8 +7,16 @@
 #include <Btk/render.hpp>
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
+#include <Btk/gl/gl.hpp>
 #include <Btk/Btk.hpp>
 namespace Btk{
+    //TODO AntiAlias shaders
+    struct ImageViewShader{
+        GL::Shader shader;
+        GL::Program program;
+        Uint32 refcount = 1;
+    };
+
     ImageView::ImageView() = default;
     ImageView::ImageView(int x,int y,int w,int h){
         rect.x = x;

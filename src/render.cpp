@@ -222,7 +222,7 @@ namespace Btk{
     void Renderer::text(float x,float y,u16string_view _text){
         auto &buf = FillInternalU8Buffer(_text);
         
-        nvgText(nvg_ctxt,x,y,&buf[0],nullptr);
+        text(x,y,buf);
     }
     //TextBox
     void Renderer::textbox(float x,float y,float width,u8string_view _text){
@@ -256,7 +256,7 @@ namespace Btk{
         return lineh;
     }
     //Get the rendered text size
-    FSize Renderer::text_size(std::u16string_view view){
+    FSize Renderer::text_size(u16string_view view){
         auto &buf = FillInternalU8Buffer(view);
         NVGtextRow  row;
         nvgTextBreakLinesEx(nvg_ctxt,&buf[0],nullptr,std::numeric_limits<float>::max(),&row,1);
@@ -347,6 +347,9 @@ namespace Btk{
         use_font(font.family());
         text_size(font.ptsize());
         return true;
+    }
+    void Renderer::set_antialias(bool val){
+        nvgShapeAntiAlias(nvg_ctxt,val);
     }
     //Transform
 

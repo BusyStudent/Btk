@@ -38,6 +38,10 @@ namespace Btk{
 
         //Configure widget
         set_font(Font(theme().font_name(),theme().font_size()));
+        //Update window rect
+        rect.x = 0;
+        rect.y = 0;
+        SDL_GetWindowSize(win,&(rect.w),&(rect.h));
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -450,6 +454,16 @@ namespace Btk{
             s_val = SDL_FALSE;
         }
         SDL_SetWindowResizable(pimpl->win,s_val);
+    }
+    void Window::set_boardered(bool val){
+        SDL_bool s_val;
+        if(val){
+            s_val = SDL_TRUE;
+        }
+        else{
+            s_val = SDL_FALSE;
+        }
+        SDL_SetWindowBordered(pimpl->win,s_val);
     }
     //multi threading
     void Window::lock(){

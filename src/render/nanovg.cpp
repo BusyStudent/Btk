@@ -13,7 +13,37 @@ extern "C"{
 }
 
 
+
 //Our nvg method
+
+extern "C"{
+    /**
+     * @brief This function like nvgBeginFrame but is didnot clear the state
+     * 
+     * @param ctx 
+     * @param windowWidth 
+     * @param windowHeight 
+     * @param devicePixelRatio 
+     */
+    void nvgBeginFrameEx(NVGcontext* ctx, float windowWidth, float windowHeight, float devicePixelRatio){
+    /*	printf("Tris: draws:%d  fill:%d  stroke:%d  text:%d  TOT:%d\n",
+		ctx->drawCallCount, ctx->fillTriCount, ctx->strokeTriCount, ctx->textTriCount,
+		ctx->fillTriCount+ctx->strokeTriCount+ctx->textTriCount);*/
+
+	// ctx->nstates = 0;
+	// nvgSave(ctx);
+	// nvgReset(ctx);
+
+	nvg__setDevicePixelRatio(ctx, devicePixelRatio);
+
+	ctx->params.renderViewport(ctx->params.userPtr, windowWidth, windowHeight, devicePixelRatio);
+
+	ctx->drawCallCount = 0;
+	ctx->fillTriCount = 0;
+	ctx->strokeTriCount = 0;
+	ctx->textTriCount = 0;
+    }
+}
 
 namespace Btk{
     //USE The nvg
@@ -66,7 +96,6 @@ namespace Btk{
 	}
 	return npos;
     }
-
 }
 
 
@@ -122,6 +151,9 @@ namespace Btk{
     //Default device operations
     void RendererDevice::begin_frame(Context ctxt,float w,float h,float ratio){
         nvgBeginFrame(ctxt,w,h,ratio);
+    }
+    void RendererDevice::begin_frame_ex(Context ctxt,float w,float h,float ratio){
+        nvgBeginFrameEx(ctxt,w,h,ratio);
     }
     void RendererDevice::end_frame(Context ctxt){
         nvgEndFrame(ctxt);

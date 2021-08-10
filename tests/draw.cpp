@@ -15,17 +15,18 @@ int main(){
     Vec2 vec2 = {0,0};
     
     Vec2 pos = {0,0};//Image position
+    int w = 0,h = 0;
 
     canvas.draw() = [&](Renderer &render){
         //render.box({0,0,500,500},{1,1,1});
         render.begin_path();
         render.rect(0,0,500,500);
-        render.fill_color(0,0,0,255);
+        render.fill_color(20,40,45,255);
         render.fill();
         
         //render.draw_image(image,pos.x,pos.y,500,500);
         FRect cliprect = {100,0,200,200};
-        FRect dst = {100,100,200,200};
+        FRect dst = {pos.x,pos.y,w,h};
         render.draw_image(image,&cliprect,&dst);
         if(vec2 != Vec2{0,0}){
             render.line({0,0},vec2,{0,0,0,255});
@@ -33,8 +34,8 @@ int main(){
         render.begin_path();
         render.text_align(Align::Center,Align::Center);
         render.text_size(12);
-        render.text(vec2.x,vec2.y,"HelloWorld   PPP");
         render.fill_color(255,255,255,255);
+        render.text(vec2.x,vec2.y,"HelloWorld   PPP");
         render.fill();
 
         render.begin_path();
@@ -74,6 +75,25 @@ int main(){
             MessageBox box("HelloWorld","FFF",MessageBox::Warn);
             box.show();
             return true;
+        }
+        if(event.type() == Event::KeyBoard){
+            auto ev = static_cast<KeyEvent&>(event);
+            if(ev.keycode == Keycode::Kp_Plus){
+                //+
+                w += 100;
+                h += 100;
+                canvas.redraw();
+            }
+            else if(ev.keycode == Keycode::Kp_Minus){
+                w -= 100;
+                h -= 100;
+                canvas.redraw();
+            }
+            // else if(ev.keycode == Keycode::){
+
+            // }
+            std::cout << w << " " << h << std::endl;
+            return event.accept();
         }
         return false;
     };

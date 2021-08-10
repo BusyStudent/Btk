@@ -300,12 +300,14 @@ namespace Btk{
                 return *this;
             }
             /**
-             * @brief find a char of
+             * @brief find a first char of
              * 
              * @return size_t 
              */
             size_t find(char32_t) const;
             size_t find(u8string_view) const;
+            size_t rfind(char32_t) const;
+            size_t rfind(u8string_view) const;
 
             u16string   to_utf16() const;
             /**
@@ -316,12 +318,14 @@ namespace Btk{
             std::string to_locale() const;
             u8string toupper() const;
             u8string tolower() const;
+            u8string tobase64() const;
             /**
              * @brief Strip the space at begin and end
              * 
              * @return u8string 
              */
             u8string strip() const;
+            u8string trim() const;
             /**
              * @brief Cmp string(ignore the case)
              * 
@@ -331,6 +335,14 @@ namespace Btk{
             bool casecmp(u8string_view view) const{
                 return compare(view,CaseInSensitive);
             }
+            /**
+             * @brief Create a sub string_view
+             * 
+             * @param pos The substring begin
+             * @param len The substring len
+             * @return u8string_view 
+             */
+            u8string_view substr(size_t pos = 0,size_t len = npos) const;
             /**
              * @brief Split string and copy them into buffer
              * 
@@ -373,14 +385,25 @@ namespace Btk{
                     //Is longger
                     return false;
                 }
-                return substr(0,text.raw_length()) == text.base();
+                return base().substr(0,text.raw_length()) == text.base();
             }
             bool end_with(u8string_view text) const{
                 if(text.raw_length() > raw_length()){
                     //Is longger
                     return false;
                 }
-                return substr(raw_length() - text.raw_length(),text.raw_length()) == text.base();
+                return base().substr(raw_length() - text.raw_length(),text.raw_length()) == text.base();
+            }
+            /**
+             * @brief Raw Substr
+             * 
+             * @tparam Args 
+             * @param args 
+             * @return u8string_view 
+             */
+            template<class ...Args>
+            u8string_view raw_substr(Args &&...args) const{
+                return base().substr(std::forward<Args>(args)...);
             }
             bool compare(u8string_view view,bool casecmp = CaseSensitive) const noexcept{
                 //Length is diffent
@@ -627,6 +650,10 @@ namespace Btk{
 
             u8string &operator =(const u8string &) = default;
             u8string &operator =(u8string &&) = default;
+            u8string &operator =(u8string_view v){
+                base() = v.base();
+                return *this;
+            }
 
             template<class T>
             u8string &operator +=(T &&arg){
@@ -726,6 +753,9 @@ namespace Btk{
             }
             u8string tolower() const{
                 return u8string_view(*this).tolower();
+            }
+            u8string substr(size_t pos = 0,size_t len = npos) const{
+                return u8string_view(*this).substr(0,len);
             }
             bool casecmp(u8string_view v) const{
                 return u8string_view(*this).casecmp(v);
@@ -1108,10 +1138,10 @@ namespace Btk{
     BTKAPI void HookIconv(IconvFunctions);
     BTKAPI void GetIconv(IconvFunctions&);
     //Std
-    // inline std::ostream &operator <<(std::ostream &os,const char *s){
-    //     os << u8string_view(s);
-    //     return os;
-    // }
+    inline std::ostream &operator <<(std::ostream &os,const char *s){
+        os << u8string_view(s);
+        return os;
+    }
     // inline std::ostream &operator <<(std::ostream &os,const StringList &strlist){
     //     for(auto &str:strlist){
 

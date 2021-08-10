@@ -50,6 +50,8 @@ namespace Btk{
 namespace X11{
     //Internal function
     int  XErrorHandler(Display *display,XErrorEvent *event){
+        
+        #ifndef NDEBUG
         _Btk_Backtrace();
         char buf[128];
         int ret = XGetErrorText(display,event->error_code,buf,sizeof(buf));
@@ -60,6 +62,11 @@ namespace X11{
             "[System::X11]At display \033[34m%s\033[0m \033[31m%s\033[0m",
             XDisplayString(display),
             buf);
+        #endif
+        if(throw_xlib_err){
+            //Throw XError in MainLoop
+            DeferCall(std::rethrow_exception,std::make_exception_ptr<XError>(event));
+        }
         return 0;
     }
     XContext GetXContext(SDL_Window *win){
@@ -143,8 +150,11 @@ namespace X11{
     }
     void HandleSysMsg(const SDL_SysWMmsg &msg){
         const XEvent &event = msg.msg.x11.event;
-        switch(event.type){
-
+        //Map it
+        XWindow win = event.xany.window;
+        auto iter = wins_map->find(win);
+        if(iter != wins_map->end()){
+            // iter->second->handle_x11(&event);
         }
     }
     //Exec
@@ -239,6 +249,23 @@ namespace X11{
 }
 }
 
+namespace Btk{
+    //XError
+    XError::XError(const void *_event){
+        const XErrorEvent *event = static_cast<const XErrorEvent*>(_event);
+        //Get Error String
+        char buf[128];
+        int ret = XGetErrorText(event->display,event->error_code,buf,sizeof(buf));
+        if(ret == -1){
+            buf[0] = '\0';
+        }
+        _x_display = event->display;
+        set_message(u8format("%s :%s",XDisplayString(event->display),buf));
+    }
+    XError::~XError() = default;
+}
+
+
 //Some platform depended operations for Window
 namespace Btk{
     //< Note This method is not impl yet
@@ -262,13 +289,27 @@ namespace Btk{
         return daemon(1,0) == 0;
     }
 
-    void EmbedWindow::set_window(void *u_display,unsigned long u_win){
+    void EmbedWindow::set_window(WinPtr win){
         //TODO 
-        X11::XWindow xwin = BTK_X_WINDOW(u_win);
+        X11::XWindow   xwin = BTK_X_WINDOW(win.first);
+        X11::XDisplay *xdpy = BTK_X_DISPLAY(win.second);
+        _user_window = win;
         //Get display and window
-        // XReparentWindow(display,p_win,xwin,0,0);
-        XFlush(BTK_X_DISPLAY(_display));
-
+        //Embed it and resize
+        XReparentWindow(xdpy,window()->x_window,xwin,x(),y());
+        XResizeWindow(xdpy,xwin,w(),h());
+        XFlush(xdpy);
+        
+    }
+    void EmbedWindow::nt_set_rect(const Rect &r){
+        // if(has_embed()){
+        //     //Has window
+        //     //Resize and move
+        //     XMoveWindow(BTK_X_DISPLAY(_display),BTK_X_WINDOW(_window),x(),y());
+        //     XResizeWindow(BTK_X_DISPLAY(_display),BTK_X_WINDOW(_window),w(),h());
+        // }
+    }
+    void EmbedWindow::detach_window(){
         
     }
 }

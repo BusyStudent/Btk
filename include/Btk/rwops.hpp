@@ -11,7 +11,7 @@ namespace Btk{
     class MemBuffer;
     class BTKAPI RWops{
         public:
-            RWops(SDL_RWops *r):fptr(r){};
+            RWops(SDL_RWops *r = nullptr):fptr(r){};
             RWops(const RWops &) = delete;
             RWops(MemBuffer &&) = delete;
             RWops(RWops && rw){

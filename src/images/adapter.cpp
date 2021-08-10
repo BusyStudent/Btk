@@ -4,6 +4,8 @@
 namespace Btk{
     void InitImageAdapter(){
         RegisterSDLImage();
+        RegisterSTBII();
+        RegisterWEBP();
         RegisterPNG();
     }
 }

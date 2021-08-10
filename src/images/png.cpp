@@ -31,9 +31,7 @@
 #define PNG_CATCH else
 
 
-namespace{
-    using Btk::ImageLibrary;
-    
+namespace{    
     struct BTKHIDDEN PngLibrary{
         BTK_PNG_LIBRARY(PNG_LIBNAME);
 
@@ -51,8 +49,6 @@ namespace{
         BTK_PNG_FUNCTION(png_sig_cmp);
         BTK_PNG_FUNCTION(png_error);
 
-        bool is_png(SDL_RWops *rwops) const;
-        SDL_Surface *load_png(SDL_RWops *rwops) const;
     };
     #ifndef BTK_PNG_DYMAIC
     //Create a static libaray
@@ -60,93 +56,74 @@ namespace{
     #else
     BTK_MAKE_DYLIB(PngLibrary,pnglib);
     #endif
-    static void read_callback(png_structp png,png_bytep buf,size_t size){
-        void *rw = pnglib->png_get_io_ptr(png);
-        size_t n = SDL_RWread(static_cast<SDL_RWops*>(rw),buf,1,size);
-        //failure
-        if(n == 0){
-            pnglib->png_error(png,SDL_GetError());
+
+    //Make png 
+    #define png_error pnglib->png_error
+    #define png_sig_cmp pnglib->png_sig_cmp
+    #define png_get_io_ptr pnglib->png_get_io_ptr
+    #define png_set_read_fn pnglib->png_set_read_fn
+    #define png_create_read_struct pnglib->png_create_read_struct
+    #define png_destroy_read_struct pnglib->png_destroy_read_struct
+    //Make deleter
+    // struct png_deleter{
+    //     void operator ()(png_structp){
+    //         png_destroy_read_struct()
+    //     }
+    // };
+    // using png_struct_ptr = std::unique_ptr<png_structp,png_deleter>;
+
+    bool check_is_png(SDL_RWops *rwops){
+        Uint8 magic[8];
+        //Save cur
+        auto cur = SDL_RWtell(rwops);
+        //Read magic
+        SDL_RWread(rwops,magic,sizeof(magic),1);
+        //Reset to the position
+        SDL_RWseek(rwops,cur,RW_SEEK_SET);
+        //Check
+        return png_sig_cmp(magic,0,sizeof(magic)) == 0;
+    }
+    void png_read_data(png_structp reader,png_bytep buf,size_t n){
+        void *rwops = png_get_io_ptr(reader);
+        if(SDL_RWread(static_cast<SDL_RWops*>(rwops),buf,1,n) != n){
+            //Read Error
+            png_error(reader,SDL_GetError());
         }
     }
-    bool PngLibrary::is_png(SDL_RWops *rwops) const{
-        constexpr int PNG_SIG_BYTE = 8;
-        char buf[PNG_SIG_BYTE];
-
-        SDL_RWseek(rwops,0,RW_SEEK_SET);
-
-        if(SDL_RWread(rwops,buf,1,PNG_SIG_BYTE) != PNG_SIG_BYTE){
-            //FAILED to read
-            return false;
-        }
-        return png_sig_cmp(reinterpret_cast<png_const_bytep>(buf),0,PNG_SIG_BYTE)== 0;
-    }
-    SDL_Surface *PngLibrary::load_png(SDL_RWops *rwops) const{
-        if(not is_png(rwops)){
+    SDL_Surface *png_load(SDL_RWops *rwops){
+        if(not check_is_png(rwops)){
+            SDL_SetError("Invalid png");
             return nullptr;
         }
-        //Reset to begin
-        SDL_RWseek(rwops,0,RW_SEEK_SET);
-
-
-        png_structp ptr = nullptr;
-        png_infop info = nullptr;
-        SDL_Surface *surf = nullptr;
-        ptr = png_create_read_struct(
+        png_struct *reader = png_create_read_struct(
             PNG_LIBPNG_VER_STRING,
             nullptr,
             nullptr,
             nullptr
         );
-        info = png_create_info_struct(ptr);
-
-        png_set_read_fn(ptr,rwops,read_callback);
-
-        png_uint_32 w,h;
-        int depth;
-        int color_type;
-
-        PNG_TRY(ptr){
-            //Skip the byte
-            png_set_sig_bytes(ptr,8);
-            png_read_info(ptr,info);
-            //png_get_IHDR();
-            png_get_IHDR(ptr,info,&w,&h,&depth,&color_type,nullptr,nullptr,nullptr);
-        }
-        PNG_CATCH{
-            goto err;
-        }
-        surf = SDL_CreateRGBSurface(
-            SDL_SWSURFACE,
-            w,
-            h,
-            depth,
-            0,
-            0,
-            0,
-            0
-        );
-        if(surf == nullptr){
-            goto err;
-        }
-        png_destroy_read_struct(&ptr,&info,nullptr);
-        return surf;
-        err:
-            png_destroy_read_struct(&ptr,&info,nullptr);
+        if(reader == nullptr){
             return nullptr;
+        }
+        png_set_read_fn(reader,rwops,png_read_data);
+        png_destroy_read_struct(&reader,nullptr,nullptr);
+        return nullptr;
     }
 }
+
+namespace Btk{
+    struct BTKHIDDEN PngDecoder:public ImageDecoder{
+        PngDecoder() = default;
+    };
+}
+
 namespace Btk{
     void RegisterPNG(){
         ImageAdapter adapter;
         adapter.name = "png";
-        adapter.fn_is = [](SDL_RWops *r){
-            pnglib.load();
-            return pnglib->is_png(r);
-        };
-        adapter.fn_load = [](SDL_RWops *r){
-            pnglib.load();
-            return pnglib->load_png(r);
-        };
+        adapter.vendor = "libpng";
+        adapter.fn_is = check_is_png;
+        adapter.fn_load = png_load;
+        pnglib.load();
         RegisterImageAdapter(adapter);
     }
 }

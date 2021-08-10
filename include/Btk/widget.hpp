@@ -80,6 +80,16 @@ namespace Btk{
              */
             virtual bool handle(Event &);
             virtual void set_rect(const Rect &rect);
+            /**
+             * @brief Set the parent (you can overload it)
+             * 
+             * @param parent The pointer to the parent
+             */
+            virtual void set_parent(Widget *parent);
+
+            //Resize
+            void resize(int w,int h,bool is_sizing);
+
             //Hide and show
             void hide();
             void show();
@@ -149,12 +159,7 @@ namespace Btk{
              * 
              */
             void dump_tree(FILE *output = stderr);
-            /**
-             * @brief Set the parent (you can overload it)
-             * 
-             * @param parent The pointer to the parent
-             */
-            virtual void set_parent(Widget *parent);
+
             Widget *parent() const noexcept{
                return _parent; 
             }
@@ -227,6 +232,7 @@ namespace Btk{
             virtual bool handle_drop(DropEvent     &){return false;}
             virtual bool handle_mouse(MouseEvent   &){return false;}
             virtual bool handle_wheel(WheelEvent   &){return false;}
+            virtual bool handle_resize(ResizeEvent &){return false;}
             virtual bool handle_motion(MotionEvent &){return false;}
             virtual bool handle_keyboard(KeyEvent  &){return false;}
             virtual bool handle_textinput(TextInputEvent &){return false;}

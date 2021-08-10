@@ -580,6 +580,11 @@ namespace Btk{
     }
     BTKAPI std::ostream &operator <<(std::ostream &o,Scancode c);
     BTKAPI std::ostream &operator <<(std::ostream &o,Keycode c);
-};
+
+    //Key
+    class BTKAPI KeySequence{
+
+    };
+}
 
 #endif // _BTK_LOCALS_HPP_

@@ -89,7 +89,14 @@ namespace Btk{
             LineEdit();
             LineEdit(u8string_view text);
             ~LineEdit();
-
+            
+            void draw(Renderer &) override;
+            
+            bool handle(Event &) override;
+            bool handle_drag(DragEvent &) override;
+            bool handle_mouse(MouseEvent &) override;
+            bool handle_keyboard(KeyEvent &) override;
+            bool handle_textinput(TextInputEvent&) override;
         private:
             u8string placeholder;//< Show if the string is empty
             u8string cur_text;

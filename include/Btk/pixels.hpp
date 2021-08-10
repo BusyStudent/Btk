@@ -101,15 +101,26 @@ namespace Btk{
             //operators
 
             //save PixBuf
-            //FIXME:Why save png and jpg doesnnot work
+            //FIXME:Why save png and jpg in SDL_image doesnnot work
             //It exported an black image
-            void save_png(RWops &,int quality);
-            void save_jpg(RWops &,int quality);
             void save_bmp(RWops &);
-
-            void save_png(u8string_view fname,int quality);
-            void save_jpg(u8string_view fname,int quality);
             void save_bmp(u8string_view fname);
+            /**
+             * @brief Save the pixel buffer
+             * 
+             * @param rw The output stream
+             * @param type The output image format
+             * @param quality The compress quality(0 - 10) default(0)
+             */
+            void save(RWops &,u8string_view type,int quality = 0);
+            /**
+             * @brief Save the pixel buffer
+             * 
+             * @param filename The output filename
+             * @param type The output image format
+             * @param quality The compress quality(0 - 10) default(0)
+             */
+            void save(u8string_view filename,u8string_view type = {},int quality = 0);
             
             PixBuf &operator =(SDL_Surface *);//assign
             PixBuf &operator =(PixBuf &&);//assign
@@ -451,6 +462,12 @@ namespace Btk{
              * @param p_handle The pointer to the handle
              */
             void native_handle(void *p_handle);
+            template<class T>
+            T    native_handle(){
+                T handle;
+                native_handle(reinterpret_cast<void*>(&handle));
+                return handle;
+            }
             /**
              * @brief Clone the texture
              * 

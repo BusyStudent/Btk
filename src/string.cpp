@@ -406,6 +406,24 @@ namespace Btk{
         }
         return npos;
     }
+    size_t u8string_view::rfind(char32_t ch) const{
+        //TODO Imporve the speed
+        size_t n = length();
+        if(n == 0){
+            //Empty string
+            return {};
+        }
+        n -= 1;
+        auto iter = impl_end() - 1;
+        while(iter >= impl_begin()){
+            //Stop when we reach be broader
+            n --;
+            if(utf8::unchecked::prior(iter) == ch){
+                return n;
+            }
+        }
+        return npos;
+    }
     //TODO Imporve the speed
     size_t u8string_view::find(u8string_view s) const{
         auto pos = base().find(s);
@@ -425,7 +443,10 @@ namespace Btk{
         return npos;
     }
     u8string u8string_view::strip() const{
-        auto ed = impl_end();
+        if(empty()){
+            return {};
+        }
+        auto ed = impl_end() - 1;
         auto bg = impl_begin();
         while(std::isspace(*bg) and bg != ed){
             ++bg;
@@ -433,7 +454,7 @@ namespace Btk{
         while(std::isspace(*ed) and bg != ed){
             --ed;
         }
-        return u8string(bg,bg - ed);
+        return u8string(bg,ed - bg + 1);
     }
     u8string u8string_view::tolower() const{
         u8string c = *this;
@@ -456,6 +477,33 @@ namespace Btk{
             ++n;
         }
         return c;
+    }
+    //Make substr
+    u8string_view u8string_view::substr(size_t pos,size_t len) const{
+        size_t dis = 0;//< The len disntance
+        size_t beg = 0;//The pos point the char begin
+        //For to end
+        _const_iterator end;
+        _const_iterator iter = impl_begin();
+        //Find current position
+        iter = Utf8Advance(impl_begin(),impl_end(),iter,pos);
+        if(iter == nullptr){
+            throwRuntimeError("Invalid pos");
+        }
+        //Seek to the sub string's end
+        if(len == npos){
+            //Point to end
+            end = impl_end();
+        }
+        else{
+            end = Utf8Advance(impl_begin(),impl_end(),iter,len);
+            if(end == nullptr){
+                throwRuntimeError("Invalid pos");
+            }
+        }
+        beg = iter - impl_begin();
+        dis = end - iter;
+        return raw_substr(beg,dis);
     }
     /**
      * @brief Split string into buffer

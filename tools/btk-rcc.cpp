@@ -4,6 +4,7 @@ extern "C"{
 }
 #include <Btk/string.hpp>
 #include <Btk/defs.hpp>
+#include <functional>
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
@@ -11,6 +12,13 @@ extern "C"{
 #include <cstring>
 #include <cstdint>
 #include <vector>
+#include <map>
+
+
+/** Read config like this
+ * 
+ * 
+ */
 
 
 namespace{
@@ -88,6 +96,20 @@ namespace{
         ofs << ';';
         //Done
     }
+
+    struct config_parser{
+        //Map key > to value 
+        //Function's args is key:value
+        std::map<
+            std::string,
+            std::function<void(const char*,const char*)>
+        > fns_map;
+        config_parser(){
+            fns_map["type"];
+            fns_map["file"];
+        }
+    };
+
 }
 int main(int argc,const char **argv){
     if(argc == 1){

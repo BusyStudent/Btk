@@ -5,29 +5,36 @@
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 namespace Btk{
-    SDLError::SDLError(const char *err):std::runtime_error(err){}
-    SDLError::SDLError(const SDLError &err):std::runtime_error(err){}
-    SDLError::~SDLError(){}
+    //RuntimeError
+    RuntimeError::RuntimeError() = default;
+    RuntimeError::~RuntimeError() = default;
+    const char *RuntimeError::what() const noexcept{
+        return _message.c_str();
+    }
+
+    SDLError::SDLError(u8string_view err):RuntimeError(err){}
+    SDLError::SDLError(const SDLError &err):RuntimeError(err){}
+    SDLError::~SDLError() = default;
     //BadFunctionCall
     BadFunctionCall::BadFunctionCall():
-        std::runtime_error("call an empty function"){}
+        RuntimeError("call an empty function"){}
     BadFunctionCall::BadFunctionCall(const BadFunctionCall &err):
-        std::runtime_error(err){}
-    BadFunctionCall::~BadFunctionCall(){}
+        RuntimeError(err){}
+    BadFunctionCall::~BadFunctionCall() = default;
 
-    RendererError::RendererError(const char *msg):
-        std::runtime_error(msg){}
-    RendererError::~RendererError(){}
+    RendererError::RendererError(u8string_view msg):
+        RuntimeError(msg){}
+    RendererError::~RendererError() = default;
     //throwError
     [[noreturn]] void throwSDLError(){
         _Btk_Backtrace();
         throw SDLError(SDL_GetError());
     }
-    [[noreturn]] void throwSDLError(const char *err){
+    [[noreturn]] void throwSDLError(u8string_view err){
         _Btk_Backtrace();
         throw SDLError(err);
     }
-    [[noreturn]] void throwRuntimeError(const char *str){
+    [[noreturn]] void throwRuntimeError(u8string_view str){
         _Btk_Backtrace();
         throw RuntimeError(str);
     }
@@ -35,7 +42,7 @@ namespace Btk{
         _Btk_Backtrace();
         throw BadFunctionCall();
     }
-    [[noreturn]] void throwRendererError(const char *msg){
+    [[noreturn]] void throwRendererError(u8string_view msg){
         _Btk_Backtrace();    
         throw RendererError(msg);
     }

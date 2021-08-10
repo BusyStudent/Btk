@@ -16,8 +16,15 @@ A library for developing Gui based on SDL2 and nanovg
 ```cpp
 #include <Btk.hpp>
 using Btk::Window;
+using Btk::Button;
 struct App:public Window{
-    App():Window("Hello World",100,100){}
+    App():Window("Hello World",100,100){
+        //Add a button and connect signal
+        auto &btn = add<Button>("Close the window");
+        btn.signal_clicked().connect([this](){
+            close();
+        });
+    }
 };
 int main(){
     App app;
@@ -32,6 +39,7 @@ int main(){
 - Rewrite font system to get better performence  
 - Add more useful widgets  
 - Add Btk::Bind(...) to bind object and functions  
+- Rewrite ImageView By OpenGL to implement AntiAlias
 
 ----
 
@@ -47,6 +55,7 @@ int main(){
 |  ScrollBar|        |      |             |
 |  Canvas   |         |      |             |
 |  GLCanvas |         |      |             |
+|  GLWidget | No      |      |             |
 |  Label    |         |      |             |
 |  Line     |         |      |             |
 

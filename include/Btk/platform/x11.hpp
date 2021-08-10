@@ -48,12 +48,19 @@ namespace Btk{
         }
     };
     //X11 Error
-    class XError:public RuntimeError{
+    class BTKAPI XError:public RuntimeError{
         public:
-            XError() = default;
+            /**
+             * @brief Construct a new XError object
+             * 
+             * @param x_display The Display
+             * @param p_xevent The pointer to XErrorEvent
+             */
+            XError(const void *p_xevent);
             XError(const XError &) = default;
             ~XError();
-            const char *what() const noexcept;
+        private:
+            void *_x_display;
     };
 };
 

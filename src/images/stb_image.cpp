@@ -16,25 +16,52 @@
 #define STBI_REALLOC SDL_realloc
 #define STBI_FREE SDL_free
 
+//STB WRITE CONFIGURE
+#ifndef BTK_STBI_NOWRITE
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_STATIC
+#define STBI_WRITE_NO_STDIO
+
+#define STBIW_ASSERT(X) BTK_ASSERT(X)
+#define STBIW_MALLOC SDL_malloc
+#define STBIW_REALLOC SDL_realloc
+#define STBIW_FREE SDL_free
+
+
+#endif
+
+
 extern "C"{
     #include "../libs/stb_image.h"
+    //Enable write by default
+    #ifndef BTK_STBI_NOWRITE
+    #include "../libs/stb_image_write.h"
+    #endif
 }
 
-//Make check functions
-#define BTK_STBI_IS(TYPE) [](SDL_RWops *rwops) -> bool{\
-    stbi_io_cb callback(rwops);\
-    stbi__context s;\
-    stbi__start_callbacks(&s,(stbi_io_callbacks *)&callback,&callback);\
-    return stbi__##TYPE##_test(&s);\
-}
+//Make alias jpg -> jpeg
+#define stbi__jpg_test stbi__jpeg_test
+//Make check functions for STB IMAGE
+#define BTK_STBI_IS(TYPE) stb_is<stbi__##TYPE##_test>
+#define BTK_STBI_SAVE(TYPE) stb_write_helper<stbi__##TYPE##_test>::write
+
 #define BTK_STBI_WRAPPER(TYPE) {\
         ImageAdapter adapter;\
         adapter.vendor = "stbi";\
         adapter.name = #TYPE;\
         adapter.fn_load = stbi_load;\
+        adapter.fn_save = BTK_STBI_SAVE(TYPE);\
         adapter.fn_is = BTK_STBI_IS(TYPE);\
         RegisterImageAdapter(adapter);\
 }
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    #define STBI_RGB SDL_PIXELFORMAT_RGB888
+#else
+    #define STBI_RGB SDL_PIXELFORMAT_BGR888
+#endif
+
 
 namespace{
     //TODO ADD Error check
@@ -59,24 +86,194 @@ namespace{
             end = SDL_RWtell(fptr);
             //Reset
             SDL_RWseek(fptr,cur,RW_SEEK_SET);
+            BTK_LOGINFO("[STBII]Current pos %d",int(cur));
         }
         int _read(char *data,int size){
-            return SDL_RWread(fptr,data,sizeof(char),size);
+            size_t ret = SDL_RWread(fptr,data,sizeof(char),size);
+            // BTK_LOGINFO("Read %d byte",int(ret));
+            return ret;
         }
         int _eof(){
             //Is eof
+            BTK_LOGINFO("[STBII]Got eof");
             return SDL_RWtell(fptr) == end;
         }
         void _skip(int n){
             //Seek at cur
+            BTK_LOGINFO("[STBII]Skip %d byte");
             SDL_RWseek(fptr,n,RW_SEEK_CUR);
+        }
+        /**
+         * @brief Reset the stream status to prev
+         * 
+         */
+        void _reset_to_prev(){
+            BTK_LOGINFO("[STBII]Reset to Prev");
+            SDL_RWseek(fptr,cur,RW_SEEK_SET);
+            BTK_LOGINFO("[STBII]After reset,Current pos %d",int(SDL_RWtell(fptr)));
         }
         SDL_RWops *fptr;
         Sint64 cur;//Current pos
         Sint64 end;//The end position
     };
+    SDL_Surface *stbi_from_rgba(
+        stbi_uc *data,
+        int w,
+        int h){
+        //Slow way
+        #if 0
+        //Create surface RGBA32
+        SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormat(
+            0,
+            w,h,
+            SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA32),
+            SDL_PIXELFORMAT_RGBA32
+        );
+        if(surf == nullptr){
+            stbi_image_free(data);
+            Btk::throwSDLError();
+        }
+        //Then Update it
+        memcpy(surf->pixels,data,w * h * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA32));
+        stbi_image_free(data);
+        
+        #else
+        //Faster way,but more dangerous
+        SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormatFrom(
+            static_cast<void*>(data),
+            w,h,
+            SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA32),
+            SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA32) * w,
+            SDL_PIXELFORMAT_RGBA32
+        );
+        if(surf == nullptr){
+            stbi_image_free(data);
+            Btk::throwSDLError();
+        }
+        //Now set the flags to let SDL free the memory itselfs
+        //Acrodding to this https://twitter.com/icculus/status/667036586610139137
+        surf->flags ^= SDL_PREALLOC;
+        #endif
+        return surf;
+    }
+    SDL_Surface *stbi_from_rgb(
+        stbi_uc *data,
+        int w,
+        int h){
+        //FIXME It will cause a render error when format is RGB888
+        //Probably ENDIAN
+        
+        //BGR888
+        #if 0
+        //Slower
+        SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormat(
+            0,
+            w,h,
+            SDL_BYTESPERPIXEL(STBI_RGB),
+            STBI_RGB
+        );
+        if(surf == nullptr){
+            stbi_image_free(data);
+            Btk::throwSDLError();
+        }
+        //Then Update it
+        memcpy(surf->pixels,data,w * h * SDL_BYTESPERPIXEL(STBI_RGB));
+        stbi_image_free(data);
+        #else
+        //Faster
+        SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormatFrom(
+            static_cast<void*>(data),
+            w,h,
+            SDL_BYTESPERPIXEL(STBI_RGB),
+            SDL_BYTESPERPIXEL(STBI_RGB) * w,
+            STBI_RGB
+        );
+        if(surf == nullptr){
+            stbi_image_free(data);
+            Btk::throwSDLError();
+        }
+        surf->flags ^= SDL_PREALLOC;
+        #endif
+        return surf;
+    }
+    SDL_Surface *stbi_from_grey(
+        stbi_uc *data,
+        int w,
+        int h){
 
+        //Begin convert and copy
+        SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormat(
+            0,
+            w,h,
+            SDL_BYTESPERPIXEL(STBI_RGB),
+            STBI_RGB
+        );
+        if(surf == nullptr){
+            stbi_image_free(data);
+            Btk::throwSDLError();
+        }
+        Uint8 *pixels = static_cast<Uint8*>(surf->pixels);
+
+        for(int y = 0;y < surf->h;y++){
+            for(int x = 0;x < surf->w;x++){
+                pixels[y * surf->w + x] = SDL_MapRGB(
+                    surf->format,
+                    data[y * surf->w + x],
+                    data[y * surf->w + x],
+                    data[y * surf->w + x]
+                );
+            }
+        }
+
+
+        stbi_image_free(data);
+        return nullptr;
+    }
+    SDL_Surface *stbi_from_greya(
+        stbi_uc *data,
+        int w,
+        int h){
+        
+        //TODO
+        stbi_image_free(data);
+        return nullptr;
+    }
+    /**
+     * @brief Create a sdl surface by pixels
+     * 
+     * @param data The pixels data(The fuction will manage it)
+     * @param w 
+     * @param h 
+     * @param comp 
+     * @return SDL_Surface* 
+     */
+    SDL_Surface *stbi_make_surf(
+        stbi_uc *data,
+        int w,
+        int h,
+        int comp){
+
+        switch(comp){
+            case STBI_rgb_alpha:{
+                return stbi_from_rgba(data,w,h);
+            }
+            case STBI_rgb:{
+                return stbi_from_rgb(data,w,h);
+            }
+            case STBI_grey_alpha:{
+                return stbi_from_greya(data,w,h);
+            }
+            case STBI_grey:{
+                return stbi_from_grey(data,w,h);
+            }
+            default:
+                //Impossible
+                BTK_LOGDEBUG("[STBII]Internal Error in stbi_make_surf");
+                std::abort();
+        }
+    }
     SDL_Surface *stbi_load(SDL_RWops *rwops){
+        SDL_Surface *surf;
         stbi_io_cb callback(rwops);
         int w,h;
         int comp;
@@ -86,22 +283,190 @@ namespace{
             SDL_SetError("%s",stbi_failure_reason());
             return nullptr;
         }
-        SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormatFrom(
-            data,
-            w,h,
-            SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA32),
-            SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA32) * w,
-            SDL_PIXELFORMAT_RGBA32
-        );
-        stbi_image_free(data);
+        BTK_LOGINFO("[STBII] recevie comp %d",comp);
 
-        if(surf == nullptr){
-            Btk::throwSDLError();
-        }
-
-        return surf;
+        return stbi_make_surf(data,w,h,comp);
     }
+    /**
+     * @brief Helper template to check type
+     * 
+     * @tparam STBCHECK 
+     * @param rwops 
+     * @return true 
+     * @return false 
+     */
+    template<auto STBCHECK>
+    bool stb_is(SDL_RWops *rwops){
+        stbi_io_cb callback(rwops);
+        stbi__context s;
+        stbi__start_callbacks(&s,(stbi_io_callbacks *)&callback,&callback);
+        bool value = STBCHECK(&s);
+        callback._reset_to_prev();
+        return value;
+        
+    }
+    /**
+     * @brief Helper class for generate output function
+     * 
+     * @tparam T 
+     */
+    template<auto T>
+    struct stb_write_helper{
+        static constexpr auto write = nullptr;
+    };
+    #ifndef BTK_STBI_NOWRITE
+    struct stb_write_base{
+        stb_write_base(SDL_RWops *r):rwops(r){};
+        SDL_RWops *rwops;
+        bool ok = true;
 
+        /**
+         * @brief Check pixel format
+         * 
+         * @param callable Callable(SDL_Surface *surf,int comp)
+         */
+        template<class Callable>
+        bool do_write(Callable &&callable,SDL_Surface *surf){
+
+            SDL_Surface *target;
+            int comp;
+            //Check format
+            if(surf->format->format == SDL_PIXELFORMAT_RGBA32){
+                //RGBA32
+                comp = STBI_rgb_alpha;
+                target = surf;
+            }
+            else if(surf->format->format == STBI_RGB){
+                comp = STBI_rgb;
+                target = surf;
+            }
+            else{
+                //Convert to RGBA32
+                target = SDL_ConvertSurfaceFormat(surf,SDL_PIXELFORMAT_RGBA32,0);
+                comp = STBI_rgb_alpha;
+                if(target == nullptr){
+                    //Convert failed
+                    return false;
+                }
+            }
+            //Call it
+            if(SDL_MUSTLOCK(target)){
+                SDL_LockSurface(target);
+            }
+            ok = callable(target,comp);
+            if(SDL_MUSTLOCK(target)){
+                SDL_UnlockSurface(target);
+            }
+            if(target != surf){
+                //Is converted surface
+                SDL_FreeSurface(target);
+            }
+            return ok;
+        }
+    };
+    //stb write callback
+    static void stbwrite_callback(void *context, void *data, int size){
+        auto base = static_cast<stb_write_base*>(context);
+        size_t ret = SDL_RWwrite(base->rwops,data,sizeof(char),size);
+        if(ret != size){
+            base->ok = false;
+        }
+    }
+    template<>
+    struct stb_write_helper<stbi__png_test>{
+        static bool write(SDL_RWops *r,SDL_Surface *surface,int){
+            stb_write_base base(r);
+            //Forward to stb
+            auto callback = [&](SDL_Surface *surf,int comp){
+                return stbi_write_png_to_func(
+                    stbwrite_callback,
+                    &base,
+                    surf->w,
+                    surf->h,
+                    comp,
+                    surf->pixels,
+                    surf->w * comp
+                );
+            };
+            return base.do_write(callback,surface);
+        }
+    };
+    template<>
+    struct stb_write_helper<stbi__jpeg_test>{
+        static bool write(SDL_RWops *r,SDL_Surface *surface,int quality){
+            stb_write_base base(r);
+            //Forward to stb
+            auto callback = [&](SDL_Surface *surf,int comp){
+                return stbi_write_jpg_to_func(
+                    stbwrite_callback,
+                    &base,
+                    surf->w,
+                    surf->h,
+                    comp,
+                    surf->pixels,
+                    quality
+                );
+            };
+            return base.do_write(callback,surface);
+        }
+    };
+    //Show we provide it,Btk had already provide a BMP Adapter
+    template<>
+    struct stb_write_helper<stbi__bmp_test>{
+        static bool write(SDL_RWops *r,SDL_Surface *surface,int){
+            stb_write_base base(r);
+            //Forward to stb
+            auto callback = [&](SDL_Surface *surf,int comp){
+                return stbi_write_bmp_to_func(
+                    stbwrite_callback,
+                    &base,
+                    surf->w,
+                    surf->h,
+                    comp,
+                    surf->pixels
+                );
+            };
+            return base.do_write(callback,surface);
+        }
+    };
+    template<>
+    struct stb_write_helper<stbi__tga_test>{
+        static bool write(SDL_RWops *r,SDL_Surface *surface,int){
+            stb_write_base base(r);
+            //Forward to stb
+            auto callback = [&](SDL_Surface *surf,int comp){
+                return stbi_write_tga_to_func(
+                    stbwrite_callback,
+                    &base,
+                    surf->w,
+                    surf->h,
+                    comp,
+                    surf->pixels
+                );
+            };
+            return base.do_write(callback,surface);
+        }
+    };
+    //TODO ADD HDR WRITER
+    // template<>
+    // struct stb_write_helper<stbi__hdr_test>{
+    //     static bool write(SDL_RWops *r,SDL_Surface *surface,int){
+    //         stb_write_base base(r);
+    //         //Forward to stb
+    //         auto callback = [&](SDL_Surface *surf,int comp){
+    //             return stbi_write_hdr_to_func(
+    //                 stbwrite_callback,
+    //                 &base,
+    //                 surf->w,
+    //                 surf->h,
+    //                 comp,
+    //                 surf->pixels
+    //             );
+    //         };
+    //         return base.do_write(callback,surface);
+    //     }
+    // };
+    #endif
 }
 
 namespace Btk{
@@ -110,6 +475,8 @@ namespace Btk{
         stbi_convert_iphone_png_to_rgb(1);
         
         BTK_STBI_WRAPPER(jpeg);        
+        BTK_STBI_WRAPPER(jpg);//JPEG alias
+
         BTK_STBI_WRAPPER(png);        
         BTK_STBI_WRAPPER(tga);        
         BTK_STBI_WRAPPER(hdr);        

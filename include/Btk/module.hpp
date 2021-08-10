@@ -3,8 +3,14 @@
 #include "string.hpp"
 #include "defs.hpp"
 
-#define BTK_MODULE_INIT() extern "C" void BtkModule_Init(Btk::Module& mod)
-#define BTK_MODULE_QUIT() extern "C" void BtkModule_Quit(Btk::Module& mod)
+/**
+ * @brief Make the module entry
+ * 
+ */
+#define BTK_MODULE_INIT(NAME) \
+    extern "C" BTKEXPORT void BtkModule_Init(Btk::Module& NAME)
+#define BTK_MODULE_QUIT(NAME) \
+    extern "C" BTKEXPORT void BtkModule_Quit(Btk::Module& NAME)
 
 namespace Btk{
     struct Module{

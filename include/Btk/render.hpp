@@ -83,7 +83,27 @@ namespace Btk{
         virtual Context create_context() = 0;
         virtual void    destroy_context(Context) = 0;
         //Frame operations
+        /**
+         * @brief Begin a frame,note it will clear the state of the context
+         * 
+         * @param ctxt 
+         * @param w Logical's Width
+         * @param h Logical's Height
+         * @param pixel_ratio Physical's w / Logical's w
+         */
         virtual void begin_frame(Context ctxt,
+                                 float w,
+                                 float h,
+                                 float pixel_ratio);
+        /**
+         * @brief Like begin_frame,but it didnot clear the state of the context
+         * 
+         * @param ctxt 
+         * @param w Logical's Width
+         * @param h Logical's Height
+         * @param pixel_ratio Physical's w / Logical's w
+         */
+        static  void begin_frame_ex(Context ctxt,
                                  float w,
                                  float h,
                                  float pixel_ratio);
@@ -433,7 +453,7 @@ namespace Btk{
              * @return RendererBackend 
              */
             RendererBackend backend() const{
-                device()->backend();
+                return device()->backend();
             }
             /**
              * @brief Get the logical drawable size
@@ -597,7 +617,7 @@ namespace Btk{
              * @return FSize 
              */
             FSize text_size(u8string_view);
-            FSize text_size(std::u16string_view);
+            FSize text_size(u16string_view);
             /**
              * @brief Set the text's size
              * 
@@ -673,7 +693,7 @@ namespace Btk{
                 intersest_scissor(rect.x,rect.y,rect.w,rect.h);
             }
             void reset_scissor();
-
+            void set_antialias(bool val = true);
         public:
             //Transform
             void scale(float x_factor,float y_factor);
@@ -749,12 +769,13 @@ namespace Btk{
             Rect  viewport = {0,0,0,0};//< cached viewport
             FRect cliprect = {0,0,0,0};//< cached cliprect
 
-            std::list<int> t_caches;//< Texture cache
+            std::list<TextureID> t_caches;//< Texture cache
             int max_caches = 20;//< Max cache
 
             bool is_drawing = false;//< Is nanovg Has BeginFrame
             bool free_device = false;
         friend class Texture;
+        friend class GLCanvas;
     };
 
 }

@@ -86,6 +86,18 @@ namespace Btk{
             SDL_Window *sdl_window() const noexcept{
                 return win;
             }
+            //Set/Get Userdata
+            void  set_userdata(const char *name,void *data){
+                SDL_SetWindowData(win,name,data);
+            }
+            void *userdata(const char *name) const{
+                return SDL_GetWindowData(win,name);
+            }
+            template<class T>
+            T    *userdata(const char *name) const{
+                return static_cast<T*>(SDL_GetWindowData(win,name));
+            }
+
         public:
             //Process Event
             bool handle_drop(DropEvent     &) override;
