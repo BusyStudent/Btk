@@ -99,7 +99,8 @@ namespace Btk{
             info.type == Input,
             &user_spec,
             &dev_spec,
-            0
+            SDL_AUDIO_ALLOW_ANY_CHANGE
+            //We can handle it by AudioStream
         );
         if(dev == 0){
             throwAudioError();

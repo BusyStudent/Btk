@@ -127,7 +127,7 @@ static LONG CALLBACK seh_exception_handler(_EXCEPTION_POINTERS *exp){
 namespace Btk{
 namespace Win32{
     //For slove WM_SIZING
-    static ObjectHolder<std::map<HWND,WindowImpl*>> hwnd_map;
+    static ObjectHolder<HWNDMap<WindowImpl*>> hwnd_map;
     static HIMC ime_handle = nullptr;
 
     static HWND get_hwnd(SDL_Window *win){
@@ -138,13 +138,13 @@ namespace Win32{
     }
     static void on_add_window(WindowImpl *win){
         HWND h = get_hwnd(win->sdl_window());
-        hwnd_map->emplace(std::make_pair(h,win));
+        hwnd_map->insert(h,win);
 
         BTK_LOGINFO("[System::Win32]Reginster window %p HWND %p",win,h);
     }
     static void on_del_window(WindowImpl *win){
         HWND h = get_hwnd(win->sdl_window());
-        hwnd_map->erase(hwnd_map->find(h));
+        hwnd_map->erase(h);
 
         BTK_LOGINFO("[System::Win32]Remove window %p HWND %p", win, h);
     }
@@ -178,6 +178,20 @@ namespace Win32{
 
         SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
         SDL_SetEventFilter(event_filter,nullptr);
+
+
+        #if 1
+        // #ifdef BTK_RENDERDEVICE_D3D11
+        //Has D3D11 Device
+        RegisterDevice([](SDL_Window *win) -> RendererDevice*{
+            Uint32 flags = SDL_GetWindowFlags(win);
+            if((flags & SDL_WINDOW_OPENGL) == SDL_WINDOW_OPENGL){
+                //Ignore OpenGL Window
+                return nullptr;
+            }
+            return CreateD3D11Device(get_hwnd(win));
+        });
+        #endif
     }
     void Quit(){
         CoUninitialize();
@@ -238,7 +252,7 @@ namespace Win32{
         LocalFree(ret);
         return s;
     }
-    bool MessageBox(std::string_view title,std::string_view msg,int flag){
+    bool MessageBox(u8string_view title,u8string_view msg,int flag){
         UINT type = 0;
 
         if(flag == MessageBox::Info){
@@ -252,38 +266,24 @@ namespace Win32{
         }
         MessageBoxW(
             GetForegroundWindow(),
-            reinterpret_cast<const wchar_t*>(Utf8To16(msg).c_str()),
-            reinterpret_cast<const wchar_t*>(Utf8To16(title).c_str()),
+            reinterpret_cast<const wchar_t*>(msg.to_utf16().c_str()),
+            reinterpret_cast<const wchar_t*>(title.to_utf16().c_str()),
             type
         );
         return true;
     }
     WindowImpl *GetWindow(HWND h){
-        auto iter = hwnd_map->find(h);
-        if(iter == hwnd_map->end()){
-            return nullptr;
-        }
-        return iter->second;
+        return hwnd_map->find(h);
     }
 }
 }
 namespace Btk{
     Win32Error::Win32Error(DWORD errcode):
-        std::runtime_error(Win32::StrMessageA(errcode).c_str()){
+        RuntimeError(Win32::StrMessageA(errcode)){
 
     }
     Win32Error::~Win32Error(){
 
-    }
-    //GetErrorCode
-    const char *Win32Error::what() const noexcept{
-        try{
-            return FillInternalU8Buffer(Win32::StrMessageA(errcode)).c_str();
-        }
-        catch(...){
-            //Formatting error or etc....
-            return "<Unknown>";
-        }
     }
     [[noreturn]] void throwWin32Error(DWORD errcode){
         throw Win32Error(errcode);
@@ -294,23 +294,27 @@ namespace Btk{
 }
 namespace Btk{
     void WindowImpl::handle_win32(
-        void *hwnd,
+        void *_hwnd,
         UINT message,
         WPARAM wParam,
         LPARAM lParam){
         
+        HWND hwnd = static_cast<HWND>(_hwnd);
         //Process Win32 Evennt
+        if(not win32_hooks.empty()){
+            win32_hooks(hwnd,message,wParam,lParam);
+        }
         switch(message){
         case WM_SIZING:{
-                RECT *rect = reinterpret_cast<RECT *>(lParam);
-
+                RECT rect;
+                GetClientRect(hwnd,&rect);
                 SDL_Event event;
                 event.type = SDL_WINDOWEVENT;
                 event.window.windowID = id();
                 event.window.timestamp = SDL_GetTicks();
                 event.window.event = SDL_WINDOWEVENT_RESIZED;
-                event.window.data1 = rect->right - rect->left;
-                event.window.data2 = rect->bottom - rect->top;
+                event.window.data1 = rect.right - rect.left;
+                event.window.data2 = rect.bottom - rect.top;
                 try{
                     handle_windowev(event);
                     //Limit to draw

@@ -1,6 +1,6 @@
 #include "build.hpp"
 
-#ifndef NDEBUG
+#if BTK_STILL_DEV
 //Make sure it wonnot compile in release
 //Still develop 
 

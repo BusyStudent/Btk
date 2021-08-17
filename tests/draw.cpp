@@ -12,10 +12,10 @@ int main(){
     auto &canvas = win.add<Canvas>(0,0,500,500);
     //load image
     auto  image = PixBuf::FromXPMArray(icon);
-    Vec2 vec2 = {0,0};
+    FVec2 vec2 = {0,0};
     
-    Vec2 pos = {0,0};//Image position
-    int w = 0,h = 0;
+    FVec2 pos = {0,0};//Image position
+    float w = 0,h = 0;
 
     canvas.draw() = [&](Renderer &render){
         //render.box({0,0,500,500},{1,1,1});
@@ -28,7 +28,7 @@ int main(){
         FRect cliprect = {100,0,200,200};
         FRect dst = {pos.x,pos.y,w,h};
         render.draw_image(image,&cliprect,&dst);
-        if(vec2 != Vec2{0,0}){
+        if(vec2 != FVec2{0,0}){
             render.line({0,0},vec2,{0,0,0,255});
         }
         render.begin_path();

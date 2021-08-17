@@ -8,6 +8,7 @@
 namespace Btk{
     class WindowImpl;
     class Container;
+    class GLDevice;
     class PixBuf;
     class Widget;
     class Event;
@@ -18,6 +19,7 @@ namespace Btk{
         Vulkan      = 1 << 1,
         SkipTaskBar = 1 << 2,
     };
+    BTK_FLAGS_OPERATOR(WindowFlags,Uint32);
     /**
      * @brief Class for describe native window
      * 
@@ -236,9 +238,28 @@ namespace Btk{
              */
             void dump_tree(FILE *output = stderr) const;
             Container &container() const;
+
+            void *internal_data(const char *key);
         private:
             WindowImpl *pimpl;
             Uint32 winid;
+    };
+    /**
+     * @brief OpenGL Window
+     * 
+     */
+    class GLWindow:public Window{
+        public:
+            GLWindow() = default;
+            GLWindow(GLWindow &&) = default;
+            GLWindow(u8string_view title,int w,int h,Flags f = Flags::None):
+                Window(title,w,h,f + WindowFlags::OpenGL){
+
+            }
+
+            GLDevice *gl_device(){
+                return static_cast<GLDevice*>(internal_data("btk_dev"));
+            }
     };
     /**
      * @brief Get the Screen Size object
@@ -246,14 +267,5 @@ namespace Btk{
      * @return BTKAPI 
      */
     BTKAPI Size GetScreenSize(int display = 0);
-    inline WindowFlags operator +(WindowFlags a,WindowFlags b){
-        return WindowFlags(Uint32(a) | Uint32(b));
-    }
-    inline WindowFlags operator |(WindowFlags a,WindowFlags b){
-        return WindowFlags(Uint32(a) | Uint32(b));
-    }
-    inline WindowFlags operator &(WindowFlags a,WindowFlags b){
-        return WindowFlags(Uint32(a) & Uint32(b));
-    }
 }
 #endif // _BTK_WINDOW_HPP_

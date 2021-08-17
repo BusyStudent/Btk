@@ -68,14 +68,13 @@ namespace Btk{
             //Texture texture;
             //Font    textfont;
     };
-    class RadioButton:public AbstractButton{
+    class BTKAPI RadioButton:public AbstractButton{
         public:
             using Widget::set_rect;
 
             RadioButton();
-            RadioButton(u8string_view text):RadioButton(){
-                btext = text;
-            }
+            //FIXME MSVC could found vtable here
+            RadioButton(u8string_view text);
             ~RadioButton();
 
             void draw(Renderer &) override;

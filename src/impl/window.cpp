@@ -42,6 +42,9 @@ namespace Btk{
         rect.x = 0;
         rect.y = 0;
         SDL_GetWindowSize(win,&(rect.w),&(rect.h));
+        //Set window data
+        SDL_SetWindowData(win,"btk_impl",this);
+        SDL_SetWindowData(win,"btk_dev",_device);
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -273,6 +276,7 @@ namespace Btk{
         if(event.type() == Event::DropFile){
             on_dropfile(event.text);
         }
+        return true;
     }
     void WindowImpl::defered_event(std::unique_ptr<Event> event){
         handle(*event);
@@ -292,6 +296,9 @@ namespace Btk{
         //Android need full screen
         Uint32 flags = 
             SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL;
+        #elif defined(_WIN32)
+        //In Win32 we can use direct3d
+        Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN;
         #else
         Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
         #endif
@@ -486,6 +493,13 @@ namespace Btk{
     Container &Window::container() const{
         return *pimpl;
     }
+    void *Window::internal_data(const char *key){
+        return SDL_GetWindowData(
+            SDL_GetWindowFromID(winid),
+            key
+        );
+    }
+
 }
 namespace Btk{
     Size GetScreenSize(int index){

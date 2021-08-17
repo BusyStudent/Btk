@@ -161,6 +161,8 @@ namespace Btk{
                 Uint64 wParam,
                 Sint64 lParam
             );
+            //Win32 MessageHook
+            Function<void(void *,unsigned int,Uint64,Sint64)> win32_hooks;
             
             #endif
 

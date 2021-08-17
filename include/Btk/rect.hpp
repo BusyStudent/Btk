@@ -77,6 +77,12 @@ namespace Btk{
         float norm() const noexcept{
             return std::sqrt(x * x + y * y);
         }
+        bool operator ==(const FPoint &p) const noexcept{
+            return x == p.x and y == p.y;
+        }
+        bool operator !=(const FPoint &p) const noexcept{
+            return x != p.x or y != p.y;
+        }
 
         float x,y;
     };

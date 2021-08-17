@@ -7,7 +7,7 @@ namespace Btk{
      * @brief ProgressBar
      * 
      */
-    class ProgressBar:public Widget{
+    class BTKAPI ProgressBar:public Widget{
         public:
             ProgressBar();
             ~ProgressBar();

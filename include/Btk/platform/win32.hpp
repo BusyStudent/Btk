@@ -7,11 +7,20 @@
 #include "../string.hpp"
 #include "../exception.hpp"
 
+#include <map>
+
 #undef MessageBox
 #undef LoadImage
 
+//CoCreateInstance Helper
+#define Btk_CoCreateInstance(T) \
+    Btk::Win32::ComCreateInstance<I##T>(\
+        CLSID_##T,IID_I##T\
+    )
+
 namespace Btk{
     class WindowImpl;
+    class RendererDevice;
 }
 
 namespace Btk{
@@ -41,7 +50,7 @@ namespace Win32{
      * @param flag 
      * @return BTKAPI 
      */
-    BTKAPI bool MessageBox(std::string_view title,std::string_view msg,int flag = 0);
+    BTKAPI bool MessageBox(u8string_view title,u8string_view msg,int flag = 0);
     /**
      * @brief Get the Window object by hwnd
      * 
@@ -50,6 +59,104 @@ namespace Win32{
      * @return nullptr on error
      */
     BTKAPI WindowImpl *GetWindow(HWND hwnd);
+        /**
+     * @brief A Helper class to manager com
+     * 
+     * @tparam T The com type
+     */
+    template<class T>
+    struct ComInstance{
+        ComInstance() = default;
+        ComInstance(T *p):ptr(p){}
+        ComInstance(const ComInstance &instance){
+            ptr = instance.ptr;
+            if(ptr != nullptr){
+                ptr->AddRef();
+            }
+        }
+        ~ComInstance(){
+            release();
+        }
+        void release(){
+            if(ptr != nullptr){
+                ptr->Release();
+            }
+        }
+
+        T *operator ->(){
+            return ptr;
+        }
+        T **operator &(){
+            return &ptr;
+        }
+        operator T *() const noexcept{
+            return ptr;
+        }
+        T *ptr = nullptr;
+    };
+    /**
+     * @brief A pointer to free memory from com
+     * 
+     * @tparam T The pointer type
+     */
+    template<class T>
+    struct ComMemPtr{
+        ComMemPtr(T *p = nullptr){
+            ptr = p;
+        }
+        ComMemPtr(const ComMemPtr &) = delete;
+        ~ComMemPtr(){
+            CoTaskMemFree(ptr);
+        }
+        T *operator ->(){
+            return ptr;
+        }
+        T **operator &(){
+            return &ptr;
+        }
+        operator T*(){
+            return ptr;
+        }
+        T *ptr;
+    };
+    /**
+     * @brief For mapping hwnd to pointer
+     * 
+     * @tparam T The pointer(like void*)
+     */
+    template<class T>
+    struct HWNDMap{
+        std::map<void*,void*> mp;
+
+        void insert(HWND hwnd,T pointer){
+            mp[hwnd] = pointer;
+        }
+        void erase(HWND hwnd){
+            mp.erase(hwnd);
+        }
+        T    find(HWND hwnd){
+            auto iter = mp.find(hwnd);
+            if(iter == mp.end()){
+                return nullptr;
+            }
+            return reinterpret_cast<T>(iter->second);
+        }
+    };
+    template<class T>
+    ComInstance<T> ComCreateInstance(const IID &id,const IID &rrid){
+        ComInstance<T> ins;
+        HRESULT hr = CoCreateInstance(
+            id,
+            nullptr,
+            CLSCTX_ALL,
+            rrid,
+            reinterpret_cast<LPVOID>(&ins)
+        );
+        if(SUCCEEDED(hr)){
+            return ins;
+        }
+        throwRuntimeError("CoCreateInstance failed");
+    }
 }
 }
 namespace Btk{
@@ -62,13 +169,11 @@ namespace Btk{
             Win32Error(DWORD errcode);
             ~Win32Error();
             DWORD errcode;//< Error code
-            /**
-             * @brief Get the error string
-             * 
-             * @return const char* 
-             */
-            const char *what() const noexcept;
     };
-    [[noreturn]] void BTKAPI throwWin32Error(DWORD errocode = GetLastError());
+    [[noreturn]] 
+    void BTKAPI throwWin32Error(DWORD errocode = GetLastError());
+    //Renderer Device
+    BTKAPI
+    RendererDevice *CreateD3D11Device(HWND hwnd);
 }
 #endif // _BTK_PLATFORM_WIN32

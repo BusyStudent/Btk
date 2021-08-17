@@ -61,6 +61,7 @@ namespace Btk{
     class BTKAPI StackedWidget:public Group{
 
     };
+    #if BTK_STILL_DEV
     /**
      * @brief Embed Native Window on here
      * 
@@ -171,6 +172,7 @@ namespace Btk{
             void *sdl_window;
             void *gl_context;
     };
+    #endif
 }
 
 #endif // _BTK_CONTAINER_HPP_

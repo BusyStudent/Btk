@@ -176,6 +176,9 @@ namespace Btk{
 namespace Btk{
     RadioButton::~RadioButton() = default;
     RadioButton::RadioButton() = default;
+    RadioButton::RadioButton(u8string_view t){
+        btext = t;
+    }
     void RadioButton::draw(Renderer &render){
         //Draw text
         if(not btext.empty()){

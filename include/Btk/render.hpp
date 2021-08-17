@@ -268,14 +268,14 @@ namespace Btk{
             int  set_cliprect(const Rect *r);
 
            
-            Rect get_viewport();
-            int  set_viewport(){
-                return set_viewport(nullptr);
-            }
-            int  set_viewport(const Rect &r){
-                return set_viewport(&r);
-            }
-            int  set_viewport(const Rect *r);
+            // Rect get_viewport();
+            // int  set_viewport(){
+            //     return set_viewport(nullptr);
+            // }
+            // int  set_viewport(const Rect &r){
+            //     return set_viewport(&r);
+            // }
+            // int  set_viewport(const Rect *r);
             /**
              * @brief Destroy the renderer
              * 

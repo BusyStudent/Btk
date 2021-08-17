@@ -410,6 +410,7 @@ namespace Btk{
         BTK_GL_BEGIN();
         //Clear target stack
         while(not targets_stack.empty()){
+            targets_stack.top().destroy();
             targets_stack.pop();
         }
         SDL_GL_DeleteContext(_context);
@@ -431,6 +432,7 @@ namespace Btk{
         //Init glad
         static bool glad_wasinit = false;
         if(not glad_wasinit){
+            GL::LoadLibaray();
             if(BtkLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress))){
                 glad_wasinit = true;
             }
@@ -883,6 +885,7 @@ namespace Btk{
         targets_stack.emplace(w,h,id);
         //Check is ok
         if(not targets_stack.top().ok){
+            targets_stack.top().destroy();
             targets_stack.pop();
             throwRendererError("Failed to set fbo");
         }
@@ -914,7 +917,7 @@ namespace Btk{
             nvgRestore(ctxt);
 
             targets_stack.top().unbind();
-            //Reset to prev
+            targets_stack.top().destroy();
             targets_stack.pop();
             if(targets_stack.empty()){
                 //Reset to screen

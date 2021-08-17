@@ -52,6 +52,7 @@ namespace Btk{
              */
             GLDevice *gl_device();
     };
+    #if BTK_STILL_DEV
     /**
      * @brief Basic class for using Direct3D 11
      * 
@@ -67,6 +68,7 @@ namespace Btk{
             virtual void draw(Renderer&) final;
             virtual void vk_draw() = 0;
     };
+    #endif
 }
 
 #endif // _BTK_CANVAS_HPP_

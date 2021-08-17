@@ -29,6 +29,12 @@ namespace Btk{
     inline void RegisterWEBP(){}
 #endif
 
+#ifdef BTK_HAS_WIC
+    BTKHIDDEN void RegisterWIC();
+#else
+    inline void RegisterWIC(){}
+#endif
+
 }
 
 

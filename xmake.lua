@@ -33,7 +33,7 @@ else
     --add_requires("SDL2","SDL2_ttf","SDL2_image")
     --VS UTF8
     add_cxxflags("/utf-8")
-    add_cxxflags("/std:c++latest")
+    add_cxxflags("/Zc:__cplusplus")
     add_cflags("/utf-8")
 end
 set_languages("c++17")
@@ -140,6 +140,11 @@ target("btk")
     --Render
     add_files("./src/render/render_gles2.cpp")
     add_files("./src/render/nanovg.cpp")
+
+    if is_plat("windows") or is_plat("mingw") then 
+        add_files("./src/render/render_dx11.cpp")
+    end
+
     --Font
     add_files("./src/font/fontstash.cpp")
     add_files("./src/font/cache.cpp")

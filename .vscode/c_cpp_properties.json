@@ -31,6 +31,10 @@
                 //A flag to suppress warning
                 "BTK_VSCODE_SUPPRESS"
             ],
+            "compilerArgs": [
+                "/Zc:__cplusplus",
+                "/utf-8"
+            ],
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "${default}"

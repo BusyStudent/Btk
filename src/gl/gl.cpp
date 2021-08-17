@@ -28,16 +28,6 @@ namespace Btk::GL{
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,1);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,8);
 
-
-        //Load library
-        #ifdef BTK_NEED_GLAD
-        if(SDL_GL_LoadLibrary(nullptr) == -1){
-            BTK_LOGINFO("Failed to Load GLES %s",SDL_GetError());
-        }
-        else{
-            AtExit(GL::Quit);
-        }
-        #endif
         //Register our Device
         RegisterDevice([](SDL_Window *win) -> RendererDevice*{
             //Check is OpenGL Window
@@ -53,6 +43,21 @@ namespace Btk::GL{
         #endif
         SDL_GL_ResetAttributes();
     }
+    #ifdef BTK_NEED_GLAD
+    void LoadLibaray(){
+        static bool loaded = false;
+        if(loaded){
+            return;
+        }
+        if(SDL_GL_LoadLibrary(nullptr) == -1){
+            BTK_LOGINFO("Failed to Load GLES %s",SDL_GetError());
+        }
+        else{
+            loaded = true;
+            AtExit(GL::Quit);
+        }
+    }
+    #endif
 }
 namespace Btk::GL{
     //There has some code from nanovg_gl_utils.h

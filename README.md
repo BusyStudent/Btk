@@ -61,6 +61,16 @@ int main(){
 
 ----
 
+## Renderer Backend
+
+| Backend    | Done? | Description|
+| ---        | ---   | ---        |
+| OpenGLESv3 |       |            |
+| Direct3D11 |       |            |
+| SDLRender  | No    |            |
+
+----
+
 ## Building prerequisites
 
 ### Linux

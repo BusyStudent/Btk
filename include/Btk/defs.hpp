@@ -102,6 +102,20 @@
     #define BTKAPI
 #endif
 
+//Platform checking
+#if defined(_WIN32) || defined(__gnu_linux__)
+    #define BTK_DESKTOP
+#elif defined(__ANDROID__) || defined(__IPHONEOS__)
+    #define BTK_MOBILE
+#endif
+//Macro to avoid compile still develop code in msvc
+//Bacause msvc will export all the symbols
+#if defined(_MSC_VER) && !defined(BTK_VSCODE_SUPPRESS)
+    #define BTK_STILL_DEV 0
+#else
+    #define BTK_STILL_DEV 1
+#endif
+
 #ifdef __cplusplus
 namespace Btk{
     //Some int defs in SDL2

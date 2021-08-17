@@ -12,7 +12,6 @@
 
 //Should we load the function dymaic
 #ifdef BTK_NEED_GLAD
-    #define GLAD_GLAPI_EXPORT
     #include "glad.h"
     #define BTK_GLAPIENTRY GLAPIENTRY
 #else
@@ -25,7 +24,7 @@
  * 
  */
 #if defined(GLAPIENTRY)
-    #define BTK_GLAPIENTRYP GLAPIENTRY
+    #define BTK_GLAPIENTRYP GLAPIENTRY *
 #elif defined(GL_APIENTRYP)
     #define BTK_GLAPIENTRYP GL_APIENTRYP
 #else
@@ -36,6 +35,16 @@ namespace Btk{
 namespace GL{
     void Init();
     void Quit();
+    #ifdef BTK_NEED_GLAD
+    /**
+     * @brief dymaic Load OpenGL Library
+     * 
+     * @return BTKAPI 
+     */
+    BTKAPI void LoadLibaray();
+    #else
+    inline void LoadLibaray(){};
+    #endif
     /**
      * @brief Create a framebuffer
      * 
@@ -193,8 +202,10 @@ namespace Btk{
      */
     struct BTKHIDDEN GLTarget{
         GLTarget(int w,int h,GLuint tex);
-        GLTarget(const GLTarget &) = delete;
-        ~GLTarget(){
+        GLTarget(const GLTarget &) = default;
+        //MSVC 's stack cannot use GLTarget with delete copy constructor
+        //So we could only allow it to copy,destroy it by ourself
+        void destroy(){
             //Cleanup
             glDeleteFramebuffers(1,&fbo);
             glDeleteRenderbuffers(1,&rbo);

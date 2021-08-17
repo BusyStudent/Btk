@@ -172,8 +172,8 @@ namespace Btk{
             //regitser atexit callback
             std::call_once(flag,std::atexit,System::Quit);
             //Init platform
-            Platform::Init();
             GL::Init();
+            Platform::Init();
             //Image Adapter
             InitImageAdapter();
             

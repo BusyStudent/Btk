@@ -6,6 +6,7 @@ namespace Btk{
         RegisterSDLImage();
         RegisterSTBII();
         RegisterWEBP();
+        RegisterWIC();
         RegisterPNG();
     }
 }
