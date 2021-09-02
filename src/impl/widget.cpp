@@ -19,6 +19,8 @@ namespace Btk{
         //Default Process event
         switch(ev.type()){
             //Normal event handle
+            case Event::Resize:
+                return handle_resize(event_cast<ResizeEvent&>(ev));
             case Event::Motion:
                 return handle_motion(event_cast<MotionEvent&>(ev));
             case Event::Click:
@@ -55,6 +57,12 @@ namespace Btk{
     }
     void Widget::set_rect(const Rect &rect){
         this->rect = rect;    
+    }
+    void Widget::resize(int w,int h,bool is_sizing){
+        ResizeEvent event(w,h,is_sizing);
+        handle(event);
+        rect.w = w;
+        rect.h = h;
     }
     //redraw the window
     void Widget::redraw(){

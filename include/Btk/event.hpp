@@ -137,11 +137,12 @@ namespace Btk{
      * @brief A event about resize
      * 
      */
-    struct ResizeEvent:public Event{
+    struct BTKAPI ResizeEvent:public Event{
         public:
-            ResizeEvent(int w,int h):Event(Resize){
+            ResizeEvent(int w,int h,bool sizing = false):Event(Resize){
                 this->w = w;
                 this->h = h;
+                this->sizing = sizing;
             }
             ResizeEvent(const ResizeEvent &) = default;
             ~ResizeEvent() = default;
@@ -153,7 +154,17 @@ namespace Btk{
             Size size() const noexcept{
                 return {w,h};
             }
+            /**
+             * @brief Will we 
+             * 
+             * @return true 
+             * @return false 
+             */
+            bool is_sizing() const noexcept{
+                return sizing;
+            }
             int w,h;
+            bool sizing;
     };    
     /**
      * @brief A event about mouse click

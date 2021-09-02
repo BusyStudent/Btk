@@ -7,7 +7,6 @@
 #include <Btk/render.hpp>
 #include <Btk/rwops.hpp>
 #include <Btk/font.hpp>
-#include <SDL2/SDL_image.h>
 #include <SDL2/SDL.h>
 
 #include <algorithm>
@@ -23,6 +22,9 @@ extern "C"{
 
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
 #define BTK_NULLCHECK(VAL) if(VAL == nullptr){return;}
+
+static_assert(sizeof(Btk::RendererPaint) == sizeof(NVGpaint));
+static_assert(sizeof(Btk::GLColor) == sizeof(NVGcolor));
 
 namespace Btk{
     void Renderer::end(){
@@ -192,8 +194,14 @@ namespace Btk{
     void Renderer::stroke_color(Color c){
         nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
     }
+    void Renderer::stroke_color(const GLColor& c){
+        nvgStrokeColor(nvg_ctxt,nvgRGBAf(UNPACK_COLOR(c)));
+    }
     void Renderer::fill_color(Color c){
         nvgFillColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
+    }
+    void Renderer::fill_color(const GLColor &c){
+        nvgFillColor(nvg_ctxt,nvgRGBAf(UNPACK_COLOR(c)));
     }
     void Renderer::show_path_caches(){
         nvgDebugDumpPathCache(nvg_ctxt);
@@ -203,6 +211,15 @@ namespace Btk{
     }
     void Renderer::line_to(float x,float y){
         nvgLineTo(nvg_ctxt,x,y);
+    }
+    void Renderer::arc_to(float x1,float y1,float x2,float y2,float radius){
+        nvgArcTo(nvg_ctxt,x1,y1,x2,y2,radius);
+    }
+    void Renderer::quad_to(float cx,float cy,float x,float y){
+        nvgQuadTo(nvg_ctxt,cx,cy,x,y);
+    }
+    void Renderer::bezier_to(float c1x,float c1y,float c2x,float c2y,float x,float y){
+        nvgBezierTo(nvg_ctxt,c1x,c1y,c2x,c2y,x,y);
     }
     void Renderer::begin_path(){
         nvgBeginPath(nvg_ctxt);
@@ -370,9 +387,6 @@ namespace Btk{
         nvgFontFace(nvg_ctxt,"");
         nvgFontBlur(nvg_ctxt,0);
     }
-    Renderer::~Renderer(){
-        destroy();
-    }
     void Renderer::destroy(){
         if(device() == nullptr){
             return;
@@ -536,6 +550,58 @@ namespace Btk{
         return *this;
     }
 }
+namespace Btk{
+    //Paint
+    static RendererPaint from_nvgpaint(const NVGpaint &p){
+        return reinterpret_cast<const RendererPaint&>(p);
+    }
+    void Renderer::stroke_paint(const RendererPaint &paint){
+        nvgStrokePaint(nvg_ctxt,reinterpret_cast<const NVGpaint&>(paint));
+    }
+    void Renderer::fill_paint(const RendererPaint &paint){
+        nvgFillPaint(nvg_ctxt,reinterpret_cast<const NVGpaint&>(paint));
+    }
+    RendererPaint Renderer::image_pattern(const FRect &r,float angle,TextureID tex,float alpha){
+        return from_nvgpaint(
+            nvgImagePattern(
+                nvg_ctxt,
+                r.x,
+                r.y,
+                r.w,
+                r.h,
+                angle,
+                tex,
+                alpha
+            )
+        );
+    }
+    RendererPaint Renderer::linear_gradient(float sx,float sy,float ex,float ey,GLColor in,GLColor out){
+        return from_nvgpaint(
+            nvgLinearGradient(
+                nvg_ctxt,
+                sx,
+                sy,
+                ex,
+                ey,
+                reinterpret_cast<const NVGcolor&>(in),
+                reinterpret_cast<const NVGcolor&>(out)
+            )
+        );
+    }
+    RendererPaint Renderer::radial_gradient(float cx,float cy,float inr,float outr,GLColor in,GLColor out){
+        return from_nvgpaint(
+            nvgRadialGradient(
+                nvg_ctxt,
+                cx,
+                cy,
+                inr,
+                outr,
+                reinterpret_cast<const NVGcolor&>(in),
+                reinterpret_cast<const NVGcolor&>(out)
+            )
+        );
+    }
+}
 //Dreaptched functions
 namespace Btk{
     //Draw a rounded box directly
@@ -576,29 +642,5 @@ namespace Btk{
         nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
         nvgStroke(nvg_ctxt);
         return 0;
-    }
-    //cliprect
-    int  Renderer::set_cliprect(const Rect *rect){
-        if(rect == nullptr){
-            nvgResetScissor(nvg_ctxt);
-            return 0;
-        }
-        if(rect->empty()){
-            nvgResetScissor(nvg_ctxt);
-            return 0;
-        }
-        cliprect = *rect;
-        nvgResetScissor(nvg_ctxt);
-        nvgScissor(
-            nvg_ctxt,
-            cliprect.x,
-            cliprect.y,
-            cliprect.w,
-            cliprect.h
-        );
-        return 0;
-    }
-    Rect Renderer::get_cliprect(){
-        return cliprect;
     }
 }

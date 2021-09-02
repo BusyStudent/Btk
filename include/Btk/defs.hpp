@@ -6,6 +6,15 @@
     #if __cplusplus < 201703L
     #error We need a C++17 to compile btk
     #endif
+    //C++ 20 
+    #if __cplusplus > 201703L
+        //C++ 20 __cplusplus is bigger than C++17
+        //Because many compiler has different value
+        #define BTK_CXX20
+        #define BTK_REQUIRE_CXX20 1
+    #else
+        #define BTK_REQUIRE_CXX20 0
+    #endif
 #else
     #include <stdint.h>
 #endif
@@ -148,6 +157,41 @@ namespace Btk{
         V = Vertical,
         H = Horizontal
     };
+    //Useful min max climp template
+    //Avoid to include algorithm in the headers
+    template<class T>
+    inline T max(const T &v1,const T &v2){
+        if(v1 > v2){
+            return v1;
+        }
+        return v2;
+    }
+    template<class T>
+    inline T min(const T &v1,const T &v2){
+        if(v1 < v2){
+            return v1;
+        }
+        return v2;
+    }
+    /**
+     * @brief Climp
+     * 
+     * @tparam T 
+     * @param v 
+     * @param min 
+     * @param max 
+     * @return T 
+     */
+    template<class T>
+    inline T clamp(const T &v,const T &min,const T &max){
+        if(v <= min){
+            return min;
+        }
+        if(v >= max){
+            return max;
+        }
+        return v;
+    }
 }
 #endif
 

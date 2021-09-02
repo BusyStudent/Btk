@@ -113,8 +113,7 @@ namespace Btk{
             */
             //Render text
             render.save();
-            auto cliprect = render.get_cliprect();
-            render.set_cliprect(rect);
+            render.intersest_scissor(rect);
 
             Rect txt_rect = rect;
             FSize text_size = render.text_size(tb_text);
@@ -155,8 +154,6 @@ namespace Btk{
                 
                 render.line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme()[Theme::Text]);
             }
-
-            render.set_cliprect(cliprect);
             render.restore();
         }
         else if(has_focus and show_line){

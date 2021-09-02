@@ -4,10 +4,18 @@
 #endif
 #ifdef BTK_USE_GFX
     #include <Btk/thirdparty/SDL2_rotozoom.h>
+#else
+    #define STB_IMAGE_RESIZE_STATIC
+    #define STB_IMAGE_RESIZE_IMPLEMENTATION
+    #define STBIR_MALLOC  SDL_malloc
+    #define STBIR_REALLOC SDL_realloc
+    #define STBIR_FREE    SDL_free
+    #include "../libs/stb_image_resize.h"
 #endif
 
 #include "../build.hpp"
 
+#include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
@@ -234,7 +242,7 @@ namespace Btk{
 #include <string_view>
 namespace Btk{
     // #ifdef BTK_HAS_SDLIMG
-    #ifdef BTK_HAS_SDLIMGa
+    #ifdef BTK_HAS_SDLIMG
     static inline PixBuf load_xpm_from(const char *const*v){
         auto surf = IMG_ReadXPMFromArray(const_cast<char**>(v));
         if(surf == nullptr){
@@ -286,6 +294,7 @@ namespace Btk{
                 if(iter != colormap.end()){
                     //founded
                     color = iter->second;
+                    colormap.insert(std::make_pair(view,color));
                     continue;
                 }
                 //Not founded,Try ignore the case
@@ -300,6 +309,8 @@ namespace Btk{
                         if(ret == 0){
                             //Founded
                             color = par.second;
+                            colormap.insert(std::make_pair(view,color));
+                            continue;
                         }
                     }
                 }
@@ -311,24 +322,6 @@ namespace Btk{
                 colormap.insert(std::make_pair(view,color));
             }
         }
-        //Convert pixel callback
-        auto map_rgba32 = [](Color c) -> Uint32{
-            Uint32 pixel;
-            #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-            //Big endian RGBA8888
-            reinterpret_cast<Uint8*>(&pixel)[0] = c.a;
-            reinterpret_cast<Uint8*>(&pixel)[1] = c.b;
-            reinterpret_cast<Uint8*>(&pixel)[2] = c.g;
-            reinterpret_cast<Uint8*>(&pixel)[3] = c.r;
-            #else
-            //little endian ABGR8888
-            reinterpret_cast<Uint8*>(&pixel)[0] = c.r;
-            reinterpret_cast<Uint8*>(&pixel)[1] = c.g;
-            reinterpret_cast<Uint8*>(&pixel)[2] = c.b;
-            reinterpret_cast<Uint8*>(&pixel)[3] = c.a;
-            #endif
-            return pixel;
-        };
         //Begin parse the pixels
         int x = 0,y = 0;
         //Make pixbuf
@@ -345,7 +338,7 @@ namespace Btk{
                 std::string_view pix(line + n,cpp);
                 //Get pixel string
                 auto color = colormap.at(pix);
-                pixels[w * y + x] = map_rgba32(color);
+                pixels[w * y + x] = MapRGBA32(color);
                 x += 1;
             }
             //Reset x,increase y to next line

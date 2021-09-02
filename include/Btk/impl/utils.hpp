@@ -2,6 +2,7 @@
 #define _BTKIMPL_UTILS_HPP_
 //This headers provide some utils
 #include <SDL2/SDL_events.h>
+#include <SDL2/SDL_endian.h>
 #include "../utils/mem.hpp"
 #include "../string.hpp"
 #include "../widget.hpp"
@@ -121,6 +122,27 @@ namespace Btk{
         buf.clear();
         Utf16To8(buf,view);
         return buf;
+    }
+    inline Uint32 MapRGBA32(Color c){
+        Uint32 pixel;
+        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        //Big endian RGBA8888
+        reinterpret_cast<Uint8*>(&pixel)[0] = c.a;
+        reinterpret_cast<Uint8*>(&pixel)[1] = c.b;
+        reinterpret_cast<Uint8*>(&pixel)[2] = c.g;
+        reinterpret_cast<Uint8*>(&pixel)[3] = c.r;
+        #else
+        //little endian ABGR8888
+        reinterpret_cast<Uint8*>(&pixel)[0] = c.r;
+        reinterpret_cast<Uint8*>(&pixel)[1] = c.g;
+        reinterpret_cast<Uint8*>(&pixel)[2] = c.b;
+        reinterpret_cast<Uint8*>(&pixel)[3] = c.a;
+        #endif
+        return pixel;
+
+    }
+    inline Uint32 MapRGBA32(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
+        return MapRGBA32({r,g,b,a});
     }
 };
 

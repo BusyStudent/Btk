@@ -4,10 +4,10 @@
 
 #include <Btk/impl/window.hpp>
 #include <Btk/imageview.hpp>
+#include <Btk/gl/opengl.hpp>
 #include <Btk/render.hpp>
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
-#include <Btk/gl/gl.hpp>
 #include <Btk/Btk.hpp>
 namespace Btk{
     //TODO AntiAlias shaders

@@ -10,9 +10,7 @@ int main(){
     auto &b = win.add<Btk::ProgressBar>();
     b.set_rect(0,0,200,20);
 
-    bar.signal_moved().connect([&b](int v){
-        b.set_value(v);
-    });
+    bar.signal_moved().connect(&Btk::ProgressBar::set_value,&b);
 
     win.mainloop();
 }

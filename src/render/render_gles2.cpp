@@ -1,11 +1,11 @@
 #include "../build.hpp"
 
 #include <Btk/impl/window.hpp>
+#include <Btk/gl/opengl.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
 #include <Btk/canvas.hpp>
 #include <Btk/render.hpp>
-#include <Btk/gl/gl.hpp>
 
 #include <Btk/font.hpp>
 

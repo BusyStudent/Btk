@@ -15,6 +15,7 @@ int main(){
     FVec2 vec2 = {0,0};
     
     FVec2 pos = {0,0};//Image position
+    FVec2 end_point = {500.0f,500.0f};
     float w = 0,h = 0;
 
     canvas.draw() = [&](Renderer &render){
@@ -29,7 +30,7 @@ int main(){
         FRect dst = {pos.x,pos.y,w,h};
         render.draw_image(image,&cliprect,&dst);
         if(vec2 != FVec2{0,0}){
-            render.line({0,0},vec2,{0,0,0,255});
+            render.line({0,0},vec2,{255,255,255,255});
         }
         render.begin_path();
         render.text_align(Align::Center,Align::Center);
@@ -47,6 +48,13 @@ int main(){
 
         render.begin_path();
         render.circle(vec2,100);
+        render.stroke();
+
+        render.begin_path();
+        render.move_to(0,0);
+        render.quad_to(vec2,end_point);
+        render.move_to(0,0);
+        render.bezier_to(end_point,vec2,{500.0f,500.0f});
         render.stroke();
     };
     canvas.handle() = [&](Event &event){
@@ -70,14 +78,13 @@ int main(){
             canvas.redraw();
             return true;
         }
-        if(event.type() == Event::Click){
-            event.accept();
-            MessageBox box("HelloWorld","FFF",MessageBox::Warn);
-            box.show();
+        if(event.type() == Event::Mouse){
+            end_point = static_cast<MouseEvent&>(event).position();
+            canvas.redraw();
             return true;
         }
         if(event.type() == Event::KeyBoard){
-            auto ev = static_cast<KeyEvent&>(event);
+            auto &ev = static_cast<KeyEvent&>(event);
             if(ev.keycode == Keycode::Kp_Plus){
                 //+
                 w += 100;

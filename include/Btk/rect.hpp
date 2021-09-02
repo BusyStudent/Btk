@@ -211,6 +211,27 @@ namespace Btk{
     inline bool PointInCircle(const FPoint &center,float r,const FPoint &point){
         return center.distance(point) <= r;
     }
+    /**
+     * @brief Get intersection of two rects
+     * 
+     * @tparam T 
+     * @param r1 
+     * @param r2 
+     * @return intersection
+     */
+    template<class T>
+    inline T IntersectRect(const T &r1,const T &r2){
+        auto minx = max(r1.x,r2.x);
+        auto miny = max(r1.y,r2.y);
+        auto maxx = min(r1.x + r1.w,r2.x + r2.w);
+        auto maxy = min(r1.y + r1.h,r2.y + r2.h);
+        return T(
+            minx,
+            miny,
+            max(static_cast<decltype(minx)>(0),maxx - minx),
+            max(static_cast<decltype(minx)>(0),maxy - miny)
+        );
+    }
 
     BTKAPI std::ostream &operator <<(std::ostream&,const Rect &);
     BTKAPI std::ostream &operator <<(std::ostream&,const FRect &);

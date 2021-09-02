@@ -17,10 +17,10 @@
 #include <Btk/impl/scope.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
+#include <Btk/gl/opengl.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/module.hpp>
 #include <Btk/async.hpp>
-#include <Btk/gl/gl.hpp>
 #include <Btk/mixer.hpp>
 #include <Btk/event.hpp>
 #include <Btk/defs.hpp>
@@ -268,6 +268,16 @@ namespace Btk{
                     signal_keymap_changed();
                     break;
                 }
+                #ifdef BTK_MOBILE
+                case SDL_APP_TERMINATING:{
+                    signal_app_terminating();
+                    break;
+                }
+                case SDL_APP_LOWMEMORY:{
+                    signal_app_lowmemory();
+                    break;
+                }
+                #endif
                 default:{
                     //get function from event callbacks map
                     auto iter = evcbs_map.find(event.type);

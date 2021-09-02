@@ -78,6 +78,12 @@ namespace Btk{
             #else
             struct WinPtr:public std::pair<_XDisplay,_XWindow>{
                 using std::pair<_XDisplay,_XWindow>::pair;
+                _XDisplay display() const noexcept{
+                    return first;
+                }
+                _XWindow window() const noexcept{
+                    return second;
+                }
             };
             #endif
             EmbedWindow();
@@ -103,6 +109,7 @@ namespace Btk{
                 //Use the helper window's display
                 WinPtr p = _helper_window;
                 p.second = win;
+                set_window(p);
             }
             #endif
             /**
@@ -130,7 +137,18 @@ namespace Btk{
             WinPtr helper_window();
 
         private:
+            struct Impl;
             /**
+             * @brief reparent window
+             * 
+             * @param win The window 
+             * @param parent The parent window
+             * @param x The x in the parent window
+             * @param y The y in the parent window
+             */
+            static void reparent_window(WinPtr win,WinPtr parent,int x,int y);
+            /**
+             * 
              * @brief Attach to the parent window
              * @param rect The children's rect relality to the parent 
              */
@@ -150,6 +168,8 @@ namespace Btk{
              * 
              */
             SDL_Window *_window = nullptr;
+            //Has attached to the WindowImpl
+            bool attached_to_parent = false;
     };
     /**
      * @brief This Widget like GLCanvas but has independ gl context

@@ -5,6 +5,7 @@
 #include <SDL2/SDL_loadso.h>
 
 #include <Btk/platform/win32.hpp>
+#include <Btk/gl/direct3d11.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <Btk/Btk.hpp>
@@ -29,61 +30,6 @@ namespace Btk{
             rect.bottom - rect.top
         };
     }
-    /**
-     * @brief Direct3D 11 Device
-     * 
-     */
-    struct DxDevice:public RendererDevice{
-        DxDevice(HWND window);
-        ~DxDevice();
-
-        template<class T>
-        using ComInstance = Win32::ComInstance<T>;
-        
-        HWND window;
-        
-        ComInstance<ID3D11RenderTargetView> render_view;
-        ComInstance<ID3D11DepthStencilView> stencil_view;
-        ComInstance<ID3D11Texture2D>        stencil;
-        //Should we add depth view
-        //ComInstance<ID3D11DepthStencilView> depth_view;
-        ComInstance<IDXGISwapChain> swapchain;
-        ComInstance<ID3D11DeviceContext> context;
-        ComInstance<ID3D11Texture2D> buffer;
-        ComInstance<ID3D11Device> device;
-        //Current buffer size
-        UINT buf_w;
-        UINT buf_h;
-        //Buffer
-        void clear_buffer(Color c) override;
-        void swap_buffer() override;
-        bool output_size(
-            Size *p_logical_size,
-            Size *p_physical_size
-        );
-        //Context
-        Context create_context() override;
-        void    destroy_context(Context) override;
-        //Viewport
-        void set_viewport(const Rect *r) override;
-        //Target
-        void set_target(Context ctxt,TextureID id);
-        /**
-         * @brief Reset
-         * 
-         * @param ctxt 
-         */
-        void reset_target(Context ctxt);
-        //Texture
-        TextureID clone_texture(Context ctxt,TextureID);
-        bool      query_texture(Context ctxt,
-                                TextureID id,
-                                Size *p_size,
-                                void *p_handle,
-                                TextureFlags *p_flags);
-        //Internal method
-        void resize_buffer(UINT new_w,UINT new_h);
-    };
     DxDevice::Context DxDevice::create_context(){
         return nvgCreateD3D11(device,NVG_ANTIALIAS);
     }
@@ -336,6 +282,13 @@ namespace Btk{
 
 //         context->RSSetViewports(1,&viewport);
 //     }
+    static int win32_refresh_rate(HWND hw){
+        HDC dc = GetDC(hw);
+        int rate = GetDeviceCaps(dc,VREFRESH);
+        ReleaseDC(hw,dc);
+        BTK_LOGINFO("[GDI]Get VRefresh rate %d at %p",rate,hw);
+        return rate;
+    }
     DxDevice::DxDevice(HWND win){
         set_backend(RendererBackend::Dx11);
         load_d3d11();
@@ -344,15 +297,14 @@ namespace Btk{
 
         auto[w,h] = win32_win_size(win);
 
-        DXGI_SWAP_CHAIN_DESC desc;
-        SDL_zero(desc);
+        DXGI_SWAP_CHAIN_DESC desc = {};
         //Buffer
         desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         desc.BufferDesc.Width = w;
         desc.BufferDesc.Height = h;
         //TODO ADD code to get refresh rate
         desc.BufferDesc.RefreshRate.Denominator = 1;
-        desc.BufferDesc.RefreshRate.Numerator = 60;
+        desc.BufferDesc.RefreshRate.Numerator = win32_refresh_rate(win);
 
         desc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
         desc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
@@ -416,6 +368,16 @@ namespace Btk{
     }
     void DxDevice::resize_buffer(UINT new_w,UINT new_h){
         BTK_LOGINFO("Resize DxBuffer to %u %u",new_w,new_h);
+
+        //Check 
+        if(new_h == 0 or new_h == 0){
+            return;
+        }
+        else if(new_h == buf_h and new_w == buf_w){
+            //Is same size
+            return;
+        }
+
         buf_w = new_w;
         buf_h = new_h;
         //Here are some code from d3d11 nvg demo
@@ -506,6 +468,7 @@ namespace Btk{
     TextureID DxDevice::clone_texture(Context ctxt,TextureID id){
         auto texture = dxdev_findtexture(ctxt,id);
         //Get desc and begin copy
+        D3D11_SHADER_RESOURCE_VIEW_DESC view_desc;
         D3D11_TEXTURE2D_DESC desc;
         ID3D11Texture2D *dtex;
         HRESULT hr;
@@ -519,7 +482,28 @@ namespace Btk{
         //Alloc context texture
         auto new_texture = dxdev_alloctexture(ctxt);
         //TODO 
-        BTK_UNIMPLEMENTED();
+        new_texture->tex = dtex;
+        new_texture->type = texture->type;
+        new_texture->flags = texture->flags;
+        new_texture->width = texture->width;
+        new_texture->height = texture->height;
+        new_texture->resourceView = nullptr;
+        //Create a view
+        view_desc.Format = desc.Format;
+        view_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        view_desc.Texture2D.MipLevels = UINT(-1);
+        view_desc.Texture2D.MostDetailedMip = 0;
+
+        hr = device->CreateShaderResourceView(
+            dtex,
+            &view_desc,
+            &(new_texture->resourceView)
+        );
+        if(FAILED(hr)){
+            nvgDeleteImage(ctxt,new_texture->id);
+            BTK_THROW_HRESULT(hr);
+        }
+        return new_texture->id;
     }
     void DxDevice::set_target(Context ctxt,TextureID id){
         BTK_UNIMPLEMENTED();

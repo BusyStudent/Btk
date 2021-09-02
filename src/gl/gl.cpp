@@ -1,7 +1,7 @@
 #include "../build.hpp"
 
 #include <Btk/impl/core.hpp>
-#include <Btk/gl/gl.hpp>
+#include <Btk/gl/opengl.hpp>
 #include <Btk/Btk.hpp>
 #include <SDL2/SDL_video.h>
 

@@ -67,6 +67,27 @@ namespace Btk{
         float minx, maxx;	// The bounds of the glyph shape.
     };
     /**
+     * @brief Same defs in nanovg
+     * 
+     */
+    class RendererPaint{
+        public:
+            RendererPaint() = default;
+            RendererPaint(const RendererPaint &) = default;
+            ~RendererPaint() = default;
+
+            RendererPaint &operator =(RendererPaint &) = default;
+            RendererPaint &operator =(RendererPaint &&) = default;
+        private:
+            float xform[6];
+            float extent[2];
+            float radius;
+            float feather;
+            GLColor innerColor;
+            GLColor outerColor;
+            TextureID image;
+    };
+    /**
      * @brief Abstruct Graphics Device
      * 
      */
@@ -252,30 +273,9 @@ namespace Btk{
              */
             Renderer(Device &dev,bool owned = false);
             Renderer(const Renderer &) = delete;
-            ~Renderer();
-
-            //FIXME :Cliprect will cause render error
-            //If you want to use it
-            //Use render.save() and render.restore to protect
-            //  the global context
-            Rect get_cliprect();
-            int  set_cliprect(){
-                return set_cliprect(nullptr);
+            ~Renderer(){
+                destroy();
             }
-            int  set_cliprect(const Rect &r){
-                return set_cliprect(&r);
-            }
-            int  set_cliprect(const Rect *r);
-
-           
-            // Rect get_viewport();
-            // int  set_viewport(){
-            //     return set_viewport(nullptr);
-            // }
-            // int  set_viewport(const Rect &r){
-            //     return set_viewport(&r);
-            // }
-            // int  set_viewport(const Rect *r);
             /**
              * @brief Destroy the renderer
              * 
@@ -521,26 +521,84 @@ namespace Btk{
 
             void fill();
             void fill_color(Color c);
+            void fill_color(const GLColor &c);
             void fill_color(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
-                fill_color({r,g,b,a});
+                fill_color(Color{r,g,b,a});
             }
-
+            void fill_paint(const RendererPaint &paint);
 
             void stroke();
             void stroke_color(Color c);
+            void stroke_color(const GLColor &c);
             void stroke_color(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
-                stroke_color({r,g,b,a});
+                stroke_color(Color{r,g,b,a});
             }
-            void stroke_width(float size);
 
+            void stroke_width(float size);
+            void stroke_paint(const RendererPaint &paint);
+            /**
+             * @brief Move to
+             * 
+             * @param x 
+             * @param y 
+             */
             void move_to(float x,float y);
+            /**
+             * @brief Line to
+             * 
+             * @param x 
+             * @param y 
+             */
             void line_to(float x,float y);
+            /**
+             * @brief Quadratic bezier
+             * 
+             * @param cx The control point x
+             * @param cy The control point y
+             * @param x The new point x
+             * @param y The new point y
+             */
+            void quad_to(float cx,float cy,float x,float y);
+            /**
+             * @brief Arc to
+             * 
+             * @param x1 
+             * @param y1 
+             * @param x2 
+             * @param y2 
+             * @param radius 
+             */
+            void arc_to(float x1,float y1,float x2,float y2,float radius);
+            /**
+             * @brief Cubic bezier
+             * 
+             * @param c1x The control point 1 x
+             * @param c1y The control point 1 y
+             * @param c2x The control point 2 x
+             * @param c2y The control point 2 y
+             * @param x The new point x
+             * @param y The new point y
+             */
+            void bezier_to(float c1x,float c1y,float c2x,float c2y,float x,float y);
 
             void move_to(const FVec2 &vec){
                 move_to(vec.x,vec.y);
             }
             void line_to(const FVec2 &vec){
                 line_to(vec.x,vec.y);
+            }
+            void quad_to(const FVec2 &control_p,const FVec2 &point){
+                quad_to(control_p.x,control_p.y,point.x,point.y);
+            }
+            void bezier_to(const FVec2 &control1,const FVec2 &control2,const FVec2 &point){
+                bezier_to(
+                    control1.x,
+                    control1.y,
+                    control2.x,
+                    control2.y,
+                    point.x,
+                    point.y
+                );
             }
 
             //NVG Graphics Path
@@ -695,6 +753,42 @@ namespace Btk{
             void reset_scissor();
             void set_antialias(bool val = true);
         public:
+            //Paint
+            /**
+             * @brief Make a image pattern
+             * 
+             * @param r The image rect
+             * @param angle The angle to te
+             * @param tex   The texture 
+             * @param alpha The aplha
+             * @return RendererPaint 
+             */
+            RendererPaint image_pattern(const FRect &r,float angle,TextureID tex,float alpha);
+            /**
+             * @brief 
+             * 
+             * @param sx South X
+             * @param sy South Y
+             * @param ex East X
+             * @param ey East Y
+             * @param in The begin color
+             * @param out The end color
+             * @return RendererPaint 
+             */
+            RendererPaint linear_gradient(float sx,float sy,float ex,float ey,GLColor in,GLColor out);
+            /**
+             * @brief 
+             * 
+             * @param cx The center x
+             * @param cy The center y
+             * @param inr 
+             * @param outr 
+             * @param in 
+             * @param out 
+             * @return RendererPaint 
+             */
+            RendererPaint radial_gradient(float cx,float cy,float inr,float outr,GLColor in,GLColor out);
+        public:
             //Transform
             void scale(float x_factor,float y_factor);
             void translate(float x,float y);
@@ -765,9 +859,6 @@ namespace Btk{
 
             NVGcontext *nvg_ctxt = nullptr;//<NanoVG Context
             Device     *_device = nullptr;//<Render device data
-            
-            Rect  viewport = {0,0,0,0};//< cached viewport
-            FRect cliprect = {0,0,0,0};//< cached cliprect
 
             std::list<TextureID> t_caches;//< Texture cache
             int max_caches = 20;//< Max cache

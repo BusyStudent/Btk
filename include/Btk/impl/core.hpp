@@ -120,6 +120,15 @@ namespace Btk{
         Signal<void()> signal_audio_device_removed;
         Signal<void()> signal_keymap_changed;
         Signal<void()> signal_quit;
+        #ifdef BTK_MOBILE
+        //<The signals on android and iphone
+        Signal<void>() signal_app_terminating;
+        Signal<void>() signal_app_lowmemory;
+        Signal<void>() signal_app_will_enter_background;
+        Signal<void>() signal_app_enter_background;
+        Signal<void>() signal_app_leave_background;
+        #endif
+
         //std::list<RendererCreateFn> render_list;
         //Init Global
         static int  Init();

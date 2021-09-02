@@ -88,7 +88,7 @@ namespace Btk{
             virtual void set_parent(Widget *parent);
 
             //Resize
-            void resize(int w,int h,bool is_sizing);
+            void resize(int w,int h,bool is_sizing = false);
 
             //Hide and show
             void hide();
@@ -320,8 +320,18 @@ namespace Btk{
              */
             template<class Callable,class ...Args>
             void for_each(Callable &&callable,Args &&...args){
-                for(auto w:childrens){
-                    callable(w,std::forward<Args>(args)...);
+                if constexpr(std::is_same_v<std::invoke_result_t<Callable,Args...>,bool>){
+                    //Has bool return type
+                    for(auto w:childrens){
+                        if(not callable(w,std::forward<Args>(args)...)){
+                            return;
+                        }
+                    }
+                }
+                else{
+                    for(auto w:childrens){
+                        callable(w,std::forward<Args>(args)...);
+                    }
                 }
             }
     };

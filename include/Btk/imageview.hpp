@@ -50,7 +50,8 @@ namespace Btk{
 
             float scale_fact = 1.0f;
             
-            TextureFlags tex_flags = TextureFlags::Linear;//< The flags of the texture
+            TextureFlags tex_flags = 
+                TextureFlags::Linear | TextureFlags::GenerateMipmaps;//< The flags of the texture
     };
     /**
      * @brief Gif player

@@ -11,6 +11,7 @@
 #include <csignal>
 
 #include <SDL2/SDL_syswm.h>
+#include <SDL2/SDL_hints.h>
 #include <SDL2/SDL_system.h>
 
 #include <sys/types.h>
@@ -110,6 +111,11 @@ namespace X11{
     }
 
     void Init(){
+        //Set SDL Hit
+        //Disable the compositor
+        //Beacuse it will cause a render error in KDE
+        SDL_SetHint("SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR","0");
+
         #ifndef NDEBUG
         //Debug crash handler
         signal(SIGSEGV,crash_handler);
@@ -216,7 +222,7 @@ namespace X11{
             dup2(fds[1],STDOUT_FILENO);
             //Exec it
             execvp(args[0],args);
-            //Failed wrtie errno
+            //Failed, wrtie errno
             auto err = errno;
             write(err_fds[1],&err,sizeof(err));
             _Exit(-1);
@@ -288,19 +294,6 @@ namespace Btk{
     bool HideConsole(){
         return daemon(1,0) == 0;
     }
-
-    void EmbedWindow::set_window(WinPtr win){
-        //TODO 
-        X11::XWindow   xwin = BTK_X_WINDOW(win.first);
-        X11::XDisplay *xdpy = BTK_X_DISPLAY(win.second);
-        _user_window = win;
-        //Get display and window
-        //Embed it and resize
-        XReparentWindow(xdpy,window()->x_window,xwin,x(),y());
-        XResizeWindow(xdpy,xwin,w(),h());
-        XFlush(xdpy);
-        
-    }
     void EmbedWindow::nt_set_rect(const Rect &r){
         // if(has_embed()){
         //     //Has window
@@ -310,6 +303,18 @@ namespace Btk{
         // }
     }
     void EmbedWindow::detach_window(){
-        
+        if(has_embed()){
+            
+        }
+    }
+    void EmbedWindow::reparent_window(WinPtr w,WinPtr parent,int x,int y){
+        XReparentWindow(
+            BTK_X_DISPLAY(w.display()),
+            BTK_X_WINDOW(w.window()),
+            BTK_X_WINDOW(parent.window()),
+            x,
+            y
+        );
+        XFlush(BTK_X_DISPLAY(w.display()));
     }
 }

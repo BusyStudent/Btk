@@ -1,4 +1,4 @@
-#include <Btk/gl/gl.hpp>
+#include <Btk/gl/opengl.hpp>
 
 #ifdef BTK_NEED_GLAD
 #define GLAD_GLAPI_EXPORT
