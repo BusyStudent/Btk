@@ -2,12 +2,17 @@
 #define _BTKIMPL_SCOPE_HPP_
 #include <SDL2/SDL_stdinc.h>
 #include <cstdarg>
-#include <memory>
 
 #ifdef __COUNTER__
-    #define Btk_defer Btk::Impl::ScopeGuard __GUARD__##__COUNTER__ = [&]()
+    #define Btk_defer Btk::Impl::ScopeGuard __GUARD__##__COUNTER__ = 
 #else
-    #define Btk_defer Btk::Impl::ScopeGuard __GUARD__ = [&]()
+    #define Btk_defer Btk::Impl::ScopeGuard __GUARD__ = 
+#endif
+
+#ifdef __COUNTER__
+    #define Btk_CallOnLoad static Btk::Impl::OnloadExecuter __Executer__##__COUNTER__ = 
+#else
+    #define Btk_CallOnLoad static Btk::Impl::OnloadExecuter __Executer__ = 
 #endif
 
 namespace Btk{
@@ -66,6 +71,13 @@ namespace Impl{
         }
         T *ptr;
         bool  owned = true;
+    };
+
+    template<class T>
+    struct OnloadExecuter{
+        OnloadExecuter(T &&v){
+            v();
+        }
     };
 };
     using Impl::SDLScopePtr;

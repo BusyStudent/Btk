@@ -48,13 +48,74 @@ namespace{
             f();
         }
     }
+    //ResourceBase
+    Btk::ObjectHolder<Btk::BasicResource> resource_base;
+    bool resource_inited = false;
+    //Cleanup / Init
+    void resource_atexit_handler(){
+        if(resource_inited){
+            resource_inited = false;
+            resource_base.destroy();
+        }
+    }
+    void resource_init(){
+        if(not resource_inited){
+            resource_inited = true;
+            resource_base.construct();
+            std::atexit(resource_atexit_handler);
+        }
+    }
 }
+
+namespace Btk{
+    inline BasicResource::BasicResource(){
+        //Image Adapter
+        InitImageAdapter();
+    }
+    inline BasicResource::~BasicResource(){
+        System::Quit();
+        //run all exit handlers
+        for(auto &handler:atexit_handlers){
+            handler();
+        }
+        //unload modules
+        for(auto &mod:modules_list){
+            mod.unload();
+        }
+    }
+    //register a exit handler
+    inline
+    void BasicResource::atexit(void (*fn)(void *),void *data){
+        atexit_handlers.push_back({
+            fn,
+            data
+        });
+    }
+    //std c handlers
+    inline
+    void BasicResource::atexit(void (*fn)()){
+        this->atexit(callback_wrapper,reinterpret_cast<void*>(fn));
+    }
+    inline
+    RendererDevice *BasicResource::create_device(SDL_Window *w){
+        RendererDevice *dev;
+        for(auto fn:devices_list){
+            dev = fn(w);
+            if(dev != nullptr){
+                return dev;
+            }
+        }
+        return nullptr;
+    }
+}
+
 namespace Btk{
     //< The thread id of thread which called Btk::run
     static std::thread::id main_thrd;
     System* System::instance = nullptr;
     bool    System::is_running = false;
     void Init(){
+        resource_init();
         //Init Btk
         System::Init();
     }
@@ -131,25 +192,16 @@ namespace Btk{
             //Check magic
             return magic[0] == 'B' and magic[1] == 'M';
         };
-        image_adapters.emplace_back(adapter);
+        RegisterImageAdapter(adapter);
 
         //First stop text input
         SDL_StopTextInput();
     }
     System::~System(){
         AsyncQuit();
-        //run all exit handlers
-        for(auto &handler:atexit_handlers){
-            handler();
-        }
-        //unload modules
-        for(auto &mod:modules_list){
-            mod.unload();
-        }
     }
     //Init or Quit
     int  System::Init(){
-        static std::once_flag flag;
         if(instance == nullptr){
             if(SDL_Init(SDL_INIT_VIDEO) == -1){
                 //Failed to init
@@ -169,13 +221,9 @@ namespace Btk{
             #endif
             //Create instance
             instance = new System();
-            //regitser atexit callback
-            std::call_once(flag,std::atexit,System::Quit);
             //Init platform
             GL::Init();
             Platform::Init();
-            //Image Adapter
-            InitImageAdapter();
             
             //Load module by env
             #ifndef BTK_NO_AUTOLOAD
@@ -192,15 +240,17 @@ namespace Btk{
     }
     //Global Cleanup
     void System::Quit(){
-        BTK_ASSERT(System::instance->is_running == false);
-        //delete instance to cleanup windows
-        delete instance;
-        instance = nullptr;
-        //Cleanup platform
-        Platform::Quit();
-        //Quit SDL
-        // TTF_Quit();
-        SDL_Quit();
+        if(instance != nullptr){
+            BTK_ASSERT(System::instance->is_running == false);
+            //delete instance to cleanup windows
+            delete instance;
+            instance = nullptr;
+            //Cleanup platform
+            Platform::Quit();
+            //Quit SDL
+            // TTF_Quit();
+            SDL_Quit();
+        }
     }
     //EventLoop
     void System::run(){
@@ -451,17 +501,6 @@ namespace Btk{
         event.user.timestamp = SDL_GetTicks();
         SDL_PushEvent(&event);
     }
-    //register a exit handler
-    void System::atexit(void (*fn)(void *),void *data){
-        atexit_handlers.push_back({
-            fn,
-            data
-        });
-    }
-    //std c handlers
-    void System::atexit(void (*fn)()){
-        System::atexit(callback_wrapper,reinterpret_cast<void*>(fn));
-    }
     //event callbacks cb
     void System::regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data){
         evcbs_map[evid] = {
@@ -532,16 +571,6 @@ namespace Btk{
         signal_window_created(p);
         return p;
     }
-    RendererDevice *System::create_device(SDL_Window *w){
-        Device *dev;
-        for(auto fn:devices_list){
-            dev = fn(w);
-            if(dev != nullptr){
-                return dev;
-            }
-        }
-        return nullptr;
-    }
 }
 namespace Btk{
     static inline void exit_impl_cb(void *args){
@@ -567,12 +596,12 @@ namespace Btk{
         return current;
     }
     void AtExit(void(* fn)(void*),void *data){
-        BTK_ASSERT(System::instance != nullptr);
-
-        System::instance->atexit(fn,data);
+        resource_init();
+        resource_base->atexit(fn,data);
     }
     void AtExit(void(* fn)()){
-        System::instance->atexit(fn);
+        resource_init();
+        resource_base->atexit(fn);
     }
     void AtIdle(void(*fn)(void*),void *data){
         Instance().idle_handlers.push_back({fn,data});
@@ -600,21 +629,24 @@ namespace Btk{
         return not Instance().is_running or not IsMainThread();
     }
     void RegisterImageAdapter(const ImageAdapter & a){
-        Instance().image_adapters.push_front(a);
-        BTK_LOGINFO("[System::Core]Register ImageAdapter %s",a.name);
+        resource_init();
+        resource_base->image_adapters.push_front(a);
+        BTK_LOGINFO("[System::Resource]Register ImageAdapter %s",a.name);
     }
     void RegisterDevice(System::CreateDeviceFn fn){
+        resource_init();
         if(fn == nullptr){
             return;
         }
-        Instance().devices_list.emplace_front(fn);
+        resource_base->devices_list.emplace_front(fn);
     }
     SDL_Surface *LoadImage(SDL_RWops *rwops,u8string_view type){
+        resource_init();
         BTK_ASSERT(rwops != nullptr);
         SDL_Surface *ret;
         if(type.empty()){
             //Didnot provide the type
-            for(auto &adapter:Instance().image_adapters){
+            for(auto &adapter:resource_base->image_adapters){
                 if(adapter.fn_is == nullptr){
                     //It cannot check the type
                     //Try load it directly
@@ -637,7 +669,7 @@ namespace Btk{
             throwRuntimeError("Unsupport format");
         }
         SDL_SetError("Unsupport format");
-        for(auto &adapter:Instance().image_adapters){
+        for(auto &adapter:resource_base->image_adapters){
             if(SDL_strncasecmp(adapter.name,type.data(),type.size()) == 0){
                 ret = adapter.load(rwops);
                 if(ret == nullptr){
@@ -651,11 +683,12 @@ namespace Btk{
         throwRuntimeError(SDL_GetError());
     }
     void SaveImage(SDL_RWops *rw,SDL_Surface *surf,u8string_view type,int quality){
+        resource_init();
         quality = std::clamp(quality,0,10);
         if(type.empty()){
             throwRuntimeError("empty type");
         }
-        for(auto &adapter:Instance().image_adapters){
+        for(auto &adapter:resource_base->image_adapters){
             if(SDL_strncasecmp(adapter.name,type.data(),type.size()) == 0){
                 //Got Adapter
                 if(adapter.fn_save == nullptr){
@@ -676,6 +709,52 @@ namespace Btk{
         }
         throwRuntimeError("Unsupport format");
     }
+    ImageDecoder *CreateImageDecoder(u8string_view type,u8string_view vendor){
+        resource_init();
+        if(type.empty()){
+            return nullptr;
+        }
+        for(auto &adapter:resource_base->image_adapters){
+            if(adapter.create_decoder == nullptr){
+                continue;
+            }
+            if(SDL_strncasecmp(adapter.name,type.data(),type.length()) == 0){
+                //Same type
+                if(not vendor.empty()){
+                    //Check vendor
+                    if(SDL_strncasecmp(adapter.vendor,vendor.data(),vendor.length()) != 0){
+                        //Failed
+                        continue;
+                    }
+                }
+                return adapter.create_decoder();
+            }
+        }
+        throwRuntimeError("Unsupport type");
+    }
+    ImageDecoder *CreateImageDecoder(SDL_RWops *rwops,bool autoclose){
+        resource_init();
+        for(auto &adapter:resource_base->image_adapters){
+            if(adapter.create_decoder == nullptr){
+                continue;
+            }
+            if(adapter.fn_is != nullptr){
+                //Same type
+                if(adapter.is(rwops)){
+                    std::unique_ptr<ImageDecoder> decoder(
+                        adapter.create_decoder()
+                    );
+                    decoder->open(rwops,autoclose);
+                    return decoder.release();
+                }
+            }
+        }
+        throwRuntimeError("Unsupport type");
+    }
+    RendererDevice *CreateDevice(SDL_Window *win){
+        resource_init();
+        resource_base->create_device(win);
+    }
 };
 namespace Btk{
     void Module::unload(){
@@ -685,6 +764,7 @@ namespace Btk{
         SDL_UnloadObject(handle);
     }
     void LoadModule(u8string_view module_name){
+        resource_init();
         void *handle = SDL_LoadObject(module_name.data());
         if(handle == nullptr){
             throwSDLError();
@@ -713,10 +793,11 @@ namespace Btk{
             throw;
         }
 
-        Instance().modules_list.push_back(mod);
+        resource_base->modules_list.push_back(mod);
     }
     bool HasModule(u8string_view name){
-        for(auto &mod:Instance().modules_list){
+        resource_init();
+        for(auto &mod:resource_base->modules_list){
             if(mod.name == name){
                 return true;
             }

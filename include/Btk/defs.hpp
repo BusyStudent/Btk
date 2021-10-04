@@ -15,8 +15,15 @@
     #else
         #define BTK_REQUIRE_CXX20 0
     #endif
+    //For C functions
+    #define BTK_CEXTERN extern "C"
+    #define BTK_CDECLS_BEGIN extern "C"{
+    #define BTK_CDECLS_END }
 #else
     #include <stdint.h>
+    #define BTK_CEXTERN
+    #define BTK_CDECLS_BEGIN
+    #define BTK_CDECLS_END
 #endif
 
 #ifdef _WIN32

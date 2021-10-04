@@ -15,6 +15,7 @@
 
 #include "../build.hpp"
 
+#include <Btk/impl/scope.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/utils/mem.hpp>
@@ -235,6 +236,50 @@ namespace Btk{
             c.a = 255;
         }
         return c;
+    }
+    //Decoder / Encoder
+    void ImageDecoder::open(SDL_RWops *rwops,bool autoclose){
+        fstream = rwops;
+        auto_close = autoclose;
+        decoder_open();
+        _is_opened = true;
+    }
+    void ImageDecoder::open(u8string_view filename){
+        SDL_RWops *rwops = SDL_RWFromFile(filename.data(),"rb");
+        if(rwops == nullptr){
+            throwSDLError();
+        }
+        return open(rwops,true);
+    }
+    void ImageDecoder::close(){
+        if(_is_opened){
+            Btk_defer [=](){
+                if(auto_close){
+                    SDL_RWclose(fstream);
+                }
+            };
+            _is_opened = false;
+            decoder_close();
+        }
+    }
+    PixBuf ImageDecoder::read_frame(size_t frame_idx,const Rect *r){
+        Rect rect;
+        if(r == nullptr){
+            rect.x = 0;
+            rect.y = 0;
+            auto[w,h] = frame_size(frame_idx);
+            rect.w = w;
+            rect.h = h;
+        }
+        else{
+            rect = *r;
+        }
+        PixBuf buf(rect.w,rect.h,container_format());
+        read_pixels(frame_idx,r,buf->pixels);
+        return buf;
+    }
+    ImageDecoder::~ImageDecoder(){
+        close();
     }
 }
 //XPM

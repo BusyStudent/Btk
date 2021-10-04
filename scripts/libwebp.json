@@ -1,0 +1,19 @@
+{
+    "name":"webp",
+    "librarys":{
+        "win32":"webp.dll",
+        "linux":"libwebp.so"
+    },
+    "symbols":[
+        "WebPInitDecoderConfigInternal",
+        "WebPDecode",
+        "WebPFreeDecBuffer",
+        "WebPConfigInitInternal",
+        "WebPPictureInitInternal",
+        "WebPPictureAlloc",
+        "WebPPictureImportRGBA",
+        "WebPEncode",
+        "WebPPictureFree"
+    ],
+    "perfix":"BTK"
+}

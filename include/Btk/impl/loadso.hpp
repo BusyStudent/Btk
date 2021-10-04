@@ -44,7 +44,7 @@ namespace Btk::Impl{
                 new(reinterpret_cast<T*>(buffer)) T;
                 is_loaded = true;
                 //Register Destrcutor
-                AtExit(&LibHolder::unload,this);
+                AtExit(UnloadMain,static_cast<void*>(this));
             }
         }
         void unload(){
@@ -52,6 +52,9 @@ namespace Btk::Impl{
                 reinterpret_cast<T*>(buffer)->~T();
                 is_loaded = false;
             }
+        }
+        static void UnloadMain(void *self){
+            static_cast<LibHolder*>(self)->unload();
         }
         T *operator ->(){
             return reinterpret_cast<T*>(buffer);

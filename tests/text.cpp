@@ -42,4 +42,15 @@ int main(){
     }
     std::cout << Btk::u8string_view("你好").to_locale() << std::endl;
     std::cout << Btk::u8string_view("你好 哈哈哈 Hello ").substr(4) << std::endl;
+    std::cout << Btk::u8string_view("你好 哈哈哈 Hello ").is_vaild() << std::endl;
+
+    //Test string view iterator
+
+    for(auto ch:Btk::u8string_view("你好 哈哈哈 Hello ")){
+        std::cout << ch  << ':' << ch.size() << std::endl;
+    }
+    std::cout << str.end() - str.begin() << std::endl;
+    std::cout << *(str.end() - 2) << std::endl;
+    std::cout << str.length() << std::endl;
+
 }

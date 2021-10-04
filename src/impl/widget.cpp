@@ -65,7 +65,7 @@ namespace Btk{
         rect.h = h;
     }
     //redraw the window
-    void Widget::redraw(){
+    void Widget::redraw() const{
         if(parent() == nullptr){
             //We couldnot find the window
             return;
@@ -107,7 +107,7 @@ namespace Btk{
         }
         //At the top
         
-        if(cur->attr.window){
+        if(cur->is_window()){
             //Is the window
             _window = static_cast<WindowImpl*>(cur);
             BTK_ASSERT(dynamic_cast<WindowImpl*>(cur) != nullptr);

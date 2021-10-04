@@ -6,6 +6,11 @@
 #include "defs.hpp"
 //the image view widget
 namespace Btk{
+    /**
+     * @brief ImageView for display Image
+     * 
+     * @todo Add animation support
+     */
     class BTKAPI ImageView:public Widget{
         public:
             ImageView();

@@ -25,7 +25,10 @@
 namespace{
     //some functions
     int close_rwops(SDL_RWops *context){
+        //Free it when SDL_RWclose is still a macro
+        #ifdef SDL_RWclose
         SDL_FreeRW(context);
+        #endif
         return 0;
     }
     size_t unsupported_write(SDL_RWops *context,const void *buf,size_t num,size_t n){

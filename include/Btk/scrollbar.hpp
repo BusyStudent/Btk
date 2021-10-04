@@ -5,10 +5,10 @@
 #include "widget.hpp"
 namespace Btk{
     /**
-     * @brief AbstructeSlider
+     * @brief AbstractSlider
      * 
      */
-    class BTKAPI AbstructSlider:public Widget{
+    class BTKAPI AbstractSlider:public Widget{
         public:
 
         protected:

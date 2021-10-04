@@ -385,7 +385,8 @@ namespace{
                     surf->h,
                     comp,
                     surf->pixels,
-                    surf->w * comp
+                    // surf->w * comp,
+                    surf->pitch
                 );
             };
             return base.do_write(callback,surface);
@@ -447,26 +448,166 @@ namespace{
             return base.do_write(callback,surface);
         }
     };
-    //TODO ADD HDR WRITER
-    // template<>
-    // struct stb_write_helper<stbi__hdr_test>{
-    //     static bool write(SDL_RWops *r,SDL_Surface *surface,int){
-    //         stb_write_base base(r);
-    //         //Forward to stb
-    //         auto callback = [&](SDL_Surface *surf,int comp){
-    //             return stbi_write_hdr_to_func(
-    //                 stbwrite_callback,
-    //                 &base,
-    //                 surf->w,
-    //                 surf->h,
-    //                 comp,
-    //                 surf->pixels
-    //             );
-    //         };
-    //         return base.do_write(callback,surface);
-    //     }
-    // };
+    template<>
+    struct stb_write_helper<stbi__hdr_test>{
+        static bool write(SDL_RWops *r,SDL_Surface *surface,int){
+            stb_write_base base(r);
+            //Forward to stb
+            auto callback = [&](SDL_Surface *surf,int comp){
+                if(surf->format->BytesPerPixel != sizeof(float)){
+                    throwRuntimeError("Unsupported");
+                }
+                return stbi_write_hdr_to_func(
+                    stbwrite_callback,
+                    &base,
+                    surf->w,
+                    surf->h,
+                    comp,
+                    static_cast<float*>(surf->pixels)
+                );
+            };
+            return base.do_write(callback,surface);
+        }
+    };
     #endif
+}
+
+namespace{
+    using Btk::throwRuntimeError;
+    using Btk::throwSDLError;
+    using Btk::ImageDecoder;
+    using Btk::PixelFormat;
+    using Btk::Rect;
+    using Btk::Size;
+    //STB Gif decoder
+    struct BTKHIDDEN STBGifDecoder:public ImageDecoder{
+        void decoder_open() override;
+        void decoder_close() override;
+        void query_info(
+            size_t *p_n_frame,
+            PixelFormat *p_fmt
+        ) override;
+        void query_frame(
+            size_t frame_index,
+            Size *p_size,
+            int *_delay
+        ) override;
+        void read_pixels(
+            size_t frame_index,
+            const Rect *rect,
+            void *pixels,
+            const PixelFormat *wanted
+        ) override;
+
+        void check_opened() const{
+            if(data == nullptr){
+                throwRuntimeError("Decoder is not opened");
+            }
+        }
+        //Image information
+        int w = 0;
+        int h = 0;
+        int z = 0;
+        int comp = 0;
+        int *delays = nullptr;
+        stbi_uc *data = 0;
+    };
+    void STBGifDecoder::decoder_open(){
+        if(data != nullptr){
+            decoder_close();
+        }
+        //Read data from stream
+        size_t bufferlen;
+        void *buffer;
+        buffer = SDL_LoadFile_RW(stream(),&bufferlen,SDL_FALSE);
+        if(buffer == nullptr){
+            throwSDLError();
+        }
+        data = stbi_load_gif_from_memory(
+            static_cast<stbi_uc*>(buffer),
+            bufferlen,
+            &delays,
+            &w,
+            &h,
+            &z,
+            &comp,
+            STBI_rgb_alpha
+        );
+        SDL_free(buffer);
+        //Parse failed
+        if(data == nullptr){
+            throwRuntimeError(stbi_failure_reason());
+        }
+        //TODO Handle Gray and Gray Alpha
+        if(comp != STBI_rgb_alpha and comp != STBI_rgb){
+            BTK_UNIMPLEMENTED();
+        }
+        //Done
+    }
+    void STBGifDecoder::decoder_close(){
+        STBI_FREE(delays);
+        STBI_FREE(data);
+
+        delays = nullptr;
+        data = nullptr;
+    }
+    void STBGifDecoder::query_info(
+        size_t *p_n_frame,
+        PixelFormat *p_fmt){
+        check_opened();
+        if(p_n_frame != nullptr){
+            *p_n_frame = z;
+        }
+        if(p_fmt != nullptr){
+            if(comp == STBI_rgb_alpha){
+                *p_fmt = PixelFormat::RGBA32;
+            }
+            else if(comp == STBI_rgb){
+                *p_fmt = STBI_RGB;
+            }
+            else{
+                BTK_UNIMPLEMENTED();
+            }
+        }
+    }
+    void STBGifDecoder::query_frame(
+        size_t frame_index,
+        Size *p_size,
+        int *p_delay
+    ){
+        check_opened();
+        if(frame_index > z){
+            throwRuntimeError("Out of range");
+        }
+        if(p_size != nullptr){
+            p_size->w = w;
+            p_size->h = h;
+        }
+        if(p_delay != nullptr){
+            *p_delay = delays[frame_index];
+        }
+    }
+    void STBGifDecoder::read_pixels(
+        size_t frame_index,
+        const Rect *rect,
+        void *pixels,
+        const PixelFormat *wanted){
+        //TODO
+        //Do check
+        check_opened();
+        if(frame_index > z){
+            throwRuntimeError("Out of range");
+        }
+        
+        BTK_ASSERT(rect == nullptr);
+        BTK_ASSERT(wanted == nullptr);
+        //Get current frame
+        int stride_bytes = comp * w;
+        stbi_uc *frame = data + stride_bytes * h * frame_index;
+
+        //Do copy
+        memcpy(pixels,frame,w * h * comp);
+    }
 }
 
 namespace Btk{
@@ -484,6 +625,16 @@ namespace Btk{
         BTK_STBI_WRAPPER(bmp);
         BTK_STBI_WRAPPER(psd);
         BTK_STBI_WRAPPER(pnm);
-        //TODO ADD gif decoder
+        //Gif decoder
+
+        ImageAdapter adapter;
+        adapter.fn_is = BTK_STBI_IS(gif);
+        adapter.fn_load = stbi_load;
+        adapter.name = "gif";
+        adapter.vendor = "stbi";
+        adapter.create_decoder = []() -> ImageDecoder*{
+            return new STBGifDecoder();
+        };
+        RegisterImageAdapter(adapter);
     }
 }

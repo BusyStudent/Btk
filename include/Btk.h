@@ -105,6 +105,7 @@ struct Btk_typeinfo{
     const char *raw_name;
     size_t hash_code;
 };
+typedef struct Btk_typeinfo Btk_typeinfo;
 
 
 //name casttinh macro
@@ -124,6 +125,7 @@ typedef void(*Btk_ccallback_t)();
 //Buttons
 BTK_DEF_WIDGET(AbstractButton,Widget);
 BTK_DEF_WIDGET(Button,AbstractButton);
+BTK_DEF_WIDGET(RadioButton,AbstractButton);
 //TextBox
 BTK_DEF_WIDGET(TextBox,Widget);
 //Label

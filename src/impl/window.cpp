@@ -19,7 +19,7 @@
 
 namespace Btk{
     static RendererDevice *create_device(SDL_Window *_win){
-        auto dev = Instance().create_device(_win);
+        auto dev = CreateDevice(_win);
         if(dev == nullptr){
             throwRendererError("Couldnot create device");
         }

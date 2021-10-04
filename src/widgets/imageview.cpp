@@ -4,6 +4,7 @@
 
 #include <Btk/impl/window.hpp>
 #include <Btk/imageview.hpp>
+#include <Btk/exception.hpp>
 #include <Btk/gl/opengl.hpp>
 #include <Btk/render.hpp>
 #include <Btk/window.hpp>
@@ -18,7 +19,7 @@ namespace Btk{
     };
 
     ImageView::ImageView() = default;
-    ImageView::ImageView(int x,int y,int w,int h){
+    ImageView::ImageView(int x,int y,int w,int h):ImageView(){
         rect.x = x;
         rect.y = y;
         rect.w = w;

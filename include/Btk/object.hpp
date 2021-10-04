@@ -418,6 +418,13 @@ namespace Btk{
             FunctorLocation remove_callback_safe(FunctorLocation location);
             //Timer
             TimerID add_timer(Uint32 internal);
+            /**
+             * @brief Get the Ticks object
+             * 
+             * @return Uint32 
+             */
+            static Uint32 GetTicks();
+            
         public:
             /**
              * @brief Connect signal

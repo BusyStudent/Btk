@@ -19,21 +19,47 @@
 namespace Btk{
     class WindowImpl;
     class RendererDevice;
+    struct GenericHandler{
+        //Function pointer
+        typedef void (*FnPtr)(void*);
+        FnPtr fn;
+        void *data;
+        void operator ()() const{
+            fn(data);
+        }
+    };
+    using ExitHandler = GenericHandler;
+    typedef RendererDevice *(*CreateDeviceFn)(SDL_Window*);
+    /**
+     * @brief Generic Resource
+     * 
+     */
+    struct BTKHIDDEN BasicResource{
+        inline BasicResource();
+        inline ~BasicResource();
+        /**
+         * @brief Create a device object
+         * 
+         * @return Device* 
+         */
+        inline
+        RendererDevice *create_device(SDL_Window*);
+        //register handlers
+        inline
+        void atexit(void (*fn)(void *),void *data);
+        inline
+        void atexit(void (*fn)());
+
+        std::list<ExitHandler> atexit_handlers;
+        std::list<ImageAdapter> image_adapters;
+        std::list<CreateDeviceFn> devices_list;
+        std::list<Module> modules_list;
+    };
     /**
      * @brief Btk System
      * 
      */
     struct BTKHIDDEN System{
-        struct GenericHandler{
-            //Function pointer
-            typedef void (*FnPtr)(void*);
-            FnPtr fn;
-            void *data;
-            void operator ()() const{
-                fn(data);
-            }
-        };
-        using  ExitHandler = GenericHandler;
         struct EventHandler{
             typedef void (*FnPtr)(const SDL_Event &ev,void *data);
             FnPtr fn;
@@ -85,18 +111,9 @@ namespace Btk{
         WindowImpl *get_window(Uint32 winid);//< It is thread unsafe
         WindowImpl *get_window_s(Uint32 winid);//< It is thread safe
         WindowImpl *create_window(SDL_Window *win);
-        //register handlers
-        void atexit(void (*fn)(void *),void *data);
-        void atexit(void (*fn)());
 
         void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data = nullptr);
         bool try_handle_exception(std::exception *exp);
-        /**
-         * @brief Create a device object
-         * 
-         * @return Device* 
-         */
-        Device *create_device(SDL_Window*);
 
         std::unordered_map<Uint32,WindowImpl*> wins_map;//Windows map
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
@@ -107,11 +124,7 @@ namespace Btk{
         //return false to abort program
         bool (*handle_exception)(std::exception *) = nullptr;
         //called atexit
-        std::list<ExitHandler> atexit_handlers;
-        std::list<ImageAdapter> image_adapters;
-        std::list<CreateDeviceFn> devices_list;
         std::list<GenericHandler> idle_handlers;//< Called on idle
-        std::list<Module> modules_list;
         //<The signal will be init before the window will be removed
         Signal<void(WindowImpl *)> signal_window_closed;
         Signal<void(WindowImpl *)> signal_window_created;
@@ -179,6 +192,13 @@ namespace Btk{
      * @return BTKHIDDEN 
      */
     BTKHIDDEN void InitImageAdapter();
+    /**
+     * @brief Create a Device object
+     * 
+     * @param window 
+     * @return BTKAPI* 
+     */
+    BTKAPI RendererDevice *CreateDevice(SDL_Window *window);
 };
 
 

@@ -8,5 +8,6 @@ namespace Btk{
         RegisterWEBP();
         RegisterWIC();
         RegisterPNG();
+        RegisterGIF();
     }
 }

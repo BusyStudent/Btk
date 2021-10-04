@@ -59,6 +59,7 @@ namespace Btk{
         bool window = false;//<Is window
         bool user_rect = false;//<Using user defined position
         bool container = false;//<Is container
+        bool laoyout = false;//<Is layout?
         bool disable = false;//<The widget is disabled?
         FocusPolicy focus = FocusPolicy::None;//<Default the widget couldnot get focus
     };
@@ -102,6 +103,7 @@ namespace Btk{
                     rect.x,
                     rect.y
                 };
+                
             };
             /**
              * @brief Return The widget's master
@@ -175,12 +177,19 @@ namespace Btk{
             WidgetAttr attribute() const noexcept{
                 return attr;
             }
-        protected:
+            //TypeCheck
+            bool is_window() const noexcept{
+                return attr.window;
+            }
+            bool is_layout() const noexcept{
+                return attr.laoyout;
+            }
             /**
              * @brief Send a redraw request to the window
              * 
              */
-            void redraw();
+            void redraw() const;
+        protected:
             /**
              * @brief Get current window
              * 
@@ -261,7 +270,9 @@ namespace Btk{
      */
     class BTKAPI Container:public Widget{
         public:
-            Container() = default;
+            Container(){
+                attr.container = true;
+            }
             Container(const Container &) = delete;
             ~Container() = default;
         public:

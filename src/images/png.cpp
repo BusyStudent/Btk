@@ -11,59 +11,13 @@
 
 //PNG LIBRARY
 #include <png.h>
-//Dymaic Library
-#ifdef BTK_PNG_DYMAIC
-    #define BTK_PNG_LIBRARY  BTK_DYMAIC_LIBRARY
-    #define BTK_PNG_FUNCTION BTK_DYMAIC_FUNCTION
-#else
-    #define BTK_PNG_LIBRARY BTK_STATIC_LIBRARY
-    #define BTK_PNG_FUNCTION BTK_STATIC_FUNCTION
-#endif
-
-#ifdef _WIN32
-    #define PNG_LIBNAME "libpng16.dll"
-#else
-    #define PNG_LIBNAME "libpng16.so"
-#endif
-
 
 #define PNG_TRY(CTXT) if(::setjmp(png_jmpbuf(CTXT)) == 0)
 #define PNG_CATCH else
 
 
-namespace{    
-    struct BTKHIDDEN PngLibrary{
-        BTK_PNG_LIBRARY(PNG_LIBNAME);
-
-        BTK_PNG_FUNCTION(png_create_info_struct);
-        BTK_PNG_FUNCTION(png_create_read_struct);
-        BTK_PNG_FUNCTION(png_destroy_info_struct);
-        BTK_PNG_FUNCTION(png_destroy_read_struct);
-
-        BTK_PNG_FUNCTION(png_set_longjmp_fn);
-        BTK_PNG_FUNCTION(png_set_read_fn);
-        BTK_PNG_FUNCTION(png_get_IHDR);
-        BTK_PNG_FUNCTION(png_read_info);
-        BTK_PNG_FUNCTION(png_get_io_ptr);
-        BTK_PNG_FUNCTION(png_set_sig_bytes);
-        BTK_PNG_FUNCTION(png_sig_cmp);
-        BTK_PNG_FUNCTION(png_error);
-
-    };
-    #ifndef BTK_PNG_DYMAIC
-    //Create a static libaray
-    BTK_MAKE_STLIB(PngLibrary,pnglib);
-    #else
-    BTK_MAKE_DYLIB(PngLibrary,pnglib);
-    #endif
-
-    //Make png 
-    #define png_error pnglib->png_error
-    #define png_sig_cmp pnglib->png_sig_cmp
-    #define png_get_io_ptr pnglib->png_get_io_ptr
-    #define png_set_read_fn pnglib->png_set_read_fn
-    #define png_create_read_struct pnglib->png_create_read_struct
-    #define png_destroy_read_struct pnglib->png_destroy_read_struct
+namespace{
+    #include "loader/png.hpp"
     //Make deleter
     // struct png_deleter{
     //     void operator ()(png_structp){
@@ -107,6 +61,7 @@ namespace{
         png_set_read_fn(reader,rwops,png_read_data);
         png_destroy_read_struct(&reader,nullptr,nullptr);
         return nullptr;
+        
     }
 }
 
@@ -123,7 +78,7 @@ namespace Btk{
         adapter.vendor = "libpng";
         adapter.fn_is = check_is_png;
         adapter.fn_load = png_load;
-        pnglib.load();
+        BTK_PNG_LOAD();
         RegisterImageAdapter(adapter);
     }
 }

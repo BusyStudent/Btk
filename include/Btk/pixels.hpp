@@ -373,11 +373,11 @@ namespace Btk{
                 clear();
                 return *this;
             }
-            int get() const noexcept{
+            TextureID get() const noexcept{
                 return texture;
             }
-            int detach() noexcept{
-                int i = texture;
+            TextureID detach() noexcept{
+                TextureID i = texture;
                 texture = 0;
                 render = nullptr;
                 return i;
@@ -493,7 +493,7 @@ namespace Btk{
              */
             void set_flags(TextureFlags flags);
         private:
-            int texture = 0;//< NVG Image ID
+            TextureID texture = 0;//< NVG Image ID
             Renderer *render = nullptr;//Renderer
         friend struct Renderer;
     };
@@ -551,27 +551,48 @@ namespace Btk{
      * @brief Decoder Interface like WIC
      * 
      */
-    class ImageDecoder{
+    class BTKAPI ImageDecoder{
         public:
-            virtual inline ~ImageDecoder(){};
+            ImageDecoder() = default;
+            ImageDecoder(const ImageDecoder &) = delete;
+            virtual ~ImageDecoder();
 
             /**
              * @brief Get information of images
              * 
              * 
              * @param p_n_frame Point to the count of frames
-             * @param p_size Point to size
+             * @param p_fmt Point to format
              */
             virtual void query_info(
                 size_t *p_n_frame,
                 PixelFormat *p_fmt
             ) = 0;
+            /**
+             * @brief Query the frame information
+             * 
+             * @param frame_index 
+             * @param p_size The frame size
+             * @param p_delay The pointer to delay(in gif)
+             */
             virtual void query_frame(
-                size_t frame_index
+                size_t frame_index,
+                Size *p_size,
+                int *p_delay = nullptr
             ) = 0;
+            /**
+             * @brief Read frame
+             * 
+             * @param frame_index 
+             * @param rect 
+             * @param pixels The pointer to pixels
+             * @param wanted The pointer to the format we wanted(or nullptr)
+             */
             virtual void read_pixels(
                 size_t frame_index,
-                void *pixelss
+                const Rect *rect,
+                void *pixels,
+                const PixelFormat *wanted = nullptr
             ) = 0;
             /**
              * @brief Open a stream
@@ -579,34 +600,88 @@ namespace Btk{
              * @param rwops The point to SDL_RWops
              * @param autoclose Should we close the SDL_RWops when the stream is closed
              */
-            virtual void open(SDL_RWops *rwops,bool autoclose = false) = 0;
+            void open(SDL_RWops *rwops,bool autoclose = false);
+            void open(u8string_view filename);
+            void open(RWops &rwops){
+                open(rwops.get());
+            }
+            void open(RWops &&rwops){
+                open(rwops.get(),true);
+                //Succeed
+                rwops.detach();
+            }
             /**
              * @brief Close the stream
              * 
              */
-            virtual void close() = 0;
-
-            void open(RWops &rwops){
-                open(rwops.get());
+            void close();
+            bool is_opened() const noexcept{
+                return _is_opened;
             }
 
-            PixelFormat image_format(){
+            /**
+             * @brief Get PixelFormat of it
+             * 
+             * @return PixelFormat 
+             */
+            PixelFormat container_format(){
                 PixelFormat fmt;
                 query_info(nullptr,&fmt);
                 return fmt;
             }
+            size_t frame_count(){
+                size_t n;
+                query_info(&n,nullptr);
+                return n;
+            }
+            Size frame_size(size_t idx){
+                Size s;
+                query_frame(idx,&s);
+                return s;
+            }
+            int  frame_delay(size_t idx){
+                int delay;
+                query_frame(idx,nullptr,&delay);
+                return delay;
+            }
+            PixBuf read_frame(size_t frame_idx,const Rect *r = nullptr);
+        protected:
+            virtual void decoder_open() = 0;
+            virtual void decoder_close() = 0;
 
+            SDL_RWops *stream() const noexcept{
+                return fstream;
+            }
 
-            //Create by type and vendor
-            static ImageDecoder *Create(u8string_view type,u8string_view vendor = {});
         private:
             SDL_RWops *fstream = nullptr;
             bool       auto_close = false;
+            bool       _is_opened = false;
     };
     //TODO
     class ImageEncoder{
 
     };
+    //Create by type and vendor
+    BTKAPI ImageDecoder *CreateImageDecoder(u8string_view type,u8string_view vendor = {});
+    BTKAPI ImageEncoder *CreateImageEncoder(u8string_view type,u8string_view vendor = {});
+    /**
+     * @brief Create a Image Decoder object
+     * 
+     * @param rwops The current stream
+     * @param autoclose 
+     * @return ImageDecoder* 
+     */
+    BTKAPI ImageDecoder *CreateImageDecoder(SDL_RWops *rwops,bool autoclose = false);
+    /**
+     * @brief Create a Image Decoder object
+     * 
+     * @param rwops The current stream
+     * @return ImageDecoder* 
+     */
+    inline ImageDecoder *CreateImageDecoder(RWops &rwops){
+        return CreateImageDecoder(rwops.get(),false);
+    }
     /**
      * @brief Convert string to color
      * 

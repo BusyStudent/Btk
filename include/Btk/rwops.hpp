@@ -22,6 +22,11 @@ namespace Btk{
             SDL_RWops *get() const noexcept{
                 return fptr;
             }
+            SDL_RWops *detach() noexcept{
+                SDL_RWops *r = fptr;
+                fptr = nullptr;
+                return r;
+            }
             /**
              * @brief Close the rwops
              * 

@@ -136,6 +136,20 @@ namespace Btk{
         fns.iconv_close = iconv_close;
         fns.iconv = iconv;
     }
+    //Helper template
+    template<class Beg,class End>
+    auto utf8_index(Beg begin,End end,size_t index){
+        auto iter = begin;
+
+        for(size_t i = 0;i < index; i++){
+            if(iter == end){
+                throw std::out_of_range("At u8 index");
+            }
+            utf8::unchecked::next(iter);
+        }
+
+        return iter;
+    }
 }
 
 namespace Btk{
@@ -143,72 +157,58 @@ namespace Btk{
     u8string::~u8string() = default;
     u8string::u8string(const u8string &) = default;
     //Index
-    _U8Proxy<u8string> u8string::at(size_type index){
-        auto iter = impl_begin();
-
-        for(size_type i = 0;i < index; i++){
-            if(iter == impl_end()){
-                throw std::out_of_range("At u8 index");
-            }
-            utf8::unchecked::next(iter);
-        }
-        auto end = iter;
-
-        if(end == impl_end()){
-            throw std::out_of_range("At u8 index");
-        }
-
-        utf8::unchecked::next(end);
+    u8string::reference u8string::at(size_type index){
         return {
             this,
-            iter,
-            end
+            utf8_index(
+                impl_begin(),
+                impl_end(),
+                index
+            )
         };
     }
-    _U8Proxy<const u8string> u8string::at(size_type index) const{
-        auto iter = impl_begin();
-
-        for(size_type i = 0;i < index; i++){
-            if(iter == impl_end()){
-                throw std::out_of_range("At u8 index");
-            }
-            utf8::unchecked::next(iter);
-        }
-        auto end = iter;
-        
-        if(end == impl_end()){
-            throw std::out_of_range("At u8 index");
-        }
-        utf8::unchecked::next(end);
+    u8string::const_reference u8string::at(size_type index) const{
         return {
-            this,
-            iter,
-            end
+            utf8_index(
+                impl_begin(),
+                impl_end(),
+                index
+            )
         };
     }
-    void u8string::impl_replace_ch(CharProxy &p,char32_t ch){
-        std::string tmp;
-        std::u32string_view view(&ch,1);
-        utf8::unchecked::utf32to8(view.begin(),view.end(),std::back_insert_iterator(tmp));
+    //For replace a unicode char
+    char * u8string::replace_char(char *where,char32_t ch){
+        std::string buffer;
+        //Query the end
+        const char *end = where;
+        Utf8Next(end);
+        //Restore
+        size_t n = where - impl_begin();
+        //Begin replace
+        utf8::unchecked::utf32to8(&ch,&ch + 1,std::back_inserter(buffer));
 
-        auto diff = p._beg - impl_begin();
-        std::string::replace(_translate_pointer(p._beg),_translate_pointer(p._end),tmp);
-        //To cur pos
-        p._beg = impl_begin() + diff;
-        p._end = impl_begin() + diff;
-        
-        Utf8Next(p._end);
-        
+        base().replace(
+            _translate_pointer(where),
+            _translate_pointer(end),
+            buffer
+        );
+        return impl_begin() + n;
     }
-    void u8string::impl_replace_ch(CharProxy &p,char ch){
-        auto diff = p._beg - impl_begin();
-        std::string::replace(_translate_pointer(p._beg),_translate_pointer(p._end),&ch,1);
-        //To cur pos
-        p._beg = impl_begin() + diff;
-        p._end = impl_begin() + diff;
-        
-        Utf8Next(p._end);
+    char * u8string::replace_char(char *where,char16_t ch){
+        std::string buffer;
+        //Query the end
+        const char *end = where;
+        Utf8Next(end);
+        size_t n = where - impl_begin();
+        //Begin replace
+        utf8::unchecked::utf16to8(&ch,&ch + 1,std::back_inserter(buffer));
 
+        base().replace(
+            _translate_pointer(where),
+            _translate_pointer(end),
+            buffer
+        );
+        return impl_begin() + n;
     }
     void u8string::push_back(char32_t ch){
         std::u32string_view view(&ch,1);
@@ -221,8 +221,8 @@ namespace Btk{
         auto iter = end();
         --iter;
 
-        for(size_t i = 0;i < iter->size();i++){
-            std::string::pop_back();
+        for(size_t i = 0;i < iter.size();i++){
+            base().pop_back();
         }
     }
     void u8string::pop_front(){
@@ -230,10 +230,11 @@ namespace Btk{
             return;
         }
         auto iter = begin();
-        base().erase(_translate_pointer(iter._beg),_translate_pointer(iter._end));
+        // base().erase(_translate_pointer(iter.current),_translate_pointer(iter._end));
+        erase(iter);
     }
     std::string u8string::encoode(const char *to) const{
-        char *i = SDL_iconv_string(to,"UTF-8",data(),base().size());
+        char *i = SDL_iconv_string(to,"UTF-8",c_str(),base().size());
         if(i == nullptr){
             throwSDLError();
         }
@@ -285,6 +286,15 @@ namespace Btk{
         u16string s;
         Utf8To16(s,*this);
         return s;
+    }
+    u8string_view::const_reference u8string_view::at(size_t index) const{
+        return {
+            utf8_index(
+                impl_begin(),
+                impl_end(),
+                index
+            )
+        };
     }
 }
 namespace Btk{
@@ -381,7 +391,7 @@ namespace Btk{
                 }
             }
             else{
-                for(long i = 0;i < n;i++){
+                for(long i = n;i < 0;i++){
                     if(cur <= beg){
                         //Outof range
                         return nullptr;
@@ -392,6 +402,13 @@ namespace Btk{
         }
         //n == 0
         return cur;
+    }
+    const char *Utf8AdvanceChecked(const char *beg,const char *end,const char *cur,long n){
+        const char *ptr = Utf8Advance(beg,end,cur,n);
+        if(ptr == nullptr){
+            throw std::out_of_range("At u8 index");
+        }
+        return ptr;
     }
 }
 namespace Btk{

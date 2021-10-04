@@ -88,6 +88,14 @@ namespace Btk{
             TextureID image;
     };
     /**
+     * @brief TextureType from nanovg
+     * 
+     */
+    enum class TextureType:int{
+        Alpha = 0x01,
+        RGBA32 = 0x02
+    };
+    /**
      * @brief Abstruct Graphics Device
      * 
      */
@@ -250,6 +258,30 @@ namespace Btk{
         }
         RendererBackend backend() const noexcept{
             return _backend;
+        }
+        /**
+         * @brief Create a texture from PixelBuf
+         * 
+         * @param ctxt 
+         * @param surf 
+         * @param flags 
+         * @return TextureID 
+         */
+        TextureID create_texture_from(
+            Context ctxt,
+            SDL_Surface *surf,
+            TextureFlags flags
+        );
+        TextureID create_texture_from(
+            Context ctxt,
+            const PixBuf &buf,
+            TextureFlags flags
+        ){
+            return create_texture_from(
+                ctxt,
+                buf.get(),
+                flags
+            );
         }
     protected:
         void set_backend(RendererBackend bac){
@@ -752,6 +784,7 @@ namespace Btk{
             }
             void reset_scissor();
             void set_antialias(bool val = true);
+            void set_alpha(float alpha = 1.0f);
         public:
             //Paint
             /**
@@ -815,9 +848,10 @@ namespace Btk{
              * 
              */
             struct CachedItem{
-                int texture;
-                int w,h;
-                bool used;
+                int tex = -1;
+                int w = -1;
+                int h = -1;
+                bool used = false;
             };
             /**
              * @brief Free a texture
@@ -860,7 +894,7 @@ namespace Btk{
             NVGcontext *nvg_ctxt = nullptr;//<NanoVG Context
             Device     *_device = nullptr;//<Render device data
 
-            std::list<TextureID> t_caches;//< Texture cache
+            std::list<CachedItem> cached_texs;//< Texture cache
             int max_caches = 20;//< Max cache
 
             bool is_drawing = false;//< Is nanovg Has BeginFrame

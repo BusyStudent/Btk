@@ -6,9 +6,10 @@
 
 #include <Btk/impl/scope.hpp>
 #include <Btk/impl/codec.hpp>
+#include <Btk/exception.hpp>
 
 namespace{
-    void set_error_by_vp8(VP8StatusCode code){
+    const char *tr_error_by_vp8(VP8StatusCode code){
         #ifndef BTK_WEBP_NOERRMSG
         #define TRANSLATE_VP8STATUS(E) \
             case VP8_STATUS_##E : errstring = "VP8_STATUS_" #E; break
@@ -26,11 +27,10 @@ namespace{
                 //Impossible
                 {abort();}
         }
-        SDL_SetError("%d => %s",int(code),errstring);
-        
+        return errstring;
         #undef TRANSLATE_VP8STATUS
         #else
-        SDL_SetError("Webp error");
+        return "InternalError";
         #endif
     }
     SDL_Surface *load_webp(SDL_RWops *rwops){
@@ -46,7 +46,7 @@ namespace{
         //Read all data
         size_t buffersize;
         void *bufferdata = SDL_LoadFile_RW(rwops,&buffersize,SDL_FALSE);
-        if(bufferdata = nullptr){
+        if(bufferdata == nullptr){
             //Read Error
             return nullptr;
         }
@@ -55,7 +55,7 @@ namespace{
         auto code = WebPDecode(static_cast<Uint8*>(bufferdata),buffersize,&config);
         if(code != VP8_STATUS_OK){
             //Failed
-            set_error_by_vp8(code);
+            SDL_SetError("WebP %d => %s",code,tr_error_by_vp8(code));
             return nullptr;
         }
         SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormat(
@@ -76,7 +76,6 @@ namespace{
         WebPFreeDecBuffer(&buffer);
         return surf;
     }
-    //TODO Finish it
     int webp_write(const uint8_t* data, size_t data_size,
                    const WebPPicture* picture){
         return SDL_RWwrite(
@@ -119,7 +118,7 @@ namespace{
         WebPPictureImportRGBA(
             &picture,
             static_cast<Uint8*>(surf->pixels),
-            surf->format->BytesPerPixel
+            surf->pitch
         );
         BTK_UNLOCKSURFACE(surf);
         //Set callback
@@ -131,20 +130,21 @@ namespace{
 
         return val == 0;
     }
-    bool is_webp(SDL_RWops *rwops){
-        Uint8 magic[20];
-        auto pos = SDL_RWtell(rwops);
-        if(SDL_RWread(rwops,magic,sizeof(magic),1) != 1){
-            //Read Error
-            SDL_RWseek(rwops,pos,RW_SEEK_SET);
-            return false;
-        }
-        //Reset to begin
-        SDL_RWseek(rwops,pos,RW_SEEK_SET);
 
-        //Check magic
-        return false;
-    }
+    using Btk::throwRuntimeError;
+    using Btk::ImageDecoder;
+    using Btk::PixelFormat;
+    using Btk::Rect;
+    using Btk::Size;
+    //TODO
+    struct WebPDecoder:public ImageDecoder{
+        //Data readed
+        Uint8 *bitstream;
+        size_t datalen;
+
+
+        WebPBitstreamFeatures features;
+    };
 }
 
 namespace Btk{
@@ -154,6 +154,7 @@ namespace Btk{
         adapter.vendor = "libwebp";
         adapter.fn_load = load_webp;
         adapter.fn_save = save_webp;
+        adapter.fn_is = BultinIsWebP;
         RegisterImageAdapter(adapter);
     }
 }

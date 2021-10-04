@@ -8,6 +8,7 @@ if is_plat("linux") then
 
     --try add extensions
     add_requires("gif",{optional = true})
+    add_requires("webp",{optional = true})
     --add_requires("freetype2",{optional = true})
     add_cxxflags("-Wall","-Wextra","-fPIC")
 else
@@ -78,7 +79,8 @@ target("btk")
     end
     --Add gif ext
     if has_package("gif") then
-        add_files("./src/ext/gif.cpp")
+        add_files("./src/images/gif.cpp")
+        add_defines("BTK_HAS_GIF")
     else
         add_defines("BTK_NGIF")
     end
@@ -157,6 +159,12 @@ target("btk")
         add_defines("BTK_HAS_PNG")
         add_packages("libpng")
         add_files("./src/images/png.cpp")
+    end
+
+    if has_package("webp") then
+        add_defines("BTK_HAS_WEBP")
+        add_packages("webp")
+        add_files("./src/images/webp.cpp")
     end
 
     --SDL_image support

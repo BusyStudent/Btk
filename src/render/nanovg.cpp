@@ -164,6 +164,39 @@ namespace Btk{
     TextureID RendererDevice::create_texture(Context ctxt,int w,int h,TextureFlags flags,const void *p){
         return nvgCreateImageRGBA(ctxt,w,h,int(flags),static_cast<const unsigned char*>(p));
     }
+    TextureID RendererDevice::create_texture_from(Context ctxt,SDL_Surface *surf,TextureFlags flags){
+        if(surf == nullptr){
+            return -1;
+        }
+        if(surf->format->format != PixelFormat::RGBA32){
+            //Convert format
+            SDL_Surface *new_surf = SDL_ConvertSurfaceFormat(
+                surf,
+                PixelFormat::RGBA32,
+                0
+            );
+            if(new_surf == nullptr){
+                throwSDLError();
+            }
+            //Make guard
+            std::unique_ptr<SDL_Surface,decltype(SDL_FreeSurface)*> guard(
+                new_surf,
+                SDL_FreeSurface
+            );
+            return create_texture_from(ctxt,new_surf,flags);
+        }
+        if(SDL_MUSTLOCK(surf)){
+            SDL_LockSurface(surf);
+        }
+        //Make guard
+        auto unlock_fn = [](SDL_Surface *surf){
+            if(SDL_MUSTLOCK(surf)){
+                SDL_UnlockSurface(surf);
+            }
+        };
+        std::unique_ptr<SDL_Surface,decltype(unlock_fn)> guard(surf,unlock_fn);
+        return create_texture(ctxt,surf->w,surf->h,flags,surf->pixels);
+    }
     void RendererDevice::update_texture(Context ctxt,TextureID id,const Rect *r,const void *pixels){
         Rect rect = {0,0,0,0};
 

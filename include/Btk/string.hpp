@@ -79,6 +79,16 @@ namespace Btk{
     inline char32_t Utf8Prev(char *& c){
         return Utf8Prev(const_cast<const char*&>(c));
     }
+    template<class T>
+    inline T Utf8GetPrev(T v){
+        Utf8Prev(v);
+        return v;
+    }
+    template<class T>
+    inline T Utf8GetNext(T v){
+        Utf8Next(v);
+        return v;
+    }
     /**
      * @brief Get size of a utf8 char
      * 
@@ -126,136 +136,262 @@ namespace Btk{
      */
     BTKAPI 
     const char *Utf8Advance(const char *beg,const char *end,const char *cur,long n);
-    /**
-     * @brief Proxy for u8string
-     * 
-     */
-    template<class T>
-    struct _U8Proxy{
-        using Iterator = typename _U8StringImplIterator<T>::Iterator;
+    //If failed,throw outof range
+    BTKAPI 
+    const char *Utf8AdvanceChecked(const char *beg,const char *end,const char *cur,long n);
 
-        T *str = nullptr;
-        Iterator _beg;
-        Iterator _end;
+    template<class Container>
+    struct _Utf8RawCodepointRef{
+        Container *container;
+        char *current;
 
-        _U8Proxy() = default;
-        _U8Proxy(T *s,Iterator i1,Iterator i2)
-            :str(s),_beg(i1),_end(i2){}
-        _U8Proxy(const _U8Proxy &) = default;
-        _U8Proxy(_U8Proxy &&) = default;
-
-        /**
-         * @brief Cast to UTF32
-         * 
-         * @return char32_t 
-         */
-        operator char32_t() const{
-            return Utf8Peek(_beg);
+        //Replace char
+        _Utf8RawCodepointRef& operator =(char32_t t){
+            current = container->replace_char(current,t);
+            return *this;
+        }
+        _Utf8RawCodepointRef& operator =(char16_t t){
+            current = container->replace_char(current,t);
+            return *this;
+        }
+        _Utf8RawCodepointRef& operator =(char t){
+            current = container->replace_char(current,char16_t(t));
+            return *this;
+        }
+        char *operator &() const noexcept{
+            return current;
+        }
+        operator char32_t() const noexcept{
+            return Utf8Peek(current);
         }
         /**
-         * @brief Cast to string_view
-         * 
-         * @return std::string_view 
-         */
-        operator std::string_view () const{
-            const char *beg = &*_beg;
-            const char *end = &*_end;
-            return std::string_view(beg,end - beg);
-        }
-        /**
-         * @brief Get the size of the char
+         * @brief Get the size of the codepoint
          * 
          * @return size_t 
          */
-        size_t size(){
-            const char *beg = &*_beg;
-            const char *end = &*_end;
-            return end - beg;
+        size_t size() const{
+            return Utf8CharSize(current);
         }
-        char32_t get() const{
-            return Utf8Peek(_beg);
+    };
+    struct _Uft8ConstCodepoinRef{
+        const char *current;
+        const char *operator &() const noexcept{
+            return current;
+        }
+        operator char32_t() const noexcept{
+            return Utf8Peek(current);
         }
         /**
-         * @brief Assign value
+         * @brief Get the size of the codepoint
          * 
-         * @tparam Ch 
-         * @param ch 
-         * @return _U8Proxy& 
+         * @return size_t 
          */
-        template<class Ch>
-        _U8Proxy &operator =(const Ch &ch){
-            static_assert(not std::is_const_v<T>,"Const value cannot be assigned");
-            static_assert(not std::is_integral_v<T>,"Must assigned a char,char16_t,char32_t");
-            str->impl_replace_ch(*this,ch);
-            return *this;
+        size_t size() const{
+            return Utf8CharSize(current);
         }
-        char *operator &() noexcept{
-            return _beg;
-        }
-        _U8Proxy &operator =(const _U8Proxy &) = default;
     };
-    template<class T>
-    struct _U8Iterator:protected _U8Proxy<T>{
-        using _U8Proxy<T>::_U8Proxy;
-        _U8Iterator() = default;
-        _U8Iterator(const _U8Iterator &) = default;
-        _U8Iterator &operator ++(){
-            Utf8Next(this->_beg);
-            Utf8Next(this->_end);
-            return *this;
-        }
-        _U8Iterator operator ++(int){
-            Utf8Next(this->_beg);
-            Utf8Next(this->_end);
-            return *this;
-        }
-        _U8Iterator &operator --(){
-            //string.end()
-            if(this->_beg == this->_end){
-                Utf8Prev(this->_beg);
-            }
-            else{
-                Utf8Prev(this->_beg);
-                Utf8Prev(this->_end);
-            }
-            return *this;
-        }
-        _U8Iterator operator --(int){
-            if(this->_beg == this->_end){
-                Utf8Prev(this->_beg);
-            }
-            else{
-                Utf8Prev(this->_beg);
-                Utf8Prev(this->_end);
-            }
-            return *this;
-        }
-        bool operator ==(const _U8Iterator &i) const{
-            return this->_beg == i._beg;
-        }
-        bool operator !=(const _U8Iterator &i) const{
-            return this->_beg != i._beg;
-        }
-        //STL
-        _U8Proxy<T> &operator *(){
-            return *this;
-        }
-        _U8Proxy<T> *operator ->(){
-            return this;
+    //Proxy for replace the char
+    template<class Iterator,bool Const>
+    struct _Utf8IteratorProxy;
+    //No const
+    template<class Iterator>
+    struct _Utf8IteratorProxy<Iterator,false>{
+        Iterator *iterator;
+        operator char32_t() const noexcept{
+            return Utf8Peek(iterator->current);
         }
         /**
-         * @brief Calc the distance
+         * @brief Get the size of the codepoint
          * 
-         * @tparam T 
-         * @param i 
-         * @return ptrdiff_t 
+         * @return size_t 
          */
-        template<class T1>
-        ptrdiff_t operator -(const _U8Iterator<T1> i) const{
-            return Utf8Distance(this->_beg,i._beg);
+        size_t size() const{
+            return Utf8CharSize(iterator->current);
         }
-        friend class u8string;
+        //Has replace
+        void operator =(char32_t t){
+            iterator->current = iterator->container->replace_char(iterator->current,t);
+        }
+        void operator =(char16_t t){
+            iterator->current = iterator->container->replace_char(iterator->current,t);
+        }
+        void operator =(char t){
+            iterator->current = iterator->container->replace_char(iterator->current,char16_t(t));
+        }
     };
+    //const
+    template<class Iterator>
+    struct _Utf8IteratorProxy<Iterator,true>{
+        Iterator *iterator;
+        operator char32_t() const noexcept{
+            return Utf8Peek(iterator->current);
+        }
+        /**
+         * @brief Get the size of the codepoint
+         * 
+         * @return size_t 
+         */
+        size_t size() const{
+            return Utf8CharSize(iterator->current);
+        }
+        //No replace
+    };
+
+    template<class Container>
+    struct _Utf8IteratorBase{
+        using self_type = _Utf8IteratorBase<Container>;
+        using container_type = Container;
+        using reference_type = _Utf8IteratorProxy<self_type,std::is_const_v<Container>>;
+        
+        const Container *container = nullptr;
+        const char *current = nullptr;
+
+        void _move_prev(){
+            Utf8Prev(current);
+        }
+        void _move_next(){
+            Utf8Next(current);
+        }
+        void _advance(long n){
+            current = Utf8AdvanceChecked(
+                container->impl_begin(),
+                container->impl_end(),
+                current,
+                n
+            );
+        }
+        /**
+         * @brief Get the size of the codepoint
+         * 
+         * @return size_t 
+         */
+        size_t size() const{
+            return Utf8CharSize(current);
+        }
+        reference_type get_reference(){
+            return {this};
+        }
+        //cmp
+        bool operator ==(const _Utf8IteratorBase &i) const noexcept{
+            return current == i.current;
+        }
+        bool operator !=(const _Utf8IteratorBase &i) const noexcept{
+            return current != i.current;
+        }
+        // -
+        ptrdiff_t operator -(const _Utf8IteratorBase &i) const{
+            return Utf8Distance(i.current,current);
+        }
+    };
+    template<class Container>
+    struct _Utf8Iterator:public _Utf8IteratorBase<Container>{
+        //Default operators
+        _Utf8Iterator() = default;
+        _Utf8Iterator(const _Utf8Iterator &) = default;
+        ~_Utf8Iterator() = default;
+
+        _Utf8Iterator(Container *c,const char *cur){
+            this->container = c;
+            this->current = cur;
+        }
+
+        _Utf8Iterator &operator =(const _Utf8Iterator &) = default;
+        _Utf8Iterator &operator ++(){
+            this->_move_next();
+            return *this;
+        }
+        _Utf8Iterator &operator --(){
+            this->_move_prev();
+            return *this;
+        }
+        _Utf8Iterator  operator ++(int){
+            auto tmp = *this;
+            this->_move_next();
+            return tmp;
+        }
+        _Utf8Iterator  operator --(int){
+            auto tmp = *this;
+            this->_move_prev();
+            return tmp;
+        }
+        //Advance
+        _Utf8Iterator operator +(long n){
+            auto tmp = *this;
+            tmp._advance(n);
+            return tmp;
+        }
+        _Utf8Iterator operator -(long n){
+            auto tmp = *this;
+            tmp._advance(- n);
+            return tmp;
+        }
+        ptrdiff_t operator -(const _Utf8Iterator &i) const{
+            return Utf8Distance(i.current,this->current);
+        }
+
+        auto operator *(){
+            return this->get_reference();
+        }
+    };
+    template<class Container>
+    struct _Utf8ConstIterator:public _Utf8IteratorBase<const Container>{
+        //Default operators
+        _Utf8ConstIterator() = default;
+        _Utf8ConstIterator(const _Utf8ConstIterator &) = default;
+        ~_Utf8ConstIterator() = default;
+
+        _Utf8ConstIterator(const Container *c,const char *cur){
+            this->container = c;
+            this->current = cur;
+        }
+
+        _Utf8ConstIterator &operator =(const _Utf8ConstIterator &) = default;
+        _Utf8ConstIterator &operator ++(){
+            this->_move_next();
+            return *this;
+        }
+        _Utf8ConstIterator &operator --(){
+            this->_move_prev();
+            return *this;
+        }
+        _Utf8ConstIterator  operator ++(int){
+            auto tmp = *this;
+            this->_move_next();
+            return tmp;
+        }
+        _Utf8ConstIterator  operator --(int){
+            auto tmp = *this;
+            this->_move_prev();
+            return tmp;
+        }
+        //Advance
+        _Utf8ConstIterator operator +(long n){
+            auto tmp = *this;
+            tmp._advance(n);
+            return tmp;
+        }
+        _Utf8ConstIterator operator -(long n){
+            auto tmp = *this;
+            tmp._advance(- n);
+            return tmp;
+        }
+        ptrdiff_t operator -(const _Utf8ConstIterator &i) const{
+            return Utf8Distance(i.current,this->current);
+        }
+        auto operator *(){
+            return this->get_reference();
+        }
+    };
+    //reverse_iterator
+    template<class Container>
+    struct _Utf8ReverseIterator:public _Utf8IteratorBase<Container>{
+
+    };
+    template<class Container>
+    struct _Utf8ConstReverseIterator:public _Utf8IteratorBase<const Container>{
+
+    };
+
     class BTKAPI u8string_view:protected std::string_view{
         public:
             u8string_view() = default;
@@ -273,8 +409,15 @@ namespace Btk{
             using List = std::vector<u8string>;
             using RefList = std::vector<u8string_view>;
 
+            using value_type = char32_t;
+            using reference = _Uft8ConstCodepoinRef;
+            using const_reference = _Uft8ConstCodepoinRef;
+
             using _iterator = const char *;
             using _const_iterator = const char *;
+
+            using iterator = _Utf8ConstIterator<u8string_view>;
+            using const_iterator = _Utf8ConstIterator<u8string_view>;
             /**
              * @brief Get the length of the string_view
              * 
@@ -417,6 +560,68 @@ namespace Btk{
                     return strncasecmp(data(),view.data(),raw_length());
                 }
             }
+            //Index method
+            reference       at(size_t index){
+                return static_cast<const u8string_view*>(this)->at(index);
+            }
+            const_reference at(size_t index) const;
+
+            reference       operator [](size_t index){
+                return static_cast<const u8string_view*>(this)->at(index);
+            }
+            const_reference operator [](size_t index) const{
+                return static_cast<const u8string_view*>(this)->at(index);
+            }
+            //Iterator
+            iterator begin(){
+                auto beg = impl_begin();
+                return {
+                    this,
+                    beg,
+                };
+            }
+            iterator end(){
+                auto beg = impl_end();
+                return {
+                    this,
+                    beg,
+                };
+            }
+            const_iterator begin() const{
+                auto beg = impl_begin();
+                return {
+                    this,
+                    beg,
+                };
+            }
+            const_iterator end() const{
+                auto beg = impl_end();
+                return {
+                    this,
+                    beg,
+                };
+            }
+            //Reference
+            reference front(){
+                return {
+                    impl_begin()
+                };
+            }
+            const_reference front() const{
+                return {
+                    impl_begin()
+                };
+            }
+            reference back(){
+                return {
+                    Utf8GetPrev(impl_end())
+                };
+            }
+            const_reference back() const{
+                return {
+                    Utf8GetPrev(impl_end())
+                };
+            }
 
         private:
             _iterator impl_begin(){
@@ -476,12 +681,14 @@ namespace Btk{
         template<class T>
         friend struct std::hash;
         friend class u16string;
+        template<class _T>
+        friend struct _Utf8IteratorBase;
     };
     /**
      * @brief UTF8 String
      * 
      */
-    class BTKAPI u8string:protected std::string{
+    class BTKAPI u8string{
         public:
             u8string();
             u8string(std::string &&);
@@ -496,12 +703,8 @@ namespace Btk{
             u8string(u8string &&) = default;
             ~u8string();
 
-            using std::string::basic_string;
-
-            using CharProxy = _U8Proxy<u8string>;
-            using ConstCharProxy = _U8Proxy<const u8string>;
-            using Iterator = _U8Iterator<u8string>;
-            using ConstIterator = _U8Iterator<const u8string>;
+            using Iterator = _Utf8Iterator<u8string>;
+            using ConstIterator = _Utf8ConstIterator<u8string>;
 
             //stl
             using const_iterator = ConstIterator;
@@ -509,23 +712,10 @@ namespace Btk{
             u8string(const_iterator beg,const_iterator end);
 
             using value_type = char32_t;
-            using reference = char32_t&;
+            using reference = _Utf8RawCodepointRef<u8string>;
+            using const_reference = _Uft8ConstCodepoinRef;
             using pointer = char32_t*;
 
-            using std::string::assign;
-            using std::string::c_str;
-            using std::string::empty;
-            using std::string::data;
-            using std::string::swap;
-            using std::string::size;
-            using std::string::clear;
-            using std::string::resize;
-            using std::string::append;
-            using std::string::compare;
-            using std::string::max_size;
-            using std::string::shrink_to_fit;
-            using std::string::size_type;
-            using std::string::npos;
             //Impl
             using _iterator = char *;
             using _const_iterator = const char *;
@@ -533,6 +723,10 @@ namespace Btk{
             using Base = std::string;
             using List = std::vector<u8string>;
             using RefList = std::vector<u8string_view>;
+
+            using size_type = size_t;
+            //Const
+            inline static constexpr size_t npos = size_t(-1);
 
             /**
              * @brief The string doesnnot has invaild char
@@ -565,7 +759,7 @@ namespace Btk{
                 push_back(char32_t(ch));
             }
             void push_back(char ch){
-                Base::push_back(ch);
+                base().push_back(ch);
             }
             /**
              * @brief Note it is a slow operation
@@ -579,8 +773,13 @@ namespace Btk{
              * @param iter 
              */
             template<class T>
-            void erase(_U8Iterator<T> iter){
-                Base::erase(iter._beg,iter._end);
+            void erase(const _Utf8IteratorBase<T> iter){
+                const char *next = iter.current;
+                Utf8Next(next);
+                base().erase(
+                    _translate_pointer(iter.current),
+                    _translate_pointer(next)
+                );
             }
             /**
              * @brief Locate the char 
@@ -588,8 +787,8 @@ namespace Btk{
              * @param index 
              * @return _U8Proxy 
              */
-            CharProxy      at(size_type index);
-            ConstCharProxy at(size_type index) const;
+            reference       at(size_type index);
+            const_reference at(size_type index) const;
             /**
              * @brief Encode to
              * 
@@ -611,25 +810,35 @@ namespace Btk{
             void append_vfmt(const char *fmt,std::va_list varg);
             void append_fmt(const char *fmt,...);
 
-            CharProxy      operator [](size_type index){
+            reference       operator [](size_type index){
                 return at(index);
             }
-            ConstCharProxy operator [](size_type index) const{
+            const_reference operator [](size_type index) const{
                 return at(index);
             }
 
-            CharProxy front(){
-                return begin();
+            reference front(){
+                return {
+                    this,
+                    impl_begin()
+                };
             }
-            ConstCharProxy front() const{
-                return begin();
+            const_reference front() const{
+                return {
+                    impl_begin()
+                };
             }
 
-            CharProxy back(){
-                return --end();
+            reference back(){
+                return {
+                    this,
+                    Utf8GetPrev(impl_end())
+                };
             }
-            ConstCharProxy back() const{
-                return --end();
+            const_reference back() const{
+                return {
+                    Utf8GetPrev(impl_end())
+                };
             }
 
             size_type find(char c) const{
@@ -668,6 +877,46 @@ namespace Btk{
             void swap(u8string &us){
                 base().swap(us.base());
             }
+            //Append
+            void append(const u8string &s){
+                base().append(s.base());
+            }
+            void append(u8string_view view){
+                base().append(view.base());
+            }
+            void append(const char *s){
+                base().append(s);
+            }
+            void append(const char *s,size_t n){
+                base().append(s,n);
+            }
+            //CSTR data
+            const char *c_str() const noexcept{
+                return base().c_str();
+            }
+            char *data() noexcept{
+                return base().data();
+            }
+            //Empty
+            bool empty() const noexcept{
+                return base().empty();
+            }
+            void clear(){
+                base().clear();
+            }
+            //Size
+            void resize(size_t n){
+                base().resize(n);
+            }
+            size_t size() const{
+                return base().size();
+            }
+            size_t capacity() const{
+                return base().capacity();
+            }
+            void shrink_to_fit(){
+                base().shrink_to_fit();
+            }
             /**
              * @brief Create string from
              * 
@@ -681,40 +930,30 @@ namespace Btk{
             //beg and end
             Iterator begin(){
                 auto beg = impl_begin();
-                auto end = beg;
-                Utf8Next(end);
                 return {
                     this,
                     beg,
-                    end
                 };
             }
             Iterator end(){
                 auto beg = impl_end();
-                auto end = beg;
                 return {
                     this,
                     beg,
-                    end
                 };
             }
             ConstIterator begin() const{
                 auto beg = impl_begin();
-                auto end = beg;
-                Utf8Next(end);
                 return {
                     this,
                     beg,
-                    end
                 };
             }
             ConstIterator end() const{
                 auto beg = impl_end();
-                auto end = beg;
                 return {
                     this,
                     beg,
-                    end
                 };
             }
         public:
@@ -726,26 +965,26 @@ namespace Btk{
             //     return u8string_view(base().c_str(),base().length());
             // }
             std::string *operator ->() noexcept{
-                return this;
+                return &base();
             }
             const std::string *operator ->() const noexcept{
-                return this;
+                return &base();
             }
             const std::string &operator *() const noexcept{
-                return *this;
+                return base();
             }
 
             std::string &get(){
-                return *this;
+                return base();
             }
             const std::string &get() const{
-                return *this;
+                return base();
             }
             std::string &base(){
-                return *this;
+                return _data;
             }
             const std::string &base() const{
-                return *this;
+                return _data;
             }
 
             u8string toupper() const{
@@ -762,23 +1001,23 @@ namespace Btk{
             }
         private:
             _iterator impl_begin(){
-                return _translate_iterator(Base::begin());
+                return _translate_iterator(base().begin());
             }
             _iterator impl_end(){
-                return _translate_iterator(Base::end());
+                return _translate_iterator(base().end());
             }
             _const_iterator impl_begin() const{
-                return _translate_iterator(Base::begin());
+                return _translate_iterator(base().begin());
             }
             _const_iterator impl_end() const{
-                return _translate_iterator(Base::end());
+                return _translate_iterator(base().end());
             }
             //Translate
             Base::iterator _translate_pointer(char *ch){
-                return Base::begin() + (ch - &*Base::begin());
+                return base().begin() + (ch - &*base().begin());
             }
             Base::const_iterator _translate_pointer(const char *ch) const{
-                return Base::begin() + (ch - &*Base::begin());
+                return base().begin() + (ch - &*base().begin());
             }
             char *_translate_iterator(Base::iterator i){
                 return &*i;
@@ -787,16 +1026,23 @@ namespace Btk{
                 return &*i;
             }
         private:
-            void impl_replace_ch(CharProxy &p,char32_t ch);
-            void impl_replace_ch(CharProxy &p,char16_t ch){
-                impl_replace_ch(p,char32_t(ch));
-            }
-            void impl_replace_ch(CharProxy &p,char ch);
+            char *replace_char(
+                char *where,
+                char32_t codepoint
+            );
+            char *replace_char(
+                char *where,
+                char16_t codepoint
+            );
+
+            std::string _data;
         
         template<class T>
         friend struct std::hash;
         template<class _T>
-        friend struct _U8Proxy;
+        friend struct _Utf8IteratorBase;
+        template<class _T>
+        friend struct _Utf8RawCodepointRef;
     };
     class BTKAPI u16string:protected std::u16string{
         public:
@@ -854,32 +1100,33 @@ namespace Btk{
     };
     //u8string inline begin
     inline u8string::u8string(std::string_view s):
-        std::string(s){
+        _data(s){
     }
     inline u8string::u8string(u8string_view s):
-        std::string(std::string_view(s)){
+        _data(std::string_view(s)){
     }
     inline u8string::u8string(const std::string &s):
-        std::string(s){
+        _data(s){
     }
     inline u8string::u8string(std::string &&s):
-        std::string(std::move(s)){
+        _data(std::move(s)){
     }
-    inline u8string::u8string(const_iterator beg,const_iterator end):
-        std::string(beg._beg,end._end){
-
+    inline u8string::u8string(const_iterator beg,const_iterator end){
+        const char *next = end.current;
+        Utf8Next(next);
+        _data = std::string(beg.current,next);
     }
     inline u8string::u8string(const char *s):
-        std::string(s){
+        _data(s){
     }
     inline u8string::u8string(const char *s,size_t n):
-        std::string(s,n){
+        _data(s,n){
     }
     inline u8string::u8string(const Uint8 *s):
-        std::string(reinterpret_cast<const char*>(s)){
+        _data(reinterpret_cast<const char*>(s)){
     }
     inline u8string::u8string(const Uint8 *s,size_t n):
-        std::string(reinterpret_cast<const char*>(s),n){
+        _data(reinterpret_cast<const char*>(s),n){
     }
     inline u16string u8string::to_utf16() const{
         return u8string_view(*this).to_utf16();   
@@ -967,19 +1214,44 @@ namespace Btk{
     }
     #endif
 
-    /**
-     * @brief output helper
-     * 
-     * @tparam T 
-     * @param o 
-     * @param p 
-     * @return std::ostream& 
-     */
+    // /**
+    //  * @brief output helper
+    //  * 
+    //  * @tparam T 
+    //  * @param o 
+    //  * @param p 
+    //  * @return std::ostream& 
+    //  */
+    // template<class T>
+    // inline std::ostream &operator <<(std::ostream &o,const _U8Proxy<T> &p){
+    //     o << std::string_view(p);
+    //     return o;
+    // }
+    //Output codepint reference
     template<class T>
-    inline std::ostream &operator <<(std::ostream &o,const _U8Proxy<T> &p){
-        o << std::string_view(p);
+    inline std::ostream &operator <<(std::ostream &o,const _Utf8RawCodepointRef<T> &p){
+        const char *cur = &p;
+        const char *end = &p;
+        Utf8Next(end);
+        o << std::string_view(cur,end - cur);
         return o;
     }
+    inline std::ostream &operator <<(std::ostream &o,const _Uft8ConstCodepoinRef &p){
+        const char *cur = &p;
+        const char *end = &p;
+        Utf8Next(end);
+        o << std::string_view(cur,end - cur);
+        return o;
+    }
+    template<class C,bool V>
+    inline std::ostream &operator <<(std::ostream &o,const _Utf8IteratorProxy<C,V> &p){
+        const char *cur = p.iterator->current;
+        const char *end = p.iterator->current;
+        Utf8Next(end);
+        o << std::string_view(cur,end - cur);
+        return o;
+    }
+    
     inline std::ostream &operator <<(std::ostream &o,const u8string &p){
         #if defined(_WIN32) && !defined(BTK_WIN32_NOLOCALE)
         //We need to covert to locale

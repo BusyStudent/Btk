@@ -32,13 +32,14 @@ namespace Btk{
             device()->end_frame(nvg_ctxt);
             device()->swap_buffer();
             //Too many caches
-            if(t_caches.size() > max_caches){
-                int n = t_caches.size() - max_caches;
+            if(cached_texs.size() > max_caches){
+                int n = cached_texs.size() - max_caches;
                 BTK_LOGINFO("Clear %d textures",n);
                 for(int i = 0;i < n;i++){
-                    device()->destroy_texture(nvg_ctxt,t_caches.front());
-                    t_caches.pop_front();
+                    device()->destroy_texture(nvg_ctxt,cached_texs.front().tex);
+                    cached_texs.pop_front();
                 }
+
             }
             is_drawing = false;
         }
@@ -139,12 +140,14 @@ namespace Btk{
     void Renderer::draw_image(const PixBuf &pixbuf,float x,float y,float w,float h,float angle){
         auto texture = create_from(pixbuf);
         draw_image(texture,x,y,w,h,angle);
-        t_caches.emplace_back(texture.detach());
+        //TODO
+        // cached_texs.emplace_back(texture.detach());
     }
     void Renderer::draw_image(const PixBuf &pixbuf,const FRect *src,const FRect *dst){
         auto texture = create_from(pixbuf);
         draw_image(texture,src,dst);
-        t_caches.emplace_back(texture.detach());
+        //TODO
+        // cached_texs.emplace_back(texture.detach());
     }
 }
 namespace Btk{
@@ -182,6 +185,9 @@ namespace Btk{
         return val;
     }
     //NVG Method
+    void Renderer::set_alpha(float alpha){
+        nvgGlobalAlpha(nvg_ctxt,alpha);
+    }
     void Renderer::fill(){
         nvgFill(nvg_ctxt);
     }
@@ -392,9 +398,9 @@ namespace Btk{
             return;
         }
         //Cleanup buffer
-        for(auto iter = t_caches.begin();iter != t_caches.end();){
-            device()->destroy_texture(nvg_ctxt,*iter);
-            iter = t_caches.erase(iter);
+        for(auto iter = cached_texs.begin();iter != cached_texs.end();){
+            device()->destroy_texture(nvg_ctxt,iter->tex);
+            iter = cached_texs.erase(iter);
         }
         device()->destroy_context(nvg_ctxt);
 
@@ -411,19 +417,7 @@ namespace Btk{
         return Texture(id,this);
     }
     Texture Renderer::create_from(const PixBuf &buf,TextureFlags f){
-        if(buf.empty()){
-            return {};
-        }
-        if(buf->format->format != SDL_PIXELFORMAT_RGBA32){
-            return create_from(buf.convert(SDL_PIXELFORMAT_RGBA32),f);
-        }
-        if(buf.must_lock()){
-            buf.lock();
-        }
-        TextureID id = device()->create_texture(nvg_ctxt,buf->w,buf->h,f,buf->pixels);
-        if(buf.must_lock()){
-            buf.unlock();
-        }
+        TextureID id = device()->create_texture_from(nvg_ctxt,buf,f);
         return Texture(id,this);
     }
 

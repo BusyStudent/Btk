@@ -1,0 +1,14 @@
+{
+    "name":"gif",
+    "librarys":{
+        "win32":"gif.dll",
+        "linux":"libgif.so"
+    },
+    "symbols":[
+        "DGifOpen",
+        "GifErrorString",
+        "DGifCloseFile"
+    ],
+    "perfix":"BTK",
+    "autoload":false
+}

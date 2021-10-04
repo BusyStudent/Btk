@@ -24,6 +24,12 @@
 #else
     #define BTK_FUNCTION SDL_FUNCTION
 #endif
+
+#ifdef _WIN32
+    //Suppress the min and max definitions in Windef.h
+    #define NOMINMAX
+#endif
+
 //Debug Info
 #ifndef NDEBUG
     #define BTK_LOGINFO(...) SDL_Log(__VA_ARGS__)
@@ -92,27 +98,61 @@ namespace Btk{
         #endif
     };
     /**
+     * @brief A struct holded demangled string
+     * 
+     */
+    struct _typeinfo_string{
+        _typeinfo_string(const std::type_info &info){
+            //TODO
+            #ifdef __GNUC__
+            str = ::abi::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
+            if(str == nullptr){
+                //failed to demangle the name
+                str = ::strdup(info.name());
+            }
+            #else
+            str = info.name();
+            #endif
+        }
+        _typeinfo_string(const _typeinfo_string &s){
+            #ifdef __GNUC__
+            str = ::strdup(s.str);
+            #else
+            str = s.str;
+            #endif
+        }
+        _typeinfo_string(_typeinfo_string &&s){
+            str = s.str;
+            s.str = nullptr;
+        }
+        ~_typeinfo_string(){
+            #ifdef __GNUC__
+            ::free(const_cast<char*>(str));
+            #endif
+        }
+        const char *str;
+        operator u8string() const noexcept{
+            return str;
+        }
+        operator u8string_view() const noexcept{
+            return str;
+        }
+        const char *c_str() const noexcept{
+            return str;
+        }
+        const char *data() const noexcept{
+            return str;
+        }
+    };
+    /**
      * @brief Get the typename of a type
      * 
      * @note It usually used in debugging
      * @param info The typeinfo
      * @return The name of the typeinfo(no demangled)
      */
-    inline u8string get_typename(const std::type_info &info){
-        #ifdef __GNUC__
-        char *ret = abi::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
-        if(ret == nullptr){
-            //failed to demangle the name
-            return info.name();
-        }
-        else{
-            u8string name(ret);
-            free(ret);
-            return name;
-        }
-        #else
-        return info.name();
-        #endif
+    inline _typeinfo_string get_typename(const std::type_info &info){
+        return info;
     }
     template<class T>
     inline u8string get_typename(const T *ptr){

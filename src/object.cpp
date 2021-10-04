@@ -89,6 +89,9 @@ namespace Btk{
             fprintf(output,"  -(%s) => %p\n",type,f.call);
         }
     }
+    Uint32 Object::GetTicks(){
+        return SDL_GetTicks();
+    }
 }
 namespace Btk{
     //Remove the 
