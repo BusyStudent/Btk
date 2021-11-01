@@ -22,26 +22,18 @@
     inline auto operator OP(const TYPE &t1,const TYPE &t2){\
         return t1.base() OP t2.base();\
     }
-
 namespace Btk{
     #ifdef _WIN32
     inline constexpr auto strncasecmp = _strnicmp;
+    using wstring = u16string;
     #else
     inline constexpr auto strncasecmp = ::strncasecmp;
+    using wstring = u32string;
     #endif
 
     inline constexpr auto CaseSensitive = false;
     inline constexpr auto CaseInSensitive = true;
 
-    //Get iterator type
-    template<class T>
-    struct _U8StringImplIterator{
-        using Iterator = char *;
-    };
-    template<class T>
-    struct _U8StringImplIterator<const T>{
-        using Iterator = const char *;
-    };
     /**
      * @brief Get len of a utf8 string
      * 
@@ -139,6 +131,10 @@ namespace Btk{
     //If failed,throw outof range
     BTKAPI 
     const char *Utf8AdvanceChecked(const char *beg,const char *end,const char *cur,long n);
+    //Utf32
+    // BTKAPI 
+    // size_t      Utf32SequenceLength(char32_t ch);
+    
 
     template<class Container>
     struct _Utf8RawCodepointRef{
@@ -385,7 +381,53 @@ namespace Btk{
     //reverse_iterator
     template<class Container>
     struct _Utf8ReverseIterator:public _Utf8IteratorBase<Container>{
+        _Utf8ReverseIterator() = default;
+        _Utf8ReverseIterator(const _Utf8ReverseIterator &) = default;
+        ~_Utf8ReverseIterator() = default;
 
+        _Utf8ReverseIterator(const Container *c,const char *cur){
+            this->container = c;
+            this->current = cur;
+        }
+        
+        _Utf8ReverseIterator &operator =(const _Utf8ReverseIterator &) = default;
+        _Utf8ReverseIterator &operator ++(){
+            this->_move_prev();
+            return *this;
+        }
+        _Utf8ReverseIterator &operator --(){
+            this->_move_next();
+            return *this;
+        }
+        _Utf8ReverseIterator  operator ++(int){
+            auto tmp = *this;
+            this->_move_prev();
+            return tmp;
+        }
+        _Utf8ReverseIterator  operator --(int){
+            auto tmp = *this;
+            this->_move_next();
+            return tmp;
+        }
+        //Advance
+        _Utf8ReverseIterator operator +(long n){
+            auto tmp = *this;
+            tmp._advance(- n);
+            return tmp;
+        }
+        _Utf8ReverseIterator operator -(long n){
+            auto tmp = *this;
+            tmp._advance(n);
+            return tmp;
+        }
+        ptrdiff_t operator -(const _Utf8ReverseIterator &i) const{
+            return Utf8Distance(i.current,this->current);
+        }
+
+
+        auto operator *(){
+            return this->get_reference();
+        }
     };
     template<class Container>
     struct _Utf8ConstReverseIterator:public _Utf8IteratorBase<const Container>{
@@ -462,6 +504,9 @@ namespace Btk{
             u8string toupper() const;
             u8string tolower() const;
             u8string tobase64() const;
+
+            u8string lstrip() const;
+            u8string rstrip() const;
             /**
              * @brief Strip the space at begin and end
              * 
@@ -469,6 +514,13 @@ namespace Btk{
              */
             u8string strip() const;
             u8string trim() const;
+
+            //Check
+            bool isalpha() const;
+            bool isvalid() const{
+                return is_vaild();
+            }
+
             /**
              * @brief Cmp string(ignore the case)
              * 
@@ -703,12 +755,13 @@ namespace Btk{
             u8string(u8string &&) = default;
             ~u8string();
 
-            using Iterator = _Utf8Iterator<u8string>;
-            using ConstIterator = _Utf8ConstIterator<u8string>;
 
             //stl
-            using const_iterator = ConstIterator;
-            using iterator = Iterator;
+            using iterator = _Utf8Iterator<u8string>;
+            using const_iterator = _Utf8ConstIterator<u8string>;
+            using reverse_iterator = _Utf8ReverseIterator<u8string>;
+
+
             u8string(const_iterator beg,const_iterator end);
 
             using value_type = char32_t;
@@ -767,20 +820,33 @@ namespace Btk{
              */
             void pop_front();
             /**
-             * @brief Erase
+             * @brief Erase a ch
              * 
              * @tparam T 
              * @param iter 
              */
             template<class T>
             void erase(const _Utf8IteratorBase<T> iter){
-                const char *next = iter.current;
-                Utf8Next(next);
                 base().erase(
                     _translate_pointer(iter.current),
-                    _translate_pointer(next)
+                    _translate_pointer(Utf8GetNext(iter.current))
                 );
             }
+            /**
+             * @brief Erase a scope
+             * 
+             * @tparam T 
+             * @param beg 
+             * @param end 
+             */
+            template<class T>
+            void erase(const _Utf8IteratorBase<T> beg,const _Utf8IteratorBase<T> end){
+                base().erase(
+                    _translate_pointer(beg.current),
+                    _translate_pointer(Utf8GetNext(end.current))
+                );
+            }
+
             /**
              * @brief Locate the char 
              * 
@@ -890,6 +956,19 @@ namespace Btk{
             void append(const char *s,size_t n){
                 base().append(s,n);
             }
+            //Prepend
+            void prepend(const u8string &s){
+                base().insert(0,s.base());
+            }
+            void prepend(u8string_view view){
+                base().insert(0,view.base());
+            }
+            void prepend(const char *s){
+                base().insert(0,s);
+            }
+            void prepend(const char *s,size_t n){
+                base().insert(0,s,n);
+            }
             //CSTR data
             const char *c_str() const noexcept{
                 return base().c_str();
@@ -917,6 +996,9 @@ namespace Btk{
             void shrink_to_fit(){
                 base().shrink_to_fit();
             }
+            u8string_view view() const{
+                return u8string_view(*this);
+            }
             /**
              * @brief Create string from
              * 
@@ -928,28 +1010,28 @@ namespace Btk{
             static u8string from(const void *,size_t n,const char *encoding = nullptr);
         public:
             //beg and end
-            Iterator begin(){
+            iterator begin(){
                 auto beg = impl_begin();
                 return {
                     this,
                     beg,
                 };
             }
-            Iterator end(){
+            iterator end(){
                 auto beg = impl_end();
                 return {
                     this,
                     beg,
                 };
             }
-            ConstIterator begin() const{
+            const_iterator begin() const{
                 auto beg = impl_begin();
                 return {
                     this,
                     beg,
                 };
             }
-            ConstIterator end() const{
+            const_iterator end() const{
                 auto beg = impl_end();
                 return {
                     this,
@@ -973,6 +1055,10 @@ namespace Btk{
             const std::string &operator *() const noexcept{
                 return base();
             }
+            u8string &operator =(const char *s){
+                base() = s;
+                return *this;
+            }
 
             std::string &get(){
                 return base();
@@ -994,7 +1080,7 @@ namespace Btk{
                 return u8string_view(*this).tolower();
             }
             u8string substr(size_t pos = 0,size_t len = npos) const{
-                return u8string_view(*this).substr(0,len);
+                return u8string_view(*this).substr(pos,len);
             }
             bool casecmp(u8string_view v) const{
                 return u8string_view(*this).casecmp(v);
@@ -1098,6 +1184,12 @@ namespace Btk{
         friend struct std::hash;
         friend class u8string;
     };
+    //TODO Utf32
+    class BTKAPI u32string:public std::u32string{
+
+    };
+
+
     //u8string inline begin
     inline u8string::u8string(std::string_view s):
         _data(s){
@@ -1111,10 +1203,8 @@ namespace Btk{
     inline u8string::u8string(std::string &&s):
         _data(std::move(s)){
     }
-    inline u8string::u8string(const_iterator beg,const_iterator end){
-        const char *next = end.current;
-        Utf8Next(next);
-        _data = std::string(beg.current,next);
+    inline u8string::u8string(const_iterator beg,const_iterator end):
+        _data(beg.current,Utf8GetNext(end.current)){
     }
     inline u8string::u8string(const char *s):
         _data(s){
@@ -1146,6 +1236,9 @@ namespace Btk{
     }
     inline u8string_view::u8string_view(std::string_view s):
         std::string_view(s){
+    }
+    inline auto u8string_view::trim() const -> u8string{
+        return strip();
     }
     inline auto u8string_view::split(char32_t ch,size_t max) const -> List{
         u8string tmp;

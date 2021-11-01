@@ -2,7 +2,6 @@
 
 #include <Btk/impl/thread.hpp>
 #include <Btk/impl/atomic.hpp>
-#include <Btk/utils/timer.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/Btk.hpp>
 

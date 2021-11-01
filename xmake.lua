@@ -2,13 +2,14 @@ add_rules("mode.debug", "mode.release")
 --add SDL require
 if is_plat("linux") then
     add_defines("USE_MMX")
-    add_requires("SDL2","SDL2_image","SDL2_ttf")
+    add_requires("SDL2")
     --Linux X11
     add_requires("dbus-1")
 
     --try add extensions
     add_requires("gif",{optional = true})
     add_requires("webp",{optional = true})
+    add_requires("SDL2_image",{optional = true})
     --add_requires("freetype2",{optional = true})
     add_cxxflags("-Wall","-Wextra","-fPIC")
 else
@@ -52,6 +53,11 @@ if is_plat("linux") then
     if is_mode("release") then
         add_cxxflags("-fvisibility=hidden","-march=native")
         add_cflags("-fvisibility=hidden","-march=native")
+    -- elseif is_mode("debug") then
+    --     add_cxxflags("-fsanitize=address")
+    --     add_cflags("-fsanitize=address")
+    --     add_links("asan")
+    --     --Debug mode or etc
     end
 end
 
@@ -115,7 +121,7 @@ target("btk")
     --     end
     -- )
 
-    add_links("SDL2","SDL2_image")
+    add_links("SDL2")
     set_kind("shared")
     --core
     add_files("./src/impl/*.cpp")
@@ -132,7 +138,7 @@ target("btk")
     --Utils
     add_files("./src/utils/*.cpp")
     --Msgboxs
-    add_files("./src/msgbox/*.cpp")
+    -- add_files("./src/msgbox/*.cpp")
     add_packages("SDL2","SDL2_image","gif")
     --Mixer
     add_files("./src/mixer/mixer.cpp")
@@ -149,8 +155,8 @@ target("btk")
 
     --Font
     add_files("./src/font/fontstash.cpp")
-    add_files("./src/font/cache.cpp")
-    add_files("./src/font/ft_font.cpp")
+    -- add_files("./src/font/cache.cpp")
+    -- add_files("./src/font/ft_font.cpp")
     --Image
     add_files("./src/images/adapter.cpp")
     --Check Image Library
@@ -171,6 +177,7 @@ target("btk")
     if has_package("libsdl_image") or has_package("SDL2_image") then
         add_defines("BTK_HAS_SDLIMG")
         add_files("./src/images/sdl_image.cpp")
+        add_links("SDL2_image")
     else
         --No SDL_image use stb_image instead
         add_defines("BTK_HAS_STBII")

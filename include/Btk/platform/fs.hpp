@@ -17,6 +17,7 @@
     #define BTK_F_OK 00
 #else
     #include <unistd.h>
+    #include <dirent.h>
     #define BTK_GETCWD ::getcwd
     #define BTK_ACCESS ::access
     #define BTK_CHDIR  ::chdir
@@ -152,6 +153,36 @@ namespace Btk{
         });
         return in_path;
     }
+    #ifdef __linux
+    inline StringList ListDir(u8string_view dirname = {}){
+        if(dirname.empty()){
+            dirname = "./";
+        }
+        ::DIR *dir = ::opendir(dirname.data());
+        if(dir == nullptr){
+            throwRuntimeError(strerror(errno));
+        }
+        //Open dir
+        StringList list;
+        //For dir
+        ::dirent *ent;
+        ent = ::readdir(dir);
+        for(;ent != nullptr ; ent = ::readdir(dir)){
+            //Ignore . and ..
+            if(ent->d_name[0] == '.'){
+                if(ent->d_name[1] == '\0'){
+                    continue;
+                }
+                else if(ent->d_name[1] == '.',ent->d_name[2] == '\0'){
+                    continue;
+                }
+            }
+            list.push_back(ent->d_name);
+        }
+        ::closedir(dir);
+        return list;
+    }
+    #endif
 }
 
 

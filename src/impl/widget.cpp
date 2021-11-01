@@ -91,6 +91,14 @@ namespace Btk{
         }
         return &(window()->render);
     }
+    //Get root
+    Widget *Widget::root() const{
+        Widget *cur = const_cast<Widget*>(this);
+        while(cur->_parent != nullptr){
+            cur = cur->_parent;
+        }
+        return cur;
+    }
     //Try to find the window
     WindowImpl *Widget::window() const noexcept{
         if(_window != nullptr){
@@ -109,8 +117,8 @@ namespace Btk{
         
         if(cur->is_window()){
             //Is the window
+            BTK_ASSERT_CASTABLE(WindowImpl,cur);
             _window = static_cast<WindowImpl*>(cur);
-            BTK_ASSERT(dynamic_cast<WindowImpl*>(cur) != nullptr);
             return _window;
         }
         return nullptr;

@@ -1,7 +1,3 @@
-extern "C"{
-    #include "../src/libs/ini.h"
-    #include "../src/libs/ini.c"
-}
 #include <Btk/string.hpp>
 #include <Btk/defs.hpp>
 #include <functional>
@@ -14,6 +10,10 @@ extern "C"{
 #include <vector>
 #include <map>
 
+extern "C"{
+    #include "../src/libs/ini.h"
+    #include "../src/libs/ini.c"
+}
 
 /** Read config like this
  * 

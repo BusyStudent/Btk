@@ -94,7 +94,7 @@ namespace X11{
     bool has_zenity = false;
     bool has_kdialog = false;
     //Map X11's window to btk's wiondow
-    static ObjectHolder<std::map<XWindow,WindowImpl*>> wins_map;
+    static Constructable<std::map<XWindow,WindowImpl*>> wins_map;
 
     static void on_add_window(WindowImpl *win){
         //set window 

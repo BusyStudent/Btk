@@ -218,10 +218,9 @@ namespace Btk{
         if(empty()){
             return;
         }
-        auto iter = end();
-        --iter;
+        size_t size = back().size();
 
-        for(size_t i = 0;i < iter.size();i++){
+        for(size_t i = 0;i < size;i++){
             base().pop_back();
         }
     }
@@ -494,6 +493,15 @@ namespace Btk{
             ++n;
         }
         return c;
+    }
+    //Check
+    bool u8string_view::isalpha() const{
+        for(char32_t ch:*this){
+            if(not std::isalpha(ch)){
+                return false;
+            }
+        }
+        return true;
     }
     //Make substr
     u8string_view u8string_view::substr(size_t pos,size_t len) const{

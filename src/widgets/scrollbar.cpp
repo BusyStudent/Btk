@@ -117,14 +117,14 @@ namespace Btk{
         render.intersest_scissor(rect);
         //draw background
         //Rect range = {bar_range.x,bar_range.y + 1,bar_range.w - 1,bar_range.h - 2}; 
-        render.rounded_box(bar_range,1,bar_bg_color);
+        render.draw_rounded_box(bar_range,1,bar_bg_color);
         // render.box(bar_rect,bar_color);
         // render.set_cliprect(cliprect);
 
         // //draw the slider
         // cliprect = render.get_cliprect();
         // render.set_cliprect(rect);
-        render.box(slider_rect,slider_color);
+        render.draw_box(slider_rect,slider_color);
         render.restore();
     }
     void ScrollBar::set_value(int value){

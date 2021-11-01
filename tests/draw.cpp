@@ -1,4 +1,3 @@
-#include <Btk/msgbox/msgbox.hpp>
 #include <Btk/window.hpp>
 #include <Btk/canvas.hpp>
 #include <Btk/event.hpp>
@@ -6,6 +5,10 @@
 #include "icon.xpm"
 using namespace Btk;
 int main(){
+    Bounds bounds = {0,0,500,500};
+    bounds.cast<Rect>();
+
+
     Window win("Drawing test",500,500);
     #if 1
     //Create a canvas
@@ -30,7 +33,7 @@ int main(){
         FRect dst = {pos.x,pos.y,w,h};
         render.draw_image(image,&cliprect,&dst);
         if(vec2 != FVec2{0,0}){
-            render.line({0,0},vec2,{255,255,255,255});
+            render.draw_line({0,0},vec2,{255,255,255,255});
         }
         render.begin_path();
         render.text_align(Align::Center,Align::Center);

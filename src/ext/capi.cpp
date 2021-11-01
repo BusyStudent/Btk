@@ -364,10 +364,10 @@ char *Btk_strdup(const char *str){
 }
 //MessageBox
 void Btk_MessageBox(const char *title,const char *message){
-    Btk::MessageBox msgbox;
-    msgbox.set_title(title);
-    msgbox.set_message(message);
-    msgbox.show();
+    // Btk::MessageBox msgbox;
+    // msgbox.set_title(title);
+    // msgbox.set_message(message);
+    // msgbox.show();
 }
 //Signal
 void Btk_SignConnect(BtkWidget *widget,const char *signal,...){
@@ -381,7 +381,7 @@ void Btk_SignConnect(BtkWidget *widget,const char *signal,...){
 }
 BtkPixBuf *Btk_LoadImage(const char *filename){
     static_assert(sizeof(Btk::PixBuf) == sizeof(SDL_Surface*));
-    Btk::ObjectHolder<Btk::PixBuf> buf;
+    Btk::Constructable<Btk::PixBuf> buf;
     BTK_BEGIN_CATCH();
     buf.construct(Btk::PixBuf::FromFile(filename));
     BTK_END_CATCH2(nullptr);

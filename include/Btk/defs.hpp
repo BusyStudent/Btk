@@ -152,13 +152,15 @@ namespace Btk{
     using Sint64 = int64_t;
     //end
     //Btk u16string
+    class u32string_view;
+    class u32string;
     class u16string_view;
     class u16string;
     class u8string_view;
     class u8string;
     //Generic Align
     
-    enum class Orientation:unsigned int{
+    enum class Orientation:bool{
         Vertical = 0,
         Horizontal = 1,
         V = Vertical,
@@ -166,6 +168,9 @@ namespace Btk{
     };
     //Useful min max climp template
     //Avoid to include algorithm in the headers
+    #undef max
+    #undef min
+
     template<class T>
     inline T max(const T &v1,const T &v2){
         if(v1 > v2){

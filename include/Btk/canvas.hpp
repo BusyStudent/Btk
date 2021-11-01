@@ -39,18 +39,25 @@ namespace Btk{
      */
     class BTKAPI GLCanvas:public Widget{
         public:
+            // virtual ~GLCanvas();
+            virtual void set_parent(Widget *) override;
             virtual void draw(Renderer&) final;
             /**
              * @brief Virtual method for OpenGL Drawing
              * 
              */
             virtual void gl_draw() = 0;
+            virtual void gl_init() = 0;
+            virtual void gl_cleanup() = 0;
             /**
              * @brief Get the OpenGL Device 
              * 
              * @return GLDevice* 
              */
             GLDevice *gl_device();
+        private:
+            
+            bool _is_inited = false;
     };
     #if BTK_STILL_DEV
     /**

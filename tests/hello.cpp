@@ -1,7 +1,6 @@
 #include <Btk/Btk.hpp>
-#include <Btk/msgbox/fselect.hpp>
-#include <Btk/msgbox/msgbox.hpp>
-#include <Btk/utils/timer.hpp>
+// #include <Btk/msgbox/fselect.hpp>
+// #include <Btk/msgbox/msgbox.hpp>
 #include <Btk/container.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/textbox.hpp>
@@ -107,9 +106,9 @@ void Hello::onclose(){
     Window::close();
 }
 void Hello::on_set_icon(){
-    Btk::FSelectBox box;
-    box.signal_async().connect(&Hello::on_select,this);
-    box.show();
+    // Btk::FSelectBox box;
+    // box.signal_async().connect(&Hello::on_select,this);
+    // box.show();
 }
 void Hello::on_select(Btk::u8string_view fname){
     if(fname.empty()){
@@ -123,8 +122,8 @@ void Hello::on_fullscreen(){
     fullscreen_flags = not fullscreen_flags;
 }
 void Hello::show_text(){
-    Btk::MessageBox msgbox("Show text",tbox->u8text());
-    msgbox.show();
+    // Btk::MessageBox msgbox("Show text",tbox->u8text());
+    // msgbox.show();
 }
 void Hello::on_defc_call(){
     defer_call(&Hello::show_text);

@@ -2,6 +2,8 @@
 #define _BTK_UTILS_SYNC_HPP_
 #include "../defs.hpp"
 struct SDL_semaphore;
+struct SDL_mutex;
+struct SDL_cond;
 namespace Btk{
     /**
      * @brief SpinLock
@@ -52,6 +54,31 @@ namespace Btk{
             void wait();
         private:
             SDL_semaphore *sem;
+    };
+    /**
+     * @brief Python like threading.event()
+     * 
+     */
+    class BTKAPI SyncEvent{
+        public:
+            SyncEvent();
+            SyncEvent(const SyncEvent &) = delete;
+            ~SyncEvent();
+
+            bool is_set() const noexcept;
+            //
+            void set();
+            void clear();
+            //Wait false on timeout
+            void wait();
+            bool wait(Uint32 ms);
+        private:
+            //Portect isset
+            mutable SpinLock it_lock;
+            SDL_cond *cond = nullptr;
+            SDL_mutex *mtx = nullptr;
+            bool     isset = false;
+
     };
     using Sem = Semaphore;
 

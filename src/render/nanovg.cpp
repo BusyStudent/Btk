@@ -1,8 +1,9 @@
 #include "../build.hpp"
 
-#include <Btk/font/font.hpp>
+#include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <Btk/font.hpp>
+#include <memory>
 
 extern "C"{
     #define FONS_USE_FREETYPE
@@ -44,6 +45,43 @@ extern "C"{
 	ctx->textTriCount = 0;
     }
 }
+
+#define NVG_CHECK(OUR,NVG) \
+    static_assert(int(Btk::OUR) == NVG,"Broken defines in render.hpp")
+#define NVG_CHECK_SIZE(OUR,NVG) \
+    static_assert(sizeof(Btk::OUR) == sizeof(NVG),"Broken defines in render.hpp")
+#define NVG_CHECK_OFSET(OUR,NVG,ELEM) \
+    static_assert(offsetof(Btk::OUR,ELEM) == offsetof(NVG,ELEM),"Broken defines in render.hpp")
+
+//Check const
+
+NVG_CHECK(LineCap::Butt,NVG_BUTT);
+NVG_CHECK(LineCap::Round,NVG_ROUND);
+NVG_CHECK(LineCap::Square,NVG_SQUARE);
+
+NVG_CHECK(LineJoin::Round,NVG_ROUND);
+NVG_CHECK(LineJoin::Bevel,NVG_BEVEL);
+NVG_CHECK(LineJoin::Miter,NVG_MITER);
+
+NVG_CHECK(TextAlign::Left,NVG_ALIGN_LEFT);
+NVG_CHECK(TextAlign::Center,NVG_ALIGN_CENTER);
+NVG_CHECK(TextAlign::Right,NVG_ALIGN_RIGHT);
+NVG_CHECK(TextAlign::Top,NVG_ALIGN_TOP);
+NVG_CHECK(TextAlign::Middle,NVG_ALIGN_MIDDLE);
+NVG_CHECK(TextAlign::Bottom,NVG_ALIGN_BOTTOM);
+NVG_CHECK(TextAlign::Baseline,NVG_ALIGN_BASELINE);
+
+NVG_CHECK(PathWinding::CW,NVG_CW);
+NVG_CHECK(PathWinding::CCW,NVG_CCW);
+//Check size
+NVG_CHECK_SIZE(RendererPaint,NVGpaint);
+NVG_CHECK_SIZE(GLColor,NVGcolor);
+
+//Check color's offset
+NVG_CHECK_OFSET(GLColor,NVGcolor,r);
+NVG_CHECK_OFSET(GLColor,NVGcolor,g);
+NVG_CHECK_OFSET(GLColor,NVGcolor,b);
+NVG_CHECK_OFSET(GLColor,NVGcolor,a);
 
 namespace Btk{
     //USE The nvg
@@ -117,17 +155,16 @@ namespace Btk{
 
 namespace Btk{
     Font Renderer::cur_font(){
-        int idx = nvg__getState(nvg_ctxt)->fontId;
+        auto state = nvg__getState(nvg_ctxt);
+        int idx = state->fontId;
         if(idx == FONS_INVALID){
             throwRuntimeError("Invaid font");
         }
-        auto i = fontsGetFaceByID(nvg_ctxt->fs,idx);
+        auto i = BtkFt_GetFromID(idx);
         if(i == nullptr){
             throwRuntimeError("Invaid font");
         }
-        auto p = static_cast<Ft::Font*>(i);
-        p->ref();
-        return p;
+        return Font(BtkFt_Dup(i),state->fontSize);
     }
     void Renderer::flush(){
         nvg_ctxt->params.renderFlush(nvg_ctxt->params.userPtr);

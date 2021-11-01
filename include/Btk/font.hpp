@@ -5,14 +5,6 @@
 #include "pixels.hpp"
 #include "defs.hpp"
 namespace Btk{
-    namespace Ft{
-        /**
-         * @brief Font impl
-         * 
-         */
-        struct Font;
-    }
-    struct Size;
     /**
      * @brief FontStyle from SDL_ttf
      * 
@@ -31,11 +23,11 @@ namespace Btk{
     class BTKAPI Font{
         public:
             //empty font
-            Font():pimpl(nullptr){};
+            Font() = default;
             Font(const Font &font);
             Font(Font &&f){
-                pimpl = f.pimpl;
-                f.pimpl = nullptr;
+                font = f.font;
+                f.font = nullptr;
             };
             /**
              * @brief Construct a new Font object
@@ -53,8 +45,8 @@ namespace Btk{
              * @param color Text color
              * @return PixBuf 
              */
-            PixBuf render_solid(u8string_view text,Color color);
-            PixBuf render_solid(u16string_view text,Color color);
+            // PixBuf render_solid(u8string_view text,Color color);
+            // PixBuf render_solid(u16string_view text,Color color);
             /**
              * @brief Render shaded text
              * 
@@ -64,8 +56,8 @@ namespace Btk{
              * @param bg BackGround color
              * @return PixBuf 
              */
-            PixBuf render_shaded(u8string_view text,Color fg,Color bg);
-            PixBuf render_shaded(u16string_view text,Color fg,Color bg);
+            // PixBuf render_shaded(u8string_view text,Color fg,Color bg);
+            // PixBuf render_shaded(u16string_view text,Color fg,Color bg);
             /**
              * @brief Render blended text
              * 
@@ -74,8 +66,8 @@ namespace Btk{
              * @param color Text color
              * @return PixBuf 
              */
-            PixBuf render_blended(u8string_view text,Color color);
-            PixBuf render_blended(u16string_view text,Color color);
+            // PixBuf render_blended(u8string_view text,Color color);
+            // PixBuf render_blended(u16string_view text,Color color);
             /**
              * @brief Get Kerning Size in two chars
              * 
@@ -176,7 +168,7 @@ namespace Btk{
             Font &operator =(const Font &);
             Font &operator =(Font &&);
             bool empty() const noexcept{
-                return pimpl == nullptr;
+                return font == nullptr;
             };
             /**
              * @brief Open font by its filename
@@ -186,9 +178,12 @@ namespace Btk{
              * @return Font 
              */
             static Font FromFile(u8string_view filename,int ptsize);
+            static void Init();
+            static void Quit();
         private:
-            Font(Ft::Font *i):pimpl(i){};
-            Ft::Font *pimpl;
+            Font(void *font_ptr,float ptsize);
+            void *font = nullptr;
+            float ptsize_ = -1;
         friend class Renderer;
     };
     class BTKAPI FontSet{
@@ -311,6 +306,9 @@ namespace Btk{
             #ifdef __gnu_linux__
             void *pat;
             #endif
+    };
+    class BTKAPI FontRenderer{
+
     };
     /**
      * @brief Some useful function about font

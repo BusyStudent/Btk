@@ -59,8 +59,8 @@ namespace Btk{
         bool window = false;//<Is window
         bool user_rect = false;//<Using user defined position
         bool container = false;//<Is container
-        bool laoyout = false;//<Is layout?
         bool disable = false;//<The widget is disabled?
+        bool layout = false;//<Is layout?
         FocusPolicy focus = FocusPolicy::None;//<Default the widget couldnot get focus
     };
     class BTKAPI Widget:public HasSlots{
@@ -182,13 +182,15 @@ namespace Btk{
                 return attr.window;
             }
             bool is_layout() const noexcept{
-                return attr.laoyout;
+                return attr.layout;
             }
             /**
              * @brief Send a redraw request to the window
              * 
              */
             void redraw() const;
+            
+            Widget *root() const;
         protected:
             /**
              * @brief Get current window

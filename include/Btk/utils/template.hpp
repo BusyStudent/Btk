@@ -4,6 +4,9 @@
 #include <utility>
 #include <cstddef>
 #include "../defs.hpp"
+#include "traits.hpp"
+
+
 /**
  * @brief It contains some useful template
  * 
@@ -206,10 +209,10 @@ namespace Btk{
      * @tparam T 
      */
     template<class T>
-    class ObjectHolder{
+    class Constructable{
         public:
-            ObjectHolder() = default;
-            ~ObjectHolder() = default;
+            Constructable() = default;
+            ~Constructable() = default;
             /**
              * @brief Construct the object
              * 
@@ -316,7 +319,7 @@ namespace Btk{
             }
         private:
             //< buffer contain the value
-            ObjectHolder<T> buffer;
+            Constructable<T> buffer;
             bool _has_value = false;
     };
     template<class T>
@@ -335,6 +338,129 @@ namespace Btk{
 
     template<class T>
     using optional = Optional<T>;
+
+    //Wrap a member function to a normal function pointer
+    //Impl
+    template<auto Method,class Class,class RetT,class Object,class ...Args>
+    RetT _MtInvoke(Object *self,Args ...args){
+        return (static_cast<Class*>(self)->*Method)(
+            std::forward<Args>(args)...
+        );
+    };
+
+    //TODO the signature is too long ,simplify it
+    template<class Object,auto Method,class T>
+    struct _MemberFunctionWrapperImpl;
+    //Const method
+    template<class Object,auto Method,class RetT,class Class,class ...Args>
+    struct _MemberFunctionWrapperImpl<Object,Method,RetT (Class::*)(Args...) const>{
+        static constexpr auto Invoke = _MtInvoke<
+            Method,
+            const Class,
+            RetT,
+            const Object,
+            Args...
+        >;    
+    };
+    //Normal method
+    template<class Object,auto Method,class RetT,class Class,class ...Args>
+    struct _MemberFunctionWrapperImpl<Object,Method,RetT (Class::*)(Args...)>{
+        static constexpr auto Invoke = _MtInvoke<
+            Method,
+            Class,
+            RetT,
+            Object,
+            Args...
+        >;    
+    };
+    /**
+     * @brief Wrap a member function to RetT (*)(ObjectType *this,Args...)
+     * 
+     * @tparam Method The method <&A::b>
+     * @tparam ObjectType The first arg f the generated function ptr(default on void)
+     */
+    template<auto Method,class ObjectType = void>
+    struct MemberFunctionWrapper:
+        public _MemberFunctionWrapperImpl<ObjectType,Method,decltype(Method)>{
+
+    };
+
+
+    [[noreturn]] void BTKAPI throwBadFunctionCall();
+
+    //Virtual function
+    template<class T,class C = void>
+    class VirtualFunction;
+
+    template<class Object,class RetT,class ...Args>
+    class VirtualFunction<Object,RetT(Args...)>{
+        public:
+            VirtualFunction() = default;
+            ~VirtualFunction() = default;
+            //Bind function
+            template<auto Method>
+            void bind(){
+                if constexpr(not std::is_same_v<Object,void>){
+                    //Check type
+                    static_assert(std::is_base_of_v<
+                        Object,
+                        typename MemberFunctionTraits<decltype(Method)>::object_type
+                    >);
+                }
+                entry = MemberFunctionWrapper<Method,Object>::Invoke;
+            }
+            //Call it
+            RetT call(Object *self,Args ...args) const{
+                return entry(self,std::forward<Args>(args)...);
+            }
+            RetT operator ()(Object *self,Args ...args) const{
+                return entry(self,std::forward<Args>(args)...);
+            }
+        private:
+            using Entry = RetT (*)(Object *,Args ...);
+            Entry entry = reinterpret_cast<Entry>(throwBadFunctionCall);
+    };
+    //Const ver
+    template<class Object,class RetT,class ...Args>
+    class VirtualFunction<Object,RetT(Args...) const>{
+        public:
+            VirtualFunction() = default;
+            ~VirtualFunction() = default;
+            //Bind function
+            template<auto Method>
+            void bind(){
+                if constexpr(not std::is_same_v<Object,void>){
+                    //Check type
+                    static_assert(std::is_base_of_v<
+                        Object,
+                        typename MemberFunctionTraits<decltype(Method)>::object_type
+                    >);
+                }
+                entry = MemberFunctionWrapper<Method,Object>::Invoke;
+            }
+            //Call it
+            RetT call(const Object *self,Args ...args) const{
+                return entry(self,std::forward<Args>(args)...);
+            }
+            RetT operator ()(const Object *self,Args ...args) const{
+                return entry(self,std::forward<Args>(args)...);
+            }
+        private:
+            using Entry = RetT (*)(const Object *,Args ...);
+            Entry entry = reinterpret_cast<Entry>(throwBadFunctionCall);
+    };
+    //For no base class check
+    template<class RetT,class ...Args>
+    class VirtualFunction<RetT(Args...),void>:
+        public VirtualFunction<void,RetT(Args...)>{
+
+    };
+    template<class RetT,class ...Args>
+    class VirtualFunction<RetT(Args...) const,void>:
+        public VirtualFunction<void,RetT(Args...) const>{
+
+    };
+
 }
 
 #endif // _BTK_UTILS_TEMPLATE_HPP_

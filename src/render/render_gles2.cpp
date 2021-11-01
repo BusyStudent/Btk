@@ -11,6 +11,7 @@
 
 extern "C"{
     #define NANOVG_GLES3_IMPLEMENTATION
+    #define NANOVG_GL_USE_UNIFORMBUFFER 1
     #include "../libs/nanovg.h"
     #include "../libs/nanovg_gl.h"
 }
@@ -1004,6 +1005,11 @@ namespace Btk{
             return;
         }
         render.end_frame();
+        //Try init 
+        if(not _is_inited){
+            gl_init();
+            _is_inited = true;
+        }
         //Resetore the env
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT,viewport);
@@ -1046,5 +1052,30 @@ namespace Btk{
             return nullptr;
         }
         return static_cast<GLDevice*>(render->device());
+    }
+    void GLCanvas::set_parent(Widget *w){
+        if(w == nullptr and _is_inited){
+            //Detach the widget
+            auto dev = gl_device();
+            if(dev != nullptr){
+                dev->make_current();
+                gl_cleanup();
+            }
+            _is_inited = false;
+            Widget::set_parent(w);
+        }
+        else{
+            //Set to new parent
+            Widget::set_parent(w);
+            auto dev = gl_device();
+            if(dev != nullptr){
+                //attached to the window
+                //Init GL
+                dev->make_current();
+                gl_init();
+                _is_inited = true;
+            }
+        }
+
     }
 }

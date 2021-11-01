@@ -37,6 +37,36 @@ namespace Btk{
         // Horizontal center
         HCenter = Center
     };
+    /**
+     * @brief LineCap from nanovg
+     * 
+     */
+    enum class LineCap:int{
+        Butt,
+        Round,
+        Square,
+        _Reserved1,
+        _Reserved2,
+    };
+    /**
+     * @brief LineJoin from nanovg
+     * 
+     */
+    enum class LineJoin:int{
+        _Reserved1,
+        Round,
+        _Reserved2,
+        Bevel,
+        Miter,
+    };
+
+    enum class PathWinding{
+        CCW = 1, //solid shapes
+        CW = 2, //Hole
+
+        Solid = CCW,
+        Hole = CW
+    };
     //TextAlign operator
     // inline TextAlign operator |(TextAlign a,TextAlign b){
     //     return static_cast<TextAlign>(int(a) | int(b));
@@ -313,18 +343,13 @@ namespace Btk{
              * 
              */
             void destroy();
-            int line(int x1,int y1,int x2,int y2,Color c);
-            int line(const Vec2 &beg,const Vec2 &end,Color c){
-                return line(beg.x,beg.y,end.x,end.y,c);
+            int draw_line(int x1,int y1,int x2,int y2,Color c);
+            int draw_line(const Vec2 &beg,const Vec2 &end,Color c){
+                return draw_line(beg.x,beg.y,end.x,end.y,c);
             }
-            int aaline(int x1,int y1,int x2,int y2,Color c);
-            
-            int rect(const Rect &r,Color c);
-            int box(const Rect &r,Color c);
 
-
-            int rounded_box(const Rect &r,int rad,Color c);
-            int rounded_rect(const Rect &r,int rad,Color c);
+            int draw_rounded_rect(const Rect &r,int rad,Color c);
+            int draw_rounded_box(const Rect &r,int rad,Color c);
             /**
              * @brief Create a Texture from Pixbuf
              * 
@@ -408,15 +433,15 @@ namespace Btk{
              * @param h
              * @param angle
              */
-            void draw_image(const Texture&,float x,float y,float w,float h,float angle = 0);
+            void draw_image(TextureRef tex,float x,float y,float w,float h,float angle = 0);
             void draw_image(const PixBuf& ,float x,float y,float w,float h,float angle = 0);
-            void draw_image(const Texture& texture,const FRect &rect,float angle = 0){
+            void draw_image(TextureRef texture,const FRect &rect,float angle = 0){
                 draw_image(texture,rect.x,rect.y,rect.w,rect.h,angle);
             }
             void draw_image(const PixBuf& pixbuf,const FRect &rect,float angle){
                 draw_image(pixbuf,rect.x,rect.y,rect.w,rect.h,angle);
             }
-            void draw_image(const Texture &,const FRect *src = nullptr,const FRect *dst = nullptr);
+            void draw_image(TextureRef tex ,const FRect *src = nullptr,const FRect *dst = nullptr);
             void draw_image(const PixBuf  &,const FRect *src = nullptr,const FRect *dst = nullptr);
             /**
              * @brief Draw a circle
@@ -701,6 +726,8 @@ namespace Btk{
              */
             void textbox(float x,float y,float width,u8string_view text);
             void textbox(float x,float y,float width,u16string_view text);
+
+            FBounds text_bounds(float x,float y,u8string_view str);
             /**
              * @brief Get the size of the rendered string
              * 
@@ -785,6 +812,10 @@ namespace Btk{
             void reset_scissor();
             void set_antialias(bool val = true);
             void set_alpha(float alpha = 1.0f);
+            void set_pathwinding(PathWinding v);
+            void set_linecap(LineCap c);
+            void set_linejoin(LineJoin c);
+            void set_miterlimit(float limit);
         public:
             //Paint
             /**
@@ -864,6 +895,7 @@ namespace Btk{
             int  clone_texture(int texture_id){
                 return device()->clone_texture(nvg_ctxt,texture_id);
             }
+            // TextureID update(texture);
             PixBuf dump_texture(int texture_id);
             /**
              * @brief Update a texture pixels
@@ -900,6 +932,7 @@ namespace Btk{
             bool is_drawing = false;//< Is nanovg Has BeginFrame
             bool free_device = false;
         friend class Texture;
+        friend class TextureRef;
         friend class GLCanvas;
     };
 

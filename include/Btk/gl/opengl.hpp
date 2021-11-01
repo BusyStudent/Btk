@@ -83,7 +83,7 @@ namespace GL{
      */
     struct Shader{
         Shader(GLenum type){
-            glCreateShader(type);
+            shader = glCreateShader(type);
         }
         Shader(const Shader &) = delete;
         ~Shader(){
@@ -161,6 +161,9 @@ namespace GL{
         }
         void unuse(){
             glUseProgram(prev);
+        }
+        void attach(const Shader &shader){
+            glAttachShader(program,shader.shader);
         }
         operator GLuint() const noexcept{
             return program;

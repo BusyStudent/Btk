@@ -13,6 +13,9 @@
 
 #include <algorithm>
 
+//STB TEXTEDIT
+#include "../libs/stb_textedit.h"
+
 namespace Btk{
     using utf8::unchecked::utf8to16;
     using utf8::unchecked::utf16to8;
@@ -100,7 +103,7 @@ namespace Btk{
         ptsize = theme().font_size();
     }
     void TextBox::draw(Renderer &render){
-        render.box(rect,theme()[Theme::Background]);
+        render.draw_box(rect,theme()[Theme::Background]);
         
         //BTK_LOGINFO("RendererLineH %f,ft_h %d",render.font_height(),ft_h);
         ft_h = render.font_height();
@@ -152,26 +155,26 @@ namespace Btk{
                     line_x = txt_rect.x + render.text_size(view).w;
                 }
                 
-                render.line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme()[Theme::Text]);
+                render.draw_line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme()[Theme::Text]);
             }
             render.restore();
         }
         else if(has_focus and show_line){
             //render the line
             int line_y = CalculateYByAlign(rect,ft_h,Align::Center);
-            render.line(rect.x + tb_boarder,
-                        line_y,
-                        rect.x + tb_boarder,
-                        line_y + ft_h,
-                        theme()[Theme::Text]
-                        );
+            render.draw_line(rect.x + tb_boarder,
+                            line_y,
+                            rect.x + tb_boarder,
+                            line_y + ft_h,
+                            theme()[Theme::Text]
+                            );
         }
 
         if(has_focus){
-            render.rounded_rect(rect,1,theme()[Theme::Highlight]);
+            render.draw_rounded_rect(rect,1,theme()[Theme::Highlight]);
         }
         else{
-            render.rounded_rect(rect,1,theme()[Theme::Border]);
+            render.draw_rounded_rect(rect,1,theme()[Theme::Border]);
         }
         render.restore();
     }

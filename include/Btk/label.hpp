@@ -44,6 +44,9 @@ namespace Btk{
             Align v_align = Align::Left;
             Align h_align = Align::Center;
     };
-};
+    class BTKAPI TextView:public Widget{
+        
+    };
+}
 
 #endif // _BTK_LABEL_HPP_

@@ -42,7 +42,7 @@
     #define BTK_DEBUG(...)
     #define BTK_LOGDEBUG(...)
 #endif
-//Assert
+//Assert / PANIC
 #ifndef NDEBUG
     #define BTK_ASSERT(EXP) if(not(EXP)){\
         _Btk_ReportFailure(__FILE__,__LINE__,BTK_FUNCTION,#EXP);\
@@ -52,6 +52,13 @@
     #define BTK_ASSERT(EXP) 
 #endif
 
+//Check type macro
+#define BTK_ASSERT_CASTABLE(TYPE,PTR) BTK_ASSERT(dynamic_cast<TYPE*>(PTR) != nullptr)
+//Get type macro
+#define BTK_typenameof(V) Btk::get_typename(T).c_str()
+
+
+//Unimpl
 #define BTK_UNIMPLEMENTED() Btk::throwRuntimeError("unimplemented")
 
 #ifndef NDEBUG
@@ -108,7 +115,11 @@ namespace Btk{
             str = ::abi::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
             if(str == nullptr){
                 //failed to demangle the name
-                str = ::strdup(info.name());
+                str = info.name();
+                need_free = false;
+            }
+            else{
+                need_free = true;
             }
             #else
             str = info.name();
@@ -116,7 +127,14 @@ namespace Btk{
         }
         _typeinfo_string(const _typeinfo_string &s){
             #ifdef __GNUC__
-            str = ::strdup(s.str);
+            if(s.need_free){
+                //allocate in heap
+                str = ::strdup(s.str);
+            }
+            else{
+                str = s.str;
+            }
+            need_free = s.need_free;
             #else
             str = s.str;
             #endif
@@ -124,13 +142,24 @@ namespace Btk{
         _typeinfo_string(_typeinfo_string &&s){
             str = s.str;
             s.str = nullptr;
+            #ifdef __GNUC__
+            need_free = true;
+            s.need_free = false;
+            #endif
         }
         ~_typeinfo_string(){
             #ifdef __GNUC__
-            ::free(const_cast<char*>(str));
+            if(need_free){
+                ::free(const_cast<char*>(str));
+            }
             #endif
         }
+        //Members
         const char *str;
+        #ifdef __GNUC__
+        bool need_free;
+        #endif
+
         operator u8string() const noexcept{
             return str;
         }
@@ -142,6 +171,9 @@ namespace Btk{
         }
         const char *data() const noexcept{
             return str;
+        }
+        size_t size() const noexcept{
+            return ::strlen(str);
         }
     };
     /**
@@ -155,7 +187,7 @@ namespace Btk{
         return info;
     }
     template<class T>
-    inline u8string get_typename(const T *ptr){
+    inline _typeinfo_string get_typename(const T *ptr){
         return get_typename(typeid(*ptr));
     }
     /**

@@ -5,6 +5,8 @@
 #include <Btk/utils/sync.hpp>
 #include <Btk/exception.hpp>
 
+#include <mutex>
+
 namespace Btk{
     void SpinLock::lock() noexcept{
         SDL_AtomicLock(&slock);
@@ -46,5 +48,54 @@ namespace Btk{
         if(SDL_SemWait(sem) != 0){
             throwSDLError();
         }
+    }
+    //Event
+    SyncEvent::SyncEvent(){
+        cond = SDL_CreateCond();
+        mtx  = SDL_CreateMutex();
+        if(cond == nullptr or mtx == nullptr){
+            u8string err = SDL_GetError();
+            SDL_DestroyCond(cond);
+            SDL_DestroyMutex(mtx);
+            throwSDLError(err);
+        }
+    }
+    SyncEvent::~SyncEvent(){
+        SDL_DestroyCond(cond);
+        SDL_DestroyMutex(mtx);
+    }
+    bool SyncEvent::is_set() const noexcept{
+        std::lock_guard locker(it_lock);
+        return isset;
+    }
+    void SyncEvent::set(){
+        std::lock_guard locker(it_lock);
+        isset = true;
+        SDL_CondBroadcast(cond);
+    }
+    void SyncEvent::clear(){
+        std::lock_guard locker(it_lock);
+        isset = false;
+    }
+    //Wait
+    void SyncEvent::wait(){
+        SDL_LockMutex(mtx);
+        while(not is_set()){
+            SDL_CondWait(cond,mtx);
+        }
+        SDL_UnlockMutex(mtx);
+    }
+    bool SyncEvent::wait(Uint32 ms){
+        bool val = true;
+        SDL_LockMutex(mtx);
+        while(not is_set()){
+            if(SDL_CondWaitTimeout(cond,mtx,ms) == SDL_MUTEX_TIMEDOUT){
+                //Timeout
+                val = false;
+                break;
+            }
+        }
+        SDL_UnlockMutex(mtx);
+        return true;
     }
 }

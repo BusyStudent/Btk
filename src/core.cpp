@@ -49,7 +49,7 @@ namespace{
         }
     }
     //ResourceBase
-    Btk::ObjectHolder<Btk::BasicResource> resource_base;
+    Btk::Constructable<Btk::BasicResource> resource_base;
     bool resource_inited = false;
     //Cleanup / Init
     void resource_atexit_handler(){
@@ -73,7 +73,6 @@ namespace Btk{
         InitImageAdapter();
     }
     inline BasicResource::~BasicResource(){
-        System::Quit();
         //run all exit handlers
         for(auto &handler:atexit_handlers){
             handler();
@@ -95,17 +94,6 @@ namespace Btk{
     inline
     void BasicResource::atexit(void (*fn)()){
         this->atexit(callback_wrapper,reinterpret_cast<void*>(fn));
-    }
-    inline
-    RendererDevice *BasicResource::create_device(SDL_Window *w){
-        RendererDevice *dev;
-        for(auto fn:devices_list){
-            dev = fn(w);
-            if(dev != nullptr){
-                return dev;
-            }
-        }
-        return nullptr;
     }
 }
 
@@ -223,6 +211,7 @@ namespace Btk{
             instance = new System();
             //Init platform
             GL::Init();
+            Font::Init();
             Platform::Init();
             
             //Load module by env
@@ -235,6 +224,7 @@ namespace Btk{
                 }
             }
             #endif
+            AtExit(System::Quit);
         }
         return 1;
     }
@@ -249,7 +239,9 @@ namespace Btk{
             Platform::Quit();
             //Quit SDL
             // TTF_Quit();
+            Font::Quit();
             SDL_Quit();
+
         }
     }
     //EventLoop
@@ -752,8 +744,17 @@ namespace Btk{
         throwRuntimeError("Unsupport type");
     }
     RendererDevice *CreateDevice(SDL_Window *win){
+        //It will crash at here if we put it into resource_base->create_device(win);
+        //and enable optimition in gcc
         resource_init();
-        resource_base->create_device(win);
+        RendererDevice *dev;
+        for(auto fn:resource_base->devices_list){
+            dev = fn(win);
+            if(dev != nullptr){
+                return dev;
+            }
+        }
+        return nullptr;
     }
 };
 namespace Btk{

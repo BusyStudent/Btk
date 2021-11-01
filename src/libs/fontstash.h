@@ -4,6 +4,7 @@
 #define FONS_INVALID -1
 
 #include <Btk/defs.hpp>
+#include <Btk/string.hpp>
 
 #ifdef __cplusplus
 extern "C"{
@@ -106,6 +107,8 @@ BTKHIDDEN void fonsSetSpacing(FONScontext* s, float spacing);
 BTKHIDDEN void fonsSetBlur(FONScontext* s, float blur);
 BTKHIDDEN void fonsSetAlign(FONScontext* s, int align);
 BTKHIDDEN void fonsSetFont(FONScontext* s, int font);
+// State getting 
+BTKHIDDEN float fonsGetSize(FONScontext* s);
 
 // Draw text
 BTKHIDDEN float fonsDrawText(FONScontext* s, float x, float y, const char* string, const char* end);
@@ -128,14 +131,42 @@ BTKHIDDEN void fonsDrawDebug(FONScontext* s, float x, float y);
 
 BTKHIDDEN int fonsAddFallbackFont(FONScontext* stash, int base, int fallback);
 BTKHIDDEN void fonsResetFallbackFont(FONScontext* stash, int base);
+
+//Our function
+
+#ifdef FS_INTERNAL
+typedef struct FONSfont *BtkFt;
+#else
+typedef void *BtkFt;
+#endif
+//Global System Init
+BTKHIDDEN void  BtkFt_Init();
+BTKHIDDEN void  BtkFt_Quit();
 /**
- * @brief Get Btk::Ft::Font *
+ * @brief Open a font
  * 
- * @param stash 
- * @param font 
- * @return no-null value on succeed 
+ * @param filename 
+ * @param idx 
+ * @return BTKHIDDEN 
  */
-BTKHIDDEN void *fontsGetFaceByID(FONScontext* stash,int font);
+BTKHIDDEN BtkFt BtkFt_Open(const char *filename,Uint32 idx);
+BTKHIDDEN BtkFt BtkFt_OpenMem(const void *buf,size_t n,bool free_data,Uint32 idx);
+BTKHIDDEN BtkFt BtkFt_Dup(BtkFt ft);
+/**
+ * @brief Find Font in global space(didnot increase the refcount)
+ * 
+ * @param name 
+ * @return BTKHIDDEN 
+ */
+BTKHIDDEN BtkFt BtkFt_GlobalFind(Btk::u8string_view name);
+BTKHIDDEN int   BtkFt_Refcount(BtkFt font);
+BTKHIDDEN void  BtkFt_Close(BtkFt font);
+BTKHIDDEN const char  *BtkFt_GetFamilyName();
+BTKHIDDEN const char  *BtkFt_GetStyleName();
+BTKHIDDEN int   BtkFt_GetID(BtkFt font);
+BTKHIDDEN BtkFt BtkFt_GetFromID(int id);
+//Fontstash extends
+BTKHIDDEN void  fonsRemoveFont(FONScontext *ctxt,int id);
 
 #ifdef __cplusplus
 }

@@ -9,7 +9,6 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
-#define STBI_NO_STDIO
 
 #define STBI_ASSERT(X) BTK_ASSERT(X)
 #define STBI_MALLOC SDL_malloc
@@ -21,7 +20,6 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
-#define STBI_WRITE_NO_STDIO
 
 #define STBIW_ASSERT(X) BTK_ASSERT(X)
 #define STBIW_MALLOC SDL_malloc
@@ -455,7 +453,7 @@ namespace{
             //Forward to stb
             auto callback = [&](SDL_Surface *surf,int comp){
                 if(surf->format->BytesPerPixel != sizeof(float)){
-                    throwRuntimeError("Unsupported");
+                    Btk::throwRuntimeError("Unsupported");
                 }
                 return stbi_write_hdr_to_func(
                     stbwrite_callback,

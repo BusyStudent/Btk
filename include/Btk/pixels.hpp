@@ -16,6 +16,7 @@ struct SDL_Surface;
 
 namespace Btk{
     class RWops;
+    class PixBuf;
     class Renderer;
     /**
      * @brief Color structure
@@ -81,23 +82,15 @@ namespace Btk{
     };
     using HSBColor = HSVColor;
     //PixelBuffer
-    class BTKAPI PixBuf{
+    class BTKAPI PixBufRef{
         public:
-            PixBuf(SDL_Surface *s = nullptr):surf(s){};//empty 
-            PixBuf(int w,int h,Uint32 format);//Create a buffer
-            //LoadFromFile
-            PixBuf(u8string_view file);
+            PixBufRef(SDL_Surface *s = nullptr):surf(s){};//empty 
             //Move construct
-            PixBuf(const PixBuf &) = delete;
-            PixBuf(PixBuf && s){
+            PixBufRef(const PixBufRef &) = default;
+            PixBufRef(PixBufRef && s){
                 surf = s.surf;
                 s.surf = nullptr;
             };
-            ~PixBuf();
-            //Get a copy of this PixBuf
-            PixBuf clone() const;
-            //Get a ref of this PixBuf
-            PixBuf ref() const;
             //operators
 
             //save PixBuf
@@ -122,8 +115,6 @@ namespace Btk{
              */
             void save(u8string_view filename,u8string_view type = {},int quality = 0);
             
-            PixBuf &operator =(SDL_Surface *);//assign
-            PixBuf &operator =(PixBuf &&);//assign
             //check empty
             bool empty() const noexcept{
                 return surf == nullptr;
@@ -169,11 +160,6 @@ namespace Btk{
             //Set RLE
             void set_rle(bool val = true);
             /**
-             * @brief Make sure the pixbuf is unique
-             * 
-             */
-            void begin_mut();
-            /**
              * @brief Convert a pixbuf's format
              * 
              * @param fmt The format
@@ -181,9 +167,9 @@ namespace Btk{
              */
             PixBuf convert(Uint32 fmt) const;
             PixBuf zoom(double w_factor,double h_factor);
-            PixBuf zoom_to(int w,int h){
-                return zoom(double(w) / double(this->w()),double(h) / double(this->h()));
-            }
+            // PixBuf zoom_to(int w,int h){
+            //     return zoom(double(w) / double(this->w()),double(h) / double(this->h()));
+            // }
             /**
              * @brief Copy it into
              * 
@@ -191,7 +177,41 @@ namespace Btk{
              * @param src 
              * @param dst 
              */
-            void bilt(const PixBuf &buf,const Rect *src,Rect *dst);
+            void bilt(PixBufRef buf,const Rect *src,Rect *dst);
+        protected:
+            SDL_Surface *surf;
+    };
+    class BTKAPI PixBuf:public PixBufRef{
+        public:
+            using PixBufRef::PixBufRef;
+
+            PixBuf(int w,int h,Uint32 format);//Create a buffer
+            //Simple take ref
+            PixBuf(const PixBuf &buf){
+                surf = buf.surf;
+                if(surf != nullptr){
+                    ++(surf->refcount);
+                }
+            }
+            //LoadFromFile
+            PixBuf(u8string_view file);
+            ~PixBuf();
+            
+            //Get a copy of this PixBuf
+            PixBuf clone() const;
+            //Get a ref of this PixBuf
+            PixBuf ref() const;
+            
+            /**
+             * @brief Make sure the pixbuf is unique
+             * 
+             */
+            void begin_mut();
+
+
+            PixBuf &operator =(SDL_Surface *);//assign
+            PixBuf &operator =(PixBuf &&);//assign
+
             //Some static method to load image
             static PixBuf FromFile(u8string_view file);
             static PixBuf FromFile(FILE *f);
@@ -199,7 +219,9 @@ namespace Btk{
             static PixBuf FromRWops(RWops &);
             static PixBuf FromXPMArray(const char *const*);
         private:
-            SDL_Surface *surf;
+            //Utils
+            static void _Delete(void *);
+            static void _Ref(void *);
     };
     /**
      * @brief Pixels format
@@ -302,27 +324,15 @@ namespace Btk{
         Nearest			 = 1<<5,	 // Image interpolation is Nearest instead Linear
     };
     //TextureFlags operators
-    // inline TextureFlags operator |(TextureFlags a,TextureFlags b){
-    //     return static_cast<TextureFlags>(int(a) | int(b));
-    // }
-    // inline TextureFlags operator +(TextureFlags a,TextureFlags b){
-    //     return static_cast<TextureFlags>(int(a) | int(b));
-    // }
     BTK_FLAGS_OPERATOR(TextureFlags,int);
     //RendererTexture
     using TextureID = int;
-    class BTKAPI Texture{
-        public:
-            /**
-             * @brief Texture's information
-             * 
-             */
-            struct Information{
-                TextureAccess access;//< Texture access
-                PixelFormat   format;//< Pixels format
-                int w;
-                int h;
-            };
+    class Texture;
+    /**
+     * @brief Texture's reference
+     * 
+     */
+    class BTKAPI TextureRef{
         public:
             /**
              * @brief Construct a new Texture object
@@ -330,21 +340,13 @@ namespace Btk{
              * @param id 
              * @param r 
              */
-            Texture(int id,Renderer *r):texture(id),render(r){}
+            TextureRef(int id,Renderer *r):texture(id),render(r){}
             /**
              * @brief Construct a new empty Texture object
              * 
              */
-            Texture():texture(0),render(nullptr){};
-            Texture(const Texture &) = delete;
-            Texture(Texture &&t){
-                texture = t.texture;
-                render = t.render;
-
-                t.texture = 0;
-                t.render = nullptr;
-            }
-            ~Texture();
+            TextureRef() = default;
+            TextureRef(const TextureRef &) = default;
             /**
              * @brief Get the size(w and h)
              * 
@@ -359,28 +361,11 @@ namespace Btk{
             }
             //check is empty
             bool empty() const noexcept{
-                return texture <= 0;
+                return texture < 0;
             }
-            //assign
-            //Texture &operator =(BtkTexture*);
-            Texture &operator =(Texture &&);
-            /**
-             * @brief clear the texture
-             * 
-             * @return Texture& 
-             */
-            Texture &operator =(std::nullptr_t){
-                clear();
-                return *this;
-            }
+
             TextureID get() const noexcept{
                 return texture;
-            }
-            TextureID detach() noexcept{
-                TextureID i = texture;
-                texture = 0;
-                render = nullptr;
-                return i;
             }
             #if 0
             /**
@@ -453,8 +438,6 @@ namespace Btk{
                 const Uint8 *v_plane, int v_pitch,
                 void *convert_buf = nullptr
             );
-
-            void clear();
             /**
              * @brief Get the texture's native handler,
              *        It is based on the backend impl
@@ -492,10 +475,50 @@ namespace Btk{
              * @param flags 
              */
             void set_flags(TextureFlags flags);
-        private:
-            TextureID texture = 0;//< NVG Image ID
+        protected:
+            TextureID texture = -1;//< NVG Image ID
             Renderer *render = nullptr;//Renderer
         friend struct Renderer;
+    };
+    class BTKAPI Texture:public TextureRef{
+        public:
+            using TextureRef::TextureRef;
+            Texture(const Texture &) = delete;
+            Texture(Texture &&t){
+                texture = t.texture;
+                render = t.render;
+
+                t.texture = -1;
+                t.render = nullptr;
+            }
+
+            ~Texture();
+
+
+            TextureID detach() noexcept{
+                TextureID i = texture;
+                texture = -1;
+                render = nullptr;
+                return i;
+            }
+            /**
+             * @brief Release the texture
+             * 
+             */
+            void clear();
+
+            //assign
+            //Texture &operator =(BtkTexture*);
+            Texture &operator =(Texture &&);
+            /**
+             * @brief clear the texture
+             * 
+             * @return Texture& 
+             */
+            Texture &operator =(std::nullptr_t){
+                clear();
+                return *this;
+            }
     };
     /**
      * @brief Gif Decoding class
@@ -690,6 +713,52 @@ namespace Btk{
      */
     BTKAPI Color ParseColor(u8string_view text);
     BTKAPI std::ostream &operator <<(std::ostream &,Color c);
+
+
+    //MAP / GET COLOR
+    inline Uint32 MapRGBA32(Color c){
+        Uint32 pixel;
+        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        //Big endian RGBA8888
+        reinterpret_cast<Uint8*>(&pixel)[0] = c.a;
+        reinterpret_cast<Uint8*>(&pixel)[1] = c.b;
+        reinterpret_cast<Uint8*>(&pixel)[2] = c.g;
+        reinterpret_cast<Uint8*>(&pixel)[3] = c.r;
+        #else
+        //little endian ABGR8888
+        reinterpret_cast<Uint8*>(&pixel)[0] = c.r;
+        reinterpret_cast<Uint8*>(&pixel)[1] = c.g;
+        reinterpret_cast<Uint8*>(&pixel)[2] = c.b;
+        reinterpret_cast<Uint8*>(&pixel)[3] = c.a;
+        #endif
+        return pixel;
+
+    }
+    inline Uint32 MapRGBA32(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
+        return MapRGBA32({r,g,b,a});
+    }
+
+    inline Color GetRGBA32(Uint32 pixel){
+        Color c;
+        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        //Big endian RGBA8888
+        c.a = reinterpret_cast<Uint8*>(&pixel)[0];
+        c.b = reinterpret_cast<Uint8*>(&pixel)[1];
+        c.g = reinterpret_cast<Uint8*>(&pixel)[2];
+        c.r = reinterpret_cast<Uint8*>(&pixel)[3];
+        #else
+        //little endian ABGR8888
+        c.r = reinterpret_cast<Uint8*>(&pixel)[0];
+        c.g = reinterpret_cast<Uint8*>(&pixel)[1];
+        c.b = reinterpret_cast<Uint8*>(&pixel)[2];
+        c.a = reinterpret_cast<Uint8*>(&pixel)[3];
+        #endif
+        return c;
+    }
+    inline GLColor GetRGBA32f(Uint32 pixel){
+        return GetRGBA32(pixel);
+    }
+
 };
 
 #endif // _BTK_PIXELS_HPP_

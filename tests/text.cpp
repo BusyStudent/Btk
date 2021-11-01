@@ -33,6 +33,9 @@ int main(){
         std::cout << ch  << ':' << ch.size() << std::endl;
     }
 
+    str.prepend("Prefix前缀");
+    std::cout << str << std::endl;
+
     Btk::u8string_view view("你好世界 sss sjajskaj");
     std::cout << view.length() << std::endl;
     std::cout << str.find("好") << std::endl;
@@ -52,5 +55,9 @@ int main(){
     std::cout << str.end() - str.begin() << std::endl;
     std::cout << *(str.end() - 2) << std::endl;
     std::cout << str.length() << std::endl;
+
+    std::cout << Btk::u8string_view("He你好ll").tolower() << std::endl;
+    std::cout << Btk::u8string_view("He你好ll").toupper() << std::endl;
+    std::cout << Btk::u8string_view("   He你好ll    ").trim() << std::endl;
 
 }

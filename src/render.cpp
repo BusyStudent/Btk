@@ -23,8 +23,6 @@ extern "C"{
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
 #define BTK_NULLCHECK(VAL) if(VAL == nullptr){return;}
 
-static_assert(sizeof(Btk::RendererPaint) == sizeof(NVGpaint));
-static_assert(sizeof(Btk::GLColor) == sizeof(NVGcolor));
 
 namespace Btk{
     void Renderer::end(){
@@ -50,7 +48,7 @@ namespace Btk{
     Texture Renderer::load(RWops &rwops,TextureFlags flags){
         return create_from(PixBuf::FromRWops(rwops),flags);
     }
-    void Renderer::draw_image(const Texture &texture,float x,float y,float w,float h,float angle){
+    void Renderer::draw_image(TextureRef texture,float x,float y,float w,float h,float angle){
         //make pattern
         auto paint = nvgImagePattern(
             nvg_ctxt,
@@ -68,7 +66,7 @@ namespace Btk{
         nvgFill(nvg_ctxt);
         
     }
-    void Renderer::draw_image(const Texture &texture,const FRect *src,const FRect *dst){
+    void Renderer::draw_image(TextureRef texture,const FRect *src,const FRect *dst){
         FRect _dst;
         if(dst != nullptr){
             _dst = *dst;
@@ -188,6 +186,18 @@ namespace Btk{
     void Renderer::set_alpha(float alpha){
         nvgGlobalAlpha(nvg_ctxt,alpha);
     }
+    void Renderer::set_pathwinding(PathWinding v){
+        nvgPathWinding(nvg_ctxt,int(v));
+    }
+    void Renderer::set_linejoin(LineJoin c){
+        nvgLineJoin(nvg_ctxt,int(c));
+    }
+    void Renderer::set_linecap(LineCap c){
+        nvgLineCap(nvg_ctxt,int(c));
+    }
+    void Renderer::set_miterlimit(float limit){
+        nvgMiterLimit(nvg_ctxt,limit);
+    }
     void Renderer::fill(){
         nvgFill(nvg_ctxt);
     }
@@ -262,6 +272,22 @@ namespace Btk{
         nvgTextBox(nvg_ctxt,x,y,width,&buf[0],nullptr);
     }
     //Sizeof
+    FBounds Renderer::text_bounds(float x,float y,u8string_view s){
+        float bounds[4];
+        nvgTextBounds(nvg_ctxt,x,y,&s.front(),&s.back(),bounds);
+        BTK_LOGINFO("bounds = {%f,%f,%f,%f}",
+            bounds[0],
+            bounds[1],
+            bounds[2],
+            bounds[3]
+        );
+        return {
+            bounds[0],
+            bounds[1],
+            bounds[2],
+            bounds[3]
+        };
+    }
     FSize Renderer::glyph_size(char16_t ch){
         auto &buf = FillInternalU8Buffer(std::u16string_view(&ch,1));
         NVGtextRow  row;
@@ -287,6 +313,14 @@ namespace Btk{
             row.width,
             font_height()
         };
+        // save();
+        // text_align(TextAlign::Left | TextAlign::Center);
+        // FSize s;
+        // auto bounds = text_bounds(0,0,buf);
+        // s.w = bounds.w;
+        // s.h = bounds.h;
+        // restore();
+        // return s;
     }
     FSize Renderer::text_size(u8string_view _view){
         auto view = _view.base();
@@ -389,9 +423,6 @@ namespace Btk{
         free_device = val;
 
         nvg_ctxt = device()->create_context();
-        //Add default font
-        nvgFontFace(nvg_ctxt,"");
-        nvgFontBlur(nvg_ctxt,0);
     }
     void Renderer::destroy(){
         if(device() == nullptr){
@@ -433,7 +464,7 @@ namespace Btk{
     Texture::~Texture(){
         clear();
     }
-    Size Texture::size() const{
+    Size TextureRef::size() const{
         Size size;
         nvgImageSize(render->nvg_ctxt,texture,&size.w,&size.h);
         return size;
@@ -444,19 +475,19 @@ namespace Btk{
             return;
         }
         render->destroy_texture(texture);
-        texture = 0;
+        texture = -1;
         render = nullptr;        
     }
 
     //Update...
 
-    void Texture::update(const void *pixels){
+    void TextureRef::update(const void *pixels){
         if(empty() or pixels == nullptr){
             return;
         }
         render->update_texture(texture,pixels);
     }
-    void Texture::update(const PixBuf &pixbuf){
+    void TextureRef::update(const PixBuf &pixbuf){
         if(empty()){
             return;
         }
@@ -485,7 +516,7 @@ namespace Btk{
             }
         }
     }
-    void Texture::update(const Rect &rect,const void *pixels){
+    void TextureRef::update(const Rect &rect,const void *pixels){
         if(empty()){
             throwRuntimeError("empty texture");
         }
@@ -501,13 +532,13 @@ namespace Btk{
         }
         render->update_texture(texture,rect,pixels);
     }
-    void Texture::native_handle(void *p_handle){
+    void TextureRef::native_handle(void *p_handle){
         if(empty()){
             throwRuntimeError("empty texture");
         }
         render->get_texture_handle(texture,p_handle);
     }
-    Texture Texture::clone() const{
+    Texture TextureRef::clone() const{
         if(empty()){
             throwRuntimeError("empty texture");
         }
@@ -519,7 +550,7 @@ namespace Btk{
     //     }
     //     return render->dump_texture(texture);
     // }
-    TextureFlags Texture::flags() const{
+    TextureFlags TextureRef::flags() const{
         if(empty()){
             throwRuntimeError("empty texture");
         }
@@ -599,37 +630,21 @@ namespace Btk{
 //Dreaptched functions
 namespace Btk{
     //Draw a rounded box directly
-    int Renderer::rounded_box(const Rect &r,int rad,Color c){
+    int Renderer::draw_rounded_box(const Rect &r,int rad,Color c){
         nvgBeginPath(nvg_ctxt);
         nvgRoundedRect(nvg_ctxt,r.x,r.y,r.w,r.h,rad);
         nvgFillColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
         nvgFill(nvg_ctxt);
         return 0;
     }
-    int Renderer::rounded_rect(const Rect &r,int rad,Color c){
+    int Renderer::draw_rounded_rect(const Rect &r,int rad,Color c){
         nvgBeginPath(nvg_ctxt);
         nvgRoundedRect(nvg_ctxt,r.x,r.y,r.w,r.h,rad);
         nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
         nvgStroke(nvg_ctxt);
         return 0;
     }
-    int Renderer::box(const Rect &r,Color c){
-        nvgBeginPath(nvg_ctxt);
-
-        nvgRect(nvg_ctxt,r.x,r.y,r.w,r.h);
-        nvgFillColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
-        nvgFill(nvg_ctxt);
-        return 0;
-    }
-    int Renderer::rect(const Rect &r,Color c){
-        nvgBeginPath(nvg_ctxt);
-
-        nvgRect(nvg_ctxt,r.x,r.y,r.w,r.h);
-        nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
-        nvgStroke(nvg_ctxt);
-        return 0;
-    }
-    int  Renderer::line(int x,int y,int x2,int y2,Color c){
+    int  Renderer::draw_line(int x,int y,int x2,int y2,Color c){
         nvgBeginPath(nvg_ctxt);
         nvgMoveTo(nvg_ctxt,x,y);
         nvgLineTo(nvg_ctxt,x2,y2);

@@ -57,6 +57,8 @@ namespace Btk{
                 //Hide / Show
                 Hide = 22,
                 Show = 23,
+                //Layout
+                LayoutUpdate,
 
                 User = 10000,
                 UserMax = UINT32_MAX - 1,

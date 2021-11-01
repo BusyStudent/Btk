@@ -2,7 +2,6 @@
 #define _BTK_TEXTBOX_HPP_
 #include <string>
 #include <string_view>
-#include "utils/timer.hpp"
 #include "widget.hpp"
 #include "pixels.hpp"
 #include "themes.hpp"
