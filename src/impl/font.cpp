@@ -66,7 +66,7 @@ namespace Btk{
     bool Font::has_glyph(char32_t ch) const{
         //return TTF_GlyphIsProvided(pimpl->font,ch);
         // return FONTIMPL(pimpl)->has_glyph(ch);
-        throwRuntimeError("Unimpl yet");
+        return BtkFt_HasGlyph(font,ch);
     }
     float Font::height() const{
         //return TTF_FontHeight(pimpl->font);

@@ -7,6 +7,8 @@
 #include <Btk/impl/window.hpp>
 #include <Btk/dialog.hpp>
 
+#include <sys/wait.h>
+
 #include "internal.hpp"
 
 #undef Status
@@ -47,10 +49,36 @@ namespace Btk{
     //         delete this;
     //     }
     // }
+    //Normal box
+    MessageBox::MessageBox(u8string_view t,u8string_view m,Flag f){
+        _title = t;
+        _message = m;
+        _flag = f;
+
+        do_run.bind<&MessageBox::_do_run>();
+    }
+    MessageBox::~MessageBox() = default;
     auto MessageBox::_do_run() -> Status{
         //Has Parent and no zenty and kdialog
-        if(X11::has_kdialog or X11::has_zenity){
-
+        if(X11::has_kdialog){
+            u8string cmd = "kdialog ";
+        }
+        else if(X11::has_zenity){
+            u8string_view cmd;
+            switch(_flag){
+                case MessageBox::Info:
+                    cmd = "--info";
+                    break;
+                case MessageBox::Warn:
+                    cmd = "--warning";
+                    break;
+                case MessageBox::Error:
+                    cmd = "--error";
+                    break;
+            }
+            auto proc = spawn("zenity","--text",_message,cmd,"--title",_title);
+            ::waitpid(proc,nullptr,0);
+            return Accepted;
         }
         else{
             SDL_Window *pent = nullptr;

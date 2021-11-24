@@ -111,6 +111,6 @@ namespace Btk{
     }
     bool Application::openurl(u8string_view _url){
         u8string url(_url);
-        return X11::Execute("xdg-open",url);
+        // return X11::Execute("xdg-open",url);
     }
 }

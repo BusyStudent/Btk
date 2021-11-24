@@ -23,6 +23,10 @@ extern "C"{
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
 #define BTK_NULLCHECK(VAL) if(VAL == nullptr){return;}
 
+#define BTK_CHECK_TEXTURE(TEX) \
+    if(TEX.render != this){ \
+        Btk::throwRendererError("Texture from different renderer");\
+    }
 
 namespace Btk{
     void Renderer::end(){
@@ -32,12 +36,15 @@ namespace Btk{
             //Too many caches
             if(cached_texs.size() > max_caches){
                 int n = cached_texs.size() - max_caches;
-                BTK_LOGINFO("Clear %d textures",n);
+                BTK_LOGINFO("[Rebderer]Clear %d textures",n);
                 for(int i = 0;i < n;i++){
                     device()->destroy_texture(nvg_ctxt,cached_texs.front().tex);
                     cached_texs.pop_front();
                 }
-
+                //Set another caches to unused
+                for(auto &item:cached_texs){
+                    item.used = false;
+                }
             }
             is_drawing = false;
         }
@@ -50,6 +57,8 @@ namespace Btk{
     }
     void Renderer::draw_image(TextureRef texture,float x,float y,float w,float h,float angle){
         //make pattern
+        BTK_CHECK_TEXTURE(texture);
+
         auto paint = nvgImagePattern(
             nvg_ctxt,
             x,
@@ -67,6 +76,8 @@ namespace Btk{
         
     }
     void Renderer::draw_image(TextureRef texture,const FRect *src,const FRect *dst){
+        BTK_CHECK_TEXTURE(texture);
+
         FRect _dst;
         if(dst != nullptr){
             _dst = *dst;
@@ -135,17 +146,58 @@ namespace Btk{
         //restore();
     }
     //Temp copy
-    void Renderer::draw_image(const PixBuf &pixbuf,float x,float y,float w,float h,float angle){
-        auto texture = create_from(pixbuf);
-        draw_image(texture,x,y,w,h,angle);
-        //TODO
-        // cached_texs.emplace_back(texture.detach());
+    void Renderer::draw_image(PixBufRef pixbuf,float x,float y,float w,float h,float angle){
+        CachedItem *cache = find_cache(w,h);
+        if(cache == nullptr){
+            //No cache useable
+            auto texture = create_from(pixbuf);
+            draw_image(texture,x,y,w,h,angle);
+            //Add it to cache
+            CachedItem item;
+            item.w = texture.w();
+            item.h = texture.h();
+            item.tex = texture.detach();
+            item.used = true;
+            cached_texs.push_back(item);
+            return;
+        }
+        //TODO need improve
+        cache->used = true;
+        update_texture(cache->tex,{0,0,w,h},pixbuf->pixels);
+        //Send a draw request
+        auto paint = nvgImagePattern(
+            nvg_ctxt,
+            x,
+            y,
+            w,
+            h,
+            angle,
+            cache->tex,
+            1.0f
+        );
+        nvgBeginPath(nvg_ctxt);
+        nvgRect(nvg_ctxt,x,y,w,h);
+        nvgFillPaint(nvg_ctxt,paint);
+        nvgFill(nvg_ctxt);
     }
-    void Renderer::draw_image(const PixBuf &pixbuf,const FRect *src,const FRect *dst){
+    void Renderer::draw_image(PixBufRef pixbuf,const FRect *src,const FRect *dst){
         auto texture = create_from(pixbuf);
         draw_image(texture,src,dst);
-        //TODO
-        // cached_texs.emplace_back(texture.detach());
+        //Add it to cache
+        CachedItem item;
+        item.w = texture.w();
+        item.h = texture.h();
+        item.tex = texture.detach();
+        item.used = true;
+        cached_texs.push_back(item);
+    }
+    auto Renderer::find_cache(int w,int h) -> CachedItem *{
+        for(auto &item:cached_texs){
+            if(not item.used and item.w >= w and item.h >= h){
+                return &item;
+            }
+        }
+        return nullptr;
     }
 }
 namespace Btk{
@@ -447,7 +499,7 @@ namespace Btk{
         TextureID id = device()->create_texture(nvg_ctxt,w,h,f);
         return Texture(id,this);
     }
-    Texture Renderer::create_from(const PixBuf &buf,TextureFlags f){
+    Texture Renderer::create_from(PixBufRef buf,TextureFlags f){
         TextureID id = device()->create_texture_from(nvg_ctxt,buf,f);
         return Texture(id,this);
     }
@@ -461,9 +513,6 @@ namespace Btk{
     }
 }
 namespace Btk{
-    Texture::~Texture(){
-        clear();
-    }
     Size TextureRef::size() const{
         Size size;
         nvgImageSize(render->nvg_ctxt,texture,&size.w,&size.h);
@@ -544,24 +593,40 @@ namespace Btk{
         }
         return Texture(render->clone_texture(texture),render);
     }
-    // PixBuf  Texture::dump() const{
-    //     if(empty()){
-    //         throwRuntimeError("empty texture");
-    //     }
-    //     return render->dump_texture(texture);
-    // }
+    PixBuf  TextureRef::dump() const{
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        //OK Try to get pixels from lock_texture
+        auto [w,h] = size();
+        auto ctxt = render->context();
+        auto dev  = render->device();
+        void *pix = nullptr;
+        
+        pix = dev->lock_texture(ctxt,texture,nullptr,LockFlag::Read);
+        if(pix == nullptr){
+            //Lock failed
+            throwRuntimeError(dev->get_error());
+        }
+        PixBuf pixbuf(w,h,PixelFormat::RGBA32);
+        memcpy(pixbuf->pixels,pix,w * h * SDL_BYTESPERPIXEL(PixelFormat::RGBA32));
+        dev->unlock_texture(ctxt,texture,pix);
+        return pixbuf;
+    }
     TextureFlags TextureRef::flags() const{
         if(empty()){
             throwRuntimeError("empty texture");
         }
         return render->get_texture_flags(texture);
     }
-    // void Texture::set_flags(TextureFlags flags){
-    //     if(empty()){
-    //         throwRuntimeError("empty texture");
-    //     }
-    //     render->set_texture_flags(texture,flags);
-    // }
+    void TextureRef::set_flags(TextureFlags flags){
+        if(empty()){
+            throwRuntimeError("empty texture");
+        }
+        if(not render->set_texture_flags(texture,flags)){
+            throwRendererError(render->device()->get_error());
+        }
+    }
     Texture &Texture::operator =(Texture &&t){
         if(&t == this){
             return *this;
@@ -571,7 +636,7 @@ namespace Btk{
         texture  = t.texture;
 
         t.render = nullptr;
-        t.texture = 0;
+        t.texture = -1;
         return *this;
     }
 }

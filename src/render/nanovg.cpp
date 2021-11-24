@@ -154,6 +154,7 @@ namespace Btk{
 
 
 namespace Btk{
+    RendererDevice::~RendererDevice() = default;
     Font Renderer::cur_font(){
         auto state = nvg__getState(nvg_ctxt);
         int idx = state->fontId;
@@ -255,7 +256,51 @@ namespace Btk{
             static_cast<const unsigned char*>(pixels)
         );
     }
-    void RendererDevice::destroy_texture(Context ctxt,TextureID id){
+
+    void *RendererDevice::lock_texture(
+        Context ctxt,
+        TextureID id,
+        const Rect *r,
+        LockFlag flag   
+    ){
+        //Default only support write
+        if(flag != Write){
+            return nullptr;
+        }
+        Rect rect;
+        if(r == nullptr){
+            rect.x = 0;
+            rect.y = 0;
+            auto [w,h] = texture_size(ctxt,id);
+            rect.w = w;
+            rect.h = h;
+        }
+        else{
+            rect = *r;
+        }
+        //Alloc mem
+        void *mem = SDL_malloc(
+            sizeof(Rect) + SDL_BYTESPERPIXEL(PixelFormat::RGBA32) * rect.w * rect.h
+        );
+        if(mem == nullptr){
+            return nullptr;
+        }
+        *static_cast<Rect*>(mem) = rect;
+        return static_cast<Uint8*>(mem) + sizeof(Rect);
+    }
+    void  RendererDevice::unlock_texture(Context ctxt,TextureID id,void *pixels){
+        if(pixels != nullptr){
+            Rect *rect = reinterpret_cast<Rect*>(
+                static_cast<Uint8*>(pixels) - sizeof(Rect)
+            );
+            update_texture(ctxt,id,rect,pixels);
+            SDL_free(rect);
+        }
+    }
+    bool  RendererDevice::configure_texture(Context,TextureID,const TextureFlags *){
+        return false;
+    }
+    void  RendererDevice::destroy_texture(Context ctxt,TextureID id){
         nvgDeleteImage(ctxt,id);
     }
 }

@@ -109,6 +109,9 @@ namespace Btk{
         template<size_t Index>
         using arg_type = typename IndexArgsPack<Index,Args...>::type;
     };
+    //C++17 void_t
+    template<class ...Args>
+    using void_t = void;
 }
 
 

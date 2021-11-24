@@ -21,6 +21,9 @@
     #define BTK_POPEN     ::_popen
     #define BTK_PCLOSE    ::_pclose
     #define BTK_PIPE(FDS) ::_pipe(FDS,1024,_O_BINARY)
+    //Process Handle
+
+    #define BTK_PHANDLE   ::intptr_t
 #else
     #include <unistd.h>
     #define BTK_READ      ::read
@@ -29,12 +32,89 @@
     #define BTK_POPEN     ::popen
     #define BTK_PCLOSE    ::pclose
     #define BTK_PIPE(FDS) ::pipe(FDS)
+    //Process Handle
+    #define BTK_PHANDLE   ::pid_t
 #endif
 
 #include "../exception.hpp"
 #include "../string.hpp"
 #include "../defs.hpp"
 namespace Btk{
+    //Helper functions
+    using process_t = BTK_PHANDLE;
+    
+    struct _vspawn_arg{
+        const char *str;
+        size_t n;
+    };
+    /**
+     * @brief Open a new process with args
+     * 
+     * @internal Donnot use it directly
+     * @param nargs 
+     * @param args
+     */
+    BTKAPI process_t _vspawn(size_t nargs,const _vspawn_arg args[]);
+    //Translate args
+    inline _vspawn_arg _spawn_tr_impl(const char *s){
+        return {
+            s,
+            std::strlen(s)
+        };
+    }
+    inline _vspawn_arg _spawn_tr_impl(const u8string &s){
+        return {
+            s.c_str(),
+            s.size()
+        };
+    }
+    inline _vspawn_arg _spawn_tr_impl(const std::string &s){
+        return {
+            s.c_str(),
+            s.size()
+        };
+    }
+    inline _vspawn_arg _spawn_tr_impl(u8string_view s){
+        return {
+            s.data(),
+            s.size()
+        };
+    }
+    inline _vspawn_arg _spawn_tr_impl(std::string_view s){
+        return {
+            s.data(),
+            s.size()
+        };
+    }
+    template<class T>
+    inline _vspawn_arg _spawn_tr(T &&v){
+        return _spawn_tr_impl(std::forward<T>(v));
+    }
+    template<size_t n>
+    inline _vspawn_arg _spawn_tr(const char (&s)[n]){
+        return {
+            s,
+            n
+        };
+    }
+    //Helper end
+
+    //Proc function begin
+    template<class T,class ...Args>
+    inline process_t spawn(T &&filename,Args &&...args){
+        // return _spawn(
+        //     sizeof...(Args) + 1,
+        //     _spawn_tr(std::forward<T>(filename)),
+        //     _spawn_tr(std::forward<Args>(args))...
+        // );
+        const _vspawn_arg arr [] = {
+            _spawn_tr(std::forward<T>(filename)),
+            _spawn_tr(std::forward<Args>(args))...
+        };
+        return _vspawn(sizeof...(Args) + 1,arr);
+    }
+    //Proc function end
+
     /**
      * @brief Pipe stream to or from a process
      * 

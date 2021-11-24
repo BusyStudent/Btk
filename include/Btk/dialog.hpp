@@ -22,9 +22,13 @@ namespace Btk{
                 Rejected = 0,
                 Accepted = 1,
             };
-            Dialog() = default;
+            Dialog();
             ~Dialog();
-            void  async();
+            /**
+             * @brief Show the dialog(Nonblock)
+             * 
+             */
+            void  show();
             /**
              * @brief Wait for the async thread
              * 
@@ -36,7 +40,7 @@ namespace Btk{
              * 
              * @return Status 
              */
-            Status show();
+            Status run();
 
             Status status() const noexcept{
                 return _status;
@@ -55,7 +59,7 @@ namespace Btk{
             }
 
         private:
-            void async_entry();
+            void default_show();
 
             Constructable<SyncEvent> _event;
             WindowImpl *_parent = {};
@@ -63,8 +67,6 @@ namespace Btk{
             Status _status = {};
             bool _opened = false;
             bool _asynced = false;
-            //Function table
-            Status (*do_run)(void *self) = {};
 
             //Signals
             Signal<void()> _signal_finished;
@@ -72,10 +74,10 @@ namespace Btk{
             Signal<void()> _signal_rejected;
 
         protected:
-            template<auto Method>
-            void register_run_fn(){
-                do_run = MemberFunctionWrapper<Method>::Invoke;
-            }
+            //Function table
+            VirtualFunction<Status()> do_run;
+            VirtualFunction<void  ()> do_show;
+
             WindowImpl *parent() const noexcept{
                 return _parent;
             }

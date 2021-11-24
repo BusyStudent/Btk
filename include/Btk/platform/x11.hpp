@@ -12,14 +12,8 @@ namespace Btk{
         BTKAPI void Quit();
         BTKAPI void HandleSysMsg(const SDL_SysWMmsg &);
         BTKAPI bool MessageBox(u8string_view title,u8string_view msg,int flag = 0);
-        /**
-         * @brief Execute 
-         * 
-         * @param argc The number of the args
-         * @param ... The args string
-         * @return int 
-         */
-        BTKAPI int   VExecute(size_t argc,...);
+
+        [[deprecated]]
         BTKAPI FILE* VPopen(size_t argc,...);
 
         inline const char *_GetCString(const char * s){
@@ -38,10 +32,6 @@ namespace Btk{
             return s.data();
         }
 
-        template<class ...Args>
-        int Execute(Args &&...args){
-            return VExecute(sizeof...(args),_GetCString(std::forward<Args>(args))...);
-        }
         template<class ...Args>
         FILE *Popen(Args &&...args){
             return Popen(sizeof...(args),_GetCString(std::forward<Args>(args))...);

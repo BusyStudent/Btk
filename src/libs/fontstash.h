@@ -4,10 +4,12 @@
 #define FONS_INVALID -1
 
 #include <Btk/defs.hpp>
+#include <Btk/rect.hpp>
 #include <Btk/string.hpp>
 
-#ifdef __cplusplus
-extern "C"{
+
+#ifdef FS_INTERNAL
+namespace{
 #endif
 
 enum FONSflags {
@@ -77,6 +79,10 @@ struct FONStextIter {
 typedef struct FONStextIter FONStextIter;
 
 typedef struct FONScontext FONScontext;
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 // Constructor and destructor.
 BTKHIDDEN FONScontext* fonsCreateInternal(FONSparams* params);
@@ -165,8 +171,18 @@ BTKHIDDEN const char  *BtkFt_GetFamilyName();
 BTKHIDDEN const char  *BtkFt_GetStyleName();
 BTKHIDDEN int   BtkFt_GetID(BtkFt font);
 BTKHIDDEN BtkFt BtkFt_GetFromID(int id);
+inline    BtkFt BtkFt_GetDefaultFont(){
+	return BtkFt_GetFromID(0);
+}
+//Mesure
+BTKHIDDEN bool  BtkFt_HasGlyph(BtkFt font,char32_t codepoint);
+BTKHIDDEN Btk::FSize BtkFt_TextSize(BtkFt font,float ptsize,Btk::u8string_view txt);
 //Fontstash extends
 BTKHIDDEN void  fonsRemoveFont(FONScontext *ctxt,int id);
+#ifdef FS_INTERNAL
+}
+#endif
+
 
 #ifdef __cplusplus
 }

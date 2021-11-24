@@ -297,6 +297,22 @@ namespace Btk{
                                     Size *size,
                                     void *nt_h,
                                     TextureFlags *f) override;
+            void*     lock_texture(
+                Context ctxt,
+                TextureID id,
+                const Rect *r,
+                LockFlag flag
+            ) override;
+            void      unlock_texture(
+                Context ctxt,
+                TextureID id,
+                void *pixels
+            ) override;
+            bool      configure_texture(
+                Context ctxt,
+                TextureID id,
+                const TextureFlags *flag
+            ) override;
             
             //Pixels
             /**
@@ -326,6 +342,9 @@ namespace Btk{
              * 
              */
             void gl_end();
+            
+            void gl_enter(Context ctxt);
+            void gl_leave(Context ctxt);
             /**
              * @brief Enable/Disable MSAA
              * @note You would be better to check the return value

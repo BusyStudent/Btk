@@ -32,6 +32,11 @@ namespace Btk{
             //Save / Restore before / after draw
             bool protect_context = true;
     };
+    class BTKAPI Graph{
+        private:
+            Color _background_color;
+            Color _text_color;
+    };
     class GLDevice;
     /**
      * @brief Basic class for using OpenGL

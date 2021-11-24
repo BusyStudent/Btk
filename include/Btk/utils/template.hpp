@@ -7,6 +7,16 @@
 #include "traits.hpp"
 
 
+#define BTK_HAS_MEMBER_IMPL(RESULT,TYPE,MEMBER,ID) \
+    template<class Type,class T = Btk::void_t<Type::MEMBER>> \
+    struct ID{ static constexpr bool value = true}; \
+    template<class Type,class T = Btk::void_t<>> \
+    struct ID{ static constexpr bool value = false}; \
+    \
+    static constexpr bool RESULT = ID<TYPE>::value;
+#define BTK_HAS_MEMBER(RESULT,TYPE,MEMBER) \
+    BTK_HAS_MEMBER_IMPL(RESULT,TYPE,MEMBER,BTK_UNIQUE_NAME(_MemberDetect))
+
 /**
  * @brief It contains some useful template
  * 
@@ -460,7 +470,48 @@ namespace Btk{
         public VirtualFunction<void,RetT(Args...) const>{
 
     };
-
+    //Store Pod in a pointer
+    template<class Pod,class ...Args>
+    void NewPodInPointer(void **ptr,Args &&...args){
+        if constexpr(sizeof(Pod) > sizeof(void*)){
+            //Too big
+            *ptr = new Pod(std::forward<Args>(args)...);
+        }
+        else{
+            new(reinterpret_cast<void*>(ptr)) Pod(std::forward<Args>(args)...);
+        }
+    }
+    template<class Pod>
+    void DeletePodInPointer(void *ptr){
+        if constexpr(sizeof(Pod) > sizeof(void*)){
+            delete static_cast<Pod*>(ptr);
+        }
+        else{
+            //Do nothing
+        }
+    }
+    template<class Pod>
+    void  StorePodInPointer(void **ptr,const Pod &v){
+        if constexpr(sizeof(Pod) > sizeof(void*)){
+            *static_cast<Pod*>(*ptr) = v;
+        }
+        else{
+            *reinterpret_cast<Pod*>(
+                ptr
+            ) = v;
+        }
+    }
+    template<class Pod>
+    Pod  LoadPodInPointer(void *ptr){
+        if constexpr(sizeof(Pod) > sizeof(void*)){
+            return *static_cast<Pod*>(ptr);
+        }
+        else{
+            return *reinterpret_cast<Pod*>(
+                &ptr
+            );
+        }
+    }
 }
 
 #endif // _BTK_UTILS_TEMPLATE_HPP_

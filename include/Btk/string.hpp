@@ -34,6 +34,9 @@ namespace Btk{
     inline constexpr auto CaseSensitive = false;
     inline constexpr auto CaseInSensitive = true;
 
+    //Convert 
+    BTKAPI size_t Utf32ToUtf8(char32_t codepoint,const char *buf,int limit = -1);
+
     /**
      * @brief Get len of a utf8 string
      * 
@@ -42,6 +45,14 @@ namespace Btk{
      * @return The string's size
      */
     BTKAPI size_t Utf8Strlen(const char *beg,const char *end = nullptr);
+    BTKAPI size_t Utf32CharSize(char32_t codepoint);
+    /**
+     * @brief Get size of a utf8 char
+     * 
+     * @param char 
+     * @return size_t 
+     */
+    BTKAPI size_t Utf8CharSize(const char *s);
     /**
      * @brief Move to the next char begin
      * 
@@ -80,18 +91,6 @@ namespace Btk{
     inline T Utf8GetNext(T v){
         Utf8Next(v);
         return v;
-    }
-    /**
-     * @brief Get size of a utf8 char
-     * 
-     * @param char 
-     * @return size_t 
-     */
-    inline size_t Utf8CharSize(const char *s){
-        auto n = s;
-        Utf8Next(n);
-
-        return n - s;
     }
     /**
      * @brief Get distance of two utf8 char
@@ -674,6 +673,10 @@ namespace Btk{
                     Utf8GetPrev(impl_end())
                 };
             }
+            //Auto cast
+            operator std::string() const{
+                return std::string(data(),size());
+            }
 
         private:
             _iterator impl_begin(){
@@ -1042,6 +1045,9 @@ namespace Btk{
             operator std::string_view() const noexcept{
                 return std::string_view(base().c_str(),base().length());
             }
+            operator const std::string &() const noexcept{
+                return base();
+            }
             //FIXME:C2664 If we donnot ocomit it
             // operator u8string_view() const noexcept{
             //     return u8string_view(base().c_str(),base().length());
@@ -1186,7 +1192,8 @@ namespace Btk{
     };
     //TODO Utf32
     class BTKAPI u32string:public std::u32string{
-
+        public:
+            using std::u32string::u32string;
     };
 
 

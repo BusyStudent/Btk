@@ -211,8 +211,7 @@ namespace Btk{
         return impl_begin() + n;
     }
     void u8string::push_back(char32_t ch){
-        std::u32string_view view(&ch,1);
-        utf8::unchecked::utf32to8(view.begin(),view.end(),std::back_insert_iterator(base()));
+        utf8::unchecked::append(ch,std::back_inserter(base()));
     }
     void u8string::pop_back(){
         if(empty()){
@@ -353,6 +352,28 @@ namespace Btk{
             ++ len;
         }
         return len;
+    }
+    size_t Utf32CharSize(char32_t codepoint){
+        if ((0xffffff80 & codepoint) == 0){
+            return 1;
+        } 
+        else if((0xfffff800 & codepoint) == 0){
+            return 2;
+        } 
+        else if((0xffff0000 & codepoint) == 0){
+            return 3;
+        } 
+        else {
+            return 4;
+        }
+    }
+    size_t Utf8CharSize(const char *s){
+        #if 0
+        return utf8::internal::sequence_length(s);
+        #else
+        auto n = Utf8GetNext(s);
+        return n - s;
+        #endif
     }
     bool Utf8IsVaild(const char *begin,const char *end){
         if(end == nullptr){

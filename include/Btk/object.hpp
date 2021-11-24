@@ -347,6 +347,7 @@ namespace Btk{
              * @param output 
              */
             void dump_slots(FILE *output = stderr) const;
+            void disconnect_all();
         public:
             /**
              * @brief Lock the signal
@@ -587,9 +588,9 @@ namespace Btk{
 
     //Impl
     struct _TimerInvokerData{
-        Uint32 (*invoke)(Uint32 interval,void *self) = nullptr;
-        void   *invoker = nullptr;
-        void   (*cleanup)(void *) = nullptr;
+        void    *self = nullptr;
+        Uint32 (*entry)(Uint32 interval,void *self) = nullptr;
+        void   (*destroy)(void *) = nullptr;
     };
 
 
@@ -665,13 +666,21 @@ namespace Btk{
      */
     class BTKAPI Timer{
         public:
-            Timer();
+            Timer(){
+                timer = _New();
+            }
             Timer(const Timer &) = delete;
-            ~Timer();
+            ~Timer(){
+                _Delete(timer);
+            }
 
 
-            void stop();
-            void start();
+            void stop(){
+                _Stop(timer);
+            }
+            void start(){
+                _Start(timer);
+            }
 
             bool running() const;
             /**
@@ -679,8 +688,12 @@ namespace Btk{
              * 
              * @return Uint32 
              */
-            Uint32 interval() const;
-            void set_interval(Uint32 interval);
+            Uint32 interval() const{
+                return _GetInterval(timer);
+            }
+            void set_interval(Uint32 interval){
+                _SetInterval(timer,interval);
+            }
 
             /**
              * @brief Bind to 
@@ -702,10 +715,11 @@ namespace Btk{
                     std::forward<Callable>(callable),
                     std::forward<Args>(args)...
                 };
-                data.invoker = invoker;
-                data.invoke  = Invoker::Run;
-                data.cleanup = Invoker::Delete;
-                bind(data);
+                data.self = invoker;
+                data.entry  = Invoker::Run;
+                data.destroy = Invoker::Delete;
+
+                _SetCallback(timer,&data);
             }
             /**
              * @brief Bind to Object's member function
@@ -730,9 +744,9 @@ namespace Btk{
                     std::forward<Callable>(callable),
                     std::forward<Object>(object),std::forward<Args>(args)...
                 };
-                data.invoker = invoker;
-                data.invoke  = Invoker::Run;
-                data.cleanup = Invoker::Delete;
+                data.self = invoker;
+                data.entry  = Invoker::Run;
+                data.destroy = Invoker::Delete;
 
                 //Check is based on HasSlots
                 constexpr bool val = std::is_base_of<HasSlots,std::remove_pointer_t<Object>>();
@@ -744,15 +758,14 @@ namespace Btk{
 
                 invoker->location = loc;
             
-                bind(data);
+                _SetCallback(timer,&data);
             }
             /**
              * @brief Reset the callback
              * 
              */
             void reset(){
-                _TimerInvokerData data = {nullptr,nullptr,nullptr};
-                bind(data);
+                _ResetCallback(timer);
             }
 
             template<class Callable,class ...Args>
@@ -761,14 +774,20 @@ namespace Btk{
                 bind(std::forward<Callable>(callable),std::forward<Args>(args)...);
                 return *this;
             }
-        private:
-            /**
-             * @brief Bind invoker
-             * 
-             */
-            void bind(_TimerInvokerData);
 
-            TimerImpl *timer;
+            //Internal
+            static void*  _New();
+            static void   _Stop(void *timer);
+            static void   _Start(void *timer);
+            static void   _Delete(void *timer);
+            static void   _SetInterval(void *timer,Uint32 interval);
+            static Uint32 _GetInterval(void *timer);
+            static void   _SetCallback(void *timer,const void *callback);
+            static void   _ResetCallback(void *timer){
+                _SetCallback(timer,nullptr);
+            }
+        private:
+            void *timer;
     };
 }
 

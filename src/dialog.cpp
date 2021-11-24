@@ -5,8 +5,11 @@
 #include <Btk/dialog.hpp>
 
 namespace Btk{
+    Dialog::Dialog(){
+        do_show.bind<&Dialog::default_show>();
+    }
     Dialog::~Dialog() = default;
-    auto Dialog::show() -> Status{
+    auto Dialog::run() -> Status{
         if(_opened){
             //Double call
             return _status;
@@ -34,20 +37,15 @@ namespace Btk{
         }
         return _status;
     }
-    void Dialog::async_entry(){
-        _event->clear();
-        show();
-        _event->set();
+    void Dialog::default_show(){
+        //Create a thread and exec
+        Thread([this](){
+            _event->clear();
+            run();
+            _event->set();
+        }).detach();
     }
-    void Dialog::async(){
-        Thread(&Dialog::async_entry,this).detach();
-    }
-    //Normal box
-    MessageBox::MessageBox(u8string_view t,u8string_view m,Flag f){
-        _title = t;
-        _message = m;
-        _flag = f;
-
-        register_run_fn<&MessageBox::_do_run>();
+    void Dialog::show(){
+        do_show(this);
     }
 }

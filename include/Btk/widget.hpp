@@ -255,6 +255,13 @@ namespace Btk{
             std::list<Widget*> childrens;
         private:
             void dump_tree_impl(FILE *output,int depth);
+            template<class Callable,class ...Args>
+            void walk_tree_impl(int depth,Callable &&callable,Args &&...args){
+                callable(depth,this,args...);
+                for(auto &child:childrens){
+                    child->walk_tree_impl(depth + 1,callable,args...);
+                }
+            }
 
             Font _font;
             Theme _theme;

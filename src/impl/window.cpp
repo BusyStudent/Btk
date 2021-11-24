@@ -362,6 +362,9 @@ namespace Btk{
     void Window::draw(){
         pimpl->redraw();
     }
+    void Window::show(){
+        SDL_ShowWindow(pimpl->win);
+    }
     void Window::close(){
         //send a close request
         SDL_Event event;
@@ -374,6 +377,9 @@ namespace Btk{
     }
     void Window::move(int x,int y){
         SDL_SetWindowPosition(pimpl->win,x,y);
+    }
+    void Window::resize(int w,int h){
+        SDL_SetWindowSize(pimpl->win,w,h);
     }
     
     void Window::set_icon(u8string_view file){
@@ -486,6 +492,19 @@ namespace Btk{
     }
     Font Window::font() const{
         throwRuntimeError("Unimpl yet");
+    }
+    Size Window::size() const{
+        Size s;
+        SDL_GetWindowSize(pimpl->win,&s.w,&s.h);
+        return s;
+    }
+    Point Window::position() const{
+        Point p;
+        SDL_GetWindowPosition(pimpl->win,&p.x,&p.y);
+        return p;
+    }
+    u8string_view Window::title() const{
+        return SDL_GetWindowTitle(pimpl->win);
     }
     void Window::dump_tree(FILE *output) const{
         pimpl->dump_tree(output);

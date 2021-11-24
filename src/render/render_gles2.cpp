@@ -100,73 +100,73 @@ namespace Btk{
         }
         return texture;
     }
-    void Renderer::set_texture_flags(int texture_id,TextureFlags flags){
+    // void Renderer::set_texture_flags(int texture_id,TextureFlags flags){
 
-        auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
-        BTK_ASSERT(texture != nullptr);
-        //Get cur texture
-        GLint cur_tex;
-        glGetIntegerv(GL_TEXTURE_2D,&cur_tex);
-        //Bind the texture
-        glBindTexture(GL_TEXTURE_2D,texture->tex);
-        //Code from nanovg gl
+    //     auto *texture = glnvgFindTexture(nvg_ctxt,texture_id);
+    //     BTK_ASSERT(texture != nullptr);
+    //     //Get cur texture
+    //     GLint cur_tex;
+    //     glGetIntegerv(GL_TEXTURE_2D,&cur_tex);
+    //     //Bind the texture
+    //     glBindTexture(GL_TEXTURE_2D,texture->tex);
+    //     //Code from nanovg gl
 
-        int w = texture->width;
-        int h = texture->height;
-        int imageFlags = int(flags);
+    //     int w = texture->width;
+    //     int h = texture->height;
+    //     int imageFlags = int(flags);
 
-        #ifdef NANOVG_GLES2
-        // Check for non-power of 2.
-        if (glnvg__nearestPow2(w) != (unsigned int)w || glnvg__nearestPow2(h) != (unsigned int)h) {
-            // No repeat
-            if ((imageFlags & NVG_IMAGE_REPEATX) != 0 || (imageFlags & NVG_IMAGE_REPEATY) != 0) {
-                printf("Repeat X/Y is not supported for non power-of-two textures (%d x %d)\n", w, h);
-                imageFlags &= ~(NVG_IMAGE_REPEATX | NVG_IMAGE_REPEATY);
-            }
-            // No mips.
-            if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
-                printf("Mip-maps is not support for non power-of-two textures (%d x %d)\n", w, h);
-                imageFlags &= ~NVG_IMAGE_GENERATE_MIPMAPS;
-            }
-        }
-        #endif
+    //     #ifdef NANOVG_GLES2
+    //     // Check for non-power of 2.
+    //     if (glnvg__nearestPow2(w) != (unsigned int)w || glnvg__nearestPow2(h) != (unsigned int)h) {
+    //         // No repeat
+    //         if ((imageFlags & NVG_IMAGE_REPEATX) != 0 || (imageFlags & NVG_IMAGE_REPEATY) != 0) {
+    //             printf("Repeat X/Y is not supported for non power-of-two textures (%d x %d)\n", w, h);
+    //             imageFlags &= ~(NVG_IMAGE_REPEATX | NVG_IMAGE_REPEATY);
+    //         }
+    //         // No mips.
+    //         if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+    //             printf("Mip-maps is not support for non power-of-two textures (%d x %d)\n", w, h);
+    //             imageFlags &= ~NVG_IMAGE_GENERATE_MIPMAPS;
+    //         }
+    //     }
+    //     #endif
 
-        if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
-            if (imageFlags & NVG_IMAGE_NEAREST) {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-            } else {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            }
-        } else {
-            if (imageFlags & NVG_IMAGE_NEAREST) {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            } else {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            }
-        }
+    //     if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+    //         if (imageFlags & NVG_IMAGE_NEAREST) {
+    //             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    //         } else {
+    //             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    //         }
+    //     } else {
+    //         if (imageFlags & NVG_IMAGE_NEAREST) {
+    //             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //         } else {
+    //             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //         }
+    //     }
 
-        if (imageFlags & NVG_IMAGE_NEAREST) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        } else {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        }
+    //     if (imageFlags & NVG_IMAGE_NEAREST) {
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //     } else {
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //     }
 
-        if (imageFlags & NVG_IMAGE_REPEATX)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        else
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    //     if (imageFlags & NVG_IMAGE_REPEATX)
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    //     else
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 
-        if (imageFlags & NVG_IMAGE_REPEATY)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        else
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    //     if (imageFlags & NVG_IMAGE_REPEATY)
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //     else
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         
-        texture->flags = imageFlags;
-        BTK_GL_CHECK();
-        //Reset
-        glBindTexture(GL_TEXTURE_2D,cur_tex);
+    //     texture->flags = imageFlags;
+    //     BTK_GL_CHECK();
+    //     //Reset
+    //     glBindTexture(GL_TEXTURE_2D,cur_tex);
 
-    }
+    // }
 }
 namespace Btk{
     //CloneTexture
@@ -540,6 +540,25 @@ namespace Btk{
             _cur_win = nullptr;
         }
     }
+    void GLDevice::gl_enter(Context ctxt){
+        gl_begin();
+        end_frame(ctxt);
+    }
+    void GLDevice::gl_leave(Context ctxt){
+        if(targets_stack.empty()){
+            //in screen
+        }
+        else{
+            //In target
+            auto &target = targets_stack.top();
+            begin_frame_ex(ctxt,
+                target.w,
+                target.h,
+                1
+            );
+        }
+        gl_end();
+    }
     //Frame
     void GLDevice::begin_frame(Context ctxt,float w,float h,float ratio){
         make_current();
@@ -877,6 +896,153 @@ namespace Btk{
         BTK_GL_BEGIN();
         RendererDevice::update_texture(ctxt,id,r,pix);
         BTK_GL_END();
+    }
+    //Lock Texture
+    struct GLLockHead{
+        LockFlag flag;
+        Rect rect;
+    };
+    void *GLDevice::lock_texture(
+        Context ctxt,
+        TextureID id,
+        const Rect *r,
+        LockFlag flag
+    ){
+        Rect rect;
+        if(r == nullptr){
+            rect.x = 0;
+            rect.y = 0;
+            auto [w,h] = texture_size(ctxt,id);
+            rect.w = w;
+            rect.h = h;
+        }
+        else{
+            rect = *r;
+        }
+        //Alloc mem
+        void *mem = SDL_malloc(
+            sizeof(GLLockHead) + SDL_BYTESPERPIXEL(PixelFormat::RGBA32) * rect.w * rect.h
+        );
+        if(mem == nullptr){
+            return nullptr;
+        }
+        void *pixels = static_cast<Uint8*>(mem) + sizeof(GLLockHead);
+        //Do op
+        static_cast<GLLockHead*>(mem)->flag = flag;
+        static_cast<GLLockHead*>(mem)->rect = rect;
+        if((flag & Read) == Read){
+            read_pixels(
+                ctxt,
+                id,
+                PixelFormat::RGBA32,
+                &rect,
+                pixels
+            );
+        }
+        return pixels;
+    }
+    void GLDevice::unlock_texture(
+        Context ctxt,
+        TextureID id,
+        void *pixels
+    ){
+        if(pixels == nullptr){
+            return;
+        }
+        GLLockHead *data = reinterpret_cast<GLLockHead*>(
+            static_cast<Uint8*>(pixels) - sizeof(GLLockHead)
+        );
+        if((data->flag & Write) == Write){
+            update_texture(ctxt,id,&(data->rect),pixels);
+        }
+        SDL_free(data);
+    }
+    //Set flags
+    bool GLDevice::configure_texture(
+        Context ctxt,
+        TextureID id,
+        const TextureFlags *flag){
+        
+        if(flag != nullptr){
+            auto tex = glnvgFindTexture(ctxt,id);
+            if(tex == nullptr){
+                return false;
+            }
+            int imageFlags = int(*flag);
+
+            GLuint cur_tex = GL::CurrentTex();
+            
+            //Code from nanovg_gl.h
+        #ifdef NANOVG_GLES2
+            // Check for non-power of 2.
+            if (glnvg__nearestPow2(w) != (unsigned int)w || glnvg__nearestPow2(h) != (unsigned int)h) {
+                // No repeat
+                if ((imageFlags & NVG_IMAGE_REPEATX) != 0 || (imageFlags & NVG_IMAGE_REPEATY) != 0) {
+                    printf("Repeat X/Y is not supported for non power-of-two textures (%d x %d)\n", w, h);
+                    imageFlags &= ~(NVG_IMAGE_REPEATX | NVG_IMAGE_REPEATY);
+                }
+                // No mips.
+                if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+                    printf("Mip-maps is not support for non power-of-two textures (%d x %d)\n", w, h);
+                    imageFlags &= ~NVG_IMAGE_GENERATE_MIPMAPS;
+                }
+            }
+        #endif
+
+        #if defined (NANOVG_GL2)
+            // GL 1.4 and later has support for generating mipmaps using a tex parameter.
+            if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+                glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+            }
+        #endif
+
+            if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+                if (imageFlags & NVG_IMAGE_NEAREST) {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+                } else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                }
+            } else {
+                if (imageFlags & NVG_IMAGE_NEAREST) {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                } else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                }
+            }
+
+            if (imageFlags & NVG_IMAGE_NEAREST) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            } else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+
+            if (imageFlags & NVG_IMAGE_REPEATX)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            else
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+            if (imageFlags & NVG_IMAGE_REPEATY)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            else
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            // The new way to build mipmaps on GLES and GL3
+        #if !defined(NANOVG_GL2)
+            if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+                glGenerateMipmap(GL_TEXTURE_2D);
+            }
+        #endif
+            bool val = (glGetError() == GL_NO_ERROR);
+            //Reset to prev
+            glBindTexture(GL_TEXTURE_2D,cur_tex);
+            if(val){
+                //Succeed ,update the flags
+                tex->flags = imageFlags;
+            }
+            return val;
+        }
+        else{
+            return false;
+        }
     }
     //Target
     void GLDevice::set_target(Context ctxt,TextureID id){

@@ -16,6 +16,8 @@ namespace Btk{
         Underline = 1 << 2,
         Strikethrough = 1 << 3
     };
+    using FontID = int;
+    inline constexpr FontID FontInvalidID = -1;
     /**
      * @brief Font Class
      * 
@@ -294,6 +296,9 @@ namespace Btk{
              * @return Iterator 
              */
             Iterator end();
+        public:
+            //Internal function
+            
         friend struct Iterator;
     };
     class BTKAPI FontMatcher{
@@ -349,22 +354,6 @@ namespace Btk{
         BTKAPI u8string GetDefaultFont();
     };
     BTKAPI void AddMemFont(u8string_view name,const void *buf,size_t bufsize,bool dup = true);
-    //operators for FontStyle
-    // inline FontStyle operator |(FontStyle s1,FontStyle s2) noexcept{
-    //     return static_cast<FontStyle>(int(s1) | int(s2));
-    // }
-    // inline FontStyle operator +(FontStyle s1,FontStyle s2) noexcept{
-    //     return static_cast<FontStyle>(int(s1) | int(s2));
-    // }
-    // inline FontStyle operator &(FontStyle s1,FontStyle s2) noexcept{
-    //     return static_cast<FontStyle>(int(s1) & int(s2));
-    // }
-    // inline FontStyle operator +=(FontStyle s1,FontStyle s2) noexcept{
-    //     return static_cast<FontStyle>(int(s1) | int(s2));
-    // }
-    // inline FontStyle operator |=(FontStyle s1,FontStyle s2) noexcept{
-    //     return static_cast<FontStyle>(int(s1) | int(s2));
-    // }
     BTK_FLAGS_OPERATOR(FontStyle,int);
 };
 

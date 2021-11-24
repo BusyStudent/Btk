@@ -25,6 +25,7 @@
 #include <Btk/font.hpp>
 #include <Btk/Btk.hpp>
 #include <cstdlib>
+#include <climits>
 #include <ctime>
 #include <random>
 #include <mutex>
@@ -45,18 +46,48 @@ using namespace Btk;
 	#include FT_ADVANCES_H
 	#include <math.h>
 #else
+	//Our mempool
+	namespace{
+		static void* fons__tmpalloc(size_t size, void* up);
+		static void fons__tmpfree(void* ptr, void* up);
+	}
+	#define STBTT_malloc(x,u)    fons__tmpalloc(x,u)
+	#define STBTT_free(x,u)      fons__tmpfree(x,u)
+	#include <SDL2/SDL_rwops.h>
+
+	#ifdef BTK_USE_CXXALLOCATOR
+	#include <memory_resource>
+	#endif
+
+
 	#define STB_TRUETYPE_IMPLEMENTATION
 	#define STBTT_STATIC
 	#include "../libs/stb_truetype.h"
 	using FT_Library = void;
+
+
+	//Map file to memory
+	#ifdef __linux
+		#include <sys/stat.h>
+		#include <sys/mman.h>
+		#include <unistd.h>
+		#include <fcntl.h>
+		#define FS_HAS_FILE_MAPPING 1
+	#else
+		#define FS_HAS_FILE_MAPPING 0
+	#endif
+
+	#define FS_PLATFORM_LINUX defined(__linux) && FS_HAS_FILE_MAPPING
+
 #endif
+
+namespace{
 
 //To the namespace
 //Forward decl
 struct FONSttFontImpl;
 static FT_Library LockLibrary();
 static void       UnlockLibrary();
-static void       CloseFace(FT_Face);
 
 //Our defs
 #define FS_GET_REFCOUNT(P) ((P) != nullptr ? ((P->_refcount)) : -1)
@@ -93,7 +124,6 @@ static void       CloseFace(FT_Face);
         _refcount++;\
     }
 
-namespace{
 	struct Runtime;
     template<class T>
     struct SmartPointer{
@@ -156,17 +186,37 @@ namespace{
         }
         T *ptr;
     };
-}
 
 
 
 
 
+#if BTK_HAS_FREETYPE
 struct FONSttFontImpl {
 	FT_Face font = nullptr;
 	u8string_view name;
 	u8string filename;
 };
+#else
+//TODO Add mapped memory into FONSFontData
+struct FONSFontData{
+	FS_REFCOUNTER();
+};
+struct FONSttFontImpl {
+	stbtt_fontinfo font;
+	u8string filename;
+	void *buffer = nullptr;
+
+	//File mapping
+	#if FS_PLATFORM_LINUX
+	size_t mem_size = 0;
+	void *mem_ptr = MAP_FAILED;
+	#endif
+
+};
+#endif
+
+
 typedef struct FONSttFontImpl FONSttFontImpl;
 
 
@@ -237,6 +287,9 @@ struct FONSglyph
 	short size, blur;
 	short x0,y0,x1,y1;
 	short xadv,xoff,yoff;
+	//The master,The glyph belong to witch context
+	void *stash = nullptr;
+	bool  unused = false;
 };
 typedef struct FONSglyph FONSglyph;
 
@@ -267,6 +320,12 @@ struct FONSfont
 		//cleanup  the face
 		fons__tt_free_face(font);
 	}
+	/**
+	 * @brief Clean the cached glyph marked with fontstash
+	 * 
+	 * @param fontstash 
+	 */
+	void clean_cache_by_ctxt(void *fontstash);
 	int id;
 	//Construct / Delete
 };
@@ -311,8 +370,11 @@ struct FONScontext
 	float tcoords[FONS_VERTEX_COUNT*2];
 	unsigned int colors[FONS_VERTEX_COUNT];
 	int nverts;
+	//Scratch buffer
+	//Unused in freetype
 	unsigned char* scratch;
 	int nscratch;
+	
 	FONSstate states[FONS_MAX_STATES];
 	int nstates;
 	void (*handleError)(void* uptr, int error, int val);
@@ -320,10 +382,15 @@ struct FONScontext
 	//Our data
 	Runtime *runtime;
 	std::map<int,SmartPointer<FONSfont>> fonts_map;
+	~FONScontext(){
+		//Clean the glyph cached by the context
+		for(auto &i:fonts_map){
+			i.second->clean_cache_by_ctxt(this);
+		}
+	}
 };
 
 //Our global font 
-namespace{
 
 struct Runtime{
 	Runtime();
@@ -335,12 +402,20 @@ struct Runtime{
 	#endif
 
 	std::recursive_mutex mtx;
+	//Font mapping
+	int default_font = FONS_INVALID;
 
 	#if BTK_HAS_FREETYPE
 	FT_Library library;
+	#elif defined(BTK_USE_CXXALLOCATOR)
+	std::pmr::synchronized_pool_resource mempool;
 	#endif
 
+	int add_font(const char *name,const char *filename,Uint32 idx);
+	int add_font(const char *name,void  *buf,size_t bufsize,int free_data,Uint32 idx);
+
 	int alloc_id();
+	int alloc_font();
 };
 Btk::Constructable<Runtime> runtime;
 
@@ -351,15 +426,25 @@ Runtime::Runtime(){
 	std::srand(std::time(nullptr));
 	#endif
 
+	#if BTK_HAS_FREETYPE
 	FT_Error err = FT_Init_FreeType(&library);
 	if(err){
 		//Has error
 		throwRuntimeError("Init freetype failed");
 	}
+	#endif
+	//Add default font
+	default_font = add_font(
+		"",
+		FontUtils::GetFileByName("").c_str(),
+		0
+	);
 }
 Runtime::~Runtime(){
 	fonts_map.clear();
+	#if BTK_HAS_FREETYPE
 	FT_Done_FreeType(library);
+	#endif
 }
 
 int Runtime::alloc_id(){
@@ -378,10 +463,11 @@ int Runtime::alloc_id(){
 		#endif
 	}
 	while(fonts_map.find(id) != fonts_map.end());
+	BTK_LOGINFO("[Fontstash] Alloc ID %d",id);
 	return id;
 }
 
-}
+
 void BtkFt_Init(){
 	runtime.construct();
 }
@@ -393,15 +479,15 @@ BtkFt BtkFt_GetFromID(int id){
 	if(id < 0){
 		return nullptr;
 	}
-	std::map<int,SmartPointer<FONSfont>>::iterator iter;
 	if(id == 0){
-		//Use the first font
-		iter = runtime->fonts_map.begin();
+		//Use default font
+		return BtkFt_GetFromID(runtime->default_font);
 	}
-	else{
-		iter = runtime->fonts_map.find(id);
-	}
+	//Begin find
+	std::map<int,SmartPointer<FONSfont>>::iterator iter;
+	iter = runtime->fonts_map.find(id);
 	if(iter == runtime->fonts_map.end()){
+		BTK_LOGDEBUG("[Fontstash]Could not find id %d",id);
 		return nullptr;
 	}
 	return iter->second.get();
@@ -419,11 +505,21 @@ BtkFt BtkFt_Dup(BtkFt font){
 }
 void  BtkFt_Close(BtkFt font){
 	FS_DELETE_REF(font);
+	if(FS_GET_REFCOUNT(font) == 1){
+		//Still has 1 ref in the global runtime
+		runtime->fonts_map.erase(font->id);
+	}
 }
 int   BtkFt_Refcount(BtkFt font){
 	return FS_GET_REFCOUNT(font);
 }
 BtkFt BtkFt_Open(const char *filename,Uint32 idx){
+	//TODO
+	// int id = runtime->add_font("",filename,idx);
+	// if(id == FONS_INVALID){
+	// 	return nullptr;
+	// }
+	// return BtkFt_GetFromID(id);
 	return nullptr;
 }
 //Find
@@ -454,17 +550,16 @@ static void      UnlockLibrary(){
 
 //Freetype
 #if BTK_HAS_FREETYPE
-static int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font, unsigned char *data, int dataSize, int fontIndex)
+static int fons__tt_loadFont(FONSttFontImpl *font, unsigned char *data, int dataSize, int fontIndex)
 {
 	FT_Error ftError;
-	FONS_NOTUSED(context);
 
 	//font->font.userdata = stash;
 	ftError = FT_New_Memory_Face(LockLibrary(), (const FT_Byte*)data, dataSize, fontIndex, &font->font);
 	UnlockLibrary();
 	return ftError == 0;
 }
-static int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font,const char *filename, int fontIndex)
+static int fons__tt_loadFont(FONSttFontImpl *font,const char *filename, int fontIndex)
 {
 	//Try to query the runtime has the same file
 	auto lib = LockLibrary();
@@ -479,14 +574,15 @@ static int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font,const ch
 					return false;
 				}
 				else{
+					BTK_LOGINFO("[Freetype]Reference face %s Index:%d",filename,fontIndex);
 					return true;
 				}
 			}
 		}
 	}
+	BTK_LOGINFO("[Freetype]Load %s Index:%d",filename,fontIndex);
 
 	FT_Error ftError;
-	FONS_NOTUSED(context);
 
 	//font->font.userdata = stash;
 	ftError = FT_New_Face(
@@ -576,14 +672,41 @@ static int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int gl
 	return (int)((ftKerning.x + 32) >> 6);  // Round up and convert to integer
 }
 #else
+
+//STB truetype allocator
+static void* fons__tmpalloc(size_t size, void* up)
+{
+	#ifdef BTK_USE_CXXALLOCATOR
+	auto &p = static_cast<Runtime*>(up)->mempool;
+	size_t *ptr = (size_t*)p.allocate(sizeof(p) + size);
+	*ptr = size;
+	return (Uint8*)ptr + sizeof(size_t);
+	#else
+	return SDL_malloc(size);
+	#endif
+}
+
+static void fons__tmpfree(void* ptr, void* up)
+{
+	#ifdef BTK_USE_CXXALLOCATOR
+	auto &p = static_cast<Runtime*>(up)->mempool;
+	return p.deallocate(
+		ptr,
+		*reinterpret_cast<size_t*>((Uint8*)ptr - sizeof(size_t))
+	);
+	#else
+	return SDL_free(ptr);
+	#endif
+}
+
 //STB truetype
 
-int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font, unsigned char *data, int dataSize, int fontIndex)
+int fons__tt_loadFont(FONSttFontImpl *font, unsigned char *data, int dataSize, int fontIndex)
 {
 	int offset, stbError;
 	FONS_NOTUSED(dataSize);
 
-	font->font.userdata = context;
+	font->font.userdata = runtime.get();
 	offset = stbtt_GetFontOffsetForIndex(data, fontIndex);
 	if (offset == -1) {
 		stbError = 0;
@@ -591,6 +714,79 @@ int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font, unsigned char 
 		stbError = stbtt_InitFont(&font->font, data, offset);
 	}
 	return stbError;
+}
+//Load in file
+int fons__tt_loadFont(FONSttFontImpl *font,const char *path, int fontIndex)
+{
+	#if FS_PLATFORM_LINUX
+	//Has filemapping
+	int fd = ::open(path,O_RDONLY);
+	if(fd == -1){
+		return false;
+	}
+	struct stat status;
+	if(::fstat(fd,&status) == -1){
+		goto err;
+	}
+	void *addr;
+	addr = ::mmap(
+		nullptr,
+		status.st_size,
+		PROT_READ,
+		MAP_SHARED,
+		fd,
+		0
+	);
+	if(addr == MAP_FAILED){
+		goto err;
+	}
+	//Done 
+	::close(fd);
+	font->mem_size = status.st_size;
+	font->mem_ptr = addr;
+
+	if(fons__tt_loadFont(font,(Uint8*)addr,status.st_size,fontIndex) == false){
+		//Error,free memory
+		::munmap(addr,status.st_size);
+		font->mem_ptr = MAP_FAILED;
+		font->mem_size = 0;
+		return false;
+	}
+	return true;
+err:
+	::close(fd);
+	return false;
+	#else
+	//No file mapping
+	size_t datasize;
+	font->buffer = SDL_LoadFile(path,&datasize);
+	if(font->buffer == nullptr){
+		//Load Error
+		return false;
+	}
+	if(fons__tt_loadFont(font,(Uint8*)font->buffer,datasize,fontIndex)){
+		return true;
+	}
+	else{
+		//Load failure
+		SDL_free(font->buffer);
+		return false;
+	}
+	#endif
+}
+static void fons__tt_free_face(FONSttFontImpl &font){
+	if(font.buffer != nullptr){
+		SDL_free(font.buffer);
+	}
+	#if FS_PLATFORM_LINUX
+	if(font.mem_ptr != MAP_FAILED){
+		//Unmap the memory
+		if(::munmap(font.mem_ptr,font.mem_size) == -1){
+			BTK_LOGWARN("[Fontstash]Unmap(%p) failed",font.mem_ptr);
+		}
+	}
+
+	#endif
 }
 
 void fons__tt_getFontVMetrics(FONSttFontImpl *font, int *ascent, int *descent, int *lineGap)
@@ -630,16 +826,13 @@ int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int glyph2)
 
 #endif
 
-
-//Local Get Font
-// static BtkFt GetFont(FONScontext *stash,int id){
-// 	if(id == 0){
-// 		//Default
-// 		return stash->fonts_map.begin()->second.get();
-// 	}
-// }
-
-
+//Has glyph
+bool BtkFt_HasGlyph(BtkFt font,char32_t codepoint){
+	if(font != nullptr){
+		return fons__tt_getGlyphIndex(&(font->font),codepoint) != 0;
+	}
+	return false;
+}
 
 
 
@@ -938,9 +1131,10 @@ FONScontext* fonsCreateInternal(FONSparams* params)
 	fonsClearState(stash);
 
 	stash->runtime = runtime.get();
-	//Add font
-	fonsAddFont(stash,"",FontUtils::GetFileByName("").c_str(),0);
-
+	//Try borrow global
+	if(runtime->default_font != FONS_INVALID){
+		stash->fonts_map[0] = BtkFt_GetFromID(0);
+	}
 	return stash;
 
 error:
@@ -1054,10 +1248,10 @@ void fonsRemoveFont(FONScontext *ctxt,int id){
 	}
 }
 
-static int fons__allocFont()
+int Runtime::alloc_font()
 {
 	FONSfont* font = new FONSfont;
-	font->id = runtime->alloc_id();
+	font->id = alloc_id();
 
 	// memset(font, 0, sizeof(FONSfont));
 
@@ -1095,7 +1289,7 @@ static int fons__allocFont(FONScontext* stash)
 	// error:
 	// 	delete font;
 	// 	return FONS_INVALID;
-	int id = fons__allocFont();
+	int id = runtime->alloc_font();
 	if(id != FONS_INVALID){
 		//Add it into the context
 		stash->fonts_map[id] = BtkFt_GetFromID(id);
@@ -1107,10 +1301,64 @@ static int fons__allocFont(FONScontext* stash)
 
 int fonsAddFont(FONScontext* stash, const char* name, const char* path, int fontIndex)
 {
+// 	int i, ascent, descent, fh, lineGap;
+// 	FONSfont* font;
+
+// 	int idx = fons__allocFont(stash);
+// 	if (idx == FONS_INVALID)
+// 		return FONS_INVALID;
+
+// 	font = BtkFt_GetFromID(idx);
+
+// 	strncpy(font->name, name, sizeof(font->name));
+// 	font->name[sizeof(font->name)-1] = '\0';
+
+// 	// Init hash lookup.
+// 	for (i = 0; i < FONS_HASH_LUT_SIZE; ++i)
+// 		font->lut[i] = -1;
+
+// 	// Read in the font data.
+// 	font->dataSize = 1;
+// 	font->data = reinterpret_cast<Uint8*>(0x1);
+// 	font->freeData = false;
+
+// 	// Init font
+// 	// stash->nscratch = 0;
+// 	if (!fons__tt_loadFont(&font->font,path, fontIndex)) goto error;
+
+// 	// Store normalized line height. The real line height is got
+// 	// by multiplying the lineh by font size.
+// 	fons__tt_getFontVMetrics( &font->font, &ascent, &descent, &lineGap);
+// 	ascent += lineGap;
+// 	fh = ascent - descent;
+// 	font->ascender = (float)ascent / (float)fh;
+// 	font->descender = (float)descent / (float)fh;
+// 	font->lineh = font->ascender - font->descender;
+
+// 	return idx;
+
+// error:
+// 	// fons__freeFont(font);
+// 	stash->fonts_map.erase(idx);
+// 	runtime->fonts_map.erase(idx);
+// 	// stash->nfonts--;
+// 	return FONS_INVALID;
+	int font = runtime->add_font(name,path,fontIndex);
+	if(font != FONS_INVALID){
+		//Add it into the context
+		stash->fonts_map[font] = BtkFt_GetFromID(font);
+		return font;
+	}
+	return FONS_INVALID;
+}
+
+
+int Runtime::add_font(const char* name, const char* path,Uint32 fontIndex)
+{
 	int i, ascent, descent, fh, lineGap;
 	FONSfont* font;
 
-	int idx = fons__allocFont(stash);
+	int idx = alloc_font();
 	if (idx == FONS_INVALID)
 		return FONS_INVALID;
 
@@ -1129,8 +1377,8 @@ int fonsAddFont(FONScontext* stash, const char* name, const char* path, int font
 	font->freeData = false;
 
 	// Init font
-	stash->nscratch = 0;
-	if (!fons__tt_loadFont(stash, &font->font,path, fontIndex)) goto error;
+	// stash->nscratch = 0;
+	if (!fons__tt_loadFont(&font->font,path, fontIndex)) goto error;
 
 	// Store normalized line height. The real line height is got
 	// by multiplying the lineh by font size.
@@ -1145,7 +1393,6 @@ int fonsAddFont(FONScontext* stash, const char* name, const char* path, int font
 
 error:
 	// fons__freeFont(font);
-	stash->fonts_map.erase(idx);
 	runtime->fonts_map.erase(idx);
 	// stash->nfonts--;
 	return FONS_INVALID;
@@ -1153,10 +1400,61 @@ error:
 
 int fonsAddFontMem(FONScontext* stash, const char* name, unsigned char* data, int dataSize, int freeData, int fontIndex)
 {
+// 	int i, ascent, descent, fh, lineGap;
+// 	FONSfont* font;
+
+// 	int idx = fons__allocFont(stash);
+// 	if (idx == FONS_INVALID)
+// 		return FONS_INVALID;
+
+// 	font = BtkFt_GetFromID(idx);
+
+// 	strncpy(font->name, name, sizeof(font->name));
+// 	font->name[sizeof(font->name)-1] = '\0';
+
+// 	// Init hash lookup.
+// 	for (i = 0; i < FONS_HASH_LUT_SIZE; ++i)
+// 		font->lut[i] = -1;
+
+// 	// Read in the font data.
+// 	font->dataSize = dataSize;
+// 	font->data = data;
+// 	font->freeData = (unsigned char)freeData;
+
+// 	// Init font
+// 	// stash->nscratch = 0;
+
+// 	if (!fons__tt_loadFont(&font->font, data, dataSize, fontIndex)) goto error;
+
+// 	// Store normalized line height. The real line height is got
+// 	// by multiplying the lineh by font size.
+// 	fons__tt_getFontVMetrics( &font->font, &ascent, &descent, &lineGap);
+// 	ascent += lineGap;
+// 	fh = ascent - descent;
+// 	font->ascender = (float)ascent / (float)fh;
+// 	font->descender = (float)descent / (float)fh;
+// 	font->lineh = font->ascender - font->descender;
+
+// 	return idx;
+
+// error:
+// 	stash->fonts_map.erase(idx);
+// 	runtime->fonts_map.erase(idx);
+// 	return FONS_INVALID;
+	int font = runtime->add_font(name,data,dataSize,freeData,fontIndex);
+	if(font != FONS_INVALID){
+		//Add it into the context
+		stash->fonts_map[font] = BtkFt_GetFromID(font);
+		return font;
+	}
+	return FONS_INVALID;
+}
+int Runtime::add_font(const char* name,void* data,size_t dataSize,int freeData,Uint32 fontIndex)
+{
 	int i, ascent, descent, fh, lineGap;
 	FONSfont* font;
 
-	int idx = fons__allocFont(stash);
+	int idx = alloc_font();
 	if (idx == FONS_INVALID)
 		return FONS_INVALID;
 
@@ -1171,12 +1469,13 @@ int fonsAddFontMem(FONScontext* stash, const char* name, unsigned char* data, in
 
 	// Read in the font data.
 	font->dataSize = dataSize;
-	font->data = data;
+	font->data = (Uint8*)data;
 	font->freeData = (unsigned char)freeData;
 
 	// Init font
-	stash->nscratch = 0;
-	if (!fons__tt_loadFont(stash, &font->font, data, dataSize, fontIndex)) goto error;
+	// stash->nscratch = 0;
+
+	if (!fons__tt_loadFont(&font->font, static_cast<Uint8*>(data), dataSize, fontIndex)) goto error;
 
 	// Store normalized line height. The real line height is got
 	// by multiplying the lineh by font size.
@@ -1190,7 +1489,6 @@ int fonsAddFontMem(FONScontext* stash, const char* name, unsigned char* data, in
 	return idx;
 
 error:
-	stash->fonts_map.erase(idx);
 	runtime->fonts_map.erase(idx);
 	return FONS_INVALID;
 }
@@ -1210,6 +1508,17 @@ int fonsGetFontByName(FONScontext* s, const char* name)
 static FONSglyph* fons__allocGlyph(FONSfont* font)
 {
 	if (font->nglyphs+1 > font->cglyphs) {
+		//The glyph will be full
+		//try to find unused glyph
+		for(int i = 0;i < font->nglyphs;i++){
+			auto &glyph = font->glyphs[i];
+			if(glyph.unused){
+				BTK_LOGINFO("[Fontstash]Find a unused glyph at %d",i);
+				return &glyph;
+			}
+		}
+
+
 		font->cglyphs = font->cglyphs == 0 ? 8 : font->cglyphs * 2;
 		font->glyphs = (FONSglyph*)realloc(font->glyphs, sizeof(FONSglyph) * font->cglyphs);
 		if (font->glyphs == NULL) return NULL;
@@ -1284,6 +1593,46 @@ static void fons__blur(FONScontext* stash, unsigned char* dst, int w, int h, int
 //	fons__blurcols(dst, w, h, dstStride, alpha);
 }
 
+//Cleanup cached glyph
+void FONSfont::clean_cache_by_ctxt(void *fontstash){
+	auto get_hash = [](FONSglyph &glyph){
+		if(glyph.next == 0){
+			return -1;
+		}
+		return glyph.next;
+	};
+	for(int i = 0;i < nglyphs;i++){
+		auto &glyph = glyphs[i];
+		if(glyph.stash != fontstash){
+			continue;
+		}
+		//Get hash
+		auto h = fons__hashint(glyph.codepoint) & (FONS_HASH_LUT_SIZE-1);		
+		int index = lut[h];
+		//glyph position
+		int pos   = &glyph - glyphs;
+		
+		if(index == pos){
+			//Is same index
+			//
+			lut[h] = get_hash(glyph);;
+
+		}
+		else{
+			//Find the pos
+			FONSglyph *cur = &glyphs[index];
+			while(cur->next != pos and cur->next != -1){
+			 	cur = &glyphs[cur->next];
+			}
+			cur->next = get_hash(glyph);
+		}
+		memset(&glyph,0,sizeof(FONSglyph));
+		glyph.unused = true;
+		glyph.next = -1;
+	}
+}
+
+
 static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned int codepoint,
 								 short isize, short iblur, int bitmapOption)
 {
@@ -1307,8 +1656,10 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	// Find code point and size.
 	h = fons__hashint(codepoint) & (FONS_HASH_LUT_SIZE-1);
 	i = font->lut[h];
+	//TODO This cache has problems in rendering in different context if we didnot check is the same stash
 	while (i != -1) {
-		if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur) {
+		if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur && 
+				font->glyphs[i].stash == stash /*Check is same context*/ ) {
 			glyph = &font->glyphs[i];
 			if (bitmapOption == FONS_GLYPH_BITMAP_OPTIONAL || (glyph->x0 >= 0 && glyph->y0 >= 0)) {
 			  return glyph;
@@ -1363,10 +1714,20 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 		glyph->size = isize;
 		glyph->blur = iblur;
 		glyph->next = 0;
+		// glyph->next = -1;
+		
+		//Our data
+		//Set its master
+		glyph->stash = stash;
+		glyph->unused = false;
 
 		// Insert char to hash lookup.
+
+		//Restore prev
 		glyph->next = font->lut[h];
-		font->lut[h] = font->nglyphs-1;
+		//Set current
+		// font->lut[h] = font->nglyphs-1;
+		font->lut[h] = glyph - font->glyphs;
 	}
 	glyph->index = g;
 	glyph->x0 = (short)gx;
@@ -1668,53 +2029,53 @@ int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, FONSquad* quad)
 	return 1;
 }
 
-void fonsDrawDebug(FONScontext* stash, float x, float y)
-{
-	int i;
-	int w = stash->params.width;
-	int h = stash->params.height;
-	float u = w == 0 ? 0 : (1.0f / w);
-	float v = h == 0 ? 0 : (1.0f / h);
+// void fonsDrawDebug(FONScontext* stash, float x, float y)
+// {
+// 	int i;
+// 	int w = stash->params.width;
+// 	int h = stash->params.height;
+// 	float u = w == 0 ? 0 : (1.0f / w);
+// 	float v = h == 0 ? 0 : (1.0f / h);
 
-	if (stash->nverts+6+6 > FONS_VERTEX_COUNT)
-		fons__flush(stash);
+// 	if (stash->nverts+6+6 > FONS_VERTEX_COUNT)
+// 		fons__flush(stash);
 
-	// Draw background
-	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
-	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
-	fons__vertex(stash, x+w, y+0, u, v, 0x0fffffff);
+// 	// Draw background
+// 	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
+// 	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
+// 	fons__vertex(stash, x+w, y+0, u, v, 0x0fffffff);
 
-	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
-	fons__vertex(stash, x+0, y+h, u, v, 0x0fffffff);
-	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
+// 	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
+// 	fons__vertex(stash, x+0, y+h, u, v, 0x0fffffff);
+// 	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
 
-	// Draw texture
-	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
-	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
-	fons__vertex(stash, x+w, y+0, 1, 0, 0xffffffff);
+// 	// Draw texture
+// 	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
+// 	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
+// 	fons__vertex(stash, x+w, y+0, 1, 0, 0xffffffff);
 
-	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
-	fons__vertex(stash, x+0, y+h, 0, 1, 0xffffffff);
-	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
+// 	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
+// 	fons__vertex(stash, x+0, y+h, 0, 1, 0xffffffff);
+// 	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
 
-	// Drawbug draw atlas
-	for (i = 0; i < stash->atlas->nnodes; i++) {
-		FONSatlasNode* n = &stash->atlas->nodes[i];
+// 	// Drawbug draw atlas
+// 	for (i = 0; i < stash->atlas->nnodes; i++) {
+// 		FONSatlasNode* n = &stash->atlas->nodes[i];
 
-		if (stash->nverts+6 > FONS_VERTEX_COUNT)
-			fons__flush(stash);
+// 		if (stash->nverts+6 > FONS_VERTEX_COUNT)
+// 			fons__flush(stash);
 
-		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+n->width, y+n->y+0, u, v, 0xc00000ff);
+// 		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
+// 		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
+// 		fons__vertex(stash, x+n->x+n->width, y+n->y+0, u, v, 0xc00000ff);
 
-		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+0, y+n->y+1, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
-	}
+// 		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
+// 		fons__vertex(stash, x+n->x+0, y+n->y+1, u, v, 0xc00000ff);
+// 		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
+// 	}
 
-	fons__flush(stash);
-}
+// 	fons__flush(stash);
+// }
 
 float fonsTextBounds(FONScontext* stash,
 					 float x, float y,
@@ -1999,3 +2360,4 @@ int fonsResetAtlas(FONScontext* stash, int width, int height)
 	return 1;
 }
 
+}

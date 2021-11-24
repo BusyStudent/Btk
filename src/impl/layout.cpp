@@ -44,6 +44,6 @@ namespace Btk{
     GridLayout::~GridLayout() = default;
 
     void GridLayout::update(){
-
+        
     }
 }

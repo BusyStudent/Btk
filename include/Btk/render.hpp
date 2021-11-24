@@ -125,6 +125,12 @@ namespace Btk{
         Alpha = 0x01,
         RGBA32 = 0x02
     };
+    enum class LockFlag:Uint32{
+        Read = 1 << 1,
+        Write = 1 << 2,
+        ReadAndWrite = Read | Write
+    };
+    BTK_FLAGS_OPERATOR(LockFlag,Uint32);
     /**
      * @brief Abstruct Graphics Device
      * 
@@ -132,8 +138,12 @@ namespace Btk{
     class BTKAPI RendererDevice{
     public:
         using Context = NVGcontext*;
+        static constexpr auto Read = LockFlag::Read;
+        static constexpr auto Write = LockFlag::Write;
+        static constexpr auto ReadAndWrite = LockFlag::ReadAndWrite;
 
-        virtual ~RendererDevice(){};
+
+        virtual ~RendererDevice();
         /**
          * @brief Create a nanovg context object
          * 
@@ -220,6 +230,22 @@ namespace Btk{
                                         Size *p_size,
                                         void *p_handle,
                                         TextureFlags *p_flags) = 0;
+        virtual void*     lock_texture(
+            Context ctxt,
+            TextureID id,
+            const Rect *r,
+            LockFlag flag
+        );
+        virtual void      unlock_texture(
+            Context ctxt,
+            TextureID id,
+            void *pixels
+        );
+        virtual bool      configure_texture(
+            Context ctxt,
+            TextureID id,
+            const TextureFlags *p_flags
+        );
         /**
          * @brief Get output size
          * 
@@ -286,6 +312,9 @@ namespace Btk{
         void texture_native_handle(Context ctxt,TextureID id,void *p_handle){
             query_texture(ctxt,id,nullptr,p_handle,nullptr);
         }
+        bool set_texture_flags(Context ctxt,TextureID id,TextureFlags flags){
+            return configure_texture(ctxt,id,&flags);
+        }
         RendererBackend backend() const noexcept{
             return _backend;
         }
@@ -304,7 +333,7 @@ namespace Btk{
         );
         TextureID create_texture_from(
             Context ctxt,
-            const PixBuf &buf,
+            PixBufRef    buf,
             TextureFlags flags
         ){
             return create_texture_from(
@@ -313,12 +342,30 @@ namespace Btk{
                 flags
             );
         }
+        template<class ...Args>
+        void set_error(Args &&...args){
+            if constexpr(sizeof... (Args) == 1){
+                clear_error();
+                _err.append(std::forward<Args>(args)...);
+            }
+            else{
+                _err.clear();
+                _err.append_fmt(std::forward<Args>(args)...);
+            }
+        }
+        void clear_error(){
+            _err.clear();
+        }
+        const u8string &get_error() const noexcept{
+            return _err;
+        }
     protected:
         void set_backend(RendererBackend bac){
             _backend = bac;
         }
     private:
         RendererBackend _backend = RendererBackend::Unknown;
+        u8string        _err;
     };
     /**
      * @brief Abstruct Renderer
@@ -357,7 +404,7 @@ namespace Btk{
              * @param flags The texture flags
              * @return Texture The texture
              */
-            Texture create_from(const PixBuf &pixbuf,TextureFlags flags = TextureFlags::Linear);
+            Texture create_from(PixBufRef pixbuf,TextureFlags flags = TextureFlags::Linear);
             /**
              * @brief Create a from handle object
              * 
@@ -434,15 +481,15 @@ namespace Btk{
              * @param angle
              */
             void draw_image(TextureRef tex,float x,float y,float w,float h,float angle = 0);
-            void draw_image(const PixBuf& ,float x,float y,float w,float h,float angle = 0);
+            void draw_image(PixBufRef  buf,float x,float y,float w,float h,float angle = 0);
             void draw_image(TextureRef texture,const FRect &rect,float angle = 0){
                 draw_image(texture,rect.x,rect.y,rect.w,rect.h,angle);
             }
-            void draw_image(const PixBuf& pixbuf,const FRect &rect,float angle){
-                draw_image(pixbuf,rect.x,rect.y,rect.w,rect.h,angle);
+            void draw_image(PixBufRef  buf,const FRect &rect,float angle){
+                draw_image(buf,rect.x,rect.y,rect.w,rect.h,angle);
             }
-            void draw_image(TextureRef tex ,const FRect *src = nullptr,const FRect *dst = nullptr);
-            void draw_image(const PixBuf  &,const FRect *src = nullptr,const FRect *dst = nullptr);
+            void draw_image(TextureRef tex,const FRect *src = nullptr,const FRect *dst = nullptr);
+            void draw_image(PixBufRef  buf,const FRect *src = nullptr,const FRect *dst = nullptr);
             /**
              * @brief Draw a circle
              * 
@@ -873,6 +920,9 @@ namespace Btk{
             RendererDevice *device() const noexcept{
                 return _device;
             }
+            auto context() const noexcept -> NVGcontext *{
+                return nvg_ctxt;
+            }
         private:
             /**
              * @brief Item for Texture
@@ -884,6 +934,14 @@ namespace Btk{
                 int h = -1;
                 bool used = false;
             };
+            /**
+             * @brief Try to find a cache
+             * 
+             * @param req_w Request width
+             * @param req_h Reqyest height
+             * @return nullptr on failure
+             */
+            CachedItem *find_cache(int req_w,int req_h);
             /**
              * @brief Free a texture
              * 
@@ -918,7 +976,9 @@ namespace Btk{
             void get_texture_handle(int texture_id,void *native_handle_ptr){
                 device()->texture_native_handle(nvg_ctxt,texture_id,native_handle_ptr);
             }
-            void set_texture_flags(int texture_id,TextureFlags);
+            bool set_texture_flags(int texture_id,TextureFlags flags){
+                return device()->set_texture_flags(nvg_ctxt,texture_id,flags);
+            }
             TextureFlags get_texture_flags(int texture_id){
                 return device()->texture_flags(nvg_ctxt,texture_id);
             }

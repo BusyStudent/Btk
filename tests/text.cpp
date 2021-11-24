@@ -1,4 +1,3 @@
-#include <Btk/utils/textbuf.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/string.hpp>
 #include <iostream>

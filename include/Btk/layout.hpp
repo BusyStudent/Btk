@@ -15,8 +15,7 @@ namespace Btk{
             //update each widgets postions
             virtual void update() = 0;
         private:
-            [[maybe_unused]]
-            struct  _InternalContext{
+            struct [[maybe_unused]] _InternalContext{
                 void *_hidden1;
                 void *_hidden2;
                 Uint32 _hidden3;

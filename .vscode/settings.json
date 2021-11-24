@@ -94,8 +94,12 @@
         "bit": "cpp",
         "compare": "cpp",
         "concepts": "cpp",
-        "stop_token": "cpp"
-        "*.def": "cpp"
+        "stop_token": "cpp",
+        "ranges": "cpp",
+        "csetjmp": "cpp",
+        "unordered_set": "cpp",
+        "regex": "cpp",
+        "shared_mutex": "cpp"
     },
     "files.exclude": {
         "**/.git": true,

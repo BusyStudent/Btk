@@ -26,6 +26,12 @@
 #include <Btk/defs.hpp>
 #include <Btk/Btk.hpp>
 
+#ifdef BTK_USE_SWDEVICE
+//Enable Software Device
+    #include <Btk/gl/software.hpp>
+#endif
+
+
 
 namespace{
     void defer_call_cb(const SDL_Event &ev,void *){
@@ -182,6 +188,12 @@ namespace Btk{
         };
         RegisterImageAdapter(adapter);
 
+        #ifdef BTK_USE_SWDEVICE
+        RegisterDevice([](SDL_Window *win) -> RendererDevice *{
+            return new SWDevice(win);
+        });
+        #endif
+
         //First stop text input
         SDL_StopTextInput();
     }
@@ -224,6 +236,7 @@ namespace Btk{
                 }
             }
             #endif
+
             AtExit(System::Quit);
         }
         return 1;

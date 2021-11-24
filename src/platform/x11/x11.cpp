@@ -1,5 +1,6 @@
 #include "../../build.hpp"
 
+#include <Btk/platform/popen.hpp>
 #include <Btk/platform/x11.hpp>
 #include <Btk/platform/fs.hpp>
 #include <Btk/impl/window.hpp>
@@ -164,34 +165,6 @@ namespace X11{
         }
     }
     //Exec
-    int VExecute(size_t argc,...){
-        va_list varg;
-        va_start(varg,argc);
-
-        //Allocate args array
-        char **args = static_cast<char**>(alloca((argc + 1) * sizeof(char*)));
-        size_t i;
-        for(i = 0;i < argc;i++){
-            args[i] = va_arg(varg,char*);
-        }
-        args[argc] = nullptr;
-        va_end(varg);
-
-
-        pid_t pid = fork();
-        if(pid == -1){
-            return -1;
-        }
-        else if(pid == 0){
-            execvp(args[0],args);
-            _Exit(-1);
-        }
-        else{
-            int ret;
-            waitpid(pid,&ret,0);
-            return ret;
-        }
-    }
     FILE *VPopen(size_t argc,...){
         va_list varg;
         va_start(varg,argc);
@@ -256,6 +229,55 @@ namespace X11{
 }
 
 namespace Btk{
+    //spawn
+    process_t _vspawn(size_t argc,const _vspawn_arg arr[]){
+        //Allocate args array
+        char **args = static_cast<char**>(alloca((argc + 1) * sizeof(char*)));
+        size_t i;
+        for(i = 0;i < argc;i++){
+            auto &data = arr[i];
+            args[i] = static_cast<char*>(alloca(data.n + 1));
+            memcpy(args[i],data.str,data.n);
+            args[i][data.n] = '\0';
+        }
+        args[argc] = nullptr;
+        //alloc error report pipe
+        int err_fds[2];
+        pipe2(err_fds,O_CLOEXEC);
+
+        pid_t pid = fork();
+
+        if(pid == -1){
+            //Fork error
+            close(err_fds[0]);
+            close(err_fds[1]);
+            return {};
+        }
+        else if(pid == 0){
+            execvp(args[0],args);
+            //Execute error
+            auto err = errno;
+            write(err_fds[1],&err,sizeof(err));
+            _Exit(-1);
+        }
+        else{
+            //Check has error
+            auto handler = std::signal(SIGPIPE,SIG_IGN);
+            //Close read
+            close(err_fds[1]);
+            int error;
+            if(read(err_fds[0],&error,sizeof(error)) == sizeof(error)){
+                //Has error
+                errno = error;
+                std::signal(SIGPIPE,handler);
+                close(err_fds[0]);
+                return {};
+            }
+            std::signal(SIGPIPE,handler);
+            close(err_fds[0]);
+            return pid;
+        }
+    }
     //XError
     XError::XError(const void *_event){
         const XErrorEvent *event = static_cast<const XErrorEvent*>(_event);

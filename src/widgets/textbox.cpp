@@ -13,8 +13,6 @@
 
 #include <algorithm>
 
-//STB TEXTEDIT
-#include "../libs/stb_textedit.h"
 
 namespace Btk{
     using utf8::unchecked::utf8to16;
@@ -318,15 +316,4 @@ namespace Btk{
         show_line = not show_line;
         redraw();
     }
-}
-//LineEdit Impl
-namespace Btk{
-    // LineEdit::LineEdit(){
-    //     attr.focus = FocusPolicy::Mouse;
-    // }
-    // LineEdit::~LineEdit() = default;
-    // //Draw
-    // void LineEdit::draw(Renderer &render){
-
-    // }
 }

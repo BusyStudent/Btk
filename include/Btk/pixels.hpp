@@ -201,7 +201,11 @@ namespace Btk{
             PixBuf clone() const;
             //Get a ref of this PixBuf
             PixBuf ref() const;
-            
+            SDL_Surface *detach() {
+                auto s = surf;
+                surf = nullptr;
+                return s;
+            }
             /**
              * @brief Make sure the pixbuf is unique
              * 
@@ -492,7 +496,9 @@ namespace Btk{
                 t.render = nullptr;
             }
 
-            ~Texture();
+            ~Texture(){
+                clear();
+            }
 
 
             TextureID detach() noexcept{

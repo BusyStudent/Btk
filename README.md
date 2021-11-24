@@ -96,11 +96,13 @@ int main(){
 
 ## Renderer Backend
 
-| Backend    | Done? | Description|
-| ---        | ---   | ---        |
-| OpenGLESv3 |       |            |
-| Direct3D11 |       |            |
-| SDLRender  | No    |            |
+| Backend    | Done? | Description  |
+| ---        | ---   | ---          |
+| Vulkan     | No    |              |
+| Software   |       | Has many bugs|
+| OpenGLESv3 |       |              |
+| Direct3D11 |       |              |
+| SDLRender  | No    |              |
 
 ----
 
@@ -110,10 +112,10 @@ int main(){
 
 - G++ with C++17 support  
 - SDL2  
-- SDL2-image  (optional)  
+- SDL2-image (optional)  
 - fontconfig (optional,for select font)  
 - libgif (optional,for display gif) 
-- freetype2
+- freetype2  (optional)  
 - scons or xmake
 
 ### Windows
@@ -121,7 +123,7 @@ int main(){
 - MINGW or vs2017  
 - SDL2  
 - SDL2-image (optional)  
-- freetype2
+- freetype2  (optional)  
 - libgif (optional)  
 - scons or xmake
 

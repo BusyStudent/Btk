@@ -71,8 +71,26 @@
     #define BTKHIDDEN
     #define BTKINLINE 
 #endif
-//rename macro
-#define BTK_PRIVATE(NAME) __BtkPriv_##NAME
+//Debug / Test
+#ifdef NDEBUG
+    #define BTK_ON_RELEASE(EXP) EXP
+    #define BTK_ON_DEBUG(EXP) 
+#else
+    #define BTK_ON_RELEASE(EXP) 
+    #define BTK_ON_DEBUG(EXP) EXP
+#endif
+
+#define BTK_RELEASE_INLINE BTK_ON_RELEASE(BTKINLINE)
+
+//Unique name
+#define BTK_MARGE_TOKEN_IMPL(A,B) A ## B
+#define BTK_MARGE_TOKEN(A,B) BTK_MARGE_TOKEN_IMPL(A,B)
+#ifdef __COUNTER__
+    #define BTK_UNIQUE_NAME(NAME) BTK_MARGE_TOKEN(NAME,__COUNTER__)
+#else
+    #define BTK_UNIQUE_NAME(NAME) BTK_MARGE_TOKEN(NAME,__LINE__)
+#endif
+
 /**
  * @brief Generate operator for enum
  * @param ENUM The enum type

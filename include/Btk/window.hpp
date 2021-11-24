@@ -134,6 +134,7 @@ namespace Btk{
              * @note Is is safe to call in multithreading without lock it
              */
             void close();
+            void resize(int w,int h);
             /**
              * @brief Enter the main event loop
              * 
@@ -232,6 +233,9 @@ namespace Btk{
             int w() const noexcept;//get w
             int h() const noexcept;//get h
             Font font() const;//get font
+            u8string_view title() const;
+            Point      position() const;
+            Size           size() const;
             /**
              * @brief Dump the widget tree
              * 

@@ -27,6 +27,10 @@ namespace Btk::DBus{
 
         DBusMessage *msg;
     };
+    struct MethodCall:public Message{
+        template<class ...Args>
+        void set_args(Args &&...args);
+    };
     struct MessageIter:public DBusMessageIter{
         MessageIter &operator <<(Uint32);
         MessageIter &operator <<(Sint32);
@@ -70,7 +74,7 @@ namespace Btk::DBus{
         }
     };
     Connection GetBus(DBusBusType t,DBusError *err = nullptr);
-    Message NewMethodCall(const char *bus_name,
+    MethodCall NewMethodCall(const char *bus_name,
                           const char *path,
                           const char *interface,
                           const char *method);
@@ -142,7 +146,7 @@ namespace Btk::DBus{
         return c;
     }
     //Message
-    inline Message NewMethodCall(
+    inline MethodCall NewMethodCall(
                           const char *bus_name,
                           const char *path,
                           const char *interface,
@@ -153,7 +157,7 @@ namespace Btk::DBus{
             interface,
             method
         );
-        Message m;
+        MethodCall m;
         m.msg = msg;
         return m;
     }

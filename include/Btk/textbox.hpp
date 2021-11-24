@@ -75,6 +75,31 @@ namespace Btk{
             float tb_boarder = 4;//The text boarder
         friend struct TextBoxInserter;
     };
+    class BTKAPI AbstractEditor:public Widget{
+        public:
+            AbstractEditor();
+            ~AbstractEditor();
+
+            //Default event handling
+            bool handle_drag(DragEvent   &) override;
+            bool handle_mouse(MouseEvent &) override;
+            bool handle_keyboard(KeyEvent &) override;
+
+            struct _Internal;
+        private:
+            _Internal *context;
+        protected:
+            void editor_init(bool single_lines);
+            void editor_click(float x,float y);
+
+            u8string editor_cur_insert();
+            u8string editor_cur_delete();
+            //Callback
+            virtual bool editor_on_insert(size_t position){return true;};
+            virtual bool editor_on_delete(size_t position){return true;};
+
+        friend struct _Internal;
+    };
     class BTKAPI TextEdit:public Widget{
         private:
             u8string cur_text;
@@ -83,7 +108,7 @@ namespace Btk{
      * @brief Just edit single line
      * 
      */
-    class BTKAPI LineEdit:public Widget{
+    class BTKAPI LineEdit:public AbstractEditor{
         public:
             LineEdit();
             LineEdit(u8string_view text);
@@ -97,10 +122,14 @@ namespace Btk{
             bool handle_keyboard(KeyEvent &) override;
             bool handle_textinput(TextInputEvent&) override;
         private:
+            Color    text_color;
+            Color    background_color;
+            Color    boarder_color;
             u8string placeholder;//< Show if the string is empty
             u8string cur_text;
             Align    align;//< Text align
             bool     clear_btn = false;//Has clear button?
+
     };
     class BTKAPI TextBroser:public Widget{
         
