@@ -156,7 +156,6 @@ namespace Btk{
         return retvalue;
     }
     System::System(){
-        AsyncInit();
         defer_call_ev_id = SDL_RegisterEvents(2);
         if(defer_call_ev_id == (Uint32)-1){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
@@ -188,17 +187,11 @@ namespace Btk{
         };
         RegisterImageAdapter(adapter);
 
-        #ifdef BTK_USE_SWDEVICE
-        RegisterDevice([](SDL_Window *win) -> RendererDevice *{
-            return new SWDevice(win);
-        });
-        #endif
-
         //First stop text input
         SDL_StopTextInput();
     }
     System::~System(){
-        AsyncQuit();
+
     }
     //Init or Quit
     int  System::Init(){
@@ -353,10 +346,15 @@ namespace Btk{
         BTK_LOGWARN(SDL_GetError());
     }
     inline void System::wait_event(SDL_Event *event){
+        if(idle_handlers.empty()){
+            //Just use sdl wait event
+            SDL_WaitEvent(event);
+            return;
+        }
         while(SDL_PollEvent(event) == 0){
             //Wait for event
             on_idle();
-            SDL_Delay(1);
+            SDL_Delay(wait_event_delay);
         }
     }
     inline void System::on_idle(){
@@ -578,6 +576,99 @@ namespace Btk{
     }
 }
 namespace Btk{
+    //AsyncSystem
+    inline
+    AsyncSystem::AsyncSystem(){
+        //Create a new worker
+        create_worker();
+    }
+    inline
+    AsyncSystem::~AsyncSystem(){
+        for(auto iter = workers.begin();iter != workers.end();){
+            //Send a quit command
+            iter->ask_quit();
+            iter = workers.erase(iter);
+        }
+    }
+    inline
+    void AsyncSystem::create_worker(){
+        workers.emplace_back();
+    }
+    inline
+    void AsyncSystem::add_task(const Task &task){
+        //TODO Find the worker witch has slowest task
+        for(auto &worker:workers){
+            if(worker.idle){
+                worker.add_task(task);
+                return;
+            }
+        }
+        if(workers.size() < workerd_limit){
+            create_worker();
+            workers.back().add_task(task);
+            return;
+        }
+        workers.front().add_task(task);
+    }
+
+    using _AsyncWorker = AsyncSystem::Worker;
+    using _AsyncTask = AsyncSystem::Task;
+    void _AsyncWorker::run(){
+        BTK_LOGINFO("[AsyncWorker]Init %p",this);
+        Task task;
+        while(true){
+            queue_lock.lock();
+            if(tasks_queue.empty()){
+                idle = true;
+                queue_lock.unlock();
+                event.clear();
+                event.wait();
+                continue;
+            }
+            task = tasks_queue.front();
+            tasks_queue.pop();
+            queue_lock.unlock();
+            try{
+                task();
+            }
+            catch(int){
+                //Ask return the thread
+                BTK_LOGINFO("[AsyncWorker]Quit %p",this);
+                return;
+            }
+            catch(...){
+                DeferCall(std::rethrow_exception,std::current_exception());
+            }
+        }
+    }
+    inline
+    void _AsyncWorker::ask_quit(){
+        Task task;
+        task.data = nullptr;
+        task.fn = [](void *){
+            throw 1;
+        };
+        std::lock_guard locker(queue_lock);
+        tasks_queue.emplace(task);
+        event.set();
+    }
+    inline
+    void _AsyncWorker::add_task(const Task &task){
+        std::lock_guard locker(queue_lock);
+        tasks_queue.emplace(task);
+        event.set();
+    }
+
+    void AsyncCall(void (*fn)(void*),void *data){
+        //Check is inited
+        Init();
+        AsyncSystem::Task task;
+        task.data = data;
+        task.fn = fn;
+        Instance().async.add_task(task);
+    }
+}
+namespace Btk{
     static inline void exit_impl_cb(void *args){
         int v = *reinterpret_cast<int*>(&args);
         throw v;
@@ -767,6 +858,9 @@ namespace Btk{
                 return dev;
             }
         }
+        #ifdef BTK_USE_SWDEVICE
+        return new Btk::SWDevice(win);
+        #endif
         return nullptr;
     }
 };

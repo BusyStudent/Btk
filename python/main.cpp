@@ -61,8 +61,8 @@ PYBIND11_MODULE(PyBtk,mod){
 
     //Def window
     py::class_<PyWindow>(mod,"Window",py::dynamic_attr())
-        .def(py::init<const std::string&,int,int>())
-        .def(py::init<const std::string&,int,int,Btk::WindowFlags>())
+        .def(py::init<Btk::u8string_view,int,int>())
+        .def(py::init<Btk::u8string_view,int,int,Btk::WindowFlags>())
         .def("mainloop",[](PyWindow &window){
             if(not window.exists()){
                 //Check exists

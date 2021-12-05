@@ -1,20 +1,19 @@
 #if !defined(_BTK_PLATFORM_HPP_)
 #define _BTK_PLATFORM_HPP_
-#ifdef _WIN32
+#include "../defs.hpp"
+#if BTK_WIN32
     #include "win32.hpp"
-    #define BTK_WIN32
-#elif defined(__linux) && !defined(__ANDROID__)
+#elif BTK_X11
     #include "x11.hpp"
-    #define BTK_X11
 #else
     #error "Unsupport platform"
 #endif
 
 namespace Btk{
     namespace Platform{
-        #ifdef BTK_WIN32
+        #if BTK_WIN32
         using namespace Win32;
-        #elif defined(BTK_X11)
+        #elif BTK_X11
         using namespace X11;
         #endif
     }

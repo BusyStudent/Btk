@@ -43,12 +43,6 @@ namespace Btk{
 namespace Btk{
     //Another Event
     
-    UpdateEvent::~UpdateEvent(){}
-    KeyEvent::~KeyEvent(){}
-    MouseEvent::~MouseEvent(){}
-    DragEvent::~DragEvent(){}
-    MotionEvent::~MotionEvent(){}
-    WheelEvent::~WheelEvent(){}
     size_t TextInputEvent::length() const noexcept{
         return SDL_utf8strlen(text.data());
     }

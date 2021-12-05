@@ -13,6 +13,7 @@
 #include <mutex>
 #include <list>
 
+#if 0
 
 namespace Btk{
     struct ThreadPool;
@@ -218,3 +219,5 @@ namespace Impl{
     }
 };
 };
+
+#endif

@@ -32,6 +32,7 @@ namespace{
     #define NANORT_IMPLEMENTATION
     #include "../libs/nanovg_rt.h"
 }
+
 // // These are additional flags on top of NVGimageFlags.
 // inline constexpr int NVG_IMAGE_NODELETE			= 1<<16;	// Do not delete SDL texture handle.
 namespace Btk{
@@ -41,14 +42,13 @@ namespace Btk{
         tag_surf = SDL_GetWindowSurface(win);
         tag_win = win;
         surf_owned = true;
-        tag_fmt = tag_surf->format->format;
+
     }
     SWDevice::SWDevice(SDL_Surface *surf,bool owned){
         set_backend(RendererBackend::Software);
 
         tag_surf = surf;
         surf_owned = owned;
-        tag_fmt = tag_surf->format->format;
 
     }
     SWDevice::~SWDevice(){
@@ -89,42 +89,48 @@ namespace Btk{
         void *pixels = nvgReadPixelsRT(current_ctxt);
         nvgFrameBufferSizeRT(current_ctxt,&fb_size.w,&fb_size.h);
 
-        //Check the buffer and surface is the same size
-        if(fb_size != sf_size){
-            //TODO Slove it
-            BTK_LOGINFO("[SWDevice] Wrong Framebuffer size,swap_buffer() was canneled");
-            return;
-        }
+        // //Check the buffer and surface is the same size
+        // if(fb_size != sf_size){
+        //     //TODO Slove it
+        //     BTK_LOGINFO("[SWDevice] Wrong Framebuffer size,swap_buffer() was canneled");
+        //     return;
+        // }
         
-        //Copy it to surface
-        if(SDL_MUSTLOCK(tag_surf)){
-            SDL_LockSurface(tag_surf);
-        }
+        // //Copy it to surface
+        // if(SDL_MUSTLOCK(tag_surf)){
+        //     SDL_LockSurface(tag_surf);
+        // }
 
-        if(tag_fmt != PixelFormat::RGBA32){
-            //We need cvt
-            SDL_ConvertPixels(
-                tag_surf->w,
-                tag_surf->h,
-                PixelFormat::RGBA32,
-                pixels,
-                tag_surf->w * SDL_BYTESPERPIXEL(PixelFormat::RGBA32),
-                tag_surf->format->format,
-                tag_surf->pixels,
-                tag_surf->pitch
-            );
+        // if(tag_fmt != PixelFormat::RGBA32){
+        //     //We need cvt
+        //     SDL_ConvertPixels(
+        //         tag_surf->w,
+        //         tag_surf->h,
+        //         PixelFormat::RGBA32,
+        //         pixels,
+        //         tag_surf->w * SDL_BYTESPERPIXEL(PixelFormat::RGBA32),
+        //         tag_surf->format->format,
+        //         tag_surf->pixels,
+        //         tag_surf->pitch
+        //     );
+        // }
+        // else{
+        //     //Just copy
+        //     memcpy(
+        //         tag_surf->pixels,
+        //         pixels,
+        //         tag_surf->pitch * tag_surf->h
+        //     );
+        // }
+
+        // if(SDL_MUSTLOCK(tag_surf)){
+        //     SDL_UnlockSurface(tag_surf);
+        // }
+        if(viewport.empty()){
+            SDL_BlitSurface(framebuffer,nullptr,tag_surf,nullptr);
         }
         else{
-            //Just copy
-            memcpy(
-                tag_surf->pixels,
-                pixels,
-                tag_surf->pitch * tag_surf->h
-            );
-        }
-
-        if(SDL_MUSTLOCK(tag_surf)){
-            SDL_UnlockSurface(tag_surf);
+            SDL_BlitSurface(framebuffer,nullptr,tag_surf,&viewport);
         }
 
         if(tag_win != nullptr){
@@ -167,6 +173,19 @@ namespace Btk{
         }
         return true;
     }
+    void SWDevice::fb_resize(int new_w,int new_h){
+        //Resize the framebuffer
+        SDL_FreeSurface(framebuffer);
+        nvgResizeFrameBufferRT(current_ctxt,new_w,new_h);
+        framebuffer = SDL_CreateRGBSurfaceWithFormatFrom(
+            nvgReadPixelsRT(current_ctxt),
+            new_w,
+            new_h,
+            SDL_BYTESPERPIXEL(PixelFormat::RGBA32),
+            new_w * SDL_BYTESPERPIXEL(PixelFormat::RGBA32),
+            PixelFormat::RGBA32
+        );
+    }
     void SWDevice::update_status(){
         if(not frame_begined and tag_win != nullptr){
             Size win_size;
@@ -176,10 +195,9 @@ namespace Btk{
                 //Recreate surface
                 SDL_FreeSurface(tag_surf);
                 tag_surf = SDL_GetWindowSurface(tag_win);
-                tag_fmt  = tag_surf->format->format;
             }
             if(current_ctxt != nullptr){
-                nvgResizeFrameBufferRT(current_ctxt,tag_surf->w,tag_surf->h);
+                fb_resize(win_size.w,win_size.h);
             }
         }
     }
@@ -208,7 +226,7 @@ namespace Btk{
         float h,
         float pixel_ratio){
         
-        nvgResizeFrameBufferRT(ctxt,w,h);
+        update_status();
         RendererDevice::begin_frame(ctxt,w,h,pixel_ratio);
         frame_begined = true;
     }
@@ -217,8 +235,19 @@ namespace Btk{
         frame_begined = false;
         update_status();
     }
-    //VIEWPORT Is ignored
-    void SWDevice::set_viewport(const Rect *){}
+    void SWDevice::set_viewport(const Rect *rect){
+        if(rect == nullptr){
+            viewport = {
+                -1,
+                -1,
+                -1,
+                -1
+            };
+        }
+        else{
+            viewport = *rect;
+        }
+    }
     //Target IS IGNORED
     void SWDevice::set_target(Context,TextureID){}
     void SWDevice::reset_target(Context){}

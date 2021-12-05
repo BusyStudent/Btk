@@ -51,7 +51,7 @@ namespace Btk{
         _window = nullptr;
 
         //Inhert style if empty
-        if(_theme.empty() and _font.empty()){
+        if(_theme == nullptr and _font.empty()){
             inhert_style();
         }
     }
@@ -160,8 +160,8 @@ namespace Btk{
 
     void Widget::inhert_style(){
         if(parent() != nullptr){
-            if( not parent()->_font.empty() and 
-                not parent()->_theme.empty()){
+            if( not  parent()->_font.empty() and 
+                not (parent()->_theme == nullptr)){
                 //Use parent
                 set_font(parent()->font());
                 set_theme(parent()->theme());
@@ -174,8 +174,8 @@ namespace Btk{
             set_theme(window()->theme());
             return;
         }
-        set_theme(Themes::GetDefault());
-        set_font(Font(theme().font_name(),theme().font_size()));
+        // set_theme(Themes::GetDefault());
+        // set_font(Font(theme().font_name(),theme().font_size()));
     }
     bool Container::add(Widget *w){
         if(w == nullptr){

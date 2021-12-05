@@ -14,20 +14,11 @@
 
 #include "../libs/fontstash.h"
 
-//Cast to the implment
+namespace{
+    static bool ft_inited = false;
+}
 
 namespace Btk{
-    static u8string find_font(u8string_view name){
-        if(name.find('/')  != name.npos or 
-           name.find('\\') != name.npos){
-
-            //Is filename
-            return name;
-        }
-        else{
-            return FontUtils::GetFileByName(name);
-        }
-    }
     Font::~Font(){
         close();
     }
@@ -38,26 +29,42 @@ namespace Btk{
     }
     //TODO Improve Cache proformance
     Font::Font(u8string_view fontname,int ptsize){
+        if(not ft_inited){
+            Font::Init();
+        }
         font = nullptr;
         open(fontname,ptsize);
     }
     //Open font by name
     void Font::open(u8string_view fontname,int ptsize){
         close();
-        openfile(find_font(fontname),ptsize);
+        BtkFt f = BtkFt_GlobalFind(fontname);
+        if(f != nullptr){
+            //Already has it
+            font = BtkFt_Dup(f);
+            ptsize_ = ptsize;
+        }
+        else{
+            openfile(
+                FontUtils::GetFileByName(fontname),
+                ptsize
+            );
+        }
     }
     //Open font by file
     void Font::openfile(u8string_view filename,int ptsize){
         auto new_font = BtkFt_Open(filename.data(),0);
+        new_font = BtkFt_Dup(new_font);
         close();
         font = new_font;
         ptsize_ = ptsize;
     }
-    Font Font::FromFile(u8string_view filename,int ptsize){
+    Font Font::FromFile(u8string_view filename,float ptsize){
         auto *font = BtkFt_Open(filename.data(),0);
         return Font(font,ptsize);
     }
     Font::Font(void *f,float ptsize){
+        font = f;
         ptsize_ = ptsize;
     }
 
@@ -81,7 +88,7 @@ namespace Btk{
 
     int Font::ptsize() const noexcept{
         // return FONTIMPL(pimpl)->ptsize;
-        throwRuntimeError("Unimpl yet");
+        return ptsize_;
     }
     void Font::set_ptsize(int new_ptsize){
         // FontImpl *new_font = new FontImpl(
@@ -90,7 +97,10 @@ namespace Btk{
         // );
         // close();
         // pimpl = new_font;
-        throwRuntimeError("UnImpl yet");
+        ptsize_ = new_ptsize;
+    }
+    FontID Font::id() const{
+        return BtkFt_GetID(font);
     }
     void Font::close(){
         BtkFt_Close(font);
@@ -221,6 +231,7 @@ namespace Btk{
         if(&f != this){
             close();
             font = BtkFt_Dup(f.font);
+            ptsize_ = f.ptsize_;
         }
         return *this;
     }
@@ -229,6 +240,7 @@ namespace Btk{
             close();
             font = f.font;
             f.font = nullptr;
+            ptsize_ = f.ptsize_;
         }
         return *this;
     }
@@ -237,9 +249,15 @@ namespace Btk{
         return BtkFt_Refcount(font);
     }
     void Font::Init(){
-        BtkFt_Init();
+        if(not ft_inited){
+            ft_inited = true;
+            BtkFt_Init();
+        }
     }
     void Font::Quit(){
-        BtkFt_Quit();
+        if(ft_inited){
+            ft_inited = false;
+            BtkFt_Quit();
+        }
     }
 };

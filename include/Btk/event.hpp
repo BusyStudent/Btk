@@ -1,8 +1,9 @@
 #if !defined(_BTK_EVENT_HPP_)
 #define _BTK_EVENT_HPP_
+#include <type_traits>
 #include <cstdint>
-#include <string_view>
 #include "locals.hpp"
+#include "string.hpp"
 #include "defs.hpp"
 #include "rect.hpp"
 union  SDL_Event;
@@ -82,7 +83,7 @@ namespace Btk{
                 _type(ev._type),
                 _accepted(false),
                 _broadcast(ev._broadcast){};
-            virtual ~Event() = default;
+            ~Event() = default;
             /**
              * @brief is accepted
              * 
@@ -180,7 +181,7 @@ namespace Btk{
          */
         MouseEvent():Event(Event::Type::Click){};
         MouseEvent(const MouseEvent &) = default;
-        ~MouseEvent();
+        ~MouseEvent() = default;
 
         bool is_pressed() const noexcept{
             return state == Pressed;
@@ -246,7 +247,7 @@ namespace Btk{
          */
         KeyEvent():Event(Event::Type::KeyBoard){};
         KeyEvent(const KeyEvent &ev) = default;
-        ~KeyEvent();
+        ~KeyEvent() = default;
         //Keycode and scancode
         Scancode scancode;
         Keycode  keycode;
@@ -275,7 +276,7 @@ namespace Btk{
         MotionEvent(Event::Type type = Event::Type::Motion):
             Event(type){};
         MotionEvent(const MotionEvent &) = default;
-        ~MotionEvent();
+        ~MotionEvent() = default;
 
         //datas
         int x;
@@ -294,6 +295,9 @@ namespace Btk{
      */
     struct BTKAPI TextInputEvent:Event{
         TextInputEvent():Event(TextInput){};
+        TextInputEvent(const TextInputEvent &) = default;
+        ~TextInputEvent() = default;
+
         u8string_view text;//<Text input buffer(utf-8 encoded)
         /**
          * @brief Get length of the string
@@ -335,7 +339,7 @@ namespace Btk{
             yrel = motion.yrel;
         };
         DragEvent(const DragEvent &) = default;
-        ~DragEvent();
+        ~DragEvent() = default;
 
         Vec2 position() const noexcept{
             return {x,y};
@@ -353,7 +357,8 @@ namespace Btk{
             this->y = y;
         }
         WheelEvent(const WheelEvent &) = default;
-        ~WheelEvent();
+        ~WheelEvent() = default;
+
         Uint32 which;//< Which mouse
         Sint64 x;//< Vertical scroll,postive for scroll right
         Sint64 y;//< Horizontal scroll,postive for scroll up
@@ -374,34 +379,39 @@ namespace Btk{
             return {x,y};
         }
     };
-    /**
-     * @brief a generic struct for updating data
-     * 
-     */
-    struct BTKAPI UpdateEvent:public Event{
-        UpdateEvent(Type t):Event(t){};
-        UpdateEvent(const UpdateEvent &) = default;
-        ~UpdateEvent();
-        union {
-            Rect rect;//< Widget's rect(type SetRect)
-        }data;
-        //UpdateRect
-        Rect rect() const noexcept{
-            return data.rect;
-        }
-        Vec2 position() const noexcept{
-            return {rect().x,rect().y};
-        }
-    };
     typedef MouseEvent ClickEvent;
     /**
      * @brief Push event to queue
      * 
      * @param event The event pointer we want to send
      * @param receiver The receiver
+     * @param deleter The deleter(can be nullptr on default delete)
      */
-    void PushEvent(Event *event,Window &receiver);
-    void PushEvent(Event *event,Widget &receiver);
+    void PushEvent(Event *event,Window &receiver,void (*deleter)(void *));
+    void PushEvent(Event *event,Widget &receiver,void (*deleter)(void *));
+
+    //template for it
+    template<
+        class T,
+        class Receiver
+    >
+    void PushEvent(T *event,Receiver &receiver){
+        if constexpr(std::is_trivially_destructible_v<std::decay_t<T>>){
+            PushEvent(std::forward<T>(event),std::forward<Receiver>(receiver),nullptr);
+        }
+        else{
+            PushEvent(std::forward<T>(event),std::forward<Receiver>(receiver),[](void *event){
+                delete static_cast<T*>(event);
+            });
+        }
+    }
+    template<
+        class T,
+        class Receiver
+    >
+    void PushEvent(const T &event,Receiver &receiver){
+        return PushEvent(new T(event),receiver);
+    }
     /**
      * @brief Dispatched event right now
      * 

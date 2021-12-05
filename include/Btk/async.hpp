@@ -6,6 +6,7 @@
 #include "defs.hpp"
 namespace Btk{
     BTKAPI void DeferCall(void(* fn)(void*),void *data);
+    BTKAPI void AsyncCall(void(* fn)(void*),void *data);
     namespace Impl{
         template<bool has_signal,class RetT>
         struct AsyncSignal;
@@ -286,14 +287,6 @@ namespace Btk{
                 static_cast<AsyncInvoker*>(__self)->emit();
             };
         };
-        /**
-         * @brief Lauch a AsyncInvoker right now
-         * 
-         * @param invoker the invoker pointer
-         * @param run the invoker entry
-         */
-        BTKAPI void RtLauch(void *invoker,void(*run)(void*invoker));
-        BTKAPI void DeferLauch(void *invoker,void(*run)(void*invoker));
     };
     enum class Lauch{
         Async = 0,
@@ -344,10 +337,10 @@ namespace Btk{
             void lauch(Lauch lauch = Lauch::Async){
                 if(invoker != nullptr){
                     if(lauch == Lauch::Async){
-                        Impl::RtLauch(invoker,invoker_type::Run);
+                        AsyncCall(invoker_type::Run,invoker);
                     }
                     else{
-                        Impl::DeferLauch(invoker,invoker_type::Run);
+                        AsyncCall(invoker_type::Run,invoker);
                     }
                     invoker = nullptr;
                 }
@@ -401,8 +394,6 @@ namespace Btk{
             std::forward<Args>(args)...
         );
     };
-    void AsyncInit();
-    void AsyncQuit();
 };
 
 

@@ -20,7 +20,7 @@ namespace pybind11 { namespace detail {
          * function signatures and declares a local variable
          * 'value' of type inty
          */
-        PYBIND11_TYPE_CASTER(Btk::u8string, _("Btk::u8string"));
+        PYBIND11_TYPE_CASTER(Btk::u8string, _("str"));
 
         /**
          * Conversion part 1 (Python->C++): convert a PyObject into a inty
@@ -58,7 +58,7 @@ namespace pybind11 { namespace detail {
          * function signatures and declares a local variable
          * 'value' of type inty
          */
-        PYBIND11_TYPE_CASTER(Btk::u8string_view, _("Btk::u8string_view"));
+        PYBIND11_TYPE_CASTER(Btk::u8string_view, _("str"));
 
         /**
          * Conversion part 1 (Python->C++): convert a PyObject into a inty

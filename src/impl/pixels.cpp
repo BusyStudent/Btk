@@ -221,21 +221,51 @@ namespace Btk{
         if(base[0] == '#'){
             //Like #RRGGBBAA
             base = base.substr(1);
-        }
-        if(base.length() != 6 and base.length() != 8){
+            if(base.length() != 6 and base.length() != 8){
             //bad color
-            throwRuntimeError("Bad color");
+                throwRuntimeError("Bad color");
+            }
+            c.r = ParseHex(base.substr(0,2));
+            c.g = ParseHex(base.substr(2,2));
+            c.b = ParseHex(base.substr(4,2));
+            if(base.length() == 8){
+                c.a = ParseHex(base.substr(6,2));
+            }
+            else{
+                c.a = 255;
+            }
+            return c;
         }
-        c.r = ParseHex(base.substr(0,2));
-        c.g = ParseHex(base.substr(2,2));
-        c.b = ParseHex(base.substr(4,2));
-        if(base.length() == 8){
-            c.a = ParseHex(base.substr(6,2));
+        else if(view.begin_with("RGBA(") and view.end_with(")")){
+            //RGBA(R,G,B,A)
+            //Copy into buffer
+            u8string buf(view);
+
+            int r,g,b,a;
+            if(sscanf(buf.data(),"RGBA(%d,%d,%d,%d)",&r,&g,&b,&a) != 4){
+                throwRuntimeError("Bad color");
+            }
+            c.r = r;
+            c.g = g;
+            c.b = b;
+            c.a = a;
+            return c;
         }
-        else{
+        else if(view.begin_with("RGB(") and view.end_with(")")){
+            //RGB(R,G,B)
+            u8string buf(view);
+            int r,g,b;
+            if(sscanf(buf.data(),"RGBA(%d,%d,%d)",&r,&g,&b) != 3){
+                throwRuntimeError("Bad color");
+            }
+            c.r = r;
+            c.g = g;
+            c.b = b;
             c.a = 255;
+            return c;
         }
-        return c;
+        //Unsupported
+        throwRuntimeError("Bad color");
     }
     //Decoder / Encoder
     void ImageDecoder::open(SDL_RWops *rwops,bool autoclose){

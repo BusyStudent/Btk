@@ -19,12 +19,17 @@ namespace Btk{
             VulkanDevice(SDL_Window *win);
             ~VulkanDevice();
 
+            Context create_context() override;
+            void    destroy_context(Context) override;
+
             void swap_buffer() override;
         private:
             SDL_Window *win;
             VkSurfaceKHR surface;
+            VkPhysicalDevice gpu;
             VkDevice   dev;
-            VkInstance vk;
+            VkInstance instance;
+            VkQueue    queue;
     };
 }
 

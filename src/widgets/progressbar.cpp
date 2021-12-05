@@ -21,12 +21,12 @@ namespace Btk{
 
         render.begin_path();
         render.rect(rect);
-        render.fill_color(theme()[Theme::Button]);
+        render.fill_color(theme().active.button);
         render.fill();
 
         render.begin_path();
         render.rect(rect);
-        render.stroke_color(theme()[Theme::Border]);
+        render.stroke_color(theme().active.border);
         render.stroke();
 
 
@@ -36,19 +36,19 @@ namespace Btk{
         FRect r = rect;
         r.w = r.w / 100.0f * value;
         render.rect(r);
-        render.fill_color(theme()[Theme::Highlight]);
+        render.fill_color(theme().active.highlight);
         render.fill();
         
         //Draw text
         if(display_value){
             render.begin_path();
+            render.use_font(font()); 
             render.text_align(TextAlign::Middle | TextAlign::Center);
-            render.text_size(theme().font_size()); 
-            render.fill_color(theme()[Theme::Text]);
+            render.fill_color(theme().active.text);
+            render.text(rect.center(),value_text);
+            render.fill();
         }
     
-        render.text(rect.center(),value_text);
-        render.fill();
     }
     void ProgressBar::set_value(float v){
         v = std::clamp(v,0.0f,100.0f);

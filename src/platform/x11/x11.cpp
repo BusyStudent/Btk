@@ -4,6 +4,7 @@
 #include <Btk/platform/x11.hpp>
 #include <Btk/platform/fs.hpp>
 #include <Btk/impl/window.hpp>
+#include <Btk/impl/scope.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
@@ -48,6 +49,13 @@ static void crash_handler(int sig){
     raise(sig);
 }
 #endif
+
+#if 1
+Btk_CallOnLoad{
+    XInitThreads();    
+};
+#endif
+
 namespace Btk{
 namespace X11{
     //Internal function
@@ -115,7 +123,7 @@ namespace X11{
         //Set SDL Hit
         //Disable the compositor
         //Beacuse it will cause a render error in KDE
-        SDL_SetHint("SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR","0");
+        SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR,"0");
 
         #ifndef NDEBUG
         //Debug crash handler

@@ -42,7 +42,7 @@ namespace Btk{
     }
     void AbstractButton::set_parent(Widget *w){
         Widget::set_parent(w);
-        ptsize = theme().font_size();
+        ptsize = theme().font.ptsize();
     }
 };
 namespace Btk{
@@ -68,18 +68,18 @@ namespace Btk{
 
         
         if(is_pressed){
-            bg = theme()[Theme::Highlight];
+            bg = theme().active.highlight;
         }
         else{
-            bg = theme()[Theme::Button];
+            bg = theme().active.button;
         }
         
         //second draw border
         if(is_entered){
-            boarder = theme()[Theme::Highlight];
+            boarder = theme().active.highlight;
         }
         else{
-            boarder = theme()[Theme::Border];
+            boarder = theme().active.border;
         }
         //Draw box
         render.begin_path();
@@ -113,10 +113,10 @@ namespace Btk{
             render.text_align(TextAlign::Center | TextAlign::Middle);
 
             if(is_pressed){
-                render.fill_color(theme()[Theme::HighlightedText]);
+                render.fill_color(theme().active.highlight_text);
             }
             else{
-                render.fill_color(theme()[Theme::Text]);
+                render.fill_color(theme().active.text);
             }
             //NOTE plus 2 to make it look better
             float x = float(fixed_rect.x) + float(fixed_rect.w) / 2 + 2;
@@ -183,10 +183,10 @@ namespace Btk{
         //Draw text
         if(not btext.empty()){
             render.begin_path();
-            render.use_font(theme().font_name());
-            render.text_size(theme().font_size());
+            render.use_font(theme().font);
+            // render.text_size(theme().font_size());
             render.text_align(TextAlign::Middle);
-            render.fill_color(theme()[Theme::Text]);
+            render.fill_color(theme().active.text);
             render.text(text_center,btext);
             render.fill();
         }
@@ -194,16 +194,16 @@ namespace Btk{
         Color circle_c;
         Color circle_b;
         if(checked){
-            circle_c = theme()[Theme::Highlight];
+            circle_c = theme().active.highlight;
         }
         else{
-            circle_c = theme()[Theme::Background];
+            circle_c = theme().active.background;
         }
         if(is_entered){
-            circle_b = theme()[Theme::Highlight];
+            circle_b = theme().active.highlight;
         }
         else{
-            circle_b = theme()[Theme::Border];
+            circle_b = theme().active.border;
         }
         //Make circle
         render.fill_circle(circle_center,circle_r - 2,circle_c);
@@ -277,15 +277,14 @@ namespace Btk{
         if(not btext.empty()){
             //Draw the text
             render.begin_path();
-            render.use_font(theme().font_name());
-            render.text_size(theme().font_size());
+            render.use_font(theme().font);
             render.text_align(TextAlign::Middle);
-            render.fill_color(theme()[Theme::Text]);
+            render.fill_color(theme().active.text);
             render.text(text_center,btext);
             render.fill();
         }
         //Select color
-        Color hight_light = theme()[Theme::Highlight];
+        Color hight_light = theme().active.highlight;
         Color rect_boarder;
 
         if(is_entered){
@@ -293,7 +292,7 @@ namespace Btk{
         }
         else{
             //Normal boarder
-            rect_boarder = theme()[Theme::Border];
+            rect_boarder = theme().active.border;
         }
         //Draw rect
         render.draw_rect(check_rect,rect_boarder);

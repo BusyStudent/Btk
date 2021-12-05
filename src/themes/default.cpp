@@ -4,6 +4,9 @@
 #include <Btk/themes.hpp>
 #include <atomic>
 #include <mutex>
+
+#include "builtins.inl"
+
 namespace Btk{
 // namespace Themes{
 //     static SpinLock spinlock;
@@ -89,41 +92,15 @@ namespace Btk{
 //         DefaultTheme() = theme;
 //     }
 // };
-    Theme::~Theme(){
-        if(ptr != nullptr){
-            ptr->unref();
-        }
+    Theme::Theme(){
+
     }
-    Theme Theme::Create(){
-        return new Base;
-    }
-    Theme &Theme::operator =(const Theme &t){
-        if(this != &t){
-            if(ptr != nullptr){
-                ptr->unref();
-            }
-            if(t.ptr != nullptr){
-                ptr = t.ptr->ref();
-            }
-            else{
-                ptr = nullptr;
-            }
-        }
-        return *this;
-    }
-}
-namespace Btk::Themes{
-    Theme &GetDefault(){
-        static auto t = Theme::Create();
-        //Normal color
-        t.normal()[Theme::Window] = Color(239,240,241,255);
-        t.normal()[Theme::Background] = Color(255,255,255,255);
-        t.normal()[Theme::Text] = Color(0,0,0,255);
-        t.normal()[Theme::Border] = Color(208,208,208,255);
-        t.normal()[Theme::Button] = Color(233,234,235,255);
-        t.normal()[Theme::Highlight] = Color(61,174,233,255);
-        t.normal()[Theme::HighlightedText] = Color(255,255,255,255);
-        
-        return t;
+    Theme::Theme(const Theme &) = default;
+    Theme::~Theme() = default;
+
+    Theme *CurrentTheme(){
+        auto theme = new Theme;
+        construct_theme_default(*theme);
+        return theme;
     }
 }

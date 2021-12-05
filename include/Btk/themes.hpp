@@ -7,216 +7,44 @@
 #include "pixels.hpp"
 #include "font.hpp"
 #include "defs.hpp"
-//A file of themes
 
-//Macro to gen color constant
+//define theme context
+#define BTK_THEME_PALETTE \
+    BTK_THEME_FILED(Color,text)\
+    BTK_THEME_FILED(Color,window)\
+    BTK_THEME_FILED(Color,background)\
+    BTK_THEME_FILED(Color,border)\
+    BTK_THEME_FILED(Color,button)\
+    BTK_THEME_FILED(Color,highlight)\
+    BTK_THEME_FILED(Color,highlight_text)\
 
-#ifdef BTK_VSCODE_SUPPRESS
-    //For suppress the error
-    #define BTK_MAKE_COLOR(COLOR) static Btk::u8string_view COLOR;
-#else
-    #define BTK_MAKE_COLOR(COLOR) \
-        static constexpr Btk::u8string_view COLOR = #COLOR;
-#endif
+
 namespace Btk{
-    class Palette;
-    /**
-     * @brief Class for set or get the color from it
-     * 
-     */
-    template<class T>
-    struct _PaletteProxy{
-        T *palette;
-        u8string_view key;
-        /**
-         * @brief load the color
-         * 
-         * @return Color 
-         */
-        operator Color() const{
-            return palette->get(key);
-        }
-
-        template<class C>
-        void operator =(C &&c) const{
-            return palette->set(key,std::forward<C>(c));
-        }
-    };
-
-    /**
-     * @brief Colors
-     * 
-     */
-    class BTKAPI Palette{
+    class Theme{
         public:
-            Palette();
-            Palette(const Palette &);
-            Palette(Palette &&);
-            ~Palette();
-
-            using Proxy = _PaletteProxy<Palette>;
-
-
-            void  set(u8string_view key,Color c);
-            Color get(u8string_view key) const;
-
-            Palette &operator =(Palette &&);
-            Palette &operator =(const Palette &);
             /**
-             * @brief Get the value from the Palette
+             * @brief Construct a new empty Theme object
              * 
-             * @param key 
-             * @return Proxy 
              */
-            Proxy operator [](u8string_view key){
-                return Proxy{this,key};
-            }
-            /**
-             * @brief Get value form it
-             * 
-             * @param key 
-             * @return Color 
-             */
-            Color operator [](u8string_view key) const{
-                return get(key);
-            }
-            /**
-             * @brief get the size of the 
-             * 
-             * @return size_t 
-             */
-            size_t size() const;
-            bool has_color(u8string_view key) const;
-        private:
-            std::map<u8string,Color> colors;
-        friend BTKAPI std::ostream &operator <<(std::ostream &,const Palette &);
-    };
-
-    class BTKAPI Theme{
-        public:
-            Theme():ptr(nullptr){};
-            Theme(const Theme &t);
-            Theme(Theme &&);
+            Theme();
+            Theme(const Theme &);
             ~Theme();
-            //const begin
-            BTK_MAKE_COLOR(Window);//< for Window's Background
-            BTK_MAKE_COLOR(Background); //< for Background
-            BTK_MAKE_COLOR(Button); //< for Button
-            BTK_MAKE_COLOR(Border); //< for Border
-
-            BTK_MAKE_COLOR(Text); //< for Text
-            BTK_MAKE_COLOR(HighlightedText); //< for HighlightedText
-            BTK_MAKE_COLOR(Highlight); //< for Highlight
-            //const end
-            /**
-             * @brief Generate by config
-             * 
-             * @param txt The config text
-             * @return Theme 
-             */
-            static Theme Parse(u8string_view txt);
-            static Theme ParseFile(u8string_view txt);
-
-            Palette &normal(){
-                return ptr->active;
-            }
-            Palette &disabled(){
-                return ptr->disabled;
-            }
-            Palette &active(){
-                return ptr->active;
-            }
-            Palette &inactive(){
-                return ptr->inactive;
-            }
-
-            const Palette &normal() const{
-                return ptr->active;
-            }
-            const Palette &disabled() const{
-                return ptr->disabled;
-            }
-            const Palette &active() const{
-                return ptr->active;
-            }
-            const Palette &inactive() const{
-                return ptr->inactive;
-            }
-            /**
-             * @brief Get color from it
-             * 
-             * @param v 
-             * @return decltype(auto) 
-             */
-            decltype(auto) operator [](u8string_view v) const{
-                return normal()[v];
-            }
-            Theme &operator =(const Theme &t);
-            
-            u8string_view font_name() const{
-                return ptr->font;
-            }
-            float font_size() const{
-                return ptr->ptsize;
-            }
-            void set_font_ptsize(float ptsize){
-                ptr->ptsize = ptsize;
-            }
-            void set_font_name(u8string_view name){
-                ptr->font = name;
-            }
-            bool empty() const noexcept{
-                return ptr == nullptr;
-            }
-            /**
-             * @brief Create an empty theme
-             * 
-             * @return Theme 
-             */
-            static Theme Create();
-        private:
-            struct Base{
-                Palette disabled;
-                Palette active;
-                Palette inactive;
-                //Font
-                u8string font = "NotoSansCJK";
-                float ptsize = 12;
-
-                int refcount = 1;
-
-                Base *ref(){
-                    ++refcount;
-                    return this;
-                }
-                void unref(){
-                    --refcount;
-                    if(refcount <= 0){
-                        delete this;
-                    }
-                }
-            };
-            Theme(Base *b):ptr(b){}
-            Base *ptr;
+        public:
+            //Parser
+            static Theme Parse(u8string_view text);
+        public:
+            //All data
+            #define BTK_THEME_FILED(TYPE,VAR) \
+                TYPE VAR = {};
+            struct Palette{
+                BTK_THEME_PALETTE
+            } active,inactive,disabled;
+            #undef  BTK_THEME_FILED
+            Font font;
     };
-    inline Theme::Theme(const Theme &t){
-        if(t.ptr == nullptr){
-            ptr = nullptr;
-            return;
-        }
-        ptr = t.ptr->ref();
-    }
-    inline Theme::Theme(Theme &&t){
-        ptr = t.ptr;
-        t.ptr = nullptr;
-    }
-
-    namespace Themes{
-        BTKAPI Theme &GetDefault();
-    };
-    BTKAPI std::ostream &operator <<(std::ostream &,const Palette &);
+    Theme *CurrentTheme();
+    void   UseTheme(u8string_view name);
+    void   AddTheme(u8string_view name,u8string_view config);
 }
-
-#undef BTK_MAKE_COLOR
 
 #endif // _BTK_THEME_HPP_

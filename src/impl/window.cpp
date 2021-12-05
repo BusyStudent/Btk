@@ -4,6 +4,7 @@
 #include <SDL2/SDL_timer.h>
 
 #include <Btk/impl/window.hpp>
+#include <Btk/impl/scope.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/exception.hpp>
@@ -14,6 +15,7 @@
 #include <Btk/layout.hpp>
 #include <Btk/themes.hpp>
 #include <Btk/event.hpp>
+#include <Btk/Btk.hpp>
 
 #include <algorithm>
 
@@ -31,13 +33,14 @@ namespace Btk{
         _device(create_device(_win)),
         render(*_device){
         //Set theme
-        set_theme(Themes::GetDefault());
+        cur_theme = CurrentTheme();
+        set_theme(cur_theme);
         //Set background color
-        bg_color = theme()[Theme::Window];        
+        bg_color = theme().active.window;        
         attr.window = true;
 
         //Configure widget
-        set_font(Font(theme().font_name(),theme().font_size()));
+        set_font(theme().font);
         //Update window rect
         rect.x = 0;
         rect.y = 0;
@@ -56,6 +59,8 @@ namespace Btk{
         delete _device;
 
         SDL_DestroyWindow(win);
+
+        delete cur_theme;
     }
     //Draw window
     void WindowImpl::draw(Renderer &render){
@@ -278,15 +283,29 @@ namespace Btk{
         }
         return true;
     }
-    void WindowImpl::defered_event(std::unique_ptr<Event> event){
-        handle(*event);
-    }
-    void PushEvent(Event *event,Window &window){
+    void PushEvent(Event *event,Window &window,void (*deleter)(void *)){
         if(event == nullptr){
             return;
         }
-        auto w = window.impl();
-        w->defer_call(&WindowImpl::defered_event,std::unique_ptr<Event>(event));
+        Uint32 id = window.impl()->id();
+        //Push it into queue
+        DeferCall([id,event,deleter](){
+            //Make cleanup
+            Btk_defer [event,deleter](){
+                if(deleter != nullptr){
+                    //Use deleter
+                    deleter(event);
+                }
+                else{
+                    delete event;
+                }
+            };
+            auto win = Instance().get_window_s(id);
+
+            if(win != nullptr){
+                win->handle(*event);
+            }
+        });
     }
 }
 namespace Btk{

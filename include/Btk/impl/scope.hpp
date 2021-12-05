@@ -2,17 +2,14 @@
 #define _BTKIMPL_SCOPE_HPP_
 #include <SDL2/SDL_stdinc.h>
 #include <cstdarg>
+#include "../defs.hpp"
 
-#ifdef __COUNTER__
-    #define Btk_defer Btk::Impl::ScopeGuard __GUARD__##__COUNTER__ = 
-#else
-    #define Btk_defer Btk::Impl::ScopeGuard __GUARD__ = 
-#endif
+#define Btk_defer Btk::Impl::ScopeGuard BTK_UNIQUE_NAME(_defer__) = 
 
-#ifdef __COUNTER__
-    #define Btk_CallOnLoad static Btk::Impl::OnloadExecuter __Executer__##__COUNTER__ = 
+#ifdef __GNUC__
+    #define Btk_CallOnLoad static __attribute__((constructor)) void BTK_UNIQUE_NAME(_executer__)()
 #else
-    #define Btk_CallOnLoad static Btk::Impl::OnloadExecuter __Executer__ = 
+    #define Btk_CallOnLoad static Btk::Impl::OnloadExecuter BTK_UNIQUE_NAME(_executer__) = []()
 #endif
 
 namespace Btk{

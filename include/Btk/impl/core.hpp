@@ -6,10 +6,12 @@
 #include <unordered_map>
 #include <exception>
 #include <atomic>
+#include <thread>
 #include <mutex>
 #include <queue>
 #include <list>
 
+#include "atomic.hpp"
 #include "thread.hpp"
 #include "codec.hpp"
 #include "../module.hpp"
@@ -54,6 +56,47 @@ namespace Btk{
         std::list<ImageAdapter> image_adapters;
         std::list<CreateDeviceFn> devices_list;
         std::list<Module> modules_list;
+    };
+    struct BTKHIDDEN AsyncSystem{
+        //Async Pool
+        inline
+        AsyncSystem();
+        inline
+        ~AsyncSystem();
+
+        using Task = GenericHandler;
+
+        struct Worker{
+            inline
+            Worker():
+                thread("BtkWorker",&Worker::run,this){
+                
+            };
+            Worker(const Worker &) = delete;
+            ~Worker() = default;
+
+            Atomic idle = false;
+            SpinLock queue_lock;
+            std::queue<Task> tasks_queue;
+            SyncEvent event;
+            Thread thread;
+            
+            inline
+            void run();
+
+            inline
+            void ask_quit();
+
+            inline
+            void add_task(const Task &);
+        };
+        inline
+        void create_worker();
+        inline
+        void add_task(const Task &task);
+
+        int workerd_limit = std::thread::hardware_concurrency();
+        std::list<Worker> workers;
     };
     /**
      * @brief Btk System
@@ -100,11 +143,6 @@ namespace Btk{
         inline void on_mousebutton(const SDL_Event &event);//Handle SDL_MouseButton
         inline void on_textinput(const SDL_Event &event);//Handle SDL_TextInputEvent
         inline void on_quit();//Handle SDL_Quit
-        /**
-         * @brief Pump native Event
-         * @todo .
-         */
-        void nt_pump(){};
         //defercall in eventloop
         void defer_call(void(* fn)(void*),void *data = nullptr);
         //Get window from WindowID
@@ -120,6 +158,7 @@ namespace Btk{
         std::recursive_mutex map_mtx;
         Uint32 defer_call_ev_id;//defer call Event ID
         Uint32 reservered_ev_id;//Reversered
+        Uint32 wait_event_delay = 1;//<Delay in wait event
         //called after a exception was throwed
         //return false to abort program
         bool (*handle_exception)(std::exception *) = nullptr;
@@ -142,7 +181,7 @@ namespace Btk{
         Signal<void>() signal_app_leave_background;
         #endif
 
-        //std::list<RendererCreateFn> render_list;
+        AsyncSystem async;
         //Init Global
         static int  Init();
         static void Quit();

@@ -4,6 +4,7 @@
 #include "../../build.hpp"
 #include <Btk/platform/x11.hpp>
 #include <Btk/utils/mem.hpp>
+#include <Btk/impl/scope.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/font.hpp>
@@ -62,6 +63,51 @@ namespace FontUtils{
 }
 namespace FontUtils{
     //Get font file
+    FontInfo FindFont(u8string_view fontname){
+        if(not was_init){
+            Init();
+        }
+        FcPattern* font;
+        FcPattern* pat = FcNameParse(
+            reinterpret_cast<const FcChar8*>(fontname.data())   
+        );
+        LockGuard locker;//Lock the library
+        //Config substitute
+        FcConfigSubstitute(config, pat, FcMatchPattern);
+        FcDefaultSubstitute(pat);
+        //Begin match
+        FcResult result;
+        font = FcFontMatch(config,pat,&result);
+
+        Btk_defer [font,pat](){
+            FcPatternDestroy(font);
+            FcPatternDestroy(pat);
+        };
+        
+        if(font == nullptr){
+            throwRuntimeError("Failed to match font");
+        }
+        FcChar8 *file;
+        if(FcPatternGetString(font,FC_FILE,0,&file) != FcResultMatch){
+            //Get String
+            throwRuntimeError("Failed to match font");
+        }
+        FcChar8 *fullname;
+        if(FcPatternGetString(font,FC_FULLNAME,0,&fullname) != FcResultMatch){
+            //Get String
+            throwRuntimeError("Failed to match font");
+        }
+        int index;
+        if(FcPatternGetInteger(font,FC_INDEX,0,&index) != FcResultMatch){
+            //Get index
+            throwRuntimeError("Failed to match font");
+        }
+        FontInfo info;
+        info.filename = reinterpret_cast<char*>(file);
+        info.fullname = reinterpret_cast<char*>(fullname);
+        info.index = index;
+        return info;
+    }
     u8string GetFileByName(u8string_view fontname){
         if(not was_init){
             Init();
@@ -267,9 +313,9 @@ namespace FontUtils{
 
     //FontMatcher
     FontMatcher::FontMatcher(){
-        pat = FcPatternCreate();
+        pattern = FcPatternCreate();
     }
     FontMatcher::~FontMatcher(){
-        FcPatternDestroy(static_cast<FcPattern*>(pat));
+        FcPatternDestroy(static_cast<FcPattern*>(pattern));
     }
 };

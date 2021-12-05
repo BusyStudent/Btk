@@ -70,6 +70,10 @@ namespace Btk{
     }
     void SyncEvent::set(){
         std::lock_guard locker(it_lock);
+        if(isset){
+            //No need to boardcast
+            return;
+        }
         isset = true;
         SDL_CondBroadcast(cond);
     }

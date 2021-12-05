@@ -25,9 +25,11 @@
 namespace Btk{
     #ifdef _WIN32
     inline constexpr auto strncasecmp = _strnicmp;
+    inline constexpr auto strcasecmp  = _stricmp;
     using wstring = u16string;
     #else
     inline constexpr auto strncasecmp = ::strncasecmp;
+    inline constexpr auto strcasecmp = ::strcasecmp;
     using wstring = u32string;
     #endif
 

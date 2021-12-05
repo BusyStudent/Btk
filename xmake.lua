@@ -65,8 +65,38 @@ if is_mode("release") then
     add_defines("NDEBUG")
 end
 
+-- Option
+option("software_renderer")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Add software renderer in DeviceList")
+option("opengl_renderer")
+    set_default(true)
+    set_showmenu(true)
+    set_description("Add opengl renderer in DeviceList")
+option("stb_truetype")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Force to use stb_truetype")
+-- Win32 Option
+option("directx_renderer")
+    if is_plat("windows") or is_plat("mingw") then
+        set_default(true)
+    else
+        set_default(false)
+    end
+    set_showmenu(true)
+    set_description("Add DirectX renderer in DeviceList")
+
 target("btk")
     add_defines("BTK_USE_GFX")
+
+    -- Import option
+    add_options("software_renderer")
+    add_options("directx_renderer")
+    add_options("opengl_renderer")
+    add_options("stb_truetype")
+
     
     if is_plat("linux") then
         add_files("./src/platform/x11/*.cpp")
@@ -146,15 +176,26 @@ target("btk")
     --GL
     add_files("./src/gl/*.cpp")
     --Render
-    add_files("./src/render/render_gles2.cpp")
     add_files("./src/render/nanovg.cpp")
 
-    if is_plat("windows") or is_plat("mingw") then 
+    if has_config("software_renderer") then
+        add_files("./src/render/render_sw.cpp")
+        add_defines("BTK_USE_SWDEVICE")
+    end
+    if has_config("opengl_renderer") then
+        add_files("./src/render/render_gles2.cpp")
+    else
+        add_defines("BTK_NO_GLDEVICE")
+    end
+    if has_config("directx_renderer") then
         add_files("./src/render/render_dx11.cpp")
     end
 
     --Font
     add_files("./src/font/fontstash.cpp")
+    if has_config("stb_truetype") then
+        add_defines("BTK_USE_STBTT")
+    end
     -- add_files("./src/font/cache.cpp")
     -- add_files("./src/font/ft_font.cpp")
     --Image

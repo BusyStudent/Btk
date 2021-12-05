@@ -95,7 +95,7 @@ namespace Btk{
     }
     void Label::set_parent(Widget *w){
         Widget::set_parent(w);
-        text_color = theme()[Theme::Text];
-        ptsize = theme().font_size();
+        text_color = theme().active.text;
+        ptsize = theme().font.ptsize();
     }
 };

@@ -28,6 +28,7 @@ namespace Btk::GL{
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,1);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,8);
 
+        #ifndef BTK_NO_GLDEVICE
         //Register our Device
         RegisterDevice([](SDL_Window *win) -> RendererDevice*{
             //Check is OpenGL Window
@@ -36,6 +37,7 @@ namespace Btk::GL{
             }
             return nullptr;
         });
+        #endif
     }
     void Quit(){
         #ifdef BTK_NEED_GLAD

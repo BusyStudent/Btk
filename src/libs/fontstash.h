@@ -145,6 +145,17 @@ typedef struct FONSfont *BtkFt;
 #else
 typedef void *BtkFt;
 #endif
+/**
+ * @brief Font's detail
+ * 
+ */
+struct BtkFt_Info{
+	const char *family_name;
+	const char *style_name;
+	void *handle;
+	int num_faces;
+};
+
 //Global System Init
 BTKHIDDEN void  BtkFt_Init();
 BTKHIDDEN void  BtkFt_Quit();
@@ -167,14 +178,13 @@ BTKHIDDEN BtkFt BtkFt_Dup(BtkFt ft);
 BTKHIDDEN BtkFt BtkFt_GlobalFind(Btk::u8string_view name);
 BTKHIDDEN int   BtkFt_Refcount(BtkFt font);
 BTKHIDDEN void  BtkFt_Close(BtkFt font);
-BTKHIDDEN const char  *BtkFt_GetFamilyName();
-BTKHIDDEN const char  *BtkFt_GetStyleName();
 BTKHIDDEN int   BtkFt_GetID(BtkFt font);
 BTKHIDDEN BtkFt BtkFt_GetFromID(int id);
 inline    BtkFt BtkFt_GetDefaultFont(){
 	return BtkFt_GetFromID(0);
 }
 //Mesure
+BTKHIDDEN void  BtkFt_GetInfo(BtkFt font,BtkFt_Info *info);
 BTKHIDDEN bool  BtkFt_HasGlyph(BtkFt font,char32_t codepoint);
 BTKHIDDEN Btk::FSize BtkFt_TextSize(BtkFt font,float ptsize,Btk::u8string_view txt);
 //Fontstash extends

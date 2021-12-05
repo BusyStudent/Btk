@@ -2,7 +2,12 @@
 #define _BTK_GL_SOFTWARE_HPP_
 #include "../render.hpp"
 #include "../pixels.hpp"
+#include <stack>
 namespace Btk{
+    /**
+     * @brief Software renderer by using nanort
+     * 
+     */
     class SWDevice:public RendererDevice{
         public:
             SWDevice(SDL_Window *win);
@@ -21,6 +26,7 @@ namespace Btk{
             //viewport
             void    set_viewport(const Rect *r) override;
             //Target
+            void set_target(SDL_Surface *surf);
             void set_target(Context ctxt,TextureID id) override;
             void reset_target(Context ctxt) override;
             //Texture
@@ -59,15 +65,18 @@ namespace Btk{
             void swap_buffer() override;
         private:
             void update_status();
+            void fb_resize(int new_w,int new_h);
+            SDL_Surface *framebuffer = nullptr;//< Bind with the context
+            Rect viewport = {-1,-1,-1,-1};
 
             NVGcontext *current_ctxt = nullptr;
-            SDL_PixelFormat *cvt_fmt = nullptr;
             SDL_Surface *tag_surf = nullptr;
             SDL_Window  *tag_win = nullptr;
-            Uint32       tag_fmt = 0;
             bool surf_owned = false;
             bool frame_begined = false;
 
+            //Render target support
+            std::stack<SDL_Surface*> targets;
     };
 }
 

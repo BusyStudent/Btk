@@ -37,7 +37,7 @@ using namespace Btk;
 
 //Freetype
 
-#define BTK_HAS_FREETYPE __has_include(<ft2build.h>)
+#define BTK_HAS_FREETYPE __has_include(<ft2build.h>) && !defined(BTK_USE_STBTT)
 
 
 #if BTK_HAS_FREETYPE
@@ -113,14 +113,14 @@ static void       UnlockLibrary();
 
 #define FS_REFCOUNTER() \
     int _refcount = 0;\
-    BTKINLINE void _unref(){\
+    void _unref(){\
         BTK_ASSERT(_refcount > 0);\
         _refcount--;\
         if(_refcount == 0){\
             delete this;\
         }\
     }\
-    BTKINLINE void _ref(){\
+    void _ref(){\
         _refcount++;\
     }
 
@@ -199,20 +199,29 @@ struct FONSttFontImpl {
 };
 #else
 //TODO Add mapped memory into FONSFontData
-struct FONSFontData{
+struct FONSttFontData{
 	FS_REFCOUNTER();
+
+	FONSttFontData(const char *filename);
+	FONSttFontData(const FONSttFontData &) = delete;
+	~FONSttFontData();
+	
+	//File mapping
+	#if FS_PLATFORM_LINUX
+	size_t mem_size = 0;
+	void * mem_ptr = MAP_FAILED;
+	#else
+	//Load all into mem
+	size_t mem_size = 0;
+	void * mem_ptr = nullptr;
+	#endif
+	bool ok = false;
 };
 struct FONSttFontImpl {
 	stbtt_fontinfo font;
 	u8string filename;
-	void *buffer = nullptr;
-
-	//File mapping
-	#if FS_PLATFORM_LINUX
-	size_t mem_size = 0;
-	void *mem_ptr = MAP_FAILED;
-	#endif
-
+	//< For load in file
+	SmartPointer<FONSttFontData> buffer;
 };
 #endif
 
@@ -320,12 +329,19 @@ struct FONSfont
 		//cleanup  the face
 		fons__tt_free_face(font);
 	}
+	bool user_opened = false;
 	/**
 	 * @brief Clean the cached glyph marked with fontstash
 	 * 
 	 * @param fontstash 
 	 */
 	void clean_cache_by_ctxt(void *fontstash);
+	/**
+	 * @brief Free all cache
+	 * 
+	 */
+	void reset_cache();
+	void remove_cached_glyph(FONSglyph &glyph);
 	int id;
 	//Construct / Delete
 };
@@ -394,6 +410,7 @@ struct FONScontext
 
 struct Runtime{
 	Runtime();
+	Runtime(const Runtime &) = delete;
 	~Runtime();
 	std::map<int,SmartPointer<FONSfont>> fonts_map;
 	//Use C++ <random>
@@ -416,6 +433,10 @@ struct Runtime{
 
 	int alloc_id();
 	int alloc_font();
+
+	BtkFt (*handle_glyph)(BtkFt cur_font,char32_t want_codepoint);
+
+	BtkFt find_fallback_font(char32_t codepoint);
 };
 Btk::Constructable<Runtime> runtime;
 
@@ -435,7 +456,7 @@ Runtime::Runtime(){
 	#endif
 	//Add default font
 	default_font = add_font(
-		"",
+		"<default>",
 		FontUtils::GetFileByName("").c_str(),
 		0
 	);
@@ -504,8 +525,11 @@ BtkFt BtkFt_Dup(BtkFt font){
 	return font;
 }
 void  BtkFt_Close(BtkFt font){
+	if(font == nullptr){
+		return;
+	}
 	FS_DELETE_REF(font);
-	if(FS_GET_REFCOUNT(font) == 1){
+	if(FS_GET_REFCOUNT(font) == 1 and font->user_opened){
 		//Still has 1 ref in the global runtime
 		runtime->fonts_map.erase(font->id);
 	}
@@ -515,12 +539,13 @@ int   BtkFt_Refcount(BtkFt font){
 }
 BtkFt BtkFt_Open(const char *filename,Uint32 idx){
 	//TODO
-	// int id = runtime->add_font("",filename,idx);
-	// if(id == FONS_INVALID){
-	// 	return nullptr;
-	// }
-	// return BtkFt_GetFromID(id);
-	return nullptr;
+	int id = runtime->add_font("",filename,idx);
+	if(id == FONS_INVALID){
+		return nullptr;
+	}
+	auto ft = BtkFt_GetFromID(id);
+	ft->user_opened = true;
+	return ft;
 }
 //Find
 BtkFt BtkFt_GlobalFind(u8string_view name){
@@ -571,10 +596,12 @@ static int fons__tt_loadFont(FONSttFontImpl *font,const char *filename, int font
 				//Same index;
 				if(FT_Reference_Face(font->font)){
 					//Take reference failed
+					UnlockLibrary();
 					return false;
 				}
 				else{
 					BTK_LOGINFO("[Freetype]Reference face %s Index:%d",filename,fontIndex);
+					UnlockLibrary();
 					return true;
 				}
 			}
@@ -671,6 +698,16 @@ static int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int gl
 	FT_Get_Kerning(font->font, glyph1, glyph2, FT_KERNING_DEFAULT, &ftKerning);
 	return (int)((ftKerning.x + 32) >> 6);  // Round up and convert to integer
 }
+
+void BtkFt_GetInfo(BtkFt font,BtkFt_Info *info){
+	if(font != nullptr){
+		info->num_faces = font->font.font->num_faces;
+		info->family_name = font->font.font->family_name;
+		info->style_name = font->font.font->style_name;
+		info->handle = font->font.font;
+	}
+	return;
+}
 #else
 
 //STB truetype allocator
@@ -699,30 +736,14 @@ static void fons__tmpfree(void* ptr, void* up)
 	#endif
 }
 
-//STB truetype
 
-int fons__tt_loadFont(FONSttFontImpl *font, unsigned char *data, int dataSize, int fontIndex)
-{
-	int offset, stbError;
-	FONS_NOTUSED(dataSize);
-
-	font->font.userdata = runtime.get();
-	offset = stbtt_GetFontOffsetForIndex(data, fontIndex);
-	if (offset == -1) {
-		stbError = 0;
-	} else {
-		stbError = stbtt_InitFont(&font->font, data, offset);
-	}
-	return stbError;
-}
 //Load in file
-int fons__tt_loadFont(FONSttFontImpl *font,const char *path, int fontIndex)
-{
+FONSttFontData::FONSttFontData(const char *path){
 	#if FS_PLATFORM_LINUX
 	//Has filemapping
 	int fd = ::open(path,O_RDONLY);
 	if(fd == -1){
-		return false;
+		return;
 	}
 	struct stat status;
 	if(::fstat(fd,&status) == -1){
@@ -742,51 +763,72 @@ int fons__tt_loadFont(FONSttFontImpl *font,const char *path, int fontIndex)
 	}
 	//Done 
 	::close(fd);
-	font->mem_size = status.st_size;
-	font->mem_ptr = addr;
+	mem_size = status.st_size;
+	mem_ptr = addr;
 
-	if(fons__tt_loadFont(font,(Uint8*)addr,status.st_size,fontIndex) == false){
-		//Error,free memory
-		::munmap(addr,status.st_size);
-		font->mem_ptr = MAP_FAILED;
-		font->mem_size = 0;
-		return false;
-	}
-	return true;
+	ok = true;
+	return;
 err:
 	::close(fd);
-	return false;
+	return;
 	#else
 	//No file mapping
 	size_t datasize;
-	font->buffer = SDL_LoadFile(path,&datasize);
-	if(font->buffer == nullptr){
+	mem_ptr = SDL_LoadFile(path,&datasize);
+	if(mem_ptr == nullptr){
 		//Load Error
-		return false;
+		return;
 	}
-	if(fons__tt_loadFont(font,(Uint8*)font->buffer,datasize,fontIndex)){
-		return true;
+	mem_size = datasize;
+	ok = true;
+	#endif
+}
+FONSttFontData::~FONSttFontData(){
+	#if FS_PLATFORM_LINUX
+	if(mem_ptr != MAP_FAILED){
+		//Unmap the memory
+		if(::munmap(mem_ptr,mem_size) == -1){
+			BTK_LOGWARN("[Fontstash]Unmap(%p) failed",mem_ptr);
+		}
 	}
-	else{
-		//Load failure
-		SDL_free(font->buffer);
-		return false;
+	#else
+	if(mem_ptr != nullptr){
+		SDL_free(mem_ptr);
 	}
 	#endif
 }
-static void fons__tt_free_face(FONSttFontImpl &font){
-	if(font.buffer != nullptr){
-		SDL_free(font.buffer);
-	}
-	#if FS_PLATFORM_LINUX
-	if(font.mem_ptr != MAP_FAILED){
-		//Unmap the memory
-		if(::munmap(font.mem_ptr,font.mem_size) == -1){
-			BTK_LOGWARN("[Fontstash]Unmap(%p) failed",font.mem_ptr);
-		}
-	}
+//STB truetype
+int fons__tt_loadFont(FONSttFontImpl *font, unsigned char *data, int dataSize, int fontIndex)
+{
+	int offset, stbError;
+	FONS_NOTUSED(dataSize);
 
-	#endif
+	font->font.userdata = runtime.get();
+	offset = stbtt_GetFontOffsetForIndex(data, fontIndex);
+	if (offset == -1) {
+		stbError = 0;
+	} else {
+		stbError = stbtt_InitFont(&font->font, data, offset);
+	}
+	return stbError;
+}
+int fons__tt_loadFont(FONSttFontImpl *font,const char *path, int fontIndex)
+{
+	SmartPointer file(new FONSttFontData(path));
+	if(not file->ok){
+		//Load failure
+		return false;
+	}
+	if(fons__tt_loadFont(font,(Uint8*)file->mem_ptr,file->mem_size,fontIndex)){
+		//Load OK
+		font->buffer = file;
+		return true;
+	}
+	return false;
+
+}
+static void fons__tt_free_face(FONSttFontImpl &font){
+	//Do nothing
 }
 
 void fons__tt_getFontVMetrics(FONSttFontImpl *font, int *ascent, int *descent, int *lineGap)
@@ -1594,44 +1636,55 @@ static void fons__blur(FONScontext* stash, unsigned char* dst, int w, int h, int
 }
 
 //Cleanup cached glyph
-void FONSfont::clean_cache_by_ctxt(void *fontstash){
+void FONSfont::remove_cached_glyph(FONSglyph &glyph){
 	auto get_hash = [](FONSglyph &glyph){
 		if(glyph.next == 0){
 			return -1;
 		}
 		return glyph.next;
 	};
+	auto h = fons__hashint(glyph.codepoint) & (FONS_HASH_LUT_SIZE-1);		
+	int index = lut[h];
+	//glyph position
+	int pos   = &glyph - glyphs;
+	
+	if(index == pos){
+		//Is same index
+		//
+		lut[h] = get_hash(glyph);;
+
+	}
+	else{
+		//Find the pos
+		FONSglyph *cur = &glyphs[index];
+		while(cur->next != pos and cur->next != -1){
+			cur = &glyphs[cur->next];
+		}
+		cur->next = get_hash(glyph);
+	}
+	memset(&glyph,0,sizeof(FONSglyph));
+	glyph.unused = true;
+	glyph.next = -1;
+}
+void FONSfont::clean_cache_by_ctxt(void *fontstash){
 	for(int i = 0;i < nglyphs;i++){
 		auto &glyph = glyphs[i];
 		if(glyph.stash != fontstash){
 			continue;
 		}
-		//Get hash
-		auto h = fons__hashint(glyph.codepoint) & (FONS_HASH_LUT_SIZE-1);		
-		int index = lut[h];
-		//glyph position
-		int pos   = &glyph - glyphs;
-		
-		if(index == pos){
-			//Is same index
-			//
-			lut[h] = get_hash(glyph);;
-
-		}
-		else{
-			//Find the pos
-			FONSglyph *cur = &glyphs[index];
-			while(cur->next != pos and cur->next != -1){
-			 	cur = &glyphs[cur->next];
-			}
-			cur->next = get_hash(glyph);
-		}
-		memset(&glyph,0,sizeof(FONSglyph));
-		glyph.unused = true;
-		glyph.next = -1;
+		remove_cached_glyph(glyph);
 	}
 }
-
+void FONSfont::reset_cache(){
+	//reset all cache
+	for(size_t n = 0;n < FONS_HASH_LUT_SIZE;n ++){
+		lut[n] = -1;
+	}
+	for(int i = 0;i < nglyphs;i++){
+		auto &glyph = glyphs[i];
+		glyph.unused = true;
+	}
+}
 
 static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned int codepoint,
 								 short isize, short iblur, int bitmapOption)

@@ -132,6 +132,7 @@ namespace Btk{
 
             //Current menu bar
             Menu *menu_bar = nullptr;
+            Theme *cur_theme = nullptr;
             
             //Methods for Widget impl
         private:
@@ -143,13 +144,6 @@ namespace Btk{
             bool mouse_pressed = false;
             bool drag_rejected = false;
             bool dragging = false;
-            /**
-             * @brief For impl Btk::PushEvent
-             * 
-             * @param event 
-             */
-            BTKHIDDEN
-            void defered_event(std::unique_ptr<Event> event);
         public:
             #ifdef _WIN32
             //Win32 parts

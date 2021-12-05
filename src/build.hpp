@@ -91,11 +91,7 @@ namespace Btk{
     //Cast event for debugging
     template<class T,class U>
     T event_cast(U &&u){
-        #ifndef NDEBUG
-        return dynamic_cast<T>(std::forward<U>(u));
-        #else
         return static_cast<T>(std::forward<U>(u));
-        #endif
     }
     inline int vscprintf(const char *fmt,va_list varg){
         #ifdef _WIN32

@@ -98,10 +98,10 @@ namespace Btk{
     }
     void TextBox::set_parent(Widget *w){
         Widget::set_parent(w);
-        ptsize = theme().font_size();
+        ptsize = theme().font.ptsize();
     }
     void TextBox::draw(Renderer &render){
-        render.draw_box(rect,theme()[Theme::Background]);
+        render.draw_box(rect,theme().active.background);
         
         //BTK_LOGINFO("RendererLineH %f,ft_h %d",render.font_height(),ft_h);
         ft_h = render.font_height();
@@ -127,7 +127,7 @@ namespace Btk{
 
             render.text_size(ptsize);
             render.text_align(TextAlign::Middle | TextAlign::Left);
-            render.fill_color(theme()[Theme::Text]);
+            render.fill_color(theme().active.text);
             
             //plus 2 make it look better
             render.text(
@@ -153,7 +153,7 @@ namespace Btk{
                     line_x = txt_rect.x + render.text_size(view).w;
                 }
                 
-                render.draw_line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme()[Theme::Text]);
+                render.draw_line(line_x,txt_rect.y,line_x,txt_rect.y + text_size.h,theme().active.text);
             }
             render.restore();
         }
@@ -164,15 +164,15 @@ namespace Btk{
                             line_y,
                             rect.x + tb_boarder,
                             line_y + ft_h,
-                            theme()[Theme::Text]
+                            theme().active.text
                             );
         }
 
         if(has_focus){
-            render.draw_rounded_rect(rect,1,theme()[Theme::Highlight]);
+            render.draw_rounded_rect(rect,1,theme().active.highlight);
         }
         else{
-            render.draw_rounded_rect(rect,1,theme()[Theme::Border]);
+            render.draw_rounded_rect(rect,1,theme().active.border);
         }
         render.restore();
     }

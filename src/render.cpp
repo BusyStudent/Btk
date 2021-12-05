@@ -393,16 +393,6 @@ namespace Btk{
     void Renderer::text_size(float ptsize){
         nvgFontSize(nvg_ctxt,ptsize);
     }
-    //Set font
-    bool Renderer::use_font(u8string_view fontname) noexcept{
-        auto &buf = FillInternalU8Buffer(fontname);
-        int font_id = nvgFindFont(nvg_ctxt,buf.c_str());
-        if(font_id == -1){
-            return false;
-        }
-        nvgFontFaceId(nvg_ctxt,font_id);
-        return true;
-    }
     TextMetrics Renderer::font_metrics(){
         TextMetrics m;
         nvgTextMetrics(nvg_ctxt,&m.ascender,&m.descender,&m.h);
@@ -451,11 +441,6 @@ namespace Btk{
             device()->end_frame(nvg_ctxt);
             is_drawing = false;
         }
-    }
-    bool Renderer::use_font(const Font &font){
-        use_font(font.family());
-        text_size(font.ptsize());
-        return true;
     }
     void Renderer::set_antialias(bool val){
         nvgShapeAntiAlias(nvg_ctxt,val);

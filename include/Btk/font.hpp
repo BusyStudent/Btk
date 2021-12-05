@@ -162,6 +162,7 @@ namespace Btk{
              */
             u8string family() const;
             u8string style_name() const;
+            FontID id() const;
             /**
              * @brief Assign font
              * 
@@ -179,7 +180,11 @@ namespace Btk{
              * @param ptsize Font ptsize
              * @return Font 
              */
-            static Font FromFile(u8string_view filename,int ptsize);
+            static Font FromFile(u8string_view filename,float ptsize);
+            static Font FromID(FontID id,float ptsize);
+            static Font DefaultFont(){
+                return FromID(0,12);
+            }
             static void Init();
             static void Quit();
         private:
@@ -188,6 +193,7 @@ namespace Btk{
             float ptsize_ = -1;
         friend class Renderer;
     };
+    //TODO
     class BTKAPI FontSet{
         #ifdef __gnu_linux__
         public:
@@ -301,25 +307,56 @@ namespace Btk{
             
         friend struct Iterator;
     };
+    //TODO
     class BTKAPI FontMatcher{
         public:
             FontMatcher();
-            FontMatcher(const FontMatcher &) = delete;
+            FontMatcher(const FontMatcher &);
             ~FontMatcher();
+
+            //Mask
+            enum{
+                Filename,
+                Fullname,
+                Index,
+                Style,
+            };
+
+            void get_value(Uint32 mask,void *p);
         private:
             //Impls
-            #ifdef __gnu_linux__
-            void *pat;
+            #if BTK_X11
+            void *pattern;
             #endif
     };
     class BTKAPI FontRenderer{
 
+    };
+    struct FontInfo{
+        u8string fullname;
+        u8string filename;
+        Uint32 index;
     };
     /**
      * @brief Some useful function about font
      * 
      */
     namespace FontUtils{
+        /**
+         * @brief Get font's detail by it's name
+         * 
+         * @param name 
+         * @return BTKAPI 
+         */
+        BTKAPI FontInfo FindFont(u8string_view name);
+        /**
+         * @brief Get the count of the font's faces
+         * 
+         * @param filename The font filename
+         * @return BTKAPI 
+         */
+        BTKAPI size_t GetNumFace(u8string_view filename);
+        BTKAPI u8string FindByCodepoint();
         /**
          * @brief Get font file by its name
          * 

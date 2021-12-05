@@ -137,9 +137,14 @@
 #endif
 
 //Platform checking
-#if defined(_WIN32) || defined(__gnu_linux__)
+#define BTK_ANDROID defined(__ANDROID__)
+#define BTK_WIN32   defined(_WIN32)
+#define BTK_X11     defined(__gnu_linux__)
+#define BTK_IOS     defined(__IPHONEOS__)
+
+#if BTK_WIN32 || BTK_X11
     #define BTK_DESKTOP
-#elif defined(__ANDROID__) || defined(__IPHONEOS__)
+#elif BTK_IOS || BTK_ANDROID
     #define BTK_MOBILE
 #endif
 //Macro to avoid compile still develop code in msvc

@@ -186,6 +186,20 @@ namespace Btk{
             user
         );
     }
+     //Set font
+    bool Renderer::use_font(u8string_view fontname) noexcept{
+        int font_id = BtkFt_GetID(BtkFt_GlobalFind(fontname));
+        if(font_id == -1){
+            return false;
+        }
+        nvgFontFaceId(nvg_ctxt,font_id);
+        return true;
+    }
+    bool Renderer::use_font(const Font &font){
+        nvgFontFaceId(nvg_ctxt,0);
+        nvgFontSize(nvg_ctxt,font.ptsize());
+        return true;
+    }
     //Default device operations
     void RendererDevice::begin_frame(Context ctxt,float w,float h,float ratio){
         nvgBeginFrame(ctxt,w,h,ratio);

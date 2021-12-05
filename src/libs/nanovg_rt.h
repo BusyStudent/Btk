@@ -66,6 +66,7 @@ void nvgDeleteRT(NVGcontext *ctx);
 void nvgFrameBufferSizeRT(NVGcontext *ctxt,int *w,int *h);
 void nvgClearBackgroundRT(NVGcontext *ctx,uint8_t r,uint8_t g,uint8_t b,uint8_t a); // Clear background.
 void nvgResizeFrameBufferRT(NVGcontext *ctxt,int new_w,int new_h);
+void nvgAttachFrameBufferRT(NVGcontext *ctxt,void *pixel,int new_w,int new_h);
 unsigned char *nvgReadPixelsRT(NVGcontext *ctx); // Returns RGBA8 pixel data.
 
 // These are additional flags on top of NVGimageFlags.
@@ -536,6 +537,7 @@ struct RTNVGcontext {
   unsigned char *pixels; // RGBA
   int width;
   int height;
+  bool owned = true;
 };
 typedef struct RTNVGcontext RTNVGcontext;
 
@@ -2463,12 +2465,18 @@ error:
 
 void nvgDeleteRT(NVGcontext *ctx) {
   RTNVGcontext *rt = (RTNVGcontext *)nvgInternalParams(ctx)->userPtr;
-  free(rt->pixels);
+  if(rt->owned){
+    free(rt->pixels);
+  }
   // printf("delete\n");
   nvgDeleteInternal(ctx);
 }
 void nvgResizeFrameBufferRT(NVGcontext *ctxt,int w,int h){
     RTNVGcontext *rt = (RTNVGcontext *)nvgInternalParams(ctxt)->userPtr;
+    if(rt->owned){
+      //Is  not the buffer we owned
+      return;
+    }
     if(rt->width == w && rt->height == w){
       return;
     }
@@ -2517,6 +2525,23 @@ void nvgClearBackgroundRT(NVGcontext *ctx,uint8_t r,uint8_t g,uint8_t b,uint8_t 
     rt->pixels[4 * i + 2] = b;
     rt->pixels[4 * i + 3] = a;
   }
+}
+void nvgAttachFrameBufferRT(NVGcontext *ctx,void *pixels,int w,int h){
+  RTNVGcontext *rt = (RTNVGcontext *)nvgInternalParams(ctx)->userPtr;
+  if(rt->owned && pixels != nullptr){
+    //free prev ctxt
+    free(rt->pixels);
+    rt->pixels = nullptr;
+  }
+  if(pixels != nullptr){
+    rt->pixels = (unsigned char*)pixels;    
+  }
+  else{
+    //Alloc a new buffer
+    rt->pixels = (unsigned char*)realloc(rt->pixels,4 * w * h);
+  }
+  rt->width = w;
+  rt->height = h;
 }
 
 unsigned char *nvgReadPixelsRT(NVGcontext *ctx) {

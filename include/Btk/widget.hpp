@@ -220,15 +220,19 @@ namespace Btk{
                 return _font;
             }
             const Theme &theme() const noexcept{
-                return _theme;
+                return *_theme;
             }
 
             void set_font(const Font &font){
                 _font = font;
                 redraw();
             }
-            void set_theme(const Theme &theme){
+            void set_theme(const Theme *theme){
                 _theme = theme;
+                redraw();
+            }
+            void set_theme(const Theme &theme){
+                _theme = &theme;
                 redraw();
             }
         public:
@@ -264,8 +268,8 @@ namespace Btk{
             }
 
             Font _font;
-            Theme _theme;
             Widget *_parent = nullptr;//< Parent
+            const Theme *_theme = nullptr;
             mutable WindowImpl *_window = nullptr;//<Window pointer
         friend class Window;
         friend class Layout;
