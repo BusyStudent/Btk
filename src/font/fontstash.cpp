@@ -81,8 +81,7 @@ using namespace Btk;
 	#endif
 
 	#define FS_PLATFORM_LINUX defined(__linux) && FS_HAS_FILE_MAPPING
-	// #define FS_PLATFORM_WIN32 defined(__WIN32) && FS_HAS_FILE_MAPPING
-	#define FS_PLATFORM_WIN32 0
+	#define FS_PLATFORM_WIN32 defined(__WIN32) && FS_HAS_FILE_MAPPING
 #endif
 
 namespace{
@@ -805,21 +804,17 @@ err:
 	);
 	mem_ptr = MapViewOfFile(
 		view,
-		PAGE_READONLY,
+		FILE_MAP_READ,
 		0,
 		0,
 		0
 	);
+	CloseHandle(fhandle);
 	if(mem_ptr == nullptr){
-		//TODO why ERROR_ACCESS_DENIED in here
 		//MAP Failed
-		// DWORD errcode = GetLastError();
-		CloseHandle(fhandle);
 		return;
 	}
 	mem_size = fsize_low;
-	CloseHandle(fhandle);
-
 	ok = true;
 	
 	#else
