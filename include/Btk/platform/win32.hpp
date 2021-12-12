@@ -2,6 +2,7 @@
 #define _BTK_PLATFORM_WIN32
 #define NOMINMAX
 #include <windows.h>
+#include <combaseapi.h>
 #include <SDL2/SDL_events.h>
 #include "../defs.hpp"
 #include "../string.hpp"

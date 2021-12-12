@@ -1,6 +1,7 @@
 #if !defined(_BTK_DIRECT3D11_HPP_)
 #define _BTK_DIRECT3D11_HPP_
 #include "../platform/win32.hpp"
+#include "../render.hpp"
 #include <d3d11.h>
 namespace Btk{
     /**

@@ -1,5 +1,7 @@
 #include "../../build.hpp"
 
+#if 0
+
 #ifdef _WIN32
 
 #include <Btk/msgbox/fselect.hpp>
@@ -64,4 +66,5 @@ namespace Btk{
         }
     }
 }
+#endif
 #endif

@@ -126,7 +126,7 @@ namespace Btk{
     static void *d3d11_lib = nullptr;
     static HHOOK d3d11_hook = nullptr;
     static D3D11InitFn *d3d11_create;
-    static ObjectHolder<Win32::HWNDMap<DxDevice*>> hdevs_map;
+    static Constructable<Win32::HWNDMap<DxDevice*>> hdevs_map;
     //Map HWND to DxDevice
     static LRESULT CALLBACK dx_msghook(int code, WPARAM wParam, LPARAM lParam){
         // BTK_ASSERT(code == WH_CALLWNDPROC);

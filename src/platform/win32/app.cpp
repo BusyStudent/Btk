@@ -16,6 +16,8 @@ namespace Btk{
     }
     //FIXME:It will block the message loop
     bool Application::notify(u8string_view title,u8string_view msg){
+        //FIXME: Undefined symbols IID_IUserNotification in mingw
+        #if 0
         Win32::ComInstance<IUserNotification> notification;
         HRESULT hr = CoCreateInstance(
             CLSID_UserNotification,
@@ -33,5 +35,7 @@ namespace Btk{
             NIIF_INFO
         );
         return SUCCEEDED(notification->Show(nullptr,INFINITE));
+        #endif
+        return 0;
     }
 }

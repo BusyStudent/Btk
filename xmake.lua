@@ -19,7 +19,8 @@ else
     --add_requires("vcpkg::SDL2-ttf",{alias = "SDL2_ttf"})
     --add_requires("vcpkg::gif",{optional = true,alias = "gif"})
     --using xmake repo
-    add_requires("libsdl","freetype","libsdl_image")
+    add_requires("libsdl")
+    add_requires("freetype","libsdl_image",{optional = true})
     add_packages("libsdl","freetype","libsdl_image")
 
     --add_packages("SDL2","SDL2-image","SDL2-ttf")
@@ -34,9 +35,11 @@ else
     --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/brotli_x64-windows-static/lib")
     --add_requires("SDL2","SDL2_ttf","SDL2_image")
     --VS UTF8
-    add_cxxflags("/utf-8")
-    add_cxxflags("/Zc:__cplusplus")
-    add_cflags("/utf-8")
+    if is_plat("windows") then
+        add_cxxflags("/utf-8")
+        add_cxxflags("/Zc:__cplusplus")
+        add_cflags("/utf-8")
+    end
 end
 set_languages("c++17")
 add_includedirs("./include")
@@ -109,7 +112,7 @@ target("btk")
 
         add_files("./src/platform/win32/*.cpp")
         add_links("user32","shell32","advapi32","ole32","oleaut32")
-        add_links("gdi32","winmm","imm32","setupapi","version")
+        add_links("gdi32","winmm","imm32","setupapi","version","comctl32")
         --add_links("freetype","bz2","brotlidec-static","brotlicommon-static")
         --add_links("libpng16","zlib")
     end
@@ -189,6 +192,7 @@ target("btk")
     end
     if has_config("directx_renderer") then
         add_files("./src/render/render_dx11.cpp")
+        add_defines("BTK_USE_DXDEVICE")
     end
 
     --Font

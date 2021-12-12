@@ -5,7 +5,7 @@
 #include <Btk/exception.hpp>
 #include <SDL2/SDL_syswm.h>
 namespace Btk{
-    #if BTK_STILL_DEV
+    #if 0
     //TODO Finish EmbedWindow
     static auto get_win_ptr(SDL_Window *win){
         EmbedWindow::WinPtr ptr;

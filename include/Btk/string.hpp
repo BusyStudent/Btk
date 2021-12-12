@@ -24,8 +24,14 @@
     }
 namespace Btk{
     #ifdef _WIN32
-    inline constexpr auto strncasecmp = _strnicmp;
-    inline constexpr auto strcasecmp  = _stricmp;
+
+    #if defined(__GNUC__) && defined(_WIN32)
+        #undef strncasecmp
+        #undef strcasecmp
+    #endif
+
+    inline constexpr auto strncasecmp = ::_strnicmp;
+    inline constexpr auto strcasecmp  = ::_stricmp;
     using wstring = u16string;
     #else
     inline constexpr auto strncasecmp = ::strncasecmp;
@@ -850,6 +856,10 @@ namespace Btk{
                     _translate_pointer(beg.current),
                     _translate_pointer(Utf8GetNext(end.current))
                 );
+            }
+            template<class ...Args>
+            void assign(Args &&...args){
+                base().assign(std::forward<Args>(args)...);
             }
 
             /**

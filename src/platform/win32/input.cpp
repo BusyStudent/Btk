@@ -24,21 +24,21 @@ namespace Btk::WinIme{
     }
 }
 namespace Btk::Win32{
-    static WindowImpl *GetWindowFromHWND(void *hwnd){
-        if(hwnd == nullptr){
-            return nullptr;
-        }
-        std::lock_guard locker(Instance().map_mtx);
-        for(auto i:Instance().wins_map){
-            auto ctxt = GetContext(i.second->sdl_window());
-            if(ctxt.window == hwnd){
-                return i.second;
-            }
-        }
-        return nullptr;
-    }
+    // static WindowImpl *GetWindowFromHWND(void *hwnd){
+    //     if(hwnd == nullptr){
+    //         return nullptr;
+    //     }
+    //     std::lock_guard locker(Instance().map_mtx);
+    //     for(auto i:Instance().wins_map){
+    //         auto ctxt = GetContext(i.second->sdl_window());
+    //         if(ctxt.window == hwnd){
+    //             return i.second;
+    //         }
+    //     }
+    //     return nullptr;
+    // }
 
-    void SDLCALL MessageHook(void *, void *hwnd, UINT message, UINT64 wParam, INT64 lParam){
+    // void SDLCALL MessageHook(void *, void *hwnd, UINT message, UINT64 wParam, INT64 lParam){
 
-    }
+    // }
 }

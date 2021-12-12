@@ -39,6 +39,26 @@
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "${default}"
+        },
+        {
+            //MINGW
+            "name": "MinGW",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/**/include",
+                "${default}"
+            ],
+            "defines": [
+                "BTK_USE_GFX",
+                //A flag to suppress warning
+                "BTK_VSCODE_SUPPRESS"
+            ],
+            "compilerArgs": [
+                "-fshort-wchar"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4

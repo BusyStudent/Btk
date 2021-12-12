@@ -1,5 +1,7 @@
 #include "../../build.hpp"
 
+#if 0
+
 #include <Btk/msgbox/impl.hpp>
 #include <Btk/utils/mem.hpp>
 #include "internal.hpp"
@@ -33,3 +35,5 @@ namespace Btk{
         }
     }
 }
+
+#endif

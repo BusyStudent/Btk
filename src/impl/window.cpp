@@ -318,6 +318,11 @@ namespace Btk{
         #elif defined(_WIN32)
         //In Win32 we can use direct3d
         Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN;
+
+        #if !defined(BTK_USE_DXDEVICE) && !defined(BTK_NO_GLDEVICE) && !defined(BTK_USE_SWDEVICE)
+        flags |= SDL_WINDOW_OPENGL;
+        #endif
+
         #else
         Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
         #endif

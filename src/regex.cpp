@@ -1,6 +1,6 @@
 #include "build.hpp"
 
-#if BTK_STILL_DEV
+#if 0
 //Make sure it wonnot compile in release
 //Still develop 
 

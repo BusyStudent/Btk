@@ -73,12 +73,16 @@ using namespace Btk;
 		#include <unistd.h>
 		#include <fcntl.h>
 		#define FS_HAS_FILE_MAPPING 1
+	#elif defined(_WIN32)
+		#include <windows.h>
+		#define FS_HAS_FILE_MAPPING 1
 	#else
 		#define FS_HAS_FILE_MAPPING 0
 	#endif
 
 	#define FS_PLATFORM_LINUX defined(__linux) && FS_HAS_FILE_MAPPING
-
+	// #define FS_PLATFORM_WIN32 defined(__WIN32) && FS_HAS_FILE_MAPPING
+	#define FS_PLATFORM_WIN32 0
 #endif
 
 namespace{
@@ -210,6 +214,10 @@ struct FONSttFontData{
 	#if FS_PLATFORM_LINUX
 	size_t mem_size = 0;
 	void * mem_ptr = MAP_FAILED;
+	#elif FS_PLATFORM_WIN32
+	size_t mem_size = 0;
+	void * mem_ptr = nullptr;
+	HANDLE view = INVALID_HANDLE_VALUE;
 	#else
 	//Load all into mem
 	size_t mem_size = 0;
@@ -771,6 +779,49 @@ FONSttFontData::FONSttFontData(const char *path){
 err:
 	::close(fd);
 	return;
+	#elif FS_PLATFORM_WIN32
+	HANDLE fhandle = CreateFileA(
+		path,
+		GENERIC_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr
+	);
+	if(fhandle == INVALID_HANDLE_VALUE){
+		return;
+	}
+	DWORD fsize_high;
+	DWORD fsize_low;
+	fsize_low = GetFileSize(fhandle,&fsize_high);
+	view = CreateFileMapping(
+		fhandle,
+		nullptr,
+		PAGE_READONLY,
+		0,
+		0,
+		nullptr
+	);
+	mem_ptr = MapViewOfFile(
+		view,
+		PAGE_READONLY,
+		0,
+		0,
+		0
+	);
+	if(mem_ptr == nullptr){
+		//TODO why ERROR_ACCESS_DENIED in here
+		//MAP Failed
+		// DWORD errcode = GetLastError();
+		CloseHandle(fhandle);
+		return;
+	}
+	mem_size = fsize_low;
+	CloseHandle(fhandle);
+
+	ok = true;
+	
 	#else
 	//No file mapping
 	size_t datasize;
@@ -791,6 +842,9 @@ FONSttFontData::~FONSttFontData(){
 			BTK_LOGWARN("[Fontstash]Unmap(%p) failed",mem_ptr);
 		}
 	}
+	#elif FS_PLATFORM_WIN32
+	UnmapViewOfFile(mem_ptr);
+	CloseHandle(view);
 	#else
 	if(mem_ptr != nullptr){
 		SDL_free(mem_ptr);

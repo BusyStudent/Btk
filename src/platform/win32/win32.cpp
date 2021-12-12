@@ -2,7 +2,6 @@
 
 #include <Btk/utils/template.hpp>
 #include <Btk/platform/win32.hpp>
-#include <Btk/msgbox/msgbox.hpp>
 #include <Btk/impl/utils.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/string.hpp>
@@ -127,7 +126,7 @@ static LONG CALLBACK seh_exception_handler(_EXCEPTION_POINTERS *exp){
 namespace Btk{
 namespace Win32{
     //For slove WM_SIZING
-    static ObjectHolder<HWNDMap<WindowImpl*>> hwnd_map;
+    static Constructable<HWNDMap<WindowImpl*>> hwnd_map;
     static HIMC ime_handle = nullptr;
 
     static HWND get_hwnd(SDL_Window *win){
@@ -180,7 +179,7 @@ namespace Win32{
         SDL_SetEventFilter(event_filter,nullptr);
 
 
-        #if 1
+        #ifdef BTK_USE_DXDEVICE
         // #ifdef BTK_RENDERDEVICE_D3D11
         //Has D3D11 Device
         RegisterDevice([](SDL_Window *win) -> RendererDevice*{
@@ -252,6 +251,7 @@ namespace Win32{
         LocalFree(ret);
         return s;
     }
+    /*
     bool MessageBox(u8string_view title,u8string_view msg,int flag){
         UINT type = 0;
 
@@ -272,6 +272,7 @@ namespace Win32{
         );
         return true;
     }
+    */
     WindowImpl *GetWindow(HWND h){
         return hwnd_map->find(h);
     }
