@@ -100,7 +100,7 @@ namespace Btk{
 
         friend struct _Internal;
     };
-    class BTKAPI TextEdit:public Widget{
+    class BTKAPI TextEdit:public AbstractEditor{
         private:
             u8string cur_text;
     };
@@ -108,7 +108,7 @@ namespace Btk{
      * @brief Just edit single line
      * 
      */
-    class BTKAPI LineEdit:public AbstractEditor{
+    class BTKAPI LineEdit:public Widget{
         public:
             LineEdit();
             LineEdit(u8string_view text);
@@ -126,9 +126,12 @@ namespace Btk{
             Color    background_color;
             Color    boarder_color;
             u8string placeholder;//< Show if the string is empty
-            u8string cur_text;
+            u8string cur_text;//< Current text
             Align    align;//< Text align
             bool     clear_btn = false;//Has clear button?
+            //select
+            int sel_begin;
+            int sel_end;
 
     };
     class BTKAPI TextBroser:public Widget{

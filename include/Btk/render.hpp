@@ -17,7 +17,7 @@ namespace Btk{
         float descender;
         float h;//< The text's h
     };
-    enum class Align:unsigned int;
+    enum class Align:int;
     /**
      * @brief TextAlign from nanovg
      * 
@@ -131,6 +131,18 @@ namespace Btk{
         ReadAndWrite = Read | Write
     };
     BTK_FLAGS_OPERATOR(LockFlag,Uint32);
+    /**
+     * @brief Info of the renderer devices
+     * 
+     */
+    struct RebdererDeviceInfo{
+        //Limits
+        Uint32 *pixels_formats;
+        Size max_texture_size;
+        Uint32 max_textures;
+        //Supports
+        bool native_lock_op;
+    };
     /**
      * @brief Abstruct Graphics Device
      * 
@@ -390,13 +402,6 @@ namespace Btk{
              * 
              */
             void destroy();
-            int draw_line(int x1,int y1,int x2,int y2,Color c);
-            int draw_line(const Vec2 &beg,const Vec2 &end,Color c){
-                return draw_line(beg.x,beg.y,end.x,end.y,c);
-            }
-
-            int draw_rounded_rect(const Rect &r,int rad,Color c);
-            int draw_rounded_box(const Rect &r,int rad,Color c);
             /**
              * @brief Create a Texture from Pixbuf
              * 
@@ -480,16 +485,35 @@ namespace Btk{
              * @param h
              * @param angle
              */
-            void draw_image(TextureRef tex,float x,float y,float w,float h,float angle = 0);
+            void draw_image(TextureRef tex,float x,float y,float w,float h,float angle = 0){
+                _draw_image(tex.get(),x,y,w,h,angle);
+            }
             void draw_image(PixBufRef  buf,float x,float y,float w,float h,float angle = 0);
             void draw_image(TextureRef texture,const FRect &rect,float angle = 0){
-                draw_image(texture,rect.x,rect.y,rect.w,rect.h,angle);
+                _draw_image(texture.get(),rect.x,rect.y,rect.w,rect.h,angle);
             }
             void draw_image(PixBufRef  buf,const FRect &rect,float angle){
                 draw_image(buf,rect.x,rect.y,rect.w,rect.h,angle);
             }
-            void draw_image(TextureRef tex,const FRect *src = nullptr,const FRect *dst = nullptr);
+            void draw_image(TextureRef tex,const FRect *src = nullptr,const FRect *dst = nullptr){
+                _draw_image(tex.get(),src,dst);
+            }
             void draw_image(PixBufRef  buf,const FRect *src = nullptr,const FRect *dst = nullptr);
+
+            void draw_box(const FRect &r,Color c);
+            void draw_rect(const FRect &r,Color c);
+            void draw_line(float x1,float y1,float x2,float y2,Color c);
+            void draw_line(const FVec2 &beg,const FVec2 &end,Color c){
+                return draw_line(beg.x,beg.y,end.x,end.y,c);
+            }
+
+            void draw_rounded_rect(const FRect &r,float rad,Color c);
+            void draw_rounded_box(const FRect &r,float rad,Color c);
+            void draw_ellipse(float x,float y,float rx,float ry,Color c);
+            void fill_ellipse(float x,float y,float rx,float ry,Color c);
+            void draw_circle(float x,float y,float r,Color c);
+            void fill_circle(float x,float y,float r,Color c);
+
             /**
              * @brief Draw a circle
              * 
@@ -498,22 +522,7 @@ namespace Btk{
              * @param c 
              */
             void draw_circle(const FVec2 &vec,float r,Color c){
-                begin_path();
-                circle(vec,r);
-                stroke_color(c);
-                stroke();
-            }
-            void draw_box(const FRect &r,Color c){
-                begin_path();
-                rect(r);
-                fill_color(c);
-                fill();
-            }
-            void draw_rect(const FRect &r,Color c){
-                begin_path();
-                rect(r);
-                stroke_color(c);
-                stroke();
+                draw_circle(vec.x,vec.y,r,c);
             }
             /**
              * @brief Fill a circle
@@ -523,11 +532,9 @@ namespace Btk{
              * @param c 
              */
             void fill_circle(const FVec2 &vec,float r,Color c){
-                begin_path();
-                circle(vec,r);
-                fill_color(c);
-                fill();
+                fill_circle(vec.x,vec.y,r,c);
             }
+
         public:
             /**
              * @brief Begin the frame,Init the device
@@ -596,11 +603,6 @@ namespace Btk{
              * 
              */
             void reset_target();
-            /**
-             * @brief Make the Context current
-             * 
-             */
-            void make_current();
         public:
             //NanoVG Functions
             /**
@@ -774,7 +776,7 @@ namespace Btk{
             void textbox(float x,float y,float width,u8string_view text);
             void textbox(float x,float y,float width,u16string_view text);
 
-            FBounds text_bounds(float x,float y,u8string_view str);
+            FRect text_bounds(float x,float y,u8string_view str);
             /**
              * @brief Get the size of the rendered string
              * 
@@ -846,7 +848,9 @@ namespace Btk{
              * @param h_align Horizontal Alignment(default Left)
              */
             void text_align(TextAlign align = TextAlign::Left | TextAlign::Baseline);
-            void text_align(Align v_align,Align h_align);
+            void text_align(Align align){
+                text_align(TextAlign(align));
+            }
             //Scissor
             void scissor(float x,float y,float w,float h);
             void scissor(const FRect &rect){
@@ -924,6 +928,9 @@ namespace Btk{
                 return nvg_ctxt;
             }
         private:
+            //Internal
+            void _draw_image(TextureID tex,float x,float y,float w,float h,float angle = 0,float alpha = 1);
+            void _draw_image(TextureID texture,const FRect *src,const FRect *dst);
             /**
              * @brief Item for Texture
              * 

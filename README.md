@@ -67,11 +67,11 @@ int main(){
 
 ## TODO List  
 
-* [ ] Rewrite font system to get better performence  
+* [x] Rewrite font system to get better performence  
 * [ ] Add more useful widgets  
 * [ ] Add Btk::Bind(...) to bind object and functions
 * [ ] Rewrite ImageView By OpenGL to implement AntiAlias
-* [ ] Rewirte themes
+* [x] Rewirte themes
 * [ ] Add CMake
 
 ----

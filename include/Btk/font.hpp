@@ -37,8 +37,10 @@ namespace Btk{
              * @param fontname Font name
              * @param ptsize Font ptsize
              */
-            Font(u8string_view fontname,int ptsize);
-            ~Font();
+            Font(u8string_view fontname,float ptsize);
+            ~Font(){
+                close();
+            }
             /**
              * @brief Render solid text
              * 
@@ -97,7 +99,7 @@ namespace Btk{
              * 
              * @return int 
              */
-            int  ptsize() const noexcept;
+            float ptsize() const noexcept;
             /**
              * @brief Get font refcount
              * 
@@ -109,15 +111,15 @@ namespace Btk{
              * 
              * @param new_ptsize New ptsize
              */
-            void set_ptsize(int new_ptsize);
+            void set_ptsize(float new_ptsize);
             /**
              * @brief Get The text's w and h
              * 
              * @param text The text
              * @return w and h (-1 if failed)
              */
-            Size size(u8string_view text);
-            Size size(u16string_view text);
+            FSize size(u8string_view text);
+            FSize size(u16string_view text);
             /**
              * @brief Close font
              * 
@@ -128,15 +130,18 @@ namespace Btk{
              * 
              * @param fontname Font name
              * @param ptsize Font ptsize
+             * @param idx The face index(default 0)
              */
-            void open(u8string_view fontname,int ptsize);
+            void open(u8string_view fontname,float ptsize,Uint32 idx = 0);
             /**
              * @brief Open font by its filename
              * 
              * @param filename Font filename
              * @param ptsize Font ptsize
+             * @param idx The face index(default 0)
+             * 
              */
-            void openfile(u8string_view filename,int ptsize);
+            void openfile(u8string_view filename,float ptsize,Uint32 idx = 0);
             /**
              * @brief Clone a font
              * 
@@ -191,6 +196,7 @@ namespace Btk{
             Font(void *font_ptr,float ptsize);
             void *font = nullptr;
             float ptsize_ = -1;
+            float spacing_ = 0;
         friend class Renderer;
     };
     //TODO

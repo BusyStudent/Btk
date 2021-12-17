@@ -186,7 +186,7 @@ inline    BtkFt BtkFt_GetDefaultFont(){
 //Mesure
 BTKHIDDEN void  BtkFt_GetInfo(BtkFt font,BtkFt_Info *info);
 BTKHIDDEN bool  BtkFt_HasGlyph(BtkFt font,char32_t codepoint);
-BTKHIDDEN Btk::FSize BtkFt_TextSize(BtkFt font,float ptsize,Btk::u8string_view txt);
+BTKHIDDEN void  BtkFt_TextSize(BtkFt font,float ptsize,float letter_spacing,Btk::u8string_view txt,Btk::FSize *output);
 //Fontstash extends
 BTKHIDDEN void  fonsRemoveFont(FONScontext *ctxt,int id);
 #ifdef FS_INTERNAL

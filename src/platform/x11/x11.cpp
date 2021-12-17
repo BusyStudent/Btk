@@ -11,6 +11,7 @@
 #include <Btk/widget.hpp>
 #include <Btk/Btk.hpp>
 #include <csignal>
+#include <map>
 
 #include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL_hints.h>

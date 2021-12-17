@@ -55,9 +55,8 @@ namespace Btk{
     Texture Renderer::load(RWops &rwops,TextureFlags flags){
         return create_from(PixBuf::FromRWops(rwops),flags);
     }
-    void Renderer::draw_image(TextureRef texture,float x,float y,float w,float h,float angle){
+    void Renderer::_draw_image(TextureID texture,float x,float y,float w,float h,float angle,float alpha){
         //make pattern
-        BTK_CHECK_TEXTURE(texture);
 
         auto paint = nvgImagePattern(
             nvg_ctxt,
@@ -66,8 +65,8 @@ namespace Btk{
             w,
             h,
             angle,
-            texture.get(),
-            1.0f
+            texture,
+            alpha
         );
         nvgBeginPath(nvg_ctxt);
         nvgRect(nvg_ctxt,x,y,w,h);
@@ -75,8 +74,7 @@ namespace Btk{
         nvgFill(nvg_ctxt);
         
     }
-    void Renderer::draw_image(TextureRef texture,const FRect *src,const FRect *dst){
-        BTK_CHECK_TEXTURE(texture);
+    void Renderer::_draw_image(TextureID texture,const FRect *src,const FRect *dst){
 
         FRect _dst;
         if(dst != nullptr){
@@ -93,16 +91,16 @@ namespace Btk{
         }
         if(src == nullptr){
             //We donnot need clipping
-            return draw_image(texture,_dst);
+            return _draw_image(texture,_dst.x,_dst.y,_dst.w,_dst.h);
         }
         if(_dst.empty() or src->empty()){
             return;
         }
-        auto [tex_w,tex_h] = texture.size();
+        auto [tex_w,tex_h] = device()->texture_size(nvg_ctxt,texture);
 
         if(src->w == tex_w and src->h == tex_h){
             //We donnot need clipping
-            return draw_image(texture,_dst);
+            return _draw_image(texture,_dst.x,_dst.y,_dst.w,_dst.h);
         }
 
         FRect _src;
@@ -135,7 +133,7 @@ namespace Btk{
             target.w,
             target.h,
             0,
-            texture.get(),
+            texture,
             1.0f
         );
         //nvgResetScissor(nvg_ctxt);
@@ -201,39 +199,6 @@ namespace Btk{
     }
 }
 namespace Btk{
-    static int TranslateAlign(Align v_align,Align h_align){
-        int val = 0;
-        switch(h_align){
-            case Align::Center:
-                val |= NVG_ALIGN_MIDDLE;
-                break;
-            case Align::Top:
-                val |= NVG_ALIGN_TOP;
-                break;
-            case Align::Bottom:
-                val |= NVG_ALIGN_BOTTOM;
-                break;
-            case Align::Baseline:
-                val |= NVG_ALIGN_BASELINE;
-                break;
-            default:
-                throwRuntimeError("Invaid Align");
-        }
-        switch(v_align){
-            case Align::Right:
-                val |= NVG_ALIGN_RIGHT;
-                break;
-            case Align::Left:
-                val |= NVG_ALIGN_LEFT;
-                break;
-            case Align::Center:
-                val |= NVG_ALIGN_CENTER;
-                break;
-            default:
-                throwRuntimeError("Invaid Align");
-        }
-        return val;
-    }
     //NVG Method
     void Renderer::set_alpha(float alpha){
         nvgGlobalAlpha(nvg_ctxt,alpha);
@@ -324,7 +289,7 @@ namespace Btk{
         nvgTextBox(nvg_ctxt,x,y,width,&buf[0],nullptr);
     }
     //Sizeof
-    FBounds Renderer::text_bounds(float x,float y,u8string_view s){
+    FRect Renderer::text_bounds(float x,float y,u8string_view s){
         float bounds[4];
         nvgTextBounds(nvg_ctxt,x,y,&s.front(),&s.back(),bounds);
         BTK_LOGINFO("bounds = {%f,%f,%f,%f}",
@@ -385,9 +350,6 @@ namespace Btk{
     }
     void Renderer::text_align(TextAlign align){
         nvgTextAlign(nvg_ctxt,int(align));
-    }
-    void Renderer::text_align(Align v_align,Align h_align){
-        nvgTextAlign(nvg_ctxt,TranslateAlign(v_align,h_align));
     }
     //Set font ptsize
     void Renderer::text_size(float ptsize){
@@ -677,29 +639,61 @@ namespace Btk{
         );
     }
 }
-//Dreaptched functions
 namespace Btk{
-    //Draw a rounded box directly
-    int Renderer::draw_rounded_box(const Rect &r,int rad,Color c){
-        nvgBeginPath(nvg_ctxt);
-        nvgRoundedRect(nvg_ctxt,r.x,r.y,r.w,r.h,rad);
-        nvgFillColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
-        nvgFill(nvg_ctxt);
-        return 0;
+    //Draw functions
+    void Renderer::draw_rounded_box(const FRect &r,float rad,Color c){
+        begin_path();
+        rounded_rect(r,rad);
+        fill_color(c);
+        fill();
     }
-    int Renderer::draw_rounded_rect(const Rect &r,int rad,Color c){
-        nvgBeginPath(nvg_ctxt);
-        nvgRoundedRect(nvg_ctxt,r.x,r.y,r.w,r.h,rad);
-        nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
-        nvgStroke(nvg_ctxt);
-        return 0;
+    void Renderer::draw_rounded_rect(const FRect &r,float rad,Color c){
+        begin_path();
+        rounded_rect(r,rad);
+        stroke_color(c);
+        stroke();
     }
-    int  Renderer::draw_line(int x,int y,int x2,int y2,Color c){
-        nvgBeginPath(nvg_ctxt);
-        nvgMoveTo(nvg_ctxt,x,y);
-        nvgLineTo(nvg_ctxt,x2,y2);
-        nvgStrokeColor(nvg_ctxt,nvgRGBA(UNPACK_COLOR(c)));
-        nvgStroke(nvg_ctxt);
-        return 0;
+    void Renderer::draw_line(float x,float y,float x2,float y2,Color c){
+        begin_path();
+        move_to(x,y);
+        line_to(x2,y2);
+        stroke_color(c);
+        stroke();
+    }
+    void Renderer::draw_rect(const FRect &r,Color c){
+        begin_path();
+        rect(r);
+        stroke_color(c);
+        stroke();
+    }
+    void Renderer::draw_box(const FRect &r,Color c){
+        begin_path();
+        rect(r);
+        fill_color(c);
+        fill();
+    }
+    void Renderer::draw_circle(float x,float y,float rad,Color c){
+        begin_path();
+        circle(x,y,rad);
+        stroke_color(c);
+        stroke();
+    }
+    void Renderer::fill_circle(float x,float y,float rad,Color c){
+        begin_path();
+        circle(x,y,rad);
+        fill_color(c);
+        fill();
+    }
+    void Renderer::draw_ellipse(float x,float y,float rx,float ry,Color c){
+        begin_path();
+        ellipse(x,y,rx,ry);
+        stroke_color(c);
+        stroke();
+    }
+    void Renderer::fill_ellipse(float x,float y,float rx,float ry,Color c){
+        begin_path();
+        ellipse(x,y,rx,ry);
+        fill_color(c);
+        fill();
     }
 }

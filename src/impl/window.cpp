@@ -33,8 +33,7 @@ namespace Btk{
         _device(create_device(_win)),
         render(*_device){
         //Set theme
-        cur_theme = CurrentTheme();
-        set_theme(cur_theme);
+        set_theme(CurrentTheme());
         //Set background color
         bg_color = theme().active.window;        
         attr.window = true;
@@ -59,8 +58,6 @@ namespace Btk{
         delete _device;
 
         SDL_DestroyWindow(win);
-
-        delete cur_theme;
     }
     //Draw window
     void WindowImpl::draw(Renderer &render){
@@ -183,6 +180,20 @@ namespace Btk{
         switch(event.window.event){
             case SDL_WINDOWEVENT_EXPOSED:{
                 //redraw window
+                if(fps_limit > 0){
+                    //Check the limit
+                    Uint32 current = SDL_GetTicks();
+                    Uint32 ticks = event.window.timestamp;
+                    Uint32 durl = 1000 / fps_limit;
+                    if(ticks + durl < current and last_draw_ticks > current - durl * 2){
+                        //Too late(and has been drawed recently)
+                        //2 is a magic number(I think it is fit)
+                        //Drop it
+                        BTK_LOGINFO("Too Late , Drop the frame");    
+                        break;
+                    }
+                    last_draw_ticks = ticks;
+                }
                 draw(render);
                 break;
             }
@@ -515,7 +526,7 @@ namespace Btk{
         SDL_ShowWindow(pimpl->win);
     }
     Font Window::font() const{
-        throwRuntimeError("Unimpl yet");
+        return pimpl->font();
     }
     Size Window::size() const{
         Size s;

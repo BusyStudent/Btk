@@ -8,8 +8,10 @@
 
 #ifdef __GNUC__
     #define Btk_CallOnLoad static __attribute__((constructor)) void BTK_UNIQUE_NAME(_executer__)()
+    #define Btk_CallOnUnload static __attribute__((destructor)) void BTK_UNIQUE_NAME(_executer__)()
 #else
     #define Btk_CallOnLoad static Btk::Impl::OnloadExecuter BTK_UNIQUE_NAME(_executer__) = []()
+    #define Btk_CallOnUnload static Btk::Impl::OnUnloadExecuter BTK_UNIQUE_NAME(_executer__) = []()
 #endif
 
 namespace Btk{
@@ -74,6 +76,17 @@ namespace Impl{
     struct OnloadExecuter{
         OnloadExecuter(T &&v){
             v();
+        }
+    };
+
+    template<class T>
+    struct OnUnloadExecuter{
+        T fn;
+        OnUnloadExecuter(T &&v):fn(v){
+
+        }
+        ~OnUnloadExecuter(){
+            fn();
         }
     };
 };

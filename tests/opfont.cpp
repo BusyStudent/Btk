@@ -16,5 +16,6 @@ int main(){
     // #endif
     Btk::Font font("Aria",16);
 
+    std::cout << font.size("HelloWorld") << std::endl;
 
 }

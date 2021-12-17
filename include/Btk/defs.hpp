@@ -141,6 +141,19 @@
 #define BTK_WIN32   defined(_WIN32)
 #define BTK_X11     defined(__gnu_linux__)
 #define BTK_IOS     defined(__IPHONEOS__)
+//Complier
+#define BTK_MINGW   (BTK_WIN32 && BTK_GCC)
+#define BTK_CLANG   defined(__clang__)
+#define BTK_MSVC    defined(_MSC_VER)
+#define BTK_GCC     defined(__GNUC__)
+
+//Bultin
+#ifdef __has_builtin
+    #define BTK_HAS_BULTIN(X) __has_builtin
+#else
+    #define BTK_HAS_BULTIN(X) 0
+#endif
+
 
 #if BTK_WIN32 || BTK_X11
     #define BTK_DESKTOP
@@ -183,7 +196,7 @@ namespace Btk{
     class u8string;
     //Generic Align
     
-    enum class Orientation:bool{
+    enum class Orientation:Uint8{
         Vertical = 0,
         Horizontal = 1,
         V = Vertical,

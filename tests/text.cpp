@@ -59,4 +59,5 @@ int main(){
     std::cout << Btk::u8string_view("He你好ll").toupper() << std::endl;
     std::cout << Btk::u8string_view("   He你好ll    ").trim() << std::endl;
 
+    std::cout << Btk::u8string_view("16").parse<uint16_t>() << std::endl;
 }

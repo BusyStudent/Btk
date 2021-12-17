@@ -374,9 +374,6 @@ namespace Btk{
 
     //     BTK_GL_END();
     // }
-    void Renderer::make_current(){
-        dynamic_cast<GLDevice&>(*device()).make_current();
-    }
     #if 0
     //DumpTexture
     PixBuf Renderer::dump_texture(const Texture &texture){

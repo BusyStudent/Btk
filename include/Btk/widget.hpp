@@ -36,22 +36,34 @@ namespace Btk{
         Mouse = 2,//< The widget will get focus by mouse and lost focus by mouse
         Wheel = 3
     };
-    //Alignment
-    enum class Align:unsigned int{
-        Center,//<V and H
-        //Vertical Alignment
-        Top,
-        Bottom,
-        Baseline,//< Only for TextAlign
-        //Horizontal Alignment
-        Right,
-        Left
+    /**
+     * @brief Widget align (same as TextAlign)
+     * 
+     */
+    enum class Align:int{
+        Left     = 1<<0,	// Default, align text horizontally to left.
+        Center 	 = 1<<1,	// Align text horizontally to center.
+        Right 	 = 1<<2,	// Align text horizontally to right.
+        // Vertical align
+        Top 	 = 1<<3,	// Align text vertically to top.
+        Middle	 = 1<<4,	// Align text vertically to middle.
+        Bottom	 = 1<<5,	// Align text vertically to bottom.
+
+        //Vertical center
+        VCenter = Middle,
+        // Horizontal center
+        HCenter = Center
     };
+    inline constexpr auto AlignVCenter = Align::VCenter;
+    inline constexpr auto AlignHCenter = Align::HCenter;
+    inline constexpr auto AlignMiddle = Align::Middle;
     inline constexpr auto AlignCenter = Align::Center;
     inline constexpr auto AlignBottom = Align::Bottom;
     inline constexpr auto AlignRight = Align::Right;
     inline constexpr auto AlignLeft = Align::Left;
     inline constexpr auto AlignTop = Align::Top;
+
+    BTK_FLAGS_OPERATOR(Align,Uint32);
 
     //Attribute for Widget
     struct WidgetAttr{
@@ -154,8 +166,10 @@ namespace Btk{
              * @tparam RetT 
              * @return RetT 
              */
-            template<class T,class RetT = FRect>
-            RetT rectangle() const noexcept;
+            template<class T>
+            RectImpl<T> rectangle() const noexcept{
+                return rect;
+            }
             /**
              * @brief Show the widget tree 
              * 
@@ -227,12 +241,8 @@ namespace Btk{
                 _font = font;
                 redraw();
             }
-            void set_theme(const Theme *theme){
+            void set_theme(const RefPtr<Theme> &theme){
                 _theme = theme;
-                redraw();
-            }
-            void set_theme(const Theme &theme){
-                _theme = &theme;
                 redraw();
             }
         public:
@@ -269,7 +279,7 @@ namespace Btk{
 
             Font _font;
             Widget *_parent = nullptr;//< Parent
-            const Theme *_theme = nullptr;
+            RefPtr<Theme> _theme;//< Theme
             mutable WindowImpl *_window = nullptr;//<Window pointer
         friend class Window;
         friend class Layout;
@@ -359,10 +369,6 @@ namespace Btk{
                 }
             }
     };
-    template<>
-    inline FRect Widget::rectangle<float,FRect>() const noexcept{
-        return FRect(rect);
-    }
     inline Widget *Widget::find_children(Vec2 position) const{
         for(auto widget:childrens){
             if(widget->rect.has_point(position)){

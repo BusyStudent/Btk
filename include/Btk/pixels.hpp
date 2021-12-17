@@ -166,7 +166,17 @@ namespace Btk{
              * @return PixBuf The pixel buf
              */
             PixBuf convert(Uint32 fmt) const;
-            PixBuf zoom(double w_factor,double h_factor);
+            PixBuf zoom(double w_factor,double h_factor) const;
+            /**
+             * @brief Copy a area into a new buf
+             * 
+             * @param x 
+             * @param y 
+             * @param w 
+             * @param h 
+             * @return PixBuf 
+             */
+            PixBuf copy(int x,int y,int w,int h) const;
             // PixBuf zoom_to(int w,int h){
             //     return zoom(double(w) / double(this->w()),double(h) / double(this->h()));
             // }

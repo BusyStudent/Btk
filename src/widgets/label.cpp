@@ -74,7 +74,7 @@ namespace Btk{
 
         render.begin_path();
         render.fill_color(text_color);
-        render.text_align(v_align,h_align);
+        render.text_align(align);
         render.text_size(ptsize);
         render.text(
             float(rect.x),

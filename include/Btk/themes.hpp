@@ -1,8 +1,8 @@
 #if !defined(_BTK_THEME_HPP_)
 #define _BTK_THEME_HPP_
 #include <iosfwd>
-#include <map>
 
+#include "utils/template.hpp"
 #include "string.hpp"
 #include "pixels.hpp"
 #include "font.hpp"
@@ -42,7 +42,7 @@ namespace Btk{
             #undef  BTK_THEME_FILED
             Font font;
     };
-    Theme *CurrentTheme();
+    RefPtr<Theme> CurrentTheme();
     void   UseTheme(u8string_view name);
     void   AddTheme(u8string_view name,u8string_view config);
 }

@@ -22,6 +22,120 @@
     inline auto operator OP(const TYPE &t1,const TYPE &t2){\
         return t1.base() OP t2.base();\
     }
+
+
+namespace Btk{
+BTKAPI void __sscanf_chk(int nargs,const char *s,const char *fmt,...);
+namespace FmtImpl{
+    //Format Helpers
+    template<class ...Args>
+    void __sscanf(const char *s,const char *fmt,Args &&...args){
+        __sscanf_chk(sizeof...(Args),s,fmt,std::forward<Args>(args)...);
+    }
+
+    template<class T>
+    struct Converter;
+
+    struct IntConverter{
+        template<class Type,class String> 
+        static void load(
+            String &ret,
+            std::conditional_t<std::is_unsigned_v<Type>,
+                unsigned long,
+                long
+            > value
+        ){
+            const char *fmt;
+            if constexpr(std::is_unsigned_v<Type>){
+                fmt = "%lu";
+            }
+            else{
+                fmt = "%ld";
+            }
+            ret.append_fmt(fmt,value);
+        }
+        template<class Type,class View>
+        static auto parse(const View&view){
+            const char *fmt;
+            
+            std::conditional_t<std::is_unsigned_v<Type>,
+                unsigned long,
+                long
+            > value {};
+            
+            if constexpr(std::is_unsigned_v<Type>){
+                fmt = "%lu";
+            }
+            else{
+                fmt = "%ld";
+            }
+            if constexpr(std::is_same_v<View,u8string>){ 
+                __sscanf(view.c_str(),fmt,&value);
+            }
+            else{
+                auto tmp = view.to_string();
+                __sscanf(tmp.c_str(),fmt,&value); 
+            }
+            return value;
+        }
+    };
+    struct FloatConverter{
+        template<class Type,class String> 
+        static void load(String &ret,double value){ 
+            ret.append_fmt("%ld",value); 
+        }
+        template<class Type,class View>
+        static double parse(const View&view){ 
+            double value{};
+            if constexpr(std::is_same_v<View,u8string>){ 
+                __sscanf(view.c_str(),"%lf",&value);
+            }
+            else{
+                auto tmp = view.to_string();
+                __sscanf(tmp.c_str(),"%lf",&value); 
+            }
+            return value;
+        }
+    };
+
+
+    #define BTK_FMT_CONVERTER(TYPE) \
+    template<> \
+    struct Converter<TYPE>{ \
+        template<class String> \
+        static void load(String &ret,TYPE value){ \
+            if constexpr(std::is_integral_v<TYPE>){ \
+                return IntConverter::load<TYPE>(ret,value);\
+            }\
+            else{\
+                return FloatConverter::load<TYPE>(ret,value);\
+            }\
+        } \
+        template<class View> \
+        static TYPE parse(const View&view){ \
+            if constexpr(std::is_integral_v<TYPE>){ \
+                return IntConverter::parse<TYPE>(view);\
+            }\
+            else{\
+                return FloatConverter::parse<TYPE>(view);\
+            }\
+        }\
+    };
+    BTK_FMT_CONVERTER(Uint8);
+    BTK_FMT_CONVERTER(Uint16);
+    BTK_FMT_CONVERTER(Uint32);
+    BTK_FMT_CONVERTER(Uint64);
+
+    BTK_FMT_CONVERTER(Sint64);
+    BTK_FMT_CONVERTER(Sint32);
+    BTK_FMT_CONVERTER(Sint16);
+    BTK_FMT_CONVERTER(Sint8);
+
+    BTK_FMT_CONVERTER(float);
+    BTK_FMT_CONVERTER(double);
+}
+}
+
 namespace Btk{
     #ifdef _WIN32
 
@@ -521,6 +635,20 @@ namespace Btk{
              */
             u8string strip() const;
             u8string trim() const;
+            /**
+             * @brief Copy into string
+             * 
+             * @return u8string 
+             */
+            u8string to_string() const;
+
+            //Parse
+            template<class T>
+            T parse() const{
+                FmtImpl::Converter<T> cvt;
+                return cvt.parse(*this);
+            }
+
 
             //Check
             bool isalpha() const;
@@ -1240,12 +1368,6 @@ namespace Btk{
     inline u16string u8string::to_utf16() const{
         return u8string_view(*this).to_utf16();   
     }
-    inline void u8string::append_fmt(const char *fmt,...){
-        va_list varg;
-        va_start(varg,fmt);
-        append_vfmt(fmt,varg);
-        va_end(varg);
-    }
     //u8string_view
     inline u8string_view::u8string_view(const std::string &s):
         std::string_view(s){
@@ -1258,6 +1380,9 @@ namespace Btk{
     }
     inline auto u8string_view::trim() const -> u8string{
         return strip();
+    }
+    inline auto u8string_view::to_string() const -> u8string{
+        return u8string(data(),size());
     }
     inline auto u8string_view::split(char32_t ch,size_t max) const -> List{
         u8string tmp;
@@ -1395,6 +1520,12 @@ namespace Btk{
     BTK_STRING_OPERATOR(u8string,!=);
     BTK_STRING_OPERATOR(u8string,>=);
     BTK_STRING_OPERATOR(u8string,<=);
+    inline bool operator ==(const u8string &s1,u8string_view s2){
+        return s1.base() == s2.base();
+    }
+    inline bool operator ==(const u8string &s1,const char *s2){
+        return s1.base() == s2;
+    }
     inline u8string operator +(const u8string &u1,const u8string &u2){
         u8string ret(u1);
         ret.append(u2);
@@ -1458,20 +1589,8 @@ namespace Btk{
      * @param ... 
      * @return u8string 
      */
-    inline u8string u8format(const char *fmt,...){
-        std::va_list l;
-        va_start(l,fmt);
-        auto r = u8vformat(fmt,l);
-        va_end(l);
-        return r;
-    }
-    inline u16string u16format(const char16_t *fmt,...){
-        std::va_list l;
-        va_start(l,fmt);
-        auto r = u16vformat(fmt,l);
-        va_end(l);
-        return r;
-    }
+    BTKAPI  u8string u8format(const char *fmt,...);
+    BTKAPI u16string u16format(const char16_t *fmt,...);
     /**
      * @brief Convert a number to string
      * 

@@ -237,7 +237,7 @@ namespace FontUtils{
     FontSet::Font FontSet::operator [](size_t index) const{
         auto fset = static_cast<FcFontSet*>(fc_fontset);
         if(index > fset->nfont){
-            throwRuntimeError(cformat("Out of range %zu:%d",index,fset->nfont).c_str());
+            throwRuntimeError(u8format("Out of range %zu:%d",index,fset->nfont).c_str());
         }
         return {fset->fonts[index]};
     }

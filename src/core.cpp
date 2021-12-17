@@ -670,21 +670,14 @@ namespace Btk{
 }
 namespace Btk{
     static inline void exit_impl_cb(void *args){
-        int v = *reinterpret_cast<int*>(&args);
+        int v = LoadPodInPointer<int>(args);
+        DeletePodInPointer<int>(args);
         throw v;
     }
     void Exit(int code){
-        if constexpr(sizeof(void *) < sizeof(int)){
-            //FIXME possible memory leak on here
-            DeferCall([code](){
-                throw code;
-            });
-        }
-        else{
-            void *args;
-            *reinterpret_cast<int*>(&args) = code;
-            DeferCall(exit_impl_cb,args);
-        }
+        void *args;
+        NewPodInPointer<int>(&args,code);
+        DeferCall(exit_impl_cb,args);
     }
     ExceptionHandler SetExceptionHandler(ExceptionHandler handler){
         ExceptionHandler current = System::instance->handle_exception;

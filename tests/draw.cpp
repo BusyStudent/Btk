@@ -36,7 +36,7 @@ int main(){
             render.draw_line({0,0},vec2,{255,255,255,255});
         }
         render.begin_path();
-        render.text_align(Align::Center,Align::Center);
+        render.text_align(AlignVCenter | Align::HCenter);
         render.text_size(12);
         render.fill_color(255,255,255,255);
         render.text(vec2.x,vec2.y,"HelloWorld   PPP");

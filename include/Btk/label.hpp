@@ -41,8 +41,7 @@ namespace Btk{
             //Texture texture;//text texture
             Color text_color = {0,0,0,255};//text color
 
-            Align v_align = Align::Left;
-            Align h_align = Align::Center;
+            Align align = Align::VCenter | Align::Left;
     };
     class BTKAPI TextView:public Widget{
         

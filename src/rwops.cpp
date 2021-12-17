@@ -199,7 +199,7 @@ namespace Btk{
     RWops RWops::FromFD(int fd,const char *modes){
         FILE *fp = BTK_FDOPEN(fd,modes);
         if(fp == nullptr){
-            throwRuntimeError(cformat("fdopen %d:%s",fd,strerror(errno)));
+            throwRuntimeError(u8format("fdopen %d:%s",fd,strerror(errno)));
         }
         SDL_RWops *rw = SDL_RWFromFP(fp,SDL_TRUE);
         if(rw == nullptr){

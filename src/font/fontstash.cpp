@@ -274,6 +274,12 @@ static void fons__tt_free_face(FONSttFontImpl &font);
 #	define FONS_MAX_FALLBACKS 20
 #endif
 
+//Tiger cleanup the cache
+#ifndef FONS_MAX_GLYPHS
+	#define FONS_MAX_GLYPHS (FONS_INIT_GLYPHS * 10)
+#endif
+
+
 static unsigned int fons__hashint(unsigned int a)
 {
 	a += ~(a<<15);
@@ -312,7 +318,7 @@ typedef struct FONSglyph FONSglyph;
 struct FONSfont
 {	
 	FONSttFontImpl font;
-	char name[64];
+	u8string name;//< u8string name
 	unsigned char* data;
 	int dataSize;
 	unsigned char freeData;
@@ -350,6 +356,7 @@ struct FONSfont
 	void reset_cache();
 	void remove_cached_glyph(FONSglyph &glyph);
 	int id;
+	bool has_unused_glyph = false;
 	//Construct / Delete
 };
 typedef struct FONSfont FONSfont;
@@ -1455,8 +1462,9 @@ int Runtime::add_font(const char* name, const char* path,Uint32 fontIndex)
 
 	font = BtkFt_GetFromID(idx);
 
-	strncpy(font->name, name, sizeof(font->name));
-	font->name[sizeof(font->name)-1] = '\0';
+	// strncpy(font->name, name, sizeof(font->name));
+	// font->name[sizeof(font->name)-1] = '\0';
+	font->name = name;
 
 	// Init hash lookup.
 	for (i = 0; i < FONS_HASH_LUT_SIZE; ++i)
@@ -1551,8 +1559,9 @@ int Runtime::add_font(const char* name,void* data,size_t dataSize,int freeData,U
 
 	font = BtkFt_GetFromID(idx);
 
-	strncpy(font->name, name, sizeof(font->name));
-	font->name[sizeof(font->name)-1] = '\0';
+	// strncpy(font->name, name, sizeof(font->name));
+	// font->name[sizeof(font->name)-1] = '\0';
+	font->name = name;
 
 	// Init hash lookup.
 	for (i = 0; i < FONS_HASH_LUT_SIZE; ++i)
@@ -1588,7 +1597,7 @@ int fonsGetFontByName(FONScontext* s, const char* name)
 {
 	int i;
 	for (auto &e:s->fonts_map) {
-		if (strcmp(e.second->name, name) == 0)
+		if (e.second->name == name)
 			return i;
 	}
 	//Try in Global space
@@ -1601,18 +1610,37 @@ static FONSglyph* fons__allocGlyph(FONSfont* font)
 	if (font->nglyphs+1 > font->cglyphs) {
 		//The glyph will be full
 		//try to find unused glyph
-		for(int i = 0;i < font->nglyphs;i++){
-			auto &glyph = font->glyphs[i];
-			if(glyph.unused){
-				BTK_LOGINFO("[Fontstash]Find a unused glyph at %d",i);
-				return &glyph;
+		if(font->has_unused_glyph){
+			for(int i = 0;i < font->nglyphs;i++){
+				auto &glyph = font->glyphs[i];
+				if(glyph.unused){
+					BTK_LOGINFO("[Fontstash]Find a unused glyph at %d",i);
+					return &glyph;
+				}
 			}
+			//Not founded
+			font->has_unused_glyph = false;
 		}
 
 
 		font->cglyphs = font->cglyphs == 0 ? 8 : font->cglyphs * 2;
 		font->glyphs = (FONSglyph*)realloc(font->glyphs, sizeof(FONSglyph) * font->cglyphs);
 		if (font->glyphs == NULL) return NULL;
+
+		//Tiger GC
+		if(font->nglyphs > FONS_MAX_GLYPHS){
+			BTK_LOGINFO("[Fontstash]Too many glyphs,Pending to start GC");
+			int id = font->id;
+			DeferCall([id](){
+				BtkFt font = BtkFt_GetFromID(id);
+				if(font == nullptr){
+					//The font was removed
+					return;
+				}
+				BTK_LOGINFO("[Fontstash]GC is working to reset %p's cache",font);
+				font->reset_cache();
+			});
+		}
 	}
 	font->nglyphs++;
 	return &font->glyphs[font->nglyphs-1];
@@ -1714,6 +1742,8 @@ void FONSfont::remove_cached_glyph(FONSglyph &glyph){
 	memset(&glyph,0,sizeof(FONSglyph));
 	glyph.unused = true;
 	glyph.next = -1;
+	//Set the flags to true
+	has_unused_glyph = true;
 }
 void FONSfont::clean_cache_by_ctxt(void *fontstash){
 	for(int i = 0;i < nglyphs;i++){
@@ -1729,10 +1759,13 @@ void FONSfont::reset_cache(){
 	for(size_t n = 0;n < FONS_HASH_LUT_SIZE;n ++){
 		lut[n] = -1;
 	}
+	memset(glyphs,0,sizeof(FONSglyph) * nglyphs);
 	for(int i = 0;i < nglyphs;i++){
 		auto &glyph = glyphs[i];
 		glyph.unused = true;
 	}
+	has_unused_glyph = true;
+	nglyphs = 0;
 }
 
 static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned int codepoint,
@@ -1753,23 +1786,40 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	pad = iblur+2;
 
 	// Reset allocator.
-	stash->nscratch = 0;
+	// stash->nscratch = 0;
 
 	// Find code point and size.
 	h = fons__hashint(codepoint) & (FONS_HASH_LUT_SIZE-1);
 	i = font->lut[h];
 	//TODO This cache has problems in rendering in different context if we didnot check is the same stash
-	while (i != -1) {
-		if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur && 
-				font->glyphs[i].stash == stash /*Check is same context*/ ) {
-			glyph = &font->glyphs[i];
-			if (bitmapOption == FONS_GLYPH_BITMAP_OPTIONAL || (glyph->x0 >= 0 && glyph->y0 >= 0)) {
-			  return glyph;
+	//TODO optimiztion is required here
+	if(stash != nullptr){
+		while (i != -1) {
+			if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur && 
+					font->glyphs[i].stash == stash /*Check is same context*/ ) {
+				glyph = &font->glyphs[i];
+				if (bitmapOption == FONS_GLYPH_BITMAP_OPTIONAL || (glyph->x0 >= 0 && glyph->y0 >= 0)) {
+				return glyph;
+				}
+				// At this point, glyph exists but the bitmap data is not yet created.
+				break;
 			}
-			// At this point, glyph exists but the bitmap data is not yet created.
-			break;
+			i = font->glyphs[i].next;
 		}
-		i = font->glyphs[i].next;
+	}
+	else{
+		//Stash is not required
+		while (i != -1) {
+			if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur) {
+				glyph = &font->glyphs[i];
+				if (bitmapOption == FONS_GLYPH_BITMAP_OPTIONAL || (glyph->x0 >= 0 && glyph->y0 >= 0)) {
+				return glyph;
+				}
+				// At this point, glyph exists but the bitmap data is not yet created.
+				break;
+			}
+			i = font->glyphs[i].next;
+		}
 	}
 
 	// Create a new glyph or rasterize bitmap data for a cached glyph.
@@ -1992,6 +2042,92 @@ static float fons__getVertAlign(FONScontext* stash, FONSfont* font, int align, s
 	}
 	return 0.0;
 }
+
+//BtkFt_TextSize
+void BtkFt_TextSize(BtkFt font,float ptsize,float letter_spacing,u8string_view txt,FSize *output){
+
+	auto get_quad = [](FONSfont* font,
+					   int prevGlyphIndex, FONSglyph* glyph,
+					   float scale, float spacing, float* x, float* y, FONSquad* q){
+		
+		float rx,ry,xoff,yoff,x0,y0,x1,y1;
+		if (prevGlyphIndex != -1) {
+			float adv = fons__tt_getGlyphKernAdvance(&font->font, prevGlyphIndex, glyph->index) * scale;
+			*x += (int)(adv + spacing + 0.5f);
+		}
+
+		// Each glyph has 2px border to allow good interpolation,
+		// one pixel to prevent leaking, and one to allow good interpolation for rendering.
+		// Inset the texture region by one pixel for correct interpolation.
+		xoff = (short)(glyph->xoff+1);
+		yoff = (short)(glyph->yoff+1);
+		x0 = (float)(glyph->x0+1);
+		y0 = (float)(glyph->y0+1);
+		x1 = (float)(glyph->x1-1);
+		y1 = (float)(glyph->y1-1);
+
+		rx = floorf(*x + xoff);
+		ry = floorf(*y + yoff);
+
+		q->x0 = rx;
+		q->y0 = ry;
+		q->x1 = rx + x1 - x0;
+		q->y1 = ry + y1 - y0;
+
+		// q->s0 = x0 * stash->itw;
+		// q->t0 = y0 * stash->ith;
+		// q->s1 = x1 * stash->itw;
+		// q->t1 = y1 * stash->ith;
+
+		*x += (int)(glyph->xadv / 10.0f + 0.5f);
+	};
+
+
+	BTK_ASSERT(output != nullptr);
+	float scale = fons__tt_getPixelHeightScale(&font->font, (float)ptsize/10.0f);
+	int prevGlyphIndex = -1;
+	FONSglyph *glyph;
+	FONSquad   q;
+
+	short isize = (short)(ptsize*10.0f);
+
+	float startx, advance;
+	float minx, miny, maxx, maxy;
+
+	float x = 0,y = 0;
+	//zero top left and top
+	//fons__getVertAlign
+	y += (font->ascender * (float)isize/10.0f);
+
+	minx = maxx = x;
+	miny = maxy = y;
+	startx = x;
+	
+	//For each char and 
+	for(char32_t ch:txt){
+		glyph = fons__getGlyph(nullptr,font,ch,isize,0,FONS_GLYPH_BITMAP_OPTIONAL);
+
+		if (glyph != NULL) {
+			get_quad(font, prevGlyphIndex, glyph, scale, letter_spacing, &x, &y, &q);
+			if (q.x0 < minx) minx = q.x0;
+			if (q.x1 > maxx) maxx = q.x1;
+			//Default(zero top left)
+			if (q.y0 < miny) miny = q.y0;
+			if (q.y1 > maxy) maxy = q.y1;
+		}
+
+		prevGlyphIndex = glyph != NULL ? glyph->index : -1;
+	}
+	//zero top left and top
+	//fonsLineBounds
+	maxy = miny + font->lineh*isize/10.0f;
+
+	output->w = (x - startx);
+	output->h = maxy - miny;
+	
+}
+
+
 
 float fonsDrawText(FONScontext* stash,
 				   float x, float y,

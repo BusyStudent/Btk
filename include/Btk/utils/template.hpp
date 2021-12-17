@@ -158,6 +158,9 @@ namespace Btk{
             T &operator *() const noexcept{
                 return *get();
             }
+            bool empty() const noexcept{
+                return data == nullptr;
+            }
 
             RefPtr &operator =(const RefPtr &);
             RefPtr &operator =(std::nullptr_t);
@@ -512,6 +515,12 @@ namespace Btk{
             );
         }
     }
+    template<class T>
+    struct GenericDeleter{
+        static void Invoke(void *t){
+            delete static_cast<T*>(t);
+        }
+    };
 }
 
 #endif // _BTK_UTILS_TEMPLATE_HPP_

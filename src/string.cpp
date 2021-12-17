@@ -152,6 +152,95 @@ namespace Btk{
     }
 }
 
+//Uchardet
+#if __has_include(<uchardet/uchardet.h>)
+    #include <uchardet/uchardet.h>
+    #include <Btk/impl/scope.hpp>
+    #include <SDL2/SDL_thread.h>
+    #include <SDL2/SDL_loadso.h>
+
+    #define FNS \
+        PROC(uchardet_new) \
+        PROC(uchardet_delete) \
+        PROC(uchardet_handle_data) \
+        PROC(uchardet_data_end) \
+        PROC(uchardet_reset) \
+        PROC(uchardet_get_charset) \
+        //
+
+    #define LOAD(X) \
+        X##_fn = (decltype(::X)*) SDL_LoadFunction(uchardet_lib,#X);
+    #define DECL(X) \
+        decltype(::X) *X##_fn = nullptr;
+
+    namespace{
+        SDL_TLSID uchardet_instance = 0;
+        void *uchardet_lib = nullptr;
+        #define PROC(X) DECL(X)
+        FNS
+        #undef PROC
+    }
+    Btk_CallOnUnload{
+        if(uchardet_lib != nullptr){
+
+        }
+        SDL_UnloadObject(uchardet_lib);
+    };
+    static bool uchardet_init(){
+        uchardet_lib = SDL_LoadObject("libuchardet.so");
+        if(uchardet_lib != nullptr){
+            #define PROC(X) LOAD(X)
+            FNS
+            #undef PROC
+
+            uchardet_instance = SDL_TLSCreate();
+            return true;
+        }
+        return false;
+    }
+    static uchardet_t udet_get(){
+        //NO lib loaded
+        if(uchardet_lib == nullptr){
+            if(not uchardet_init()){
+                //Init failed
+                return nullptr;
+            }            
+        }
+        uchardet_t t = (uchardet_t)SDL_TLSGet(uchardet_instance);
+        if(t == nullptr){
+            //Create a new one
+            t = uchardet_new_fn();
+            SDL_TLSSet(
+                uchardet_instance,
+                t,
+                reinterpret_cast<void(*)(void*)>(uchardet_delete_fn)
+            );
+        }
+        uchardet_reset_fn(t);
+        return t;
+    }
+    static const char *get_charset_from(const void *mem,size_t n){
+        auto t = udet_get();
+        if(t == nullptr){
+            Btk::throwRuntimeError("Unknown charset");
+        }
+        uchardet_handle_data_fn(t,static_cast<const char*>(mem),n);
+        uchardet_data_end_fn(t);
+        const char *ret = uchardet_get_charset_fn(t);
+        if(strcmp(ret,"") == 0){
+            Btk::throwRuntimeError("Unknown charset");
+        }
+        return ret;
+    }
+    #undef LOAD
+    #undef DECL
+    #undef FNS
+    #define GET_CHARSET_FROM(MEM,N) get_charset_from(MEM,N)
+#else
+    #define GET_CHARSET_FROM(MEM,N) "UTF-8"
+#endif
+
+
 namespace Btk{
     u8string::u8string() = default;
     u8string::~u8string() = default;
@@ -274,8 +363,14 @@ namespace Btk{
         vsprintf(end,fmt,varg);
 
     }
+    void u8string::append_fmt(const char *fmt,...){
+        va_list varg;
+        va_start(varg,fmt);
+        append_vfmt(fmt,varg);
+        va_end(varg);
+    }
     void u8string::append_from(const void *buf,size_t n,const char *encoding){
-        IconvHolder i("UTF-8",encoding);
+        IconvHolder i("UTF-8",GET_CHARSET_FROM(buf,n));
         iconv_string<std::string>(i,base(),static_cast<const char*>(buf),n);
     }
 }
@@ -311,6 +406,16 @@ namespace Btk{
     }
 }
 namespace Btk{
+    void __sscanf_chk(int nargs,const char *s,const char *fmt,...){
+        std::va_list vargs;
+        va_start(vargs,fmt);
+        auto ret = ::vsscanf(s,fmt,vargs);
+        va_end(vargs);
+        if(ret != nargs){
+            //scan failed
+            throwRuntimeError(u8format("Failed to parse '%s'",fmt));
+        }
+    }
     u8string u8vformat(const char *fmt,std::va_list varg){
         BTK_ASSERT(fmt != nullptr);
         //Get bufsize
@@ -332,9 +437,23 @@ namespace Btk{
 
         return str;
     }
+    u8string u8format(const char *fmt,...){
+        std::va_list l;
+        va_start(l,fmt);
+        auto r = u8vformat(fmt,l);
+        va_end(l);
+        return r;
+    }
     //TODO add win32 wsprintf
-    u16string u16vformat(char16_t *fmt,std::va_list varg){
+    u16string u16vformat(const char16_t *fmt,std::va_list varg){
         return u8vformat(u16string_view(fmt).to_utf8().c_str(),varg).to_utf16();
+    }
+    u16string u16format(const char16_t *fmt,...){
+        std::va_list l;
+        va_start(l,fmt);
+        auto r = u16vformat(fmt,l);
+        va_end(l);
+        return r;
     }
     char32_t Utf8Next(const char *& ch){
         return utf8::unchecked::next(ch);

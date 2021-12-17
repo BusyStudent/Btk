@@ -134,7 +134,7 @@ namespace Btk{
         }
         return surf;
     }
-    PixBuf PixBufRef::zoom(double w_f,double_t h_f){
+    PixBuf PixBufRef::zoom(double w_f,double_t h_f) const{
         #ifdef BTK_USE_GFX
         SDL_Surface *surf = zoomSurface(this->surf,w_f,h_f,SMOOTHING_ON);
         if(surf == nullptr){
@@ -145,6 +145,16 @@ namespace Btk{
         BTK_UNIMPLEMENTED();
         #endif
     }
+    PixBuf PixBufRef::copy(int x,int y,int w,int h) const{
+        Rect r{0,0,surf->w,surf->h};
+        Rect req{x,y,w,h};
+        auto t = r.intersect_with(req);
+        //Create a new one
+        PixBuf buf(t.w,t.h,surf->format->format);
+        SDL_BlitSurface(buf.surf,&t,buf.surf,nullptr);
+        return buf;
+    }
+
     void PixBufRef::bilt(PixBufRef buf,const Rect *src,Rect *dst){
         if(SDL_BlitSurface(buf.get(),src,surf,dst) != 0){
             throwSDLError();

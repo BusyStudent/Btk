@@ -98,8 +98,8 @@ namespace Btk{
     Theme::Theme(const Theme &) = default;
     Theme::~Theme() = default;
 
-    Theme *CurrentTheme(){
-        auto theme = new Theme;
+    RefPtr<Theme> CurrentTheme(){
+        RefPtr<Theme> theme(new Theme);
         construct_theme_default(*theme);
         return theme;
     }

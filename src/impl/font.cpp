@@ -18,16 +18,14 @@ namespace{
 }
 
 namespace Btk{
-    Font::~Font(){
-        close();
-    }
     //Copt font
     Font::Font(const Font &f){
         font = BtkFt_Dup(f.font);
         ptsize_ = f.ptsize_;
+        spacing_ = f.spacing_;
     }
     //TODO Improve Cache proformance
-    Font::Font(u8string_view fontname,int ptsize){
+    Font::Font(u8string_view fontname,float ptsize){
         if(not ft_inited){
             Font::Init();
         }
@@ -35,7 +33,7 @@ namespace Btk{
         open(fontname,ptsize);
     }
     //Open font by name
-    void Font::open(u8string_view fontname,int ptsize){
+    void Font::open(u8string_view fontname,float ptsize,Uint32 idx){
         close();
         BtkFt f = BtkFt_GlobalFind(fontname);
         if(f != nullptr){
@@ -46,13 +44,14 @@ namespace Btk{
         else{
             openfile(
                 FontUtils::GetFileByName(fontname),
-                ptsize
+                ptsize,
+                idx
             );
         }
     }
     //Open font by file
-    void Font::openfile(u8string_view filename,int ptsize){
-        auto new_font = BtkFt_Open(filename.data(),0);
+    void Font::openfile(u8string_view filename,float ptsize,Uint32 idx){
+        auto new_font = BtkFt_Open(filename.data(),idx);
         new_font = BtkFt_Dup(new_font);
         close();
         font = new_font;
@@ -85,11 +84,11 @@ namespace Btk{
         throwRuntimeError("Unimpl yet");
     }
 
-    int Font::ptsize() const noexcept{
+    float Font::ptsize() const noexcept{
         // return FONTIMPL(pimpl)->ptsize;
         return ptsize_;
     }
-    void Font::set_ptsize(int new_ptsize){
+    void Font::set_ptsize(float new_ptsize){
         // FontImpl *new_font = new FontImpl(
         //     pimpl->filename,
         //     new_ptsize
@@ -203,7 +202,7 @@ namespace Btk{
         throwRuntimeError("Unimpl yet");
     }
     //size
-    Size Font::size(u8string_view text){
+    FSize Font::size(u8string_view text){
         // int w,h;
         // if(TTF_SizeUTF8(pimpl->font,text.data(),&w,&h) != 0){
         //     w = -1;
@@ -211,9 +210,11 @@ namespace Btk{
         // }
         // return {w,h};
         // return FONTIMPL(pimpl)->text_size(text.base());
-        throwRuntimeError("Unimpl yet");
+        FSize size;
+        BtkFt_TextSize(font,ptsize_,spacing_,text,&size);
+        return size;
     }
-    Size Font::size(u16string_view text){
+    FSize Font::size(u16string_view text){
         // int w,h;
         // if(TTF_SizeUNICODE(pimpl->font,
         //     reinterpret_cast<const Uint16*>(text.data()),
@@ -231,6 +232,7 @@ namespace Btk{
             close();
             font = BtkFt_Dup(f.font);
             ptsize_ = f.ptsize_;
+            spacing_ = f.spacing_;
         }
         return *this;
     }
@@ -240,6 +242,7 @@ namespace Btk{
             font = f.font;
             f.font = nullptr;
             ptsize_ = f.ptsize_;
+            spacing_ = f.spacing_;
         }
         return *this;
     }

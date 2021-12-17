@@ -117,6 +117,17 @@ PYBIND11_MODULE(PyBtk,mod){
         })
         
     ;
+    //Font
+    py::class_<Btk::Font>(mod,"Font")
+        .def(py::init<Btk::u8string_view,float>())
+        .def(py::init())
+        .def("close",&Btk::Font::close)
+        .def("empty",&Btk::Font::empty)
+        .def("ptsize",&Btk::Font::ptsize)
+        .def("set_ptsize",&Btk::Font::set_ptsize)
+        .def("open",&Btk::Font::open)
+        .def("openfile",&Btk::Font::openfile)
+    ;
     //Def enum
     py::enum_<Btk::Orientation>(mod,"Orientation")
         .value("H",Btk::Orientation::H)

@@ -124,6 +124,8 @@ namespace Btk{
             Atomic visible = false;
             //Last time we call the redraw
             Uint32 last_redraw_ticks = 0;
+            //Last time the window was drawed(for drop to last event)
+            Uint32 last_draw_ticks = 0;
             //FPS limit(0 on unlimited)
             Uint32 fps_limit = 60;
             //The draw callback
@@ -132,7 +134,6 @@ namespace Btk{
 
             //Current menu bar
             Menu *menu_bar = nullptr;
-            Theme *cur_theme = nullptr;
             
             //Methods for Widget impl
         private:
