@@ -2,15 +2,17 @@
 #ifdef BTK_HAS_SDLIMG
     #include <SDL2/SDL_image.h>
 #endif
-#ifdef BTK_USE_GFX
-    #include <Btk/thirdparty/SDL2_rotozoom.h>
+
+#define STB_IMAGE_RESIZE_STATIC
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#define STBIR_MALLOC(SIZE,UPTR)  SDL_malloc(SIZE)
+#define STBIR_FREE(PTR,UPTR)    SDL_free(PTR)
+#include "../libs/stb_image_resize.h"
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    #define STBIR_RGB SDL_PIXELFORMAT_RGB888
 #else
-    #define STB_IMAGE_RESIZE_STATIC
-    #define STB_IMAGE_RESIZE_IMPLEMENTATION
-    #define STBIR_MALLOC  SDL_malloc
-    #define STBIR_REALLOC SDL_realloc
-    #define STBIR_FREE    SDL_free
-    #include "../libs/stb_image_resize.h"
+    #define STBIR_RGB SDL_PIXELFORMAT_BGR888
 #endif
 
 #include "../build.hpp"
@@ -134,16 +136,50 @@ namespace Btk{
         }
         return surf;
     }
-    PixBuf PixBufRef::zoom(double w_f,double_t h_f) const{
-        #ifdef BTK_USE_GFX
-        SDL_Surface *surf = zoomSurface(this->surf,w_f,h_f,SMOOTHING_ON);
-        if(surf == nullptr){
-            throwSDLError();
+    PixBuf PixBufRef::resize(int dst_w,int dst_h) const{
+        Uint32 format = surf->format->format;
+        int num;
+
+        if(SDL_ISPIXELFORMAT_ALPHA(format)){
+            if(format != SDL_PIXELFORMAT_RGBA32){
+                //Not RGBA32
+                return convert(SDL_PIXELFORMAT_RGBA32).resize(dst_w,dst_h);
+            }
+            num = 4;
         }
-        return surf;
-        #else
-        BTK_UNIMPLEMENTED();
-        #endif
+        else if(format == STBIR_RGB){
+            //RGB
+            num = 4;
+        }
+        else{
+            return convert(STBIR_RGB).resize(dst_w,dst_h);
+        }
+
+
+        PixBuf dst(dst_w,dst_h,format);
+
+        if(SDL_MUSTLOCK(surf)){
+            SDL_LockSurface(surf);
+        }
+
+        stbir_resize_uint8(
+            (Uint8*)surf->pixels,
+            surf->w,
+            surf->h,
+            surf->pitch,
+            (Uint8*)dst->pixels,
+            dst_w,
+            dst_h,
+            dst->pitch,
+            num
+        );
+
+        if(SDL_MUSTLOCK(surf)){
+            SDL_UnlockSurface(surf);
+        }
+
+
+        return dst;
     }
     PixBuf PixBufRef::copy(int x,int y,int w,int h) const{
         Rect r{0,0,surf->w,surf->h};

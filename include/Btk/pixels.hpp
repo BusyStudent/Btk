@@ -166,6 +166,7 @@ namespace Btk{
              * @return PixBuf The pixel buf
              */
             PixBuf convert(Uint32 fmt) const;
+            PixBuf resize(int w,int h) const;
             PixBuf zoom(double w_factor,double h_factor) const;
             /**
              * @brief Copy a area into a new buf
@@ -237,6 +238,9 @@ namespace Btk{
             static void _Delete(void *);
             static void _Ref(void *);
     };
+    inline PixBuf PixBufRef::zoom(double w_factor,double h_factor) const{
+        return resize(surf->w * w_factor,surf->h * h_factor);
+    }
     /**
      * @brief Pixels format
      * 
@@ -263,6 +267,9 @@ namespace Btk{
 
         operator Uint32() const noexcept{
             return fmt;
+        }
+        bool has_alpha() const noexcept{
+            return SDL_ISPIXELFORMAT_ALPHA(fmt);
         }
         Uint32 fmt;
     };

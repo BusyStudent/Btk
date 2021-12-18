@@ -81,6 +81,10 @@ option("stb_truetype")
     set_default(false)
     set_showmenu(true)
     set_description("Force to use stb_truetype")
+option("svg_parser")
+    set_default(true)
+    set_showmenu(true)
+    set_description("Render svg")
 -- Win32 Option
 option("directx_renderer")
     if is_plat("windows") or is_plat("mingw") then
@@ -193,6 +197,11 @@ target("btk")
     if has_config("directx_renderer") then
         add_files("./src/render/render_dx11.cpp")
         add_defines("BTK_USE_DXDEVICE")
+    end
+
+    --SVG
+    if not has_config("svg_parser") then
+        add_defines("BTK_DISABLE_SVG")
     end
 
     --Font

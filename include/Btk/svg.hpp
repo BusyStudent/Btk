@@ -64,7 +64,7 @@ namespace Btk{
             static SVGImage Parse(u8string_view str){
                 return _Parse(str.data(),str.size());
             }
-            static SVGImage ParseFile(const char *file){
+            static SVGImage ParseFile(u8string_view file){
                 return _ParseFile(file);
             }
             static SVGImage Parse(u8string_view str,const char *unit,float dpi){
@@ -81,7 +81,7 @@ namespace Btk{
              * @return void* 
              */
             static void *_ParseStream(SDL_RWops *rw,const char *unit = nullptr,float dpi = 96);
-            static void *_ParseFile(const char *f,const char *unit = nullptr,float dpi = 96);
+            static void *_ParseFile(u8string_view f,const char *unit = nullptr,float dpi = 96);
             /**
              * @brief Parse SVG String
              * 
@@ -106,6 +106,7 @@ namespace Btk{
             void draw(Renderer &renderer) override;
             void set_image(SVGImage &&s){
                 image = std::move(s);
+                redraw();
             }
         private:
             float scale_x = 1,scale_y = 1;

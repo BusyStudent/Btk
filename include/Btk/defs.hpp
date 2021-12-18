@@ -136,6 +136,11 @@
     #define BTKAPI
 #endif
 
+#ifdef __clang__
+    #pragma clang diagnostic ignored "-Wexpansion-to-defined"
+#endif
+
+
 //Platform checking
 #define BTK_ANDROID defined(__ANDROID__)
 #define BTK_WIN32   defined(_WIN32)

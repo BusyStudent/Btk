@@ -1793,13 +1793,15 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	i = font->lut[h];
 	//TODO This cache has problems in rendering in different context if we didnot check is the same stash
 	//TODO optimiztion is required here
-	if(stash != nullptr){
+	if(bitmapOption == FONS_GLYPH_BITMAP_REQUIRED){
+		//Require bitmap
 		while (i != -1) {
 			if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur && 
 					font->glyphs[i].stash == stash /*Check is same context*/ ) {
 				glyph = &font->glyphs[i];
-				if (bitmapOption == FONS_GLYPH_BITMAP_OPTIONAL || (glyph->x0 >= 0 && glyph->y0 >= 0)) {
-				return glyph;
+				//Is the bitmap data was created?
+				if(glyph->x0 >=0 && glyph->y0 >= 0){
+					return glyph;
 				}
 				// At this point, glyph exists but the bitmap data is not yet created.
 				break;
@@ -1809,14 +1811,11 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	}
 	else{
 		//Stash is not required
+		//Bitmap is Optional
 		while (i != -1) {
 			if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur) {
 				glyph = &font->glyphs[i];
-				if (bitmapOption == FONS_GLYPH_BITMAP_OPTIONAL || (glyph->x0 >= 0 && glyph->y0 >= 0)) {
 				return glyph;
-				}
-				// At this point, glyph exists but the bitmap data is not yet created.
-				break;
 			}
 			i = font->glyphs[i].next;
 		}
@@ -2044,7 +2043,7 @@ static float fons__getVertAlign(FONScontext* stash, FONSfont* font, int align, s
 }
 
 //BtkFt_TextSize
-void BtkFt_TextSize(BtkFt font,float ptsize,float letter_spacing,u8string_view txt,FSize *output){
+void BtkFt_TextSize(BtkFt font,float ptsize,float blur,float letter_spacing,u8string_view txt,FSize *output){
 
 	auto get_quad = [](FONSfont* font,
 					   int prevGlyphIndex, FONSglyph* glyph,
@@ -2105,7 +2104,7 @@ void BtkFt_TextSize(BtkFt font,float ptsize,float letter_spacing,u8string_view t
 	
 	//For each char and 
 	for(char32_t ch:txt){
-		glyph = fons__getGlyph(nullptr,font,ch,isize,0,FONS_GLYPH_BITMAP_OPTIONAL);
+		glyph = fons__getGlyph(nullptr,font,ch,isize,blur,FONS_GLYPH_BITMAP_OPTIONAL);
 
 		if (glyph != NULL) {
 			get_quad(font, prevGlyphIndex, glyph, scale, letter_spacing, &x, &y, &q);

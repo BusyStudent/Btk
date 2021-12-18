@@ -161,7 +161,7 @@ namespace Btk{
         }
         //TODO need improve
         cache->used = true;
-        update_texture(cache->tex,{0,0,w,h},pixbuf->pixels);
+        update_texture(cache->tex,{0,0,int(w),int(h)},pixbuf->pixels);
         //Send a draw request
         auto paint = nvgImagePattern(
             nvg_ctxt,

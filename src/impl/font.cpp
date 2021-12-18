@@ -23,6 +23,7 @@ namespace Btk{
         font = BtkFt_Dup(f.font);
         ptsize_ = f.ptsize_;
         spacing_ = f.spacing_;
+        blur_ = f.blur_;
     }
     //TODO Improve Cache proformance
     Font::Font(u8string_view fontname,float ptsize){
@@ -211,7 +212,7 @@ namespace Btk{
         // return {w,h};
         // return FONTIMPL(pimpl)->text_size(text.base());
         FSize size;
-        BtkFt_TextSize(font,ptsize_,spacing_,text,&size);
+        BtkFt_TextSize(font,ptsize_,blur_,spacing_,text,&size);
         return size;
     }
     FSize Font::size(u16string_view text){
@@ -233,6 +234,7 @@ namespace Btk{
             font = BtkFt_Dup(f.font);
             ptsize_ = f.ptsize_;
             spacing_ = f.spacing_;
+            blur_ = f.blur_;
         }
         return *this;
     }
@@ -243,6 +245,7 @@ namespace Btk{
             f.font = nullptr;
             ptsize_ = f.ptsize_;
             spacing_ = f.spacing_;
+            blur_ = f.blur_;
         }
         return *this;
     }

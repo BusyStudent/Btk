@@ -197,6 +197,7 @@ namespace Btk{
             void *font = nullptr;
             float ptsize_ = -1;
             float spacing_ = 0;
+            float blur_ = 0;
         friend class Renderer;
     };
     //TODO
