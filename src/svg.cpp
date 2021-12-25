@@ -41,13 +41,14 @@ namespace{
     {
         // we only support simple (2-stop) gradients
         NSVGgradientStop* s0 = &g->stops[0];
-        NSVGgradientStop* s1 = &g->stops[1];
+        NSVGgradientStop* s1 = &g->stops[g->nstops - 1];
         float* t = g->xform;
         float x0 = t[4], y0 = t[5], dx = t[2], dy = t[3];
         return nvgLinearGradient(vg, x0 + s0->offset*dx, y0 + s0->offset*dy,
             x0 + s1->offset*dx, y0 + s1->offset*dy, nvgColUint(s0->color), nvgColUint(s1->color));
     }
     static NVGpaint radialGradToNVpaint(NVGcontext* vg, NSVGgradient* g){
+        BTK_LOGINFO("Unsupported radial");
         NSVGgradientStop* s0 = &g->stops[0];
         NSVGgradientStop* s1 = &g->stops[1];
         float* t = g->xform;

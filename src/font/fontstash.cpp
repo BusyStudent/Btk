@@ -516,6 +516,10 @@ BtkFt BtkFt_GetFromID(int id){
 	}
 	if(id == 0){
 		//Use default font
+		if(runtime->default_font == 0){
+			//Runtime not inited
+			return nullptr;
+		}
 		return BtkFt_GetFromID(runtime->default_font);
 	}
 	//Begin find
@@ -1231,7 +1235,10 @@ FONScontext* fonsCreateInternal(FONSparams* params)
 	stash->runtime = runtime.get();
 	//Try borrow global
 	if(runtime->default_font != FONS_INVALID){
-		stash->fonts_map[0] = BtkFt_GetFromID(0);
+		auto ft = BtkFt_GetFromID(0);
+		if(ft != nullptr){
+			stash->fonts_map[0] = ft;
+		}
 	}
 	return stash;
 

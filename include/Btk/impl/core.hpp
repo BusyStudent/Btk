@@ -121,19 +121,20 @@ namespace Btk{
         static System *instance;//instance of system
         static bool    is_running;
         
-        void run();
         //Window Register
         void register_window(WindowImpl *impl);
         void unregister_window(WindowImpl *impl);
         void close_window(WindowImpl *impl);
         //Handle event
+        inline void run();
         /**
          * @brief Wait for SDL_Event
          * 
          * @param event 
          * @return int 
          */
-        inline void wait_event(SDL_Event *event);
+        inline void wait_event(SDL_Event &event);
+        inline void dispatch_event(SDL_Event &event);
         inline void on_idle();//< When there is no event avliable
         inline void on_dropev(const SDL_Event &event);//Handle SDL_DropEvent
         inline void on_windowev(const SDL_Event &event);//Handle SDL_WINDOWEVENT

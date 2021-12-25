@@ -534,6 +534,7 @@ namespace Btk{
             void fill_circle(const FVec2 &vec,float r,Color c){
                 fill_circle(vec.x,vec.y,r,c);
             }
+            void draw_text(float x,float y,u8string_view txt,Color c);
 
         public:
             /**

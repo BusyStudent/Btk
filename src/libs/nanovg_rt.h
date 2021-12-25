@@ -533,11 +533,11 @@ struct RTNVGcontext {
   int stencilFuncRef;
   unsigned int stencilFuncMask;
 #endif
+  int owned = true;
 
   unsigned char *pixels; // RGBA
   int width;
   int height;
-  bool owned = true;
 };
 typedef struct RTNVGcontext RTNVGcontext;
 
@@ -640,8 +640,7 @@ static int rtnvg__deleteTexture(RTNVGcontext *rt, int id) {
   int i;
   for (i = 0; i < rt->ntextures; i++) {
     if (rt->textures[i].id == id) {
-      if (rt->textures[i].tex != 0 &&
-          (rt->textures[i].flags & NVG_IMAGE_NODELETE) == 0) {
+      if ((rt->textures[i].flags & NVG_IMAGE_NODELETE) == 0) {
         free(rt->textures[i].data);
         // glDeleteTextures(1, &rt->textures[i].tex);
       }
@@ -2410,16 +2409,18 @@ static void rtnvg__renderDelete(void *uptr) {
   free(rt->uniforms);
   free(rt->calls);
 
-  free(rt);
+  delete rt;
 }
 
 NVGcontext *nvgCreateRT(int flags, int w, int h) {
   NVGparams params;
   NVGcontext *ctx = NULL;
-  RTNVGcontext *rt = (RTNVGcontext *)malloc(sizeof(RTNVGcontext));
+  RTNVGcontext *rt = (RTNVGcontext *)new RTNVGcontext{};
   if (rt == NULL)
     goto error;
-  memset(rt, 0, sizeof(RTNVGcontext));
+  // memset(rt, 0, sizeof(RTNVGcontext));
+
+  // rt->owned = true;
 
   memset(&params, 0, sizeof(params));
   params.renderCreate = rtnvg__renderCreate;
@@ -2542,6 +2543,7 @@ void nvgAttachFrameBufferRT(NVGcontext *ctx,void *pixels,int w,int h){
   }
   rt->width = w;
   rt->height = h;
+  rt->owned = false;
 }
 
 unsigned char *nvgReadPixelsRT(NVGcontext *ctx) {

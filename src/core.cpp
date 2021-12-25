@@ -155,6 +155,19 @@ namespace Btk{
         Instance().is_running = false;
         return retvalue;
     }
+    bool PollEvent(){
+        try{
+            SDL_Event event;
+            while(SDL_PollEvent(&event)){
+                Instance().dispatch_event(event);
+            }
+            Instance().on_idle();
+            return true;
+        }
+        catch(int){
+            return false;
+        }
+    }
     System::System(){
         defer_call_ev_id = SDL_RegisterEvents(2);
         if(defer_call_ev_id == (Uint32)-1){
@@ -251,107 +264,110 @@ namespace Btk{
         }
     }
     //EventLoop
-    void System::run(){
-        SDL_Event event;
-        while(true){
-            wait_event(&event);
-            switch(event.type){
-                case SDL_QUIT:{
-                    on_quit();
-                    break;
+    void System::dispatch_event(SDL_Event &event){
+        switch(event.type){
+            case SDL_QUIT:{
+                on_quit();
+                break;
+            }
+            case SDL_CLIPBOARDUPDATE:{
+                BTK_LOGINFO("[System::Core]Emitting SignalClipboardUpdate");
+                signal_clipboard_update();
+                break;
+            }
+            case SDL_WINDOWEVENT:{
+                on_windowev(event);
+                break;
+            }
+            case SDL_DROPCOMPLETE:
+            case SDL_DROPBEGIN:
+            case SDL_DROPTEXT:
+            case SDL_DROPFILE:{
+                on_dropev(event);
+                break;
+            }
+            case SDL_MOUSEMOTION:{
+                on_mousemotion(event);
+                break;
+            }
+            case SDL_MOUSEBUTTONUP:
+            case SDL_MOUSEBUTTONDOWN:{
+                on_mousebutton(event);
+                break;
+            }
+            case SDL_KEYUP:
+            case SDL_KEYDOWN:{
+                on_keyboardev(event);
+                break;
+            }
+            case SDL_TEXTINPUT:{
+                on_textinput(event);
+                break;
+            }
+            case SDL_MOUSEWHEEL:{
+                on_mousewheel(event);
+                break;
+            }
+            case SDL_SYSWMEVENT:{
+                Platform::HandleSysMsg(*(event.syswm.msg));
+                break;
+            }
+            case SDL_AUDIODEVICEADDED:{
+                BTK_LOGINFO("[System::Audio] AudioDeviceAdded");
+                signal_audio_device_added();
+                break;
+            }
+            case SDL_AUDIODEVICEREMOVED:{
+                BTK_LOGINFO("[System::Audio] AudioDeviceRemoved");
+                signal_audio_device_removed();
+                break;
+            }
+            case SDL_KEYMAPCHANGED:{
+                signal_keymap_changed();
+                break;
+            }
+            #ifdef BTK_MOBILE
+            case SDL_APP_TERMINATING:{
+                signal_app_terminating();
+                break;
+            }
+            case SDL_APP_LOWMEMORY:{
+                signal_app_lowmemory();
+                break;
+            }
+            #endif
+            default:{
+                //get function from event callbacks map
+                auto iter = evcbs_map.find(event.type);
+                if(iter != evcbs_map.end()){
+                    iter->second(event);
                 }
-                case SDL_CLIPBOARDUPDATE:{
-                    BTK_LOGINFO("[System::Core]Emitting SignalClipboardUpdate");
-                    signal_clipboard_update();
-                    break;
-                }
-                case SDL_WINDOWEVENT:{
-                    on_windowev(event);
-                    break;
-                }
-                case SDL_DROPCOMPLETE:
-                case SDL_DROPBEGIN:
-                case SDL_DROPTEXT:
-                case SDL_DROPFILE:{
-                    on_dropev(event);
-                    break;
-                }
-                case SDL_MOUSEMOTION:{
-                    on_mousemotion(event);
-                    break;
-                }
-                case SDL_MOUSEBUTTONUP:
-                case SDL_MOUSEBUTTONDOWN:{
-                    on_mousebutton(event);
-                    break;
-                }
-                case SDL_KEYUP:
-                case SDL_KEYDOWN:{
-                    on_keyboardev(event);
-                    break;
-                }
-                case SDL_TEXTINPUT:{
-                    on_textinput(event);
-                    break;
-                }
-                case SDL_MOUSEWHEEL:{
-                    on_mousewheel(event);
-                    break;
-                }
-                case SDL_SYSWMEVENT:{
-                    Platform::HandleSysMsg(*(event.syswm.msg));
-                    break;
-                }
-                case SDL_AUDIODEVICEADDED:{
-                    BTK_LOGINFO("[System::Audio] AudioDeviceAdded");
-                    signal_audio_device_added();
-                    break;
-                }
-                case SDL_AUDIODEVICEREMOVED:{
-                    BTK_LOGINFO("[System::Audio] AudioDeviceRemoved");
-                    signal_audio_device_removed();
-                    break;
-                }
-                case SDL_KEYMAPCHANGED:{
-                    signal_keymap_changed();
-                    break;
-                }
-                #ifdef BTK_MOBILE
-                case SDL_APP_TERMINATING:{
-                    signal_app_terminating();
-                    break;
-                }
-                case SDL_APP_LOWMEMORY:{
-                    signal_app_lowmemory();
-                    break;
-                }
-                #endif
-                default:{
-                    //get function from event callbacks map
-                    auto iter = evcbs_map.find(event.type);
-                    if(iter != evcbs_map.end()){
-                        iter->second(event);
-                    }
-                    else{
-                        SDL_LogWarn(
-                            SDL_LOG_CATEGORY_APPLICATION,
-                            "[System::EventDispather]unknown event id %d timestamp %d",
-                            event.type,
-                            SDL_GetTicks()
-                        );
-                    }
+                else{
+                    SDL_LogWarn(
+                        SDL_LOG_CATEGORY_APPLICATION,
+                        "[System::EventDispather]unknown event id %d timestamp %d",
+                        event.type,
+                        SDL_GetTicks()
+                    );
                 }
             }
+
         }
-        BTK_LOGWARN(SDL_GetError());
     }
-    inline void System::wait_event(SDL_Event *event){
+    inline void System::run(){
+        SDL_Event event;
+        while(true){
+            wait_event(event);
+            dispatch_event(event);
+        }
+    }
+    inline void System::wait_event(SDL_Event &event){
         if(idle_handlers.empty()){
             //Just use sdl wait event
-            SDL_WaitEvent(event);
+            SDL_WaitEvent(&event);
             return;
         }
-        while(SDL_PollEvent(event) == 0){
+        while(SDL_PollEvent(&event) == 0){
             //Wait for event
             on_idle();
             SDL_Delay(wait_event_delay);

@@ -3,6 +3,9 @@
 #include "../render.hpp"
 #include "../pixels.hpp"
 #include <stack>
+struct SDL_Window;
+struct SDL_Texture;
+struct SDL_Renderer;
 namespace Btk{
     /**
      * @brief Software renderer by using nanort
@@ -64,19 +67,37 @@ namespace Btk{
             void clear_buffer(Color c) override;
             void swap_buffer() override;
         private:
-            void update_status();
-            void fb_resize(int new_w,int new_h);
-            SDL_Surface *framebuffer = nullptr;//< Bind with the context
-            Rect viewport = {-1,-1,-1,-1};
+            void active_env();
+            // void sw_flush();
+            void sw_resize(int new_w,int new_h);
 
-            NVGcontext *current_ctxt = nullptr;
-            SDL_Surface *tag_surf = nullptr;
-            SDL_Window  *tag_win = nullptr;
-            bool surf_owned = false;
-            bool frame_begined = false;
+            // void hw_flush();
+            void hw_resize(int new_w,int new_h);
 
-            //Render target support
-            std::stack<SDL_Surface*> targets;
+            //Target
+            struct Target{
+                void *pixels;
+                int   w;
+                int   h;
+            };
+            using Stack = std::stack<Target>;
+
+            Stack         target_stack;
+            bool          target_attached = false;
+            //HW Bilt
+            SDL_Renderer *hw_render = nullptr;
+            SDL_Texture  *hw_framebuffer = nullptr;//< Renderer buf for sw_ctxt
+            bool          hw_attached = false;//< The sw_ctxt attached the buffer?
+            bool          hw_owned = false;
+            bool          hw_bilt = false;
+            //SW Bilt
+            SDL_Surface  *sw_framebuffer = nullptr;//< Renderer buf for sw_ctxt
+            bool          sw_owned = false;
+            //Window
+            SDL_Surface *window_framebuffer = nullptr;//< Screen
+            SDL_Window  *window = nullptr;
+            //Context
+            NVGcontext  *sw_context = nullptr;
     };
 }
 

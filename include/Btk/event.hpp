@@ -60,6 +60,8 @@ namespace Btk{
                 Show = 23,
                 //Layout
                 LayoutUpdate,
+                //SDL
+                SDL,
 
                 User = 10000,
                 UserMax = UINT32_MAX - 1,

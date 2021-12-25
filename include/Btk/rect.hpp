@@ -312,6 +312,43 @@ namespace Btk{
     using Vec2 = Point;
     using FVec2 = FPoint;
 
+    //Line --begin
+    template<class T>
+    struct _Line{
+        using value_type = T;
+
+        T x1,y1;
+        T x2,y2;
+        //Construct
+        _Line() = default;
+        _Line(const _Line &) = default;
+        _Line(T x1,T y1,T x2,T y2){
+            this->x1 = x1;
+            this->y1 = y1;
+            this->x2 = x2;
+            this->y2 = y2;
+        }
+        //Autocast
+        template<class Elem>
+        _Line(Elem x1,Elem y1,Elem x2,Elem y2){
+            this->x1 = static_cast<T>(x1);
+            this->y1 = static_cast<T>(y1);
+            this->x2 = static_cast<T>(x2);
+            this->y2 = static_cast<T>(y2);
+        }
+
+        _Point<T> p1() const noexcept{
+            return {x1,x2};   
+        }
+        _Point<T> p2() const noexcept{
+            return {x2,y2};
+        }
+
+    };
+    //Line --end
+
+    using FLine = _Line<float>;
+
     //Bounds --begin
     template<class T>
     struct _Bounds{
@@ -461,6 +498,9 @@ namespace Btk{
             max(static_cast<decltype(minx)>(0),maxy - miny)
         );
     }
+
+    //Do extern template
+    // extern template BTKAPI FRect IntersectRect<FRect>(const FRect &,const FRect &);
 
     BTKAPI std::ostream &operator <<(std::ostream&,const Rect &);
     BTKAPI std::ostream &operator <<(std::ostream&,const FRect &);

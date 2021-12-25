@@ -143,6 +143,20 @@ namespace Btk{
      * @return true on succeess
      */
     BTKAPI bool HideConsole();
+    /**
+     * @brief Poll event and update status 
+     * 
+     * @code {.cpp}
+     * while(PollEvent()){
+     *     //Process your ...
+     * }
+     * @endcode
+     * 
+     * 
+     * @return true on continue
+     * @return false on asked to quit
+     */
+    BTKAPI bool PollEvent();
 
     /**
      * @brief Enter the EventLoop
