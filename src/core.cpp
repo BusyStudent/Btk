@@ -103,6 +103,101 @@ namespace Btk{
     }
 }
 
+//Event translate
+namespace{
+    //Btk Translate Event
+    auto tr_event(const SDL_MouseMotionEvent &event) -> Btk::MotionEvent{
+        Btk::MotionEvent ev;
+
+        ev.x = event.x;
+        ev.y = event.y;
+        ev.xrel = event.xrel;
+        ev.yrel = event.yrel;
+
+        return ev;
+    };
+    auto tr_event(const SDL_MouseWheelEvent &event) -> Btk::WheelEvent{
+        Sint64 x,y;
+        if(event.direction == SDL_MOUSEWHEEL_FLIPPED){
+            x = -event.x;
+            y = -event.y;
+        }
+        else{
+            x = event.x;
+            y = event.y;
+        }
+        return {event.which,x,y};
+    }
+    auto tr_event(const SDL_MouseButtonEvent &event) -> Btk::MouseEvent{
+        Btk::MouseEvent ev;
+
+        if(event.state == SDL_PRESSED){
+            ev.state = Btk::MouseEvent::Pressed;
+        }
+        else{
+            ev.state = Btk::MouseEvent::Released;
+        }
+        ev.x = event.x;
+        ev.y = event.y;
+
+        ev.clicks = event.clicks;
+        ev.button.value = event.button;
+        return ev;
+    }
+    auto tr_event(const SDL_KeyboardEvent &event) -> Btk::KeyEvent{
+        Btk::KeyEvent ev;
+        if(event.state == SDL_PRESSED){
+            ev.state = Btk::KeyEvent::Pressed;
+        }
+        else{
+            ev.state = Btk::KeyEvent::Released;
+        }
+
+        ev.keycode = Btk::Keycode(event.keysym.sym);
+        ev.scancode = Btk::Scancode(event.keysym.scancode);
+        ev.keymode = static_cast<Btk::Keymode>(event.keysym.mod);
+
+        ev.repeat = event.repeat;
+        return ev;
+    }
+    auto tr_event(const SDL_DropEvent &event) -> Btk::DropEvent{
+        Btk::Event::Type type;
+        Btk::DropEvent ev(Btk::Event::None);
+
+        switch(event.type){
+            case SDL_DROPBEGIN:
+                ev.set_type(Btk::Event::DropBegin);
+                BTK_LOGINFO("DropBegin");
+                break;
+            case SDL_DROPCOMPLETE:
+                ev.set_type(Btk::Event::DropEnd);
+                BTK_LOGINFO("DropEnd");
+                break;
+            case SDL_DROPFILE:
+                ev.set_type(Btk::Event::DropFile);
+                ev.text = event.file;
+                BTK_LOGINFO("DropFile");
+                break;
+            case SDL_DROPTEXT:
+                ev.set_type(Btk::Event::DropText);
+                ev.text = event.file;
+                BTK_LOGINFO("DropText");
+                break;
+            default:
+                BTK_ASSERT(!"");
+        }
+        return ev;
+    }
+    auto tr_event(const SDL_TextEditingEvent &t) -> Btk::TextEditingEvent{
+        Btk::TextEditingEvent event;
+
+        event.text = t.text;
+        event.editing = Btk::u8string_view(&t.text[t.start],t.length);
+        
+        return event;
+    }
+}
+
 namespace Btk{
     //< The thread id of thread which called Btk::run
     static std::thread::id main_thrd;
@@ -304,6 +399,10 @@ namespace Btk{
                 on_textinput(event);
                 break;
             }
+            case SDL_TEXTEDITING:{
+                on_textediting(event);
+                break;
+            }
             case SDL_MOUSEWHEEL:{
                 on_mousewheel(event);
                 break;
@@ -326,7 +425,7 @@ namespace Btk{
                 signal_keymap_changed();
                 break;
             }
-            #ifdef BTK_MOBILE
+            #if BTK_MOBILE
             case SDL_APP_TERMINATING:{
                 signal_app_terminating();
                 break;
@@ -385,7 +484,8 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        win->handle_windowev(event);
+        SDLEvent ev(&event);
+        win->handle(ev);
     }
     //MouseMotion
     inline void System::on_mousemotion(const SDL_Event &event){
@@ -393,7 +493,7 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        auto motion = TranslateEvent(event.motion);
+        auto motion = tr_event(event.motion);
         win->handle_motion(motion);
     }
     //MouseButton
@@ -402,7 +502,7 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        auto click = TranslateEvent(event.button);
+        auto click = tr_event(event.button);
         win->handle_mouse(click);
     }
     //MouseWheel
@@ -411,7 +511,7 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        auto wheel = TranslateEvent(event.wheel);
+        auto wheel = tr_event(event.wheel);
         if(win->handle_wheel(wheel)){
             if(not wheel.is_accepted()){
                 win->sig_event(wheel);
@@ -428,7 +528,7 @@ namespace Btk{
             return;
         }
         //Translate event and send
-        auto drop = TranslateEvent(event.drop);
+        auto drop = tr_event(event.drop);
         win->handle_drop(drop);
     }
     //KeyBoardEvent
@@ -437,7 +537,7 @@ namespace Btk{
         if(win == nullptr){
             return;
         }
-        auto kevent = TranslateEvent(event.key);
+        auto kevent = tr_event(event.key);
         if(not win->handle_keyboard(kevent)){
             //No one process it
             if(not kevent.is_accepted()){
@@ -454,6 +554,14 @@ namespace Btk{
             return;
         }
         win->handle_textinput(ev);
+    }
+    inline void System::on_textediting(const SDL_Event &event){
+        WindowImpl *win = get_window_s(event.text.windowID);
+        if(win == nullptr){
+            return;
+        }
+        auto ev = tr_event(event.edit);
+        win->handle_textediting(ev);
     }
     inline void System::on_quit(){
         if(signal_quit.empty()){

@@ -31,14 +31,19 @@
 #include <mutex>
 #include <map>
 
+//TODO Add HarfBuzz
+
 using namespace Btk;
 
 #define FONS_NOTUSED(v)  (void)sizeof(v)
 
 //Freetype
 
-#define BTK_HAS_FREETYPE __has_include(<ft2build.h>) && !defined(BTK_USE_STBTT)
-
+#ifdef BTK_USE_STBTT
+	#define BTK_HAS_FREETYPE 0
+#else
+	#define BTK_HAS_FREETYPE __has_include(<ft2build.h>)
+#endif
 
 #if BTK_HAS_FREETYPE
 	#include <ft2build.h>
@@ -83,6 +88,24 @@ using namespace Btk;
 	#define FS_PLATFORM_LINUX defined(__linux) && FS_HAS_FILE_MAPPING
 	#define FS_PLATFORM_WIN32 defined(__WIN32) && FS_HAS_FILE_MAPPING
 #endif
+
+
+#ifdef BTK_USE_HARFBUZZ
+	#define BTK_HAS_HARFBUZZ __has_include(<hb.h>)
+#else
+	#define BTK_HAS_HARFBUZZ 0
+#endif
+
+#if BTK_HAS_HARFBUZZ && BTK_HAS_FREETYPE
+	#include <Btk/impl/scope.hpp>
+	#include <hb.h>
+	#include <hb-ft.h>
+	//MAKE Dymaic load
+	namespace{
+
+	}
+#endif
+
 
 namespace{
 
@@ -199,6 +222,10 @@ struct FONSttFontImpl {
 	FT_Face font = nullptr;
 	u8string_view name;
 	u8string filename;
+
+	#if BTK_HAS_HARFBUZZ
+	hb_font_t *hb_font = nullptr;
+	#endif
 };
 #else
 //TODO Add mapped memory into FONSFontData
@@ -636,15 +663,33 @@ static int fons__tt_loadFont(FONSttFontImpl *font,const char *filename, int font
 		fontIndex,
 		&font->font
 	);
-	UnlockLibrary();
 	//Fill filename
 	font->filename = filename;
+	
+	#if BTK_HAS_HARFBUZZ
+	if(ftError == 0){
+		font->hb_font = hb_ft_font_create(font->font,nullptr);
+		if(font->hb_font == nullptr){
+			//create failed
+			FT_Done_Face(font->font);
+			return false;
+		}
+		hb_ft_font_set_load_flags(font->hb_font,FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
+	}
+	#endif
+
+	UnlockLibrary();
+
 	return ftError == 0;
 }
 static void fons__tt_free_face(FONSttFontImpl &font){
 	LockLibrary();
 	FT_Done_Face(font.font);
 	UnlockLibrary();
+
+	#if BTK_HAS_HARFBUZZ
+	hb_font_destroy(font.hb_font);
+	#endif
 }
 
 static void fons__tt_getFontVMetrics(FONSttFontImpl *font, int *ascent, int *descent, int *lineGap)

@@ -62,7 +62,7 @@ namespace Btk{
         //Fist draw backgroud
         //Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 1}
         //It makes button look better
-        Rect fixed_rect = {rect.x,rect.y + 1,rect.w - 1,rect.h - 2};
+        FRect fixed_rect = {rect.x + 1,rect.y + 1,rect.w - 1,rect.h - 1};
         Color bg;//< Background color
         Color boarder;//< Boarder color
 
@@ -84,32 +84,17 @@ namespace Btk{
         //Draw box
         render.begin_path();
         render.fill_color(bg);
-        render.rounded_rect(fixed_rect,2);
+        render.rounded_rect(fixed_rect,theme().button_rad);
         render.fill();
         //Render text
         if(btext.size() != 0){
             //has text
             render.save();
             
-            #if 0
-            if(texture.empty()){
-                if(textbuf.empty()){
-                    //render text
-                    if(is_pressed){
-                        textbuf = textfont.render_blended(btext,theme()->high_light_text);
-                    }
-                    else{
-                        textbuf = textfont.render_blended(btext,theme()->text_color);
-                    }
-                }
-                texture = render.create_from(textbuf);
-            }
-            auto pos = CalculateRectByAlign(rect,textbuf->w,textbuf->h,Align::Center,Align::Center);
-            #endif
             render.intersest_scissor(rect);
             // render.copy(texture,nullptr,&pos);
             render.begin_path();
-            render.text_size(ptsize);
+            render.use_font(font());
             render.text_align(TextAlign::Center | TextAlign::Middle);
 
             if(is_pressed){
@@ -119,8 +104,8 @@ namespace Btk{
                 render.fill_color(theme().active.text);
             }
             //NOTE plus 2 to make it look better
-            float x = float(fixed_rect.x) + float(fixed_rect.w) / 2 + 2;
-            float y = float(fixed_rect.y) + float(fixed_rect.h) / 2 + 2;
+            float x = fixed_rect.hcenter() + 2;
+            float y = fixed_rect.vcenter() + 2;
 
             //BTK_LOGINFO("Text's x=%f y=%f",x,y);
 
@@ -138,7 +123,7 @@ namespace Btk{
         //draw the boarder
         render.begin_path();
         render.stroke_color(boarder);
-        render.rounded_rect(fixed_rect,2);
+        render.rounded_rect(fixed_rect,theme().button_rad);
         render.stroke();
         
     }

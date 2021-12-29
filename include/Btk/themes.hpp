@@ -41,6 +41,8 @@ namespace Btk{
             } active,inactive,disabled;
             #undef  BTK_THEME_FILED
             Font font;
+            //Button 
+            float button_rad = 0;
     };
     RefPtr<Theme> CurrentTheme();
     void   UseTheme(u8string_view name);

@@ -1,6 +1,6 @@
 # Btk
 
-Btk is a tiny retained mode GUI library based on SDL2 and nanovg.  
+Btk is a C++ tiny retained mode GUI library based on SDL2 and nanovg.  
 
 It was written in morden C++,so it was very easy to use.  
 

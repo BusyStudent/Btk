@@ -171,6 +171,14 @@ namespace Btk{
 //Event Processing
 namespace Btk{
     bool WindowImpl::handle(Event &event){
+        if(event.type() == Event::SDL){
+            //Is SDL_WindowEvent
+            auto &e = event_cast<SDLEvent&>(event);
+            if(e.sdl_event->type == SDL_WINDOWEVENT){
+                handle_windowev(*(e.sdl_event));
+                return true;
+            }
+        }
         if(Group::handle(event)){
             return true;
         }

@@ -26,38 +26,38 @@ namespace Btk{
                 Leave = 3,//Mouse leave Widget
                 Motion = 4,//Mouse motion in Widget
                 //MouseEvent
-                Click = 5,//Mouse Click
-                Mouse = 5,
+                Mouse = 5,//Mouse Click
 
                 DragBegin = 6,//The drag is begin
                 Drag = 7,//Is draging now
                 DragEnd = 8,//The drag is end
                 
                 TextInput = 9,//Text the Input
+                TextEditing = 10,
 
 
-                TakeFocus = 10,//The widget take focus
+                TakeFocus = 11,//The widget take focus
                                //accept the event to task focus
 
-                LostFocus = 11,//<The widget lost focus
+                LostFocus = 12,//<The widget lost focus
                                //Of course you can refuse it
 
-                Enable = 12,//The widget was enabled
-                Disable = 13,//The widget was disabled
+                Enable = 13,//The widget was enabled
+                Disable = 14,//The widget was disabled
                 
-                Wheel = 14,//The mouse Wheel
-                WindowEnter = 15,//The mouse enter the window
-                WindowLeave = 16,//The mouse leave the window
-                Resize = 17,//< The widget is be resized
+                Wheel = 15,//The mouse Wheel
+                WindowEnter = 16,//The mouse enter the window
+                WindowLeave = 17,//The mouse leave the window
+                Resize = 18,//< The widget is be resized
 
                 //Drop
-                DropBegin = 18,
-                DropEnd = 19,
-                DropText = 20,
-                DropFile = 21,
+                DropBegin = 19,
+                DropEnd = 20,
+                DropText = 21,
+                DropFile = 22,
                 //Hide / Show
-                Hide = 22,
-                Show = 23,
+                Hide = 23,
+                Show = 24,
                 //Layout
                 LayoutUpdate,
                 //SDL
@@ -181,7 +181,7 @@ namespace Btk{
          * 
          * @param event must be MouseButtonEvent
          */
-        MouseEvent():Event(Event::Type::Click){};
+        MouseEvent():Event(Event::Mouse){};
         MouseEvent(const MouseEvent &) = default;
         ~MouseEvent() = default;
 
@@ -295,7 +295,7 @@ namespace Btk{
      * @brief A Event of text input
      * 
      */
-    struct BTKAPI TextInputEvent:Event{
+    struct BTKAPI TextInputEvent:public Event{
         TextInputEvent():Event(TextInput){};
         TextInputEvent(const TextInputEvent &) = default;
         ~TextInputEvent() = default;
@@ -307,6 +307,25 @@ namespace Btk{
          * @return The utf8 string length
          */
         size_t length() const noexcept;
+    };
+    /**
+     * @brief A Event of text editing
+     * 
+     */
+    struct BTKAPI TextEditingEvent:public Event{
+        TextEditingEvent():Event(TextEditing){};
+        TextEditingEvent(const TextEditingEvent &) = default;
+        ~TextEditingEvent() = default;
+
+        u8string_view text;//<The text
+        u8string_view editing;//< Selected text
+
+        size_t selection_begin() const noexcept{
+            return text.find(editing);
+        }
+        size_t selection_end() const noexcept{
+            return text.find(editing) + editing.length();
+        }
     };
     /**
      * @brief A event about mouse drag
@@ -381,7 +400,17 @@ namespace Btk{
             return {x,y};
         }
     };
-    typedef MouseEvent ClickEvent;
+    /**
+     * @brief Wrap SDL_Event pointer to it
+     * 
+     */
+    struct BTKAPI SDLEvent:public Event{
+        SDLEvent(const SDL_Event *ptr):Event(SDL),sdl_event(ptr){};
+        SDLEvent(const SDLEvent &) = default;
+        ~SDLEvent() = default;
+
+        const SDL_Event *sdl_event;
+    };
     /**
      * @brief Push event to queue
      * 

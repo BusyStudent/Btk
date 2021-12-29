@@ -26,7 +26,8 @@ namespace Btk{
             bool handle_wheel(WheelEvent   &) override;
             bool handle_motion(MotionEvent &) override;
             bool handle_keyboard(KeyEvent  &) override;
-            bool handle_textinput(TextInputEvent &) override;
+            bool handle_textinput(TextInputEvent     &) override;
+            bool handle_textediting(TextEditingEvent &) override;
 
             bool detach(Widget *w) override;
             /**

@@ -1,20 +1,19 @@
 #if !defined(_BTK_DEFS_HPP_)
 #define _BTK_DEFS_HPP_
+//Get complier / platform
+#include "platform/macro.hpp"
 
-#ifdef __cplusplus
+//Export symbols
+#ifdef _BTK_SOURCE
+    //source file
+    #define BTKAPI BTKEXPORT
+#else
+    //#define BTKAPI BTKIMPORT
+    #define BTKAPI
+#endif
+
+#if BTK_CXX
     #include <cstdint>
-    #if __cplusplus < 201703L
-    #error We need a C++17 to compile btk
-    #endif
-    //C++ 20 
-    #if __cplusplus > 201703L
-        //C++ 20 __cplusplus is bigger than C++17
-        //Because many compiler has different value
-        #define BTK_CXX20
-        #define BTK_REQUIRE_CXX20 1
-    #else
-        #define BTK_REQUIRE_CXX20 0
-    #endif
     //For C functions
     #define BTK_CEXTERN extern "C"
     #define BTK_CDECLS_BEGIN extern "C"{
@@ -26,51 +25,7 @@
     #define BTK_CDECLS_END
 #endif
 
-#ifdef _WIN32
-    #ifdef _MSC_VER
-        #define BTKEXPORT __declspec(dllexport)
-        #define BTKIMPORT __declspec(dllimport)
-        #undef not
-        #undef and
-        #undef or
 
-        #define not !
-        #define and &&
-        #define or ||
-    #else
-        #define BTKEXPORT __attribute__((dllexport))
-        #define BTKIMPORT __attribute__((dllimport))
-    #endif
-    #define BTKCDEL __cdel
-#elif defined(__GNUC__)
-    #define BTKCDEL //Ignore CDEL call
-    #define BTKEXPORT __attribute__((visibility("default")))  
-    #define BTKIMPORT 
-#else
-    //ignore this
-    #define BTKCDEL
-    #define BTKEXPORT 
-    #define BTKIMPORT 
-#endif
-
-//attributes
-#if defined(__GNUC__)
-    #define BTKWEAK   __attribute__((weak))
-    #define BTKHIDDEN __attribute__((visibility("hidden")))
-    #define BTKINLINE __attribute__((__always_inline__))
-
-    #define BTK_NODISCARD(MSG) __attribute__((nodiscard(MSG)))
-#elif defined(_MSC_VER)    
-    #define BTKWEAK 
-    #define BTKHIDDEN  
-    #define BTKINLINE __forceinline
-    
-    #define BTK_NODISCARD(MSG) __declspec((nodiscard(MSG)))
-#else
-    #define BTKWEAK 
-    #define BTKHIDDEN
-    #define BTKINLINE 
-#endif
 //Debug / Test
 #ifdef NDEBUG
     #define BTK_ON_RELEASE(EXP) EXP
@@ -127,44 +82,6 @@
     BTK_ENUM_ALIAS(ENUM,+,|);\
     BTK_ENUM_ALIAS(ENUM,+=,|=);
 
-
-#ifdef _BTK_SOURCE
-    //source file
-    #define BTKAPI BTKEXPORT
-#else
-    //#define BTKAPI BTKIMPORT
-    #define BTKAPI
-#endif
-
-#ifdef __clang__
-    #pragma clang diagnostic ignored "-Wexpansion-to-defined"
-#endif
-
-
-//Platform checking
-#define BTK_ANDROID defined(__ANDROID__)
-#define BTK_WIN32   defined(_WIN32)
-#define BTK_X11     defined(__gnu_linux__)
-#define BTK_IOS     defined(__IPHONEOS__)
-//Complier
-#define BTK_MINGW   (BTK_WIN32 && BTK_GCC)
-#define BTK_CLANG   defined(__clang__)
-#define BTK_MSVC    defined(_MSC_VER)
-#define BTK_GCC     defined(__GNUC__)
-
-//Bultin
-#ifdef __has_builtin
-    #define BTK_HAS_BULTIN(X) __has_builtin
-#else
-    #define BTK_HAS_BULTIN(X) 0
-#endif
-
-
-#if BTK_WIN32 || BTK_X11
-    #define BTK_DESKTOP
-#elif BTK_IOS || BTK_ANDROID
-    #define BTK_MOBILE
-#endif
 //Macro to avoid compile still develop code in msvc
 //Bacause msvc will export all the symbols
 #if defined(_MSC_VER) && !defined(BTK_VSCODE_SUPPRESS)
@@ -173,7 +90,7 @@
     #define BTK_STILL_DEV 1
 #endif
 
-#ifdef __cplusplus
+#if BTK_CXX
 namespace Btk{
     //Some int defs in SDL2
     //Uint

@@ -31,9 +31,16 @@ namespace Btk{
             u8string_view text() const{
                 return btext;
             }
+            PixBufRef     icon() const{
+                return bicon;
+            }
             bool is_checked() const noexcept{
                 return checked;
             }
+
+            // void set_parent(Widget *) override;
+            void set_text(u8string_view view);
+            void set_icon(PixBufRef     icon);
         protected:
             virtual void set_parent(Widget *) override;
             virtual void onenter();
@@ -46,6 +53,8 @@ namespace Btk{
             bool checkable = true;
 
             u8string btext;//< Button text
+            PixBuf   bicon;//< Button icon
+            Texture  bicon_tex;//< Button icon's texture
 
             Signal<void()> clicked;
     };

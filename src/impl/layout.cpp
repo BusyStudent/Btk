@@ -38,6 +38,16 @@ namespace Btk{
     Layout::~Layout(){
         lay_destroy_context(context());
     }
+    bool Layout::handle(Event &event){
+        if(Group::handle(event)){
+            return true;
+        }
+        if(event.type() == Event::LayoutUpdate){
+            update();
+            return true;
+        }
+        return false;
+    }
 }
 namespace Btk{
     GridLayout::GridLayout() = default;

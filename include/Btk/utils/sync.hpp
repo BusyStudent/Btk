@@ -1,6 +1,7 @@
 #if !defined(_BTK_UTILS_SYNC_HPP_)
 #define _BTK_UTILS_SYNC_HPP_
 #include "../defs.hpp"
+#include <atomic>
 struct SDL_semaphore;
 struct SDL_mutex;
 struct SDL_cond;
@@ -28,6 +29,24 @@ namespace Btk{
             bool try_lock() noexcept;
         private:
             int slock = 0;
+    };
+    /**
+     * @brief recursive spinlock
+     * 
+     */
+    class BTKAPI RSpinLock{
+        public:
+            RSpinLock() = default;
+            RSpinLock(const RSpinLock &) = default;
+            ~RSpinLock() = default;
+
+            void lock() noexcept;
+            void unlock() noexcept;
+            bool try_lock() noexcept;
+        private:
+            std::atomic<unsigned long> owner;
+            std::atomic<bool> locked;
+            std::atomic<int>  counts;
     };
     class BTKAPI Semaphore{
         public:

@@ -198,6 +198,7 @@ namespace Btk{
     bool Renderer::use_font(const Font &font){
         nvgFontFaceId(nvg_ctxt,0);
         nvgFontSize(nvg_ctxt,font.ptsize());
+        nvgFontBlur(nvg_ctxt,font.blur_);
         nvgTextLetterSpacing(nvg_ctxt,font.spacing_);
         return true;
     }

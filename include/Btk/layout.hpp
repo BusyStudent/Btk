@@ -12,6 +12,8 @@ namespace Btk{
             Layout();
             ~Layout();
 
+            bool handle(Event &) override;
+
             //update each widgets postions
             virtual void update() = 0;
         private:

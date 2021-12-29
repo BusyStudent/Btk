@@ -84,11 +84,6 @@ namespace Btk{
         // return FONTIMPL(pimpl)->kerning_size(prev,cur);
         throwRuntimeError("Unimpl yet");
     }
-
-    float Font::ptsize() const noexcept{
-        // return FONTIMPL(pimpl)->ptsize;
-        return ptsize_;
-    }
     void Font::set_ptsize(float new_ptsize){
         // FontImpl *new_font = new FontImpl(
         //     pimpl->filename,

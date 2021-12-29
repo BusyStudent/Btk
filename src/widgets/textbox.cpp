@@ -262,7 +262,7 @@ namespace Btk{
         }
         return event.accept();
     }
-    bool TextBox::handle_mouse(ClickEvent &event){
+    bool TextBox::handle_mouse(MouseEvent &event){
         return event.accept();
     }
     void TextBox::u8text(std::string &s) const{

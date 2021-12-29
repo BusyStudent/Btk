@@ -236,6 +236,24 @@ namespace Btk{
         //Is ok
         bool ok;
     };
+    struct GLAttributes{
+
+    };
+    class  GLAdapter{
+        void *uptr;
+        void  (*init)(void *uptr);
+        void  (*cleanup)(void *uptr);
+        void *(*create_context)(void *uptr,void *win_handle);
+        void  (*destroy_context)(void *uptr,void *gl_handle);
+        //Env
+        void  (*make_current)(void *uptr,void *win_handle,void *gl_handle);
+        void *(*get_current_context)(void *uptr);
+        void *(*get_current_window)(void *uptr);
+        void  (*get_proc)(void *uptr);
+        void  (*get_drawable)(void *uptr,int *w,int *h);
+        bool  (*has_extension)(void *uptr,const char *extname);
+        void  (*swap_window)(void *uptr,void *win_handle);
+    };
     /**
      * @brief OpenGL Renderer Device
      * 

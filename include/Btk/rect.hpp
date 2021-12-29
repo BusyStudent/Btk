@@ -240,6 +240,16 @@ namespace Btk{
             Elem _y = Elem(this->y) + Elem(this->h) / 2;
             return {_x,_y};
         }
+        template<class Elem = T>
+        Elem hcenter() const noexcept{   
+            Elem _x = Elem(this->x) + Elem(this->w) / 2;
+            return _x;
+        }
+        template<class Elem = T>
+        Elem vcenter() const noexcept{   
+            Elem _y = Elem(this->y) + Elem(this->h) / 2;
+            return _y;
+        }
         //Intersect
         _Rect<T> intersect_with(_Rect<T> &r) const noexcept{
             return IntersectRect(*this,r);

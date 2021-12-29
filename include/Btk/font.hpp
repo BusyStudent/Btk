@@ -99,7 +99,12 @@ namespace Btk{
              * 
              * @return int 
              */
-            float ptsize() const noexcept;
+            float ptsize() const noexcept{
+                return ptsize_;
+            }
+            float blur() const noexcept{
+                return blur_;
+            }
             /**
              * @brief Get font refcount
              * 

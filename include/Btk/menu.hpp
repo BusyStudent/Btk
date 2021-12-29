@@ -12,8 +12,13 @@ namespace Btk{
             ~Menu();
 
             void set_parent(Widget*) override;
+            void add_menu(Menu *menu);
         private:
             bool _use_native = true;
+    };
+    class BTKAPI Action:public HasSlots{
+        private:
+            u8string value;
     };
 }
 

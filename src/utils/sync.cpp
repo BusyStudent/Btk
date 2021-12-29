@@ -1,11 +1,20 @@
 #include "../build.hpp"
 
+#include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_atomic.h>
+#include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_mutex.h>
 #include <Btk/utils/sync.hpp>
 #include <Btk/exception.hpp>
 
 #include <mutex>
+
+#if BTK_GCC && (defined(__i386__) || defined(__x86_64__))
+    #define PAUSE() __asm__ __volatile__("pause\n")
+#else
+    #define PAUSE()
+#endif
+
 
 namespace Btk{
     void SpinLock::lock() noexcept{
@@ -16,6 +25,44 @@ namespace Btk{
     }
     bool SpinLock::try_lock() noexcept{
         return SDL_AtomicTryLock(&slock);
+    }
+    //RSpinlock
+    void RSpinLock::lock() noexcept{
+        int iterations = 0;
+        while(not try_lock()){
+            //Sleep here
+            if(iterations < 32){
+                iterations ++;
+                PAUSE();
+                continue;
+            }
+            SDL_Delay(0);
+        }
+    }
+    void RSpinLock::unlock() noexcept{
+        BTK_ASSERT(owner == SDL_ThreadID());
+        BTK_ASSERT(locked);
+        counts --;
+        if(counts == 0){
+            locked.store(false,std::memory_order_release);
+            owner = 0;
+        }
+    }
+    bool RSpinLock::try_lock() noexcept{
+        if(locked.load(std::memory_order_acquire)){
+            if(owner == SDL_ThreadID()){
+                counts ++;
+            }
+            else{
+                //No locked
+                return false;
+            }
+            return true;
+        }
+        //Try to get it
+        locked.store(true,std::memory_order_release);
+        owner = SDL_ThreadID();
+        counts = 1;
     }
     /**
      * @brief Construct a new Semaphore object

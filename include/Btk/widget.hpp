@@ -29,6 +29,7 @@ namespace Btk{
     struct MotionEvent;
     struct ResizeEvent;
     struct TextInputEvent;
+    struct TextEditingEvent;
 
     enum class FocusPolicy:Uint8{
         None = 0,
@@ -260,7 +261,8 @@ namespace Btk{
             virtual bool handle_resize(ResizeEvent &){return false;}
             virtual bool handle_motion(MotionEvent &){return false;}
             virtual bool handle_keyboard(KeyEvent  &){return false;}
-            virtual bool handle_textinput(TextInputEvent &){return false;}
+            virtual bool handle_textinput(TextInputEvent     &){return false;}
+            virtual bool handle_textediting(TextEditingEvent &){return false;}
             
         protected:
             WidgetAttr attr;//Widget attributes

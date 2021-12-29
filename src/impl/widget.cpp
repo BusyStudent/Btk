@@ -23,7 +23,7 @@ namespace Btk{
                 return handle_resize(event_cast<ResizeEvent&>(ev));
             case Event::Motion:
                 return handle_motion(event_cast<MotionEvent&>(ev));
-            case Event::Click:
+            case Event::Mouse:
                 return handle_mouse(event_cast<MouseEvent&>(ev));
             case Event::KeyBoard:
                 return handle_keyboard(event_cast<KeyEvent&>(ev));
@@ -35,6 +35,8 @@ namespace Btk{
                 return handle_drag(event_cast<DragEvent&>(ev));
             case Event::TextInput:
                 return handle_textinput(event_cast<TextInputEvent&>(ev));
+            case Event::TextEditing:
+                return handle_textediting(event_cast<TextEditingEvent&>(ev));
             case Event::DropBegin:
             case Event::DropEnd:
             case Event::DropFile:
@@ -404,6 +406,13 @@ namespace Btk{
         return dispatch_to_widget(focus_widget,event);
     }
     bool Group::handle_textinput(TextInputEvent &event){
+        //If we donnot find any widget has focus,send to the widget mouse point at
+        if(focus_widget == nullptr){
+            return dispatch_to_widget(cur_widget,event);
+        }
+        return dispatch_to_widget(focus_widget,event);
+    }
+    bool Group::handle_textediting(TextEditingEvent &event){
         //If we donnot find any widget has focus,send to the widget mouse point at
         if(focus_widget == nullptr){
             return dispatch_to_widget(cur_widget,event);
