@@ -70,13 +70,8 @@ namespace Btk{
         SDL_UnlockSurface(SURF);\
     }
 
-#ifdef __COUNTER__
-    #define BTK_RW_SAVE_STATUS(RW) \
-        Btk::_RWopsStatusSaver __saver_##__COUNTER__(RW);
-#else
-    #define BTK_RW_SAVE_STATUS(RW) \
-        Btk::_RWopsStatusSaver __saver(RW);
-#endif
+#define BTK_RW_SAVE_STATUS(RW) \
+    Btk::_RWopsStatusSaver BTK_UNIQUE_NAME(__saver) (RW);
 
 //Builtin Check
 namespace Btk{
@@ -113,6 +108,14 @@ namespace Btk{
                 return true;
         }
         return false;
+    }
+    inline
+    Sint64 RWtellsize(SDL_RWops *rwops){
+        Sint64 cur = SDL_RWtell(rwops);
+        SDL_RWseek(rwops,0,RW_SEEK_END);
+        Sint64 end = SDL_RWtell(rwops);
+        SDL_RWseek(rwops,cur,RW_SEEK_SET);
+        return end - cur;
     }
 }
 

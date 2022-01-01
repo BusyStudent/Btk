@@ -37,6 +37,7 @@ namespace{
 // inline constexpr int NVG_IMAGE_NODELETE			= 1<<16;	// Do not delete SDL texture handle.
 namespace Btk{
     SWDevice::SWDevice(SDL_Window *win){
+        //TODO Still has bug on not has hw_bilt
         set_backend(RendererBackend::Software);
 
         window = win;
@@ -81,6 +82,7 @@ namespace Btk{
             if(hw_render == nullptr){
                 continue;
             }
+            BTK_LOGINFO("[SWDevice]hw_bilt backend %s",infos_vec[n].second.name);
             //Try create texture
             int out_w,out_h,pitch;
             void *tpix;

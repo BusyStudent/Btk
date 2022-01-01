@@ -166,9 +166,12 @@ namespace Btk{
         UnhookWindowsHookEx(d3d11_hook);
         hdevs_map.destroy();
         SDL_UnloadObject(d3d11_lib);
+        CoUninitialize();
     }
     static void load_d3d11(){
         if(d3d11_lib == nullptr){
+            HRESULT hr = CoInitializeEx(0,COINIT_MULTITHREADED);
+            BTK_THROW_HRESULT(hr);
             d3d11_lib = SDL_LoadObject("D3D11.dll");
             if(d3d11_lib == nullptr){
                 throwRendererError(SDL_GetError());

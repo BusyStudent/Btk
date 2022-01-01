@@ -94,6 +94,14 @@ option("directx_renderer")
     end
     set_showmenu(true)
     set_description("Add DirectX renderer in DeviceList")
+option("wincodec")
+    if is_plat("windows") or is_plat("mingw") then
+        set_default(true)
+    else
+        set_default(false)
+    end
+    set_showmenu(true)
+    set_description("Add WIC")
 
 target("btk")
     add_defines("BTK_USE_GFX")
@@ -225,6 +233,12 @@ target("btk")
         add_defines("BTK_HAS_WEBP")
         add_packages("webp")
         add_files("./src/images/webp.cpp")
+    end
+
+    if has_config("wincodec") then
+        add_defines("BTK_HAS_WIC")
+        add_files("./src/images/wincodec.cpp")
+        add_links("Windowscodecs")
     end
 
     --SDL_image support

@@ -15,7 +15,7 @@ extern "C" void _Btk_ReportFailure(
     SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION,"Assertion faild on %s:%d %s '%s'",file,line,fn,exp);
     _Btk_Backtrace();
     #ifdef _WIN32
-    auto msg = Btk::cformat("Assertion faild on %s:%d %s '%s'",file,line,fn,exp);
+    auto msg = Btk::u8format("Assertion faild on %s:%d %s '%s'",file,line,fn,exp);
     MessageBoxA(nullptr,msg.c_str(),"Assertion Failed",MB_ICONERROR);
     #endif
 

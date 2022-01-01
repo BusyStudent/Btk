@@ -7,7 +7,7 @@
 
 
 namespace Btk{
-    class Layout:public Group{
+    class BTKAPI Layout:public Group{
         public:
             Layout();
             ~Layout();

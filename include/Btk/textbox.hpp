@@ -75,6 +75,7 @@ namespace Btk{
             float tb_boarder = 4;//The text boarder
         friend struct TextBoxInserter;
     };
+    #if 0
     class BTKAPI AbstractEditor:public Widget{
         public:
             AbstractEditor();
@@ -137,6 +138,7 @@ namespace Btk{
     class BTKAPI TextBroser:public Widget{
         
     };
+    #endif
 };
 
 

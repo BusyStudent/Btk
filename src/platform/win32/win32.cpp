@@ -30,13 +30,13 @@ namespace{
             virtual void OnCallstackEntry(CallstackEntryType,CallstackEntry &addr){
                 if(addr.lineNumber == 0){
                     //No line number
-                    Btk::cformat(msg,"  at %p: %s (in %s)\n",
+                    Btk::u8format(msg,"  at %p: %s (in %s)\n",
                         reinterpret_cast<void*>(addr.offset),
                         addr.name,
                         addr.moduleName);
                 }
                 else{
-                    Btk::cformat(msg,"  at %p: %s (in %s:%d)\n",
+                    Btk::u8format(msg,"  at %p: %s (in %s:%d)\n",
                         reinterpret_cast<void*>(addr.offset),
                         addr.name,
                         addr.lineFileName,
@@ -59,7 +59,7 @@ static void crash_handler(int sig){
         signame = "SIGSEGV";
     }
     _Btk_Backtrace();
-    Btk::u8string msg = Btk::cformat("Error: Caught signal %s",signame);
+    Btk::u8string msg = Btk::u8format("Error: Caught signal %s",signame);
 
     #ifdef _MSC_VER
     msg += "\nCurrent CallStack =>\n";
@@ -103,7 +103,7 @@ static LONG CALLBACK seh_exception_handler(_EXCEPTION_POINTERS *exp){
 
     fflush(stderr);
     
-    Btk::u8string msg = Btk::cformat("Exception at address %p\n",exp->ExceptionRecord->ExceptionAddress);
+    Btk::u8string msg = Btk::u8format("Exception at address %p\n",exp->ExceptionRecord->ExceptionAddress);
 
     #ifdef _MSC_VER
     msg += "\nCurrent CallStack =>\n";

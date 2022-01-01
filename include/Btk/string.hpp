@@ -1547,6 +1547,9 @@ namespace Btk{
     BTK_STRING_OPERATOR(u8string_view,!=);
     BTK_STRING_OPERATOR(u8string_view,>=);
     BTK_STRING_OPERATOR(u8string_view,<=);
+    inline bool operator ==(const u8string_view &s1,const char *s2){
+        return s1.base().compare(s2);
+    }
     inline u8string_view operator ""_btku8v(const char *s,size_t n){
         return u8string_view(s,n);
     }

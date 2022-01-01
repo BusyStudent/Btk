@@ -969,6 +969,11 @@ namespace Btk{
         //and enable optimition in gcc
         resource_init();
         RendererDevice *dev;
+
+        #ifdef BTK_USE_SWDEVICE
+        try{
+        #endif
+        
         for(auto fn:resource_base->devices_list){
             dev = fn(win);
             if(dev != nullptr){
@@ -976,6 +981,9 @@ namespace Btk{
             }
         }
         #ifdef BTK_USE_SWDEVICE
+        }catch(RuntimeError &){
+
+        }
         return new Btk::SWDevice(win);
         #endif
         return nullptr;

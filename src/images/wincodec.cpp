@@ -21,12 +21,20 @@ struct RwopsIstream:public IStream{
         --refcount;
         auto r = refcount;
         if(refcount == 0){
-            delete this;
+            // delete this;
         }
         return r;
     }
-    virtual HRESULT __stdcall QueryInterface(REFIID,void**) override{
-        return -1;
+    virtual HRESULT __stdcall QueryInterface(REFIID iid,void**ptr) override{
+        //TODO WIC Require it
+        if(iid == __uuidof(IUnknown) or
+           iid == __uuidof(IStream)  or
+           iid == __uuidof(ISequentialStream)){
+            *ptr = this;
+            AddRef();
+            return S_OK;
+        }
+        return E_NOINTERFACE;
     }
     //ISequentialStream
     virtual HRESULT __stdcall Read(void *buf, ULONG bufsize, ULONG *readed) override{
@@ -51,7 +59,7 @@ struct RwopsIstream:public IStream{
     }
     //IStream
     virtual HRESULT __stdcall SetSize(ULARGE_INTEGER) override{
-        return 1;
+        return E_NOTIMPL;
     }
     virtual HRESULT __stdcall Clone(IStream **i) override{
         *i = new RwopsIstream(rwops);
@@ -69,38 +77,46 @@ struct RwopsIstream:public IStream{
             case STREAM_SEEK_END:
                 sdl_flags = RW_SEEK_END;
                 break;
-        }        
-        new_pos->QuadPart = SDL_RWseek(rwops,offset.QuadPart,sdl_flags);
-        if(new_pos < 0){
-            return -1;
         }
-        return 1;
+        auto ret = SDL_RWseek(rwops,offset.QuadPart,sdl_flags);
+        if(new_pos != nullptr){
+            new_pos->QuadPart = ret;
+        }
+        if(ret < 0){
+            return E_FAIL;
+        }
+        return S_OK;
     }
 
     virtual HRESULT __stdcall Commit(DWORD) override{
-        return S_OK;
+        return E_NOTIMPL;
     }
     //Ignored
     virtual HRESULT __stdcall LockRegion(ULARGE_INTEGER,ULARGE_INTEGER,DWORD) override{
-        return -1;
+        return E_NOTIMPL;
     }
     virtual HRESULT __stdcall UnlockRegion(ULARGE_INTEGER, ULARGE_INTEGER, DWORD) override{
-        return -1;
+        return E_NOTIMPL;
     }
     virtual HRESULT __stdcall Stat(STATSTG *,DWORD) override{
-        return -1;
+        return E_NOTIMPL;
     }
     virtual HRESULT __stdcall CopyTo(IStream*,ULARGE_INTEGER,ULARGE_INTEGER*,ULARGE_INTEGER*) override{
-        return -1;
+        return E_NOTIMPL;
     }
     virtual HRESULT __stdcall Revert() override{
-        return S_OK;
+        return E_NOTIMPL;
     }
     //RwopsIStream
     RwopsIstream(SDL_RWops *r){
         rwops = r;
+        cur = SDL_RWtell(r);
+    }
+    ~RwopsIstream(){
+        SDL_RWseek(rwops,cur,RW_SEEK_SET);
     }
     SDL_RWops *rwops;
+    Sint64 cur;
     ULONG refcount = 1;
 };
 }
@@ -121,16 +137,24 @@ namespace{
 
     void cleanup_wic(){
         wic_factory->Release();
+        CoUninitialize();
     }
-    void InitWIC(){
-        HRESULT hr = CoCreateInstance(
+    bool InitWIC(){
+        HRESULT hr;
+        hr = CoInitializeEx(0,COINIT_MULTITHREADED);
+        WIC_CHECK2(hr,false);
+        hr = CoCreateInstance(
             CLSID_WICImagingFactory,
             nullptr,
             CLSCTX_INPROC_SERVER,
-            IID_PPV_ARGS(&wic_factory)
+            IID_IWICImagingFactory,
+            reinterpret_cast<void**>(&wic_factory)
         );
-        WIC_CHECK(hr);
+        if(FAILED(hr)){
+            CoUninitialize();
+        }
         Btk::AtExit(cleanup_wic);
+        return true;
     }
     Uint32 translate_wic_fmt(const GUID &wic_fmt){
         return 0;
@@ -197,14 +221,30 @@ namespace{
         return surf;
     }
     SDL_Surface *load_image_wic_direct(SDL_RWops *rwops){
-        size_t bufsize;
-        void * buf = SDL_LoadFile_RW(rwops,&bufsize,SDL_FALSE);
-        if(buf == nullptr){
+        BTK_RW_SAVE_STATUS(rwops);
+        Sint64 size = Btk::RWtellsize(rwops);
+        //Alloc mem,and read into it
+        HGLOBAL memhandle = GlobalAlloc(GMEM_MOVEABLE,size);
+        if(memhandle == INVALID_HANDLE_VALUE){
             return nullptr;
         }
-        Btk::SDLScopePtr sdlptr(buf);
+        //Load data begin
+        void *addr = GlobalLock(memhandle);
+        if(SDL_RWread(rwops,addr,1,size) != size){
+            //Errpr
+            GlobalUnlock(memhandle);
+            CloseHandle(memhandle);
+            return nullptr;
+        }
+        GlobalUnlock(memhandle);
+
         //Load data end
-        ComInstance<IStream> stream(SHCreateMemStream((BYTE*)buf,bufsize));
+        ComInstance<IStream> stream;
+        if(FAILED(CreateStreamOnHGlobal(memhandle,TRUE,&stream))){
+            //FAILED
+            CloseHandle(memhandle);
+            return nullptr;
+        }
         return load_image_istream(stream);
     }
     SDL_Surface *load_image_wic(SDL_RWops *rwops){
@@ -216,19 +256,21 @@ namespace{
 #define BTK_WIC_WRAPPER(TYPE) {\
     ImageAdapter adapter;\
     adapter.name = #TYPE;\
-    adapter.vendor = "wic";\
-    adapter.fn_load = load_image_wic_direct;\
+    adapter.vendor = "wincodec";\
+    adapter.fn_load = load_image_wic;\
     RegisterImageAdapter(adapter);\
 }
 
 namespace Btk{
     void RegisterWIC(){
-        BTK_WIC_WRAPPER(JPEG);
-        BTK_WIC_WRAPPER(TIFF);
-        BTK_WIC_WRAPPER(DDS);
-        BTK_WIC_WRAPPER(BMP);
-        BTK_WIC_WRAPPER(GIF);
-        BTK_WIC_WRAPPER(ICO);
-        BTK_WIC_WRAPPER(PNG);
+        if(InitWIC()){
+            BTK_WIC_WRAPPER(JPEG);
+            BTK_WIC_WRAPPER(TIFF);
+            BTK_WIC_WRAPPER(DDS);
+            BTK_WIC_WRAPPER(BMP);
+            BTK_WIC_WRAPPER(GIF);
+            BTK_WIC_WRAPPER(ICO);
+            BTK_WIC_WRAPPER(PNG);
+        }
     }
 }
