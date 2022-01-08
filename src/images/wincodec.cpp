@@ -14,16 +14,10 @@ namespace{
 struct RwopsIstream:public IStream{
     //IUnknown
     virtual ULONG __stdcall AddRef() override{
-        ++refcount;
-        return refcount;
+        return InterlockedIncrement(&refcount);
     }
     virtual ULONG __stdcall Release() override{
-        --refcount;
-        auto r = refcount;
-        if(refcount == 0){
-            // delete this;
-        }
-        return r;
+        return InterlockedDecrement(&refcount);
     }
     virtual HRESULT __stdcall QueryInterface(REFIID iid,void**ptr) override{
         //TODO WIC Require it
@@ -41,20 +35,20 @@ struct RwopsIstream:public IStream{
         size_t ret = SDL_RWread(rwops,buf,1,bufsize);
         *readed = ret;
         if(ret == bufsize){
-            return 1;
+            return S_OK;
         }
         else{
-            return -1;
+            return E_FAIL;
         }
     }
     virtual HRESULT __stdcall Write(const void *buf,ULONG bufsize,ULONG *writed) override{
         size_t ret = SDL_RWwrite(rwops,buf,1,bufsize);
         *writed = ret;
         if (ret == bufsize){
-            return 1;
+            return S_OK;
         }
         else{
-            return -1;
+            return E_FAIL;
         }
     }
     //IStream
@@ -62,8 +56,7 @@ struct RwopsIstream:public IStream{
         return E_NOTIMPL;
     }
     virtual HRESULT __stdcall Clone(IStream **i) override{
-        *i = new RwopsIstream(rwops);
-        return 1;
+        return E_NOTIMPL;
     }
     virtual HRESULT __stdcall Seek(LARGE_INTEGER offset,DWORD flags,ULARGE_INTEGER *new_pos) override{
         int sdl_flags;
@@ -78,12 +71,11 @@ struct RwopsIstream:public IStream{
                 sdl_flags = RW_SEEK_END;
                 break;
         }
-        auto ret = SDL_RWseek(rwops,offset.QuadPart,sdl_flags);
-        if(new_pos != nullptr){
-            new_pos->QuadPart = ret;
-        }
-        if(ret < 0){
+        if(SDL_RWseek(rwops,offset.QuadPart,sdl_flags) < 0){
             return E_FAIL;
+        }
+        if(new_pos != nullptr){
+            new_pos->QuadPart = SDL_RWtell(rwops);
         }
         return S_OK;
     }
@@ -98,8 +90,15 @@ struct RwopsIstream:public IStream{
     virtual HRESULT __stdcall UnlockRegion(ULARGE_INTEGER, ULARGE_INTEGER, DWORD) override{
         return E_NOTIMPL;
     }
-    virtual HRESULT __stdcall Stat(STATSTG *,DWORD) override{
-        return E_NOTIMPL;
+    virtual HRESULT __stdcall Stat(STATSTG *stat,DWORD) override{
+        //Must impl
+        auto now = SDL_RWtell(rwops);
+        //Get end
+        SDL_RWseek(rwops,0,RW_SEEK_END);
+        auto end = SDL_RWtell(rwops);
+        stat->cbSize.QuadPart = end - cur;
+        SDL_RWseek(rwops,now,RW_SEEK_SET);
+        return S_OK;
     }
     virtual HRESULT __stdcall CopyTo(IStream*,ULARGE_INTEGER,ULARGE_INTEGER*,ULARGE_INTEGER*) override{
         return E_NOTIMPL;
@@ -110,6 +109,7 @@ struct RwopsIstream:public IStream{
     //RwopsIStream
     RwopsIstream(SDL_RWops *r){
         rwops = r;
+        //Get current
         cur = SDL_RWtell(r);
     }
     ~RwopsIstream(){
@@ -156,8 +156,16 @@ namespace{
         Btk::AtExit(cleanup_wic);
         return true;
     }
-    Uint32 translate_wic_fmt(const GUID &wic_fmt){
+    Uint32     translate_wic_fmt(const GUID &wic_fmt){
         return 0;
+    }
+    const GUID &translate_sdl_fmt(Uint32 fmt){
+        switch(fmt){
+            case SDL_PIXELFORMAT_RGBA32:
+                return GUID_WICPixelFormat32bppPRGBA;
+            default:
+                return GUID_WICPixelFormatUndefined;
+        }
     }
     SDL_Surface *load_image_istream(IStream *istream){
         HRESULT hr;
@@ -220,33 +228,108 @@ namespace{
         //Done
         return surf;
     }
-    SDL_Surface *load_image_wic_direct(SDL_RWops *rwops){
-        BTK_RW_SAVE_STATUS(rwops);
-        Sint64 size = Btk::RWtellsize(rwops);
-        //Alloc mem,and read into it
-        HGLOBAL memhandle = GlobalAlloc(GMEM_MOVEABLE,size);
-        if(memhandle == INVALID_HANDLE_VALUE){
-            return nullptr;
+    //TODO
+    #if 0
+    bool wic_save_generic(const GUID &encoder_fmt,SDL_Surface *surf,SDL_RWops *rwops){
+        //Check format
+        const GUID &surf_fmt = translate_sdl_fmt(surf->format->format);
+        if(surf_fmt == GUID_WICPixelFormatUndefined){
+            //must convert
+            SDL_Surface *new_surf = SDL_ConvertSurfaceFormat(
+                surf,
+                SDL_PIXELFORMAT_RGBA32,
+                0
+            );
+            if(new_surf == nullptr){
+                return false;
+            }
+            bool ret = wic_save_generic(encoder_fmt,new_surf,rwops);
+            SDL_FreeSurface(new_surf);
+            return ret;
         }
-        //Load data begin
-        void *addr = GlobalLock(memhandle);
-        if(SDL_RWread(rwops,addr,1,size) != size){
-            //Errpr
-            GlobalUnlock(memhandle);
-            CloseHandle(memhandle);
-            return nullptr;
-        }
-        GlobalUnlock(memhandle);
 
-        //Load data end
-        ComInstance<IStream> stream;
-        if(FAILED(CreateStreamOnHGlobal(memhandle,TRUE,&stream))){
-            //FAILED
-            CloseHandle(memhandle);
-            return nullptr;
-        }
-        return load_image_istream(stream);
+        ComInstance<IWICBitmapEncoder> encoder;
+        ComInstance<IWICBitmapFrameEncode> frame;
+        HRESULT hr;
+        GUID fmt;
+        int w,h;
+        w = surf->w;
+        h = surf->h;
+
+        hr = wic_factory->CreateEncoder(
+            encoder_fmt,
+            nullptr,
+            &encoder
+        );
+        WIC_CHECK2(hr,false);
+        //Wrap SDL_RWops
+        RwopsIstream stream(rwops);
+        hr = encoder->Initialize(
+            &stream,
+            WICBitmapEncoderNoCache
+        );
+        WIC_CHECK2(hr,false);
+        hr = encoder->GetContainerFormat(&fmt);
+        WIC_CHECK2(hr,false);
+        hr = encoder->CreateNewFrame(&frame,nullptr);
+        WIC_CHECK2(hr,false);
+        //Init
+        hr = frame->Initialize(nullptr);
+        hr = frame->SetSize(w,h);
+        //Write pixels
+        ComInstance<IWICFormatConverter> converter;
+        hr = wic_factory->CreateFormatConverter(&converter);
+        // hr = converter->Initialize(
+        //     frame,
+        //     GUID_WICPixelFormat32bppPRGBA,
+        //     WICBitmapDitherTypeNone,
+        //     nullptr,
+        //     0,
+        //     WICBitmapPaletteTypeCustom
+        // );
+        hr = converter->CopyPixels(
+            nullptr,
+            w * 4,
+            w * h * 4,
+            (BYTE*)surf->pixels
+        );
+        //copy to frame
+        frame->WriteSource(converter,nullptr);
+
+
+        //flush
+        hr = frame->Commit();
+        hr = encoder->Commit();
+        return true;
     }
+    #endif
+    // SDL_Surface *load_image_wic_direct(SDL_RWops *rwops){
+    //     BTK_RW_SAVE_STATUS(rwops);
+    //     Sint64 size = Btk::RWtellsize(rwops);
+    //     //Alloc mem,and read into it
+    //     HGLOBAL memhandle = GlobalAlloc(GMEM_MOVEABLE,size);
+    //     if(memhandle == INVALID_HANDLE_VALUE){
+    //         return nullptr;
+    //     }
+    //     //Load data begin
+    //     void *addr = GlobalLock(memhandle);
+    //     if(SDL_RWread(rwops,addr,1,size) != size){
+    //         //Errpr
+    //         GlobalUnlock(memhandle);
+    //         CloseHandle(memhandle);
+    //         return nullptr;
+    //     }
+    //     GlobalUnlock(memhandle);
+
+    //     //Load data end
+    //     ComInstance<IStream> stream;
+    //     if(FAILED(CreateStreamOnHGlobal(memhandle,TRUE,&stream))){
+    //         //FAILED
+    //         CloseHandle(memhandle);
+    //         return nullptr;
+    //     }
+    //     return load_image_istream(stream);
+    // }
     SDL_Surface *load_image_wic(SDL_RWops *rwops){
         RwopsIstream stream(rwops);
         return load_image_istream(&stream);
