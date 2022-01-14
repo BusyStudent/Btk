@@ -45,7 +45,18 @@ namespace Btk{
             bool drag_rejected = false;
     };
     class BTKAPI GroupBox:public Group{
+        public:
+            GroupBox() = default;
+            ~GroupBox();
+            
+            void draw(Renderer &) override;
+            // bool handle(Event  &) override;
+        private:
+            Color borader_color;
+            Color background_color;
 
+            bool draw_boarder = true;
+            bool draw_background = true;
     };
     class BTKAPI DockWidget:public Group{
         
@@ -69,108 +80,16 @@ namespace Btk{
      */
     class BTKAPI EmbedWindow:public Widget{
         public:
-            //Platform 
-            using _XDisplay = void *;
-            using _XWindow  = unsigned long;
-            using _HWND = void *;
-
-            #ifdef _WIN32
-            using WinPtr = _HWND;
-            #else
-            struct WinPtr:public std::pair<_XDisplay,_XWindow>{
-                using std::pair<_XDisplay,_XWindow>::pair;
-                _XDisplay display() const noexcept{
-                    return first;
-                }
-                _XWindow window() const noexcept{
-                    return second;
-                }
-            };
-            #endif
             EmbedWindow();
-            EmbedWindow(const EmbedWindow &) = delete;
             ~EmbedWindow();
-            
-            void draw(Renderer &) override;
-            void set_rect(const Rect &r) override;
-            void set_parent(Widget *w) override;
-            /**
-             * @brief Set the window object
-             * 
-             * @param window 
-             */
-            void set_window(WinPtr window);
-            #ifdef __gnu_linux__
-            /**
-             * @brief X11 Set the window object
-             * 
-             * @param win The XWindowID
-             */
-            void set_window(_XWindow win){
-                //Use the helper window's display
-                WinPtr p = _helper_window;
-                p.second = win;
-                set_window(p);
-            }
-            #endif
-            /**
-             * @brief Has window embed 
-             * 
-             * @return true 
-             * @return false 
-             */
-            bool has_embed() const noexcept{
-                return _user_window != WinPtr{};
-            }
-            /**
-             * @brief Detach the window embed in
-             * 
-             */
-            void detach_window();
-            /**
-             * @brief Get the window which is embed in the widget
-             * 
-             * @return WinPtr 
-             */
-            WinPtr embed_window() const{
-                return _user_window;
-            }
-            WinPtr helper_window();
 
+            void draw(Renderer &) override;
+            void set_rect(const Rect &) override;
+            void set_parent(Widget *) override;
+            void set_window(NativeWindow *win);
         private:
-            struct Impl;
-            /**
-             * @brief reparent window
-             * 
-             * @param win The window 
-             * @param parent The parent window
-             * @param x The x in the parent window
-             * @param y The y in the parent window
-             */
-            static void reparent_window(WinPtr win,WinPtr parent,int x,int y);
-            /**
-             * 
-             * @brief Attach to the parent window
-             * @param rect The children's rect relality to the parent 
-             */
-            BTKHIDDEN
-            void nt_attach(const Rect &rect);
-            BTKHIDDEN
-            void nt_set_rect(const Rect &r);
-            /**
-             * @brief The window witch want to be embed
-             * 
-             */
-            WinPtr _user_window = {};
-            WinPtr _target_window = {};
-            WinPtr _helper_window = {};
-            /**
-             * @brief Helper window for clip the screen
-             * 
-             */
-            SDL_Window *_window = nullptr;
-            //Has attached to the WindowImpl
-            bool attached_to_parent = false;
+            struct _Internal;
+            _Internal *internal;
     };
     /**
      * @brief This Widget like GLCanvas but has independ gl context

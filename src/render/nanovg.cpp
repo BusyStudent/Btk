@@ -162,10 +162,12 @@ namespace Btk{
             throwRuntimeError("Invaid font");
         }
         auto i = BtkFt_GetFromID(idx);
-        if(i == nullptr){
-            throwRuntimeError("Invaid font");
-        }
-        return Font(BtkFt_Dup(i),state->fontSize);
+
+        Font f(BtkFt_Dup(i),state->fontSize);
+        f.set_blur(state->fontBlur);
+        f.set_spacing(state->letterSpacing);
+
+        return f;
     }
     void Renderer::flush(){
         nvg_ctxt->params.renderFlush(nvg_ctxt->params.userPtr);

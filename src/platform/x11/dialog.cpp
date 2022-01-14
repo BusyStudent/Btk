@@ -57,7 +57,9 @@ namespace Btk{
 
         do_run.bind<&MessageBox::_do_run>();
     }
-    MessageBox::~MessageBox() = default;
+    void MessageBox::_do_destroy(){
+
+    }
     auto MessageBox::_do_run() -> Status{
         //Has Parent and no zenty and kdialog
         if(X11::has_kdialog){

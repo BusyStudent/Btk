@@ -10,9 +10,35 @@ namespace Btk{
      */
     class BTKAPI AbstractSlider:public Widget{
         public:
+            //Event handle
+            bool handle_mouse(MouseEvent &) override;
+            bool handle_drag(DragEvent &) override;
+            bool handle_wheel(WheelEvent &) override;
 
+
+            void set_rect(const Rect &r) override;
+            void set_orientation(Orientation);
+            void move_silder(float value);
+            //Get signal
+            Signal<void(float)> &signal_value_changed() noexcept{
+                return _signal_change;
+            }
         protected:
+            //---------------//
+            //  |Silder|     //
+            //---Sildeable---//
+            //The silder
+            FRect sildeable_rect;
+            FRect slider_rect;
+            Color slider_color;
+
+            float wheel_step = 1.0f;
+            
+            Orientation orientation;
             Signal<void(float)> _signal_change;
+
+    };
+    class BTKAPI SilderBar:public AbstractSlider{
 
     };
     class BTKAPI ScrollBar:public Widget{

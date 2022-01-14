@@ -325,27 +325,4 @@ namespace Btk{
     bool HideConsole(){
         return daemon(1,0) == 0;
     }
-    void EmbedWindow::nt_set_rect(const Rect &r){
-        // if(has_embed()){
-        //     //Has window
-        //     //Resize and move
-        //     XMoveWindow(BTK_X_DISPLAY(_display),BTK_X_WINDOW(_window),x(),y());
-        //     XResizeWindow(BTK_X_DISPLAY(_display),BTK_X_WINDOW(_window),w(),h());
-        // }
-    }
-    void EmbedWindow::detach_window(){
-        if(has_embed()){
-            
-        }
-    }
-    void EmbedWindow::reparent_window(WinPtr w,WinPtr parent,int x,int y){
-        XReparentWindow(
-            BTK_X_DISPLAY(w.display()),
-            BTK_X_WINDOW(w.window()),
-            BTK_X_WINDOW(parent.window()),
-            x,
-            y
-        );
-        XFlush(BTK_X_DISPLAY(w.display()));
-    }
 }

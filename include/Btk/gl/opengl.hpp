@@ -5,19 +5,8 @@
 #include "../defs.hpp"
 #include "../string.hpp"
 #include "../render.hpp"
-
-#ifndef __linux
-    #define BTK_NEED_GLAD
-#endif
-
-//Should we load the function dymaic
-#ifdef BTK_NEED_GLAD
-    #include "glad.h"
-    #define BTK_GLAPIENTRY GLAPIENTRY
-#else
-    #include <GLES3/gl3.h>
-    #define BTK_GLAPIENTRY GL_APIENTRYP
-#endif
+//Import PFNS and macro
+#include "opengl_macro.h"
 
 /**
  * @brief OpenGL entry for function pointer
@@ -31,199 +20,280 @@
     #define BTK_GLAPIENTRYP *
 #endif
 
+
 namespace Btk{
 namespace GL{
     void Init();
     void Quit();
-    #ifdef BTK_NEED_GLAD
     /**
      * @brief dymaic Load OpenGL Library
      * 
      * @return BTKAPI 
      */
     BTKAPI void LoadLibaray();
-    #else
-    inline void LoadLibaray(){};
-    #endif
-    /**
-     * @brief Create a framebuffer
-     * 
-     */
-    struct BTKAPI FrameBuffer{
-        /**
-         * @brief Construct a new Frame Buffer object by texture
-         * 
-         * @param w The texture w
-         * @param h The texture h
-         * @param tex The texture
-         * @param need_free Should we delete it ourself
-         */
-        FrameBuffer(int w,int h,GLuint tex,bool need_free = false);
-        FrameBuffer(const FrameBuffer &) = delete;
-        ~FrameBuffer();
-        int w;
-        int h;
+    // /**
+    //  * @brief Create a framebuffer
+    //  * 
+    //  */
+    // struct BTKAPI FrameBuffer{
+    //     /**
+    //      * @brief Construct a new Frame Buffer object by texture
+    //      * 
+    //      * @param w The texture w
+    //      * @param h The texture h
+    //      * @param tex The texture
+    //      * @param need_free Should we delete it ourself
+    //      */
+    //     FrameBuffer(int w,int h,GLuint tex,bool need_free = false);
+    //     FrameBuffer(const FrameBuffer &) = delete;
+    //     ~FrameBuffer();
+    //     int w;
+    //     int h;
 
-        GLuint fbo;
-        GLuint rbo;
-        GLuint tex;
+    //     GLuint fbo;
+    //     GLuint rbo;
+    //     GLuint tex;
 
-        GLuint screen_fbo;
-        GLuint screen_rbo;
+    //     GLuint screen_fbo;
+    //     GLuint screen_rbo;
 
-        bool need_free;//< Is the texture need free?
-        bool ok;//< If we succeed to create it
+    //     bool need_free;//< Is the texture need free?
+    //     bool ok;//< If we succeed to create it
 
-        void bind();
-        void unbind();
-    };
-    /**
-     * @brief OpenGL Shader
-     * 
-     */
-    struct Shader{
-        Shader(GLenum type){
-            shader = glCreateShader(type);
-        }
-        Shader(const Shader &) = delete;
-        ~Shader(){
-            glDeleteShader(shader);
-        }
-        /**
-         * @brief compile code
-         * 
-         * @param code 
-         * @return true succeed
-         * @return false 
-         */
-        bool compile(u8string_view code){
-            auto  src = reinterpret_cast<const GLchar*>(code.data());
-            GLint len = code.size() * sizeof(GLchar);
-            glShaderSource(shader,1,&src,&len);
-            glCompileShader(shader);
+    //     void bind();
+    //     void unbind();
+    // };
+    // /**
+    //  * @brief OpenGL Shader
+    //  * 
+    //  */
+    // struct Shader{
+    //     Shader(GLenum type){
+    //         shader = glCreateShader(type);
+    //     }
+    //     Shader(const Shader &) = delete;
+    //     ~Shader(){
+    //         glDeleteShader(shader);
+    //     }
+    //     /**
+    //      * @brief compile code
+    //      * 
+    //      * @param code 
+    //      * @return true succeed
+    //      * @return false 
+    //      */
+    //     bool compile(u8string_view code){
+    //         auto  src = reinterpret_cast<const GLchar*>(code.data());
+    //         GLint len = code.size() * sizeof(GLchar);
+    //         glShaderSource(shader,1,&src,&len);
+    //         glCompileShader(shader);
 
-            GLint status;
-            glGetShaderiv(shader,GL_COMPILE_STATUS,&status);
+    //         GLint status;
+    //         glGetShaderiv(shader,GL_COMPILE_STATUS,&status);
             
-            return status == GL_TRUE ? true : false;
-        }
-        /**
-         * @brief Get Shader Info log
-         * 
-         * @return u8string 
-         */
-        u8string infolog() const{
-            u8string msg;
-            GLint len;
+    //         return status == GL_TRUE ? true : false;
+    //     }
+    //     /**
+    //      * @brief Get Shader Info log
+    //      * 
+    //      * @return u8string 
+    //      */
+    //     u8string infolog() const{
+    //         u8string msg;
+    //         GLint len;
             
-            glGetShaderiv(shader,GL_INFO_LOG_LENGTH,&len);
-            msg.resize(len);
-            glGetShaderInfoLog(shader,msg.size(),nullptr,reinterpret_cast<GLchar*>(msg.data()));
-            msg.shrink_to_fit();
-            return msg;
-        }
-        /**
-         * @brief Get the shader's source code
-         * 
-         * @return u8string 
-         */
-        u8string source() const{
-            u8string code;
-            GLint len;
+    //         glGetShaderiv(shader,GL_INFO_LOG_LENGTH,&len);
+    //         msg.resize(len);
+    //         glGetShaderInfoLog(shader,msg.size(),nullptr,reinterpret_cast<GLchar*>(msg.data()));
+    //         msg.shrink_to_fit();
+    //         return msg;
+    //     }
+    //     /**
+    //      * @brief Get the shader's source code
+    //      * 
+    //      * @return u8string 
+    //      */
+    //     u8string source() const{
+    //         u8string code;
+    //         GLint len;
             
-            glGetShaderiv(shader,GL_SHADER_SOURCE_LENGTH,&len);
-            code.resize(len);
-            glGetShaderSource(shader,code.size(),nullptr,reinterpret_cast<GLchar*>(code.data()));
-            code.shrink_to_fit();
-            return code;
-        }
-        operator GLuint() const noexcept{
-            return shader;
-        }
-        GLuint shader;
-    };
-    struct Program{
-        Program(){
-            program = glCreateProgram();
-        }
-        Program(const Program &) = delete;
-        ~Program(){
-            glDeleteProgram(program);
-        }
-        void link(){
-            glLinkProgram(program);
-        }
-        void use(){
-            GLint pr;
-            glGetIntegerv(GL_CURRENT_PROGRAM,&pr);
-            prev = pr;
-            glUseProgram(program);
-        }
-        void unuse(){
-            glUseProgram(prev);
-        }
-        void attach(const Shader &shader){
-            glAttachShader(program,shader.shader);
-        }
-        operator GLuint() const noexcept{
-            return program;
-        }
-        GLuint prev;
-        GLuint program;
-    };
-    inline GLuint CurrentFBO(){
-        GLint fbo;
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING,&fbo);
-        return fbo;
-    }
-    inline GLuint CurrentRBO(){
-        GLint rbo;
-        glGetIntegerv(GL_RENDERBUFFER_BINDING,&rbo);
-        return rbo;
-    }
-    inline GLuint CurrentTex(GLenum tex = GL_TEXTURE_2D){
-        GLint t;
-        glGetIntegerv(tex,&t);
-        return t;
-    }
-    inline Rect CurrentViewPort(){
-        GLint viewport[4];
-        glGetIntegerv(GL_VIEWPORT,viewport);
-        return Rect(viewport[0],viewport[1],viewport[2],viewport[3]);
-    }
+    //         glGetShaderiv(shader,GL_SHADER_SOURCE_LENGTH,&len);
+    //         code.resize(len);
+    //         glGetShaderSource(shader,code.size(),nullptr,reinterpret_cast<GLchar*>(code.data()));
+    //         code.shrink_to_fit();
+    //         return code;
+    //     }
+    //     operator GLuint() const noexcept{
+    //         return shader;
+    //     }
+    //     GLuint shader;
+    // };
+    // struct Program{
+    //     Program(){
+    //         program = glCreateProgram();
+    //     }
+    //     Program(const Program &) = delete;
+    //     ~Program(){
+    //         glDeleteProgram(program);
+    //     }
+    //     void link(){
+    //         glLinkProgram(program);
+    //     }
+    //     void use(){
+    //         GLint pr;
+    //         glGetIntegerv(GL_CURRENT_PROGRAM,&pr);
+    //         prev = pr;
+    //         glUseProgram(program);
+    //     }
+    //     void unuse(){
+    //         glUseProgram(prev);
+    //     }
+    //     void attach(const Shader &shader){
+    //         glAttachShader(program,shader.shader);
+    //     }
+    //     operator GLuint() const noexcept{
+    //         return program;
+    //     }
+    //     GLuint prev;
+    //     GLuint program;
+    // };
+    // inline GLuint CurrentFBO(){
+    //     GLint fbo;
+    //     glGetIntegerv(GL_FRAMEBUFFER_BINDING,&fbo);
+    //     return fbo;
+    // }
+    // inline GLuint CurrentRBO(){
+    //     GLint rbo;
+    //     glGetIntegerv(GL_RENDERBUFFER_BINDING,&rbo);
+    //     return rbo;
+    // }
+    // inline GLuint CurrentTex(GLenum tex = GL_TEXTURE_2D){
+    //     GLint t;
+    //     glGetIntegerv(tex,&t);
+    //     return t;
+    // }
+    // inline Rect CurrentViewPort(){
+    //     GLint viewport[4];
+    //     glGetIntegerv(GL_VIEWPORT,viewport);
+    //     return Rect(viewport[0],viewport[1],viewport[2],viewport[3]);
+    // }
 }
-using GLShader = GL::Shader;
-using GLProgram = GL::Program;
+// using GLShader = GL::Shader;
+// using GLProgram = GL::Program;
 }
 
 struct SDL_Window;
 //GLDevice
 namespace Btk{
+    //Functions
+    #ifndef BTK_GL_STATIC
+        #define BTK_GL_DECL(PFN,NAME) PFN NAME;
+    #else
+        #define BTK_GL_DECL(PFN,NAME) static constexpr PFN NAME = ::NAME;
+    #endif
+    struct GLVersion{
+        int  major;
+        int  minor;
+        bool es;
+    };
+    /**
+     * @brief OpenGLES2 functions
+     * 
+     */
+    struct GLES2Functions{
+        #define BTK_GL_PROCESS(PFN,NAME) BTK_GL_DECL(PFN,NAME)
+
+        BTK_OPENGLES2_FUNCTIONS_PART
+
+        #undef BTK_GL_PROCESS
+
+        //load templates
+        template<class Callable>
+        void load_proc(Callable &&callable){
+            #ifndef BTK_GL_STATIC
+            
+            #define BTK_GL_PROCESS(PFN,NAME) \
+                this->NAME = reinterpret_cast<PFN>(callable(#NAME));
+            
+            BTK_OPENGLES2_FUNCTIONS_PART
+            
+            #undef BTK_GL_PROCESS
+            
+            #endif
+        }
+        //Helper
+        GLuint glGetCurrentFrameBuffer() const{
+            GLint fbo;
+            glGetIntegerv(GL_FRAMEBUFFER_BINDING,&fbo);
+            return fbo;
+        }
+        GLuint glGetCurrentRenderBuffer() const{
+            GLint fbo;
+            glGetIntegerv(GL_RENDERBUFFER_BINDING,&fbo);
+            return fbo;
+        }
+        GLuint glGetCurrentTexture2D() const{
+            GLint t;
+            glGetIntegerv(GL_TEXTURE_2D,&t);
+            return t;
+        }
+        Rect   glGetCurrentViewPort() const{
+            GLint viewport[4];
+            glGetIntegerv(GL_VIEWPORT,viewport);
+            return Rect(viewport[0],viewport[1],viewport[2],viewport[3]);
+        }
+    };
+    struct GLES3Functions:public GLES2Functions{
+        #define BTK_GL_PROCESS(PFN,NAME) BTK_GL_DECL(PFN,NAME)
+
+        BTK_OPENGLES3_FUNCTIONS_PART
+
+        #undef BTK_GL_PROCESS
+
+        template<class Callable>
+        void load_proc(Callable &&callable){
+            #ifndef BTK_GL_STATIC
+            //call parents
+            GLES2Functions::load_proc(callable);
+
+            #define BTK_GL_PROCESS(PFN,NAME) \
+                this->NAME = reinterpret_cast<PFN>(callable(#NAME));
+            
+            BTK_OPENGLES3_FUNCTIONS_PART
+            
+            #undef BTK_GL_PROCESS
+
+            #endif
+        }
+    };
+
     /**
      * @brief Output target
      * @internal It is used for GLDevice
      */
     struct BTKHIDDEN GLTarget{
-        GLTarget(int w,int h,GLuint tex);
+        inline
+        GLTarget(GLES3Functions &fns,int w,int h,GLuint tex);
+        inline
         GLTarget(const GLTarget &) = default;
         //MSVC 's stack cannot use GLTarget with delete copy constructor
         //So we could only allow it to copy,destroy it by ourself
-        void destroy(){
+        void destroy(GLES3Functions &fns){
             //Cleanup
-            glDeleteFramebuffers(1,&fbo);
-            glDeleteRenderbuffers(1,&rbo);
+            fns.glDeleteFramebuffers(1,&fbo);
+            fns.glDeleteRenderbuffers(1,&rbo);
         }
         /**
          * @brief Reset to prev
          * 
          */
-        void unbind(){
-            glBindFramebuffer(GL_FRAMEBUFFER,prev_fbo);
-            glBindRenderbuffer(GL_RENDERBUFFER,prev_rbo);
+        void unbind(GLES3Functions &fns){
+            fns.glBindFramebuffer(GL_FRAMEBUFFER,prev_fbo);
+            fns.glBindRenderbuffer(GL_RENDERBUFFER,prev_rbo);
         }
-        void bind(){
-            glBindFramebuffer(GL_FRAMEBUFFER,fbo);
-            glBindRenderbuffer(GL_RENDERBUFFER,rbo);
+        void bind(GLES3Functions &fns){
+            fns.glBindFramebuffer(GL_FRAMEBUFFER,fbo);
+            fns.glBindRenderbuffer(GL_RENDERBUFFER,rbo);
         }
         //Prev status
         GLuint prev_fbo;
@@ -239,28 +309,32 @@ namespace Btk{
     struct GLAttributes{
 
     };
-    class  GLAdapter{
-        void *uptr;
-        void  (*init)(void *uptr);
-        void  (*cleanup)(void *uptr);
-        void *(*create_context)(void *uptr,void *win_handle);
-        void  (*destroy_context)(void *uptr,void *gl_handle);
-        //Env
-        void  (*make_current)(void *uptr,void *win_handle,void *gl_handle);
-        void *(*get_current_context)(void *uptr);
-        void *(*get_current_window)(void *uptr);
-        void  (*get_proc)(void *uptr);
-        void  (*get_drawable)(void *uptr,int *w,int *h);
-        bool  (*has_extension)(void *uptr,const char *extname);
-        void  (*swap_window)(void *uptr,void *win_handle);
+    class GLAdapter{
+        public:
+            virtual ~GLAdapter(){};
+            virtual void *create_context(void *win_handle) = 0;
+            virtual void  destroy_context(void *gl_handle) = 0;
+            //Env
+            virtual bool   make_current(void *win_handle,void *gl_handle) = 0;
+            virtual void  *get_current_context() = 0;
+            virtual void  *get_current_window() = 0;
+            virtual void  *get_proc(const char *name) = 0;
+            virtual void   get_drawable(void *win_handle,int *w,int *h) = 0;
+            virtual void   get_window_size(void *win_handle,int *w,int *h) = 0;
+            virtual bool   has_extension(const char *extname) = 0;
+            virtual void   swap_window(void *win_handle) = 0;
+
+            BTKAPI
+            GLVersion get_version();
     };
     /**
      * @brief OpenGL Renderer Device
      * 
      */
-    class BTKAPI GLDevice:public RendererDevice{
+    class BTKAPI GLDevice:public RendererDevice,public GLES3Functions{
         public:
             GLDevice(SDL_Window *win);
+            GLDevice(void *win_handle,GLAdapter *adapter,bool owned = false);
             GLDevice(const GLDevice &) = delete;
             ~GLDevice();
 
@@ -396,14 +470,14 @@ namespace Btk{
 
             Rect viewport(){
                 make_current();
-                return GL::CurrentViewPort();
+                return glGetCurrentViewPort();
             }
         private:
             //OpenGL Window and Context
-            SDL_Window *_window;
+            void *_window;
             void *_context;
             //Var for gl_begin and gl_end
-            SDL_Window *_cur_win;
+            void *_cur_win;
             void *_cur_ctxt;
             //Env
             GLuint screen_fbo;
@@ -413,8 +487,8 @@ namespace Btk{
             bool has_arb_copy_image  = false;
             bool is_gles = true;
             //Function ptr
-            bool (*has_msaa_fn)() = nullptr;//< Check has msaa
-            bool (*set_msaa_fn)(bool) = nullptr;//Enable / disable msaa
+            bool (*has_msaa_fn)(GLES3Functions &fns) = nullptr;//< Check has msaa
+            bool (*set_msaa_fn)(GLES3Functions &fns,bool) = nullptr;//Enable / disable msaa
             //Ext
             using GLGetTexImage = void(BTK_GLAPIENTRYP )(
                 GLenum target,
@@ -424,7 +498,9 @@ namespace Btk{
                 void * pixels);
 
             GLGetTexImage gl_get_tex_image = nullptr;
-
+            //Adapter
+            GLAdapter *adapter;
+            bool owned_adapter;
         private:
             std::stack<GLTarget> targets_stack;
     };

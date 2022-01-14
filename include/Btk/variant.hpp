@@ -7,6 +7,7 @@
 #include "exception.hpp"
 
 #include <ostream>
+#include <map>
 
 //Use X Macros to generate the code
 #define BTK_VARIANT_BODY \
@@ -224,6 +225,24 @@ namespace Btk{
         new (static_cast<void*>(&data)) u8string(s);
         type = Type::_u8string;
     }
+
+    //VariantMap
+    // class  VariantMap;
+    // class _VariantMapProxy{
+    //     private:
+    //         VariantMap *map;
+    //         u8string    key;
+    //     public:
+    //         template<class T>
+    //         operator T() const{
+    //             map->at(key).get<T>();
+    //         }
+    // };
+    // class VariantMap:public std::map<u8string,Variant>{
+    //     public:
+    //         using std::map<u8string,Variant>::map;
+    // };
+
     //Avoid this
     //os << 1; => os << Variant(1)
     // #define BTK_MAKE_STDOP(T) \

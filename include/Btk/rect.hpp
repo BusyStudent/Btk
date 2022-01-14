@@ -477,6 +477,8 @@ namespace Btk{
     template<class T>
     using SizeImpl = _Size<T>;
     template<class T>
+    using LineImpl = _Line<T>;
+    template<class T>
     using PointImpl = _Point<T>;
     template<class T>
     using BoundsImpl = _Bounds<T>;

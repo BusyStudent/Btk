@@ -761,7 +761,7 @@ namespace Btk{
                 return;
             }
             catch(...){
-                DeferCall(std::rethrow_exception,std::current_exception());
+                DeferRethrow();
             }
         }
     }
@@ -834,6 +834,9 @@ namespace Btk{
         System::instance->defer_call(
             callback_wrapper,reinterpret_cast<void*>(fn)
         );
+    }
+    void DeferRethrow(){
+        DeferCall(std::rethrow_exception,std::current_exception());
     }
     bool IsMainThread(){
         return main_thrd == std::this_thread::get_id();

@@ -223,6 +223,8 @@ struct FONSttFontImpl {
 	u8string_view name;
 	u8string filename;
 
+	Int32 load_flags = FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT;
+
 	#if BTK_HAS_HARFBUZZ
 	hb_font_t *hb_font = nullptr;
 	#endif
@@ -338,6 +340,8 @@ struct FONSglyph
 	short xadv,xoff,yoff;
 	//The master,The glyph belong to witch context
 	void *stash = nullptr;
+	//TODO optimiztion
+	Uint16 hit_ticks = 0;
 	bool  unused = false;
 };
 typedef struct FONSglyph FONSglyph;
@@ -429,8 +433,8 @@ struct FONScontext
 	int nverts;
 	//Scratch buffer
 	//Unused in freetype
-	unsigned char* scratch;
-	int nscratch;
+	// unsigned char* scratch;
+	// int nscratch;
 	
 	FONSstate states[FONS_MAX_STATES];
 	int nstates;
@@ -674,7 +678,7 @@ static int fons__tt_loadFont(FONSttFontImpl *font,const char *filename, int font
 			FT_Done_Face(font->font);
 			return false;
 		}
-		hb_ft_font_set_load_flags(font->hb_font,FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
+		hb_ft_font_set_load_flags(font->hb_font,font->load_flags);
 	}
 	#endif
 
@@ -719,7 +723,7 @@ static int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size
 
 	ftError = FT_Set_Pixel_Sizes(font->font, 0, size);
 	if (ftError) return 0;
-	ftError = FT_Load_Glyph(font->font, glyph, FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
+	ftError = FT_Load_Glyph(font->font, glyph, font->load_flags);
 	if (ftError) return 0;
 	ftError = FT_Get_Advance(font->font, glyph, FT_LOAD_NO_SCALE, &advFixed);
 	if (ftError) return 0;
@@ -743,7 +747,7 @@ static void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *outp
 	FONS_NOTUSED(outHeight);
 	FONS_NOTUSED(scaleX);
 	FONS_NOTUSED(scaleY);
-	FT_Error ftError = FT_Load_Glyph(font->font, glyph,FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
+	FT_Error ftError = FT_Load_Glyph(font->font, glyph,FT_LOAD_RENDER | font->load_flags);
 	if (ftError){
 		//Handle err???
 	}
@@ -1238,8 +1242,8 @@ FONScontext* fonsCreateInternal(FONSparams* params)
 	stash->params = *params;
 
 	// Allocate scratch buffer.
-	stash->scratch = (unsigned char*)malloc(FONS_SCRATCH_BUF_SIZE);
-	if (stash->scratch == NULL) goto error;
+	// stash->scratch = (unsigned char*)malloc(FONS_SCRATCH_BUF_SIZE);
+	// if (stash->scratch == NULL) goto error;
 
 	// Initialize implementation library
 	if (!fons__tt_init(stash)) goto error;
@@ -1972,7 +1976,7 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 
 	// Blur
 	if (iblur > 0) {
-		stash->nscratch = 0;
+		// stash->nscratch = 0;
 		bdst = &stash->texData[glyph->x0 + glyph->y0 * stash->params.width];
 		fons__blur(stash, bdst, gw, gh, stash->params.width, iblur);
 	}
@@ -2527,7 +2531,7 @@ void fonsDeleteInternal(FONScontext* stash)
 	if (stash->atlas) fons__deleteAtlas(stash->atlas);
 	// if (stash->fonts) free(stash->fonts);
 	if (stash->texData) free(stash->texData);
-	if (stash->scratch) free(stash->scratch);
+	// if (stash->scratch) free(stash->scratch);
 	delete stash;
 	fons__tt_done(stash);
 }
@@ -2633,10 +2637,12 @@ int fonsResetAtlas(FONScontext* stash, int width, int height)
 	// Reset cached glyphs
 	for (auto &each:stash->fonts_map) {
 		FONSfont* font = each.second.get();
-		font->nglyphs = 0;
-		for (j = 0; j < FONS_HASH_LUT_SIZE; j++)
-			font->lut[j] = -1;
+		font->clean_cache_by_ctxt(stash);
+		// font->nglyphs = 0;
+		// for (j = 0; j < FONS_HASH_LUT_SIZE; j++)
+		// 	font->lut[j] = -1;
 	}
+	
 
 	stash->params.width = width;
 	stash->params.height = height;

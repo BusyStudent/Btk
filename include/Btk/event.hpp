@@ -62,6 +62,9 @@ namespace Btk{
                 LayoutUpdate,
                 //SDL
                 SDL,
+                //Finger
+                Figner,//< Finger click
+                FignerMotion,//< Finger motion
 
                 User = 10000,
                 UserMax = UINT32_MAX - 1,

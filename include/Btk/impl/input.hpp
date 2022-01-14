@@ -9,21 +9,32 @@
 #include "../rect.hpp"
 namespace Btk{
     //Alias
-    void StartTextInput(){
+    inline void StartTextInput(){
         SDL_StartTextInput();
     }
-    void StopTextInput(){
+    inline void StopTextInput(){
         SDL_StopTextInput();
     }
     //Why SDL_SetTextInputRect 's arg is not const
-    void SetTextInputRect(const Rect *r = nullptr){
+    inline void SetTextInputRect(const Rect *r = nullptr){
         if(r == nullptr){
             SDL_SetTextInputRect(nullptr);
         }
-        SDL_Rect rect = *r;
-        SDL_SetTextInputRect(&rect);
+        else{
+            SDL_Rect rect = *r;
+            SDL_SetTextInputRect(&rect);
+        }
     }
-    void SetTextInputRect(const Rect &r){
+    inline void SetTextInputRect(const FRect *r = nullptr){
+        if(r == nullptr){
+            SDL_SetTextInputRect(nullptr);
+        }
+        else{
+            Rect rect = *r;
+            SDL_SetTextInputRect(&rect);
+        }
+    }
+    inline void SetTextInputRect(const Rect &r){
         SetTextInputRect(&r);
     }
 }

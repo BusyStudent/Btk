@@ -18,6 +18,7 @@ namespace Btk{
         OpenGL      = 1 << 0,
         Vulkan      = 1 << 1,
         SkipTaskBar = 1 << 2,
+        OpenGLMSAA  = 1 << 3,
     };
     BTK_FLAGS_OPERATOR(WindowFlags,Uint32);
     /**
@@ -265,6 +266,16 @@ namespace Btk{
                 return static_cast<GLDevice*>(internal_data("btk_dev"));
             }
     };
+    /**
+     * @brief Create a Window object
+     * 
+     * @param title 
+     * @param w 
+     * @param h 
+     * @param flags
+     * @return The WindowImpl handler
+     */
+    BTKAPI WindowImpl *CreateWindow(u8string_view title,int w,int h,WindowFlags f);
     /**
      * @brief Get the Screen Size object
      * @param display The display index(0 on default)

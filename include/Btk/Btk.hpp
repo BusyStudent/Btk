@@ -123,6 +123,7 @@ namespace Btk{
             std::forward<Args>(args)...
         );
     }
+    BTKAPI void DeferRethrow();
     /**
      * @brief Check is main thread(which call Btk::run)
      * 

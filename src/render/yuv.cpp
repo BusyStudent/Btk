@@ -357,7 +357,7 @@ static void def_YCbCr_to_RGB_row(stbi_uc *out, const stbi_uc *y, const stbi_uc *
 #endif
 
 namespace Btk{
-    void Texture::update_yuv(
+    void TextureRef::update_yuv(
          const Rect *_rect,
          const Uint8 *y_plane, int y_pitch,
          const Uint8 *u_plane, int u_pitch,

@@ -240,6 +240,8 @@ namespace Btk{
      * @return BTKAPI* 
      */
     BTKAPI RendererDevice *CreateDevice(SDL_Window *window);
+    BTKAPI WindowImpl     *CreateWindow(SDL_Window *window);
+    BTKAPI WindowImpl     *GetWindowFromID(Uint32 windowid);
 };
 
 

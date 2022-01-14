@@ -116,7 +116,15 @@ namespace Btk{
              * 
              * @param new_ptsize New ptsize
              */
-            void set_ptsize(float new_ptsize);
+            void set_ptsize(float new_ptsize){
+                ptsize_ = new_ptsize;
+            }
+            void set_spacing(float spacing){
+                spacing_ = spacing;
+            }
+            void set_blur(float blur){
+                blur_ = blur_;
+            }
             /**
              * @brief Get The text's w and h
              * 

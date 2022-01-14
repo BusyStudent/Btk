@@ -748,6 +748,10 @@ namespace Btk{
             void ellipse(const FVec2 &vec,float rx,float ry){
                 ellipse(vec.x,vec.y,rx,ry);
             }
+            void triangle(float x1,float y1,float x2,float y2,float x3,float y3);
+            void triangle(const FVec2 &a,const FVec2 &b,const FVec2 &c){
+                triangle(a.x,a.y,b.x,b.y,c.x,c.y);
+            }
 
             void show_path_caches();
             /**
@@ -911,6 +915,7 @@ namespace Btk{
             void rotate(float angel);
             void skew_x(float angle);
             void skew_y(float angle);
+            void reset_transform();
         public:
             /**
              * @brief Flush the data

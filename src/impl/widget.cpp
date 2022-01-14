@@ -14,6 +14,8 @@ namespace Btk{
     Widget::~Widget(){
         //Delete each children
         clear_childrens();
+        //Free name
+        SDL_free(_name);
     }
     bool Widget::handle(Event& ev){
         //Default Process event
@@ -45,6 +47,14 @@ namespace Btk{
             default:
                 return false;
         }
+    }
+    void Widget::set_name(u8string_view name){
+        _name = static_cast<char*>(SDL_realloc(_name,name.size() + 1));
+        if(_name == nullptr){
+            throwSDLError();
+        }
+        std::memcpy(_name,name.data(),name.size());
+        _name[name.size()] = '\0';
     }
     //Virtual member function
     void Widget::set_parent(Widget *parent){
@@ -122,6 +132,14 @@ namespace Btk{
             BTK_ASSERT_CASTABLE(WindowImpl,cur);
             _window = static_cast<WindowImpl*>(cur);
             return _window;
+        }
+        return nullptr;
+    }
+    auto Widget::find_children(u8string_view name) const -> Widget*{
+        for(auto &child:childrens){
+            if(name.compare(child->_name)){
+                return child;
+            }
         }
         return nullptr;
     }

@@ -103,6 +103,7 @@ namespace Btk{
 
             //Resize
             void resize(int w,int h,bool is_sizing = false);
+            void move(int x,int y);
 
             //Hide and show
             void hide();
@@ -206,6 +207,17 @@ namespace Btk{
             void redraw() const;
             
             Widget *root() const;
+            /**
+             * @brief Translate Position in locale widget to root widget
+             * 
+             * @tparam T 
+             * @param p 
+             * @return PointImpl<T> 
+             */
+            template<class T = int>
+            PointImpl<T> map_to_root(const PointImpl<T> &p){
+                return p.translate(x(),y());
+            }
         protected:
             /**
              * @brief Get current window
@@ -225,6 +237,7 @@ namespace Btk{
              * @return Widget* 
              */
             Widget *find_children(const Vec2 position) const;
+            Widget *find_children(u8string_view name) const;
             /**
              * @brief Set theme and font from parent
              * 
@@ -245,6 +258,10 @@ namespace Btk{
             void set_theme(const RefPtr<Theme> &theme){
                 _theme = theme;
                 redraw();
+            }
+            void set_name(u8string_view name);
+            const char *name() const noexcept{
+                return _name;
             }
         public:
             //Event Handle Method,It will be called in Widget::handle()
@@ -280,6 +297,7 @@ namespace Btk{
             }
 
             Font _font;
+            char *_name = nullptr;//< Widget name
             Widget *_parent = nullptr;//< Parent
             RefPtr<Theme> _theme;//< Theme
             mutable WindowImpl *_window = nullptr;//<Window pointer
@@ -370,6 +388,8 @@ namespace Btk{
                     }
                 }
             }
+            //Expose find method
+            using Widget::find_children;
     };
     inline Widget *Widget::find_children(Vec2 position) const{
         for(auto widget:childrens){

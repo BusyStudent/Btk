@@ -5,18 +5,12 @@
 #include <Btk/impl/window.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/exception.hpp>
-#include <Btk/gl/opengl.hpp>
 #include <Btk/render.hpp>
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
 #include <Btk/Btk.hpp>
 namespace Btk{
-    //TODO AntiAlias shaders
-    struct ImageViewShader{
-        GL::Shader shader;
-        GL::Program program;
-        Uint32 refcount = 1;
-    };
+    //TODO AntiAlias
 
     ImageView::ImageView() = default;
     ImageView::ImageView(int x,int y,int w,int h):ImageView(){

@@ -48,4 +48,8 @@ namespace Btk{
     void Dialog::show(){
         do_show(this);
     }
+    //MessageBox
+    MessageBox::~MessageBox(){
+        _do_destroy();
+    }
 }

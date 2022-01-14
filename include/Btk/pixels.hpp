@@ -33,6 +33,10 @@ namespace Btk{
         Color(const SDL_Color &c):Color(c.r,c.g,c.b,c.a){}
         Color(const Color &) = default;
         Color &operator =(const Color &) = default;
+
+        bool transparent() const noexcept{
+            return a == 0;
+        }
     };
     /**
      * @brief Color in opengl
@@ -450,7 +454,15 @@ namespace Btk{
              * @note The pixbuf's size() must be equal to the texture
              * @param pixbuf 
              */
-            void update(const PixBuf &pixbuf);
+            void update(PixBufRef pixbuf);
+            /**
+             * @brief Update the texture by format
+             * 
+             * @param rect 
+             * @param pixels 
+             * @param fmt 
+             */
+            void update(const Rect *rect,const void *pixels,Uint32 fmt);
             
             void update_yuv(
                 const Rect *rect,

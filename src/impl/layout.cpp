@@ -43,6 +43,7 @@ namespace Btk{
             return true;
         }
         if(event.type() == Event::LayoutUpdate){
+            event.accept();
             update();
             return true;
         }
@@ -54,6 +55,6 @@ namespace Btk{
     GridLayout::~GridLayout() = default;
 
     void GridLayout::update(){
-        
+
     }
 }

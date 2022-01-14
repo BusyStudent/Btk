@@ -94,15 +94,17 @@ namespace Btk{
 
             MessageBox(u8string_view title = {},u8string_view msg = {},Flag f = Info);
             ~MessageBox();
-
         private:
             /**
-             * @brief Internal Donnot call it
+             * @brief Platform MessageBox
              * 
              * @return Status 
              */
             BTKHIDDEN
             Status _do_run();
+            BTKHIDDEN
+            void   _do_destroy();
+
 
             u8string _title;
             u8string _message;

@@ -373,6 +373,12 @@ namespace Btk{
     void Renderer::ellipse(float center_x,float center_y,float rx,float ry){
         nvgEllipse(nvg_ctxt,center_x,center_y,rx,ry);
     }
+    void Renderer::triangle(float x1,float y1,float x2,float y2,float x3,float y3){
+        nvgMoveTo(nvg_ctxt,x1,y1);
+        nvgLineTo(nvg_ctxt,x2,y2);
+        nvgLineTo(nvg_ctxt,x3,y3);
+        nvgClosePath(nvg_ctxt);
+    }
     //R/S
     void Renderer::save(){
         nvgSave(nvg_ctxt);
@@ -414,6 +420,9 @@ namespace Btk{
     }
     void Renderer::translate(float x,float y){
         nvgTranslate(nvg_ctxt,x,y);
+    }
+    void Renderer::reset_transform(){
+        nvgResetTransform(nvg_ctxt);
     }
 }
 namespace Btk{
@@ -483,7 +492,7 @@ namespace Btk{
         }
         render->update_texture(texture,pixels);
     }
-    void TextureRef::update(const PixBuf &pixbuf){
+    void TextureRef::update(PixBufRef pixbuf){
         if(empty()){
             return;
         }
@@ -527,6 +536,14 @@ namespace Btk{
             throwRuntimeError("rect.size() > size()");
         }
         render->update_texture(texture,rect,pixels);
+    }
+    void TextureRef::update(const Rect *rect,const void *pixels,Uint32 fmt){
+        auto dev  = render->device();
+        auto ctxt = render->context();
+        Rect r;
+        if(rect == nullptr){
+
+        }
     }
     void TextureRef::native_handle(void *p_handle){
         if(empty()){
@@ -693,6 +710,12 @@ namespace Btk{
     void Renderer::fill_ellipse(float x,float y,float rx,float ry,Color c){
         begin_path();
         ellipse(x,y,rx,ry);
+        fill_color(c);
+        fill();
+    }
+    void Renderer::draw_text(float x,float y,u8string_view txt,Color c){
+        begin_path();
+        text(x,y,txt);
         fill_color(c);
         fill();
     }

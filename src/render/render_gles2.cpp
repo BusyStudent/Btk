@@ -6,13 +6,17 @@
 #include <Btk/window.hpp>
 #include <Btk/canvas.hpp>
 #include <Btk/render.hpp>
-
 #include <Btk/font.hpp>
 
-extern "C"{
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
+#include <cmath>
+
+#include "../libs/nanovg.h"
+
+namespace{
     #define NANOVG_GLES3_IMPLEMENTATION
-    #define NANOVG_GL_USE_UNIFORMBUFFER 1
-    #include "../libs/nanovg.h"
     #include "../libs/nanovg_gl.h"
 }
 
@@ -25,9 +29,8 @@ extern "C"{
 
 #ifndef NDEBUG
 
-#define BTK_GL_CHECK() _btk_glcheck(__FILE__,__LINE__,BTK_FUNCTION)
-static bool _btk_glcheck(const char *f,int line,const char *fn){
-    GLenum code = glGetError();
+#define BTK_GL_CHECK() _btk_glcheck(glGetError(),__FILE__,__LINE__,BTK_FUNCTION)
+static bool _btk_glcheck(GLenum code,const char *f,int line,const char *fn){
     if(code == GL_NO_ERROR){
         return true;
     }
@@ -66,6 +69,48 @@ namespace Btk::GL{
         GLDevice *dev;
     };
 }
+
+namespace{
+    struct SDLGL:public Btk::GLAdapter{
+        void *create_context(void *win_handle){
+            Btk::GL::LoadLibaray();
+            void *ctxt = SDL_GL_CreateContext(static_cast<SDL_Window*>(win_handle));
+            if(ctxt != nullptr){
+                SDL_GL_SetSwapInterval(1);
+            }
+            return ctxt;
+        }
+        void  destroy_context(void *gl_handle){
+            SDL_GL_DeleteContext(gl_handle);
+        }
+        //Env
+        bool  make_current(void *win_handle,void *gl_handle){
+            return SDL_GL_MakeCurrent(static_cast<SDL_Window*>(win_handle),gl_handle) == 0;
+        }
+        void  *get_current_context(){
+            return SDL_GL_GetCurrentContext();
+        }
+        void  *get_current_window(){
+            return SDL_GL_GetCurrentWindow();
+        }
+        void  *get_proc(const char *name){
+            return SDL_GL_GetProcAddress(name);
+        }
+        void   get_drawable(void *win_handle,int *w,int *h){
+            return SDL_GL_GetDrawableSize(static_cast<SDL_Window*>(win_handle),w,h);
+        }
+        void   get_window_size(void *win_handle,int *w,int *h){
+            return SDL_GetWindowSize(static_cast<SDL_Window*>(win_handle),w,h);
+        }
+        bool   has_extension(const char *extname){
+            return SDL_GL_ExtensionSupported(extname);
+        }
+        void   swap_window(void *win_handle){
+            return SDL_GL_SwapWindow(static_cast<SDL_Window*>(win_handle));
+        }
+    };
+}
+
 namespace Btk{
     /**
      * @brief The renderer device impl
@@ -401,6 +446,51 @@ namespace Btk{
 }
 //Some opengl constants
 #define GL_MULTISAMPLE_ARB 0x809D
+namespace Btk{
+    //glGetVersion
+    //from glad
+    GLVersion GLAdapter::get_version(){
+            
+        /* Thank you @elmindreda
+        * https://github.com/elmindreda/greg/blob/master/templates/greg.c.in#L176
+        * https://github.com/glfw/glfw/blob/master/src/context.c#L36
+        */
+        int i, major, minor;
+
+        const char* version;
+        const char* prefixes[] = {
+            "OpenGL ES-CM ",
+            "OpenGL ES-CL ",
+            "OpenGL ES ",
+            NULL
+        };
+        auto glGetString = (PFNGLGETSTRINGPROC)get_proc("glGetString");
+
+        version = (const char*) glGetString(GL_VERSION);
+        if (!version) return {};
+
+        for (i = 0;  prefixes[i];  i++) {
+            const size_t length = strlen(prefixes[i]);
+            if (strncmp(version, prefixes[i], length) == 0) {
+                version += length;
+                break;
+            }
+        }
+
+    /* PR #18 */
+    #ifdef _MSC_VER
+        sscanf_s(version, "%d.%d", &major, &minor);
+    #else
+        sscanf(version, "%d.%d", &major, &minor);
+    #endif
+
+        GLVersion ver;
+
+        ver.major = major; ver.minor = minor;
+        ver.es = true;
+        return ver;
+    }
+}
 //RendererDevice
 namespace Btk{
     GLDevice::~GLDevice(){
@@ -408,75 +498,73 @@ namespace Btk{
         BTK_GL_BEGIN();
         //Clear target stack
         while(not targets_stack.empty()){
-            targets_stack.top().destroy();
+            targets_stack.top().destroy(*this);
             targets_stack.pop();
         }
-        SDL_GL_DeleteContext(_context);
+        adapter->destroy_context(_context);
         BTK_GL_END();
-    }
-    GLDevice::GLDevice(SDL_Window *win){
-        //Create context
-        _context = SDL_GL_CreateContext(win);
-        if(_context == nullptr){
-            throwSDLError();
+
+        if(owned_adapter){
+            delete adapter;
         }
-        _window = win;
+    }
+    GLDevice::GLDevice(void *win_handle,GLAdapter *_adapter,bool owned){
+        //Create context
+        adapter = _adapter;
+        _window = win_handle;
+        _context = adapter->create_context(win_handle);
+        if(_context == nullptr){
+            throwRuntimeError("Could not create gl context");
+        }
         //Configure
-        SDL_GL_SetSwapInterval(1);
+        // SDL_GL_SetSwapInterval(1);
+
+        //Load proc
+        GLES3Functions::load_proc([this](const char *name){
+            return adapter->get_proc(name);
+        });
 
         set_backend(RendererBackend::OpenGL);
-        
-        #ifdef BTK_NEED_GLAD
-        //Init glad
-        static bool glad_wasinit = false;
-        if(not glad_wasinit){
-            GL::LoadLibaray();
-            if(BtkLoadGLES2Loader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress))){
-                glad_wasinit = true;
-            }
-        }
-        #endif
+
         //Save env
-        screen_fbo = GL::CurrentFBO();
-        screen_rbo = GL::CurrentRBO();
+        screen_fbo = glGetCurrentFrameBuffer();
+        screen_rbo = glGetCurrentRenderBuffer();
         //Check env
         //We will make sure msaa is disable by default
         //So user can use temporarily turn off/on antialias
-        has_arb_multisample = SDL_GL_ExtensionSupported("GL_ARB_multisample");
-        has_arb_copy_image  = SDL_GL_ExtensionSupported("GL_ARB_copy_image");
+        has_arb_multisample = adapter->has_extension("GL_ARB_multisample");
+        has_arb_copy_image  = adapter->has_extension("GL_ARB_copy_image");
         //Check is opengl es
-        int _gl_flags;
-        SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,&_gl_flags);
-        is_gles = ((_gl_flags & SDL_GL_CONTEXT_PROFILE_ES) == SDL_GL_CONTEXT_PROFILE_ES);
+        is_gles = adapter->get_version().es;
         //Log info
         BTK_LOGINFO("[OpenGL]has_arb_multisample %d",int(has_arb_multisample));
         //Default functions
-        has_msaa_fn = [](){
+        has_msaa_fn = [](GLES3Functions &fns){
             GLint sample_count;
-            glGetIntegerv(GL_SAMPLES,&sample_count);
+            fns.glGetIntegerv(GL_SAMPLES,&sample_count);
             return sample_count != 0;
         };
         //Replace functions by ext
         if(has_arb_multisample){
-            set_msaa_fn = [](bool value) -> bool{
+            set_msaa_fn = [](GLES3Functions &fns,bool value) -> bool{
                 if(value){
-                    glEnable(GL_MULTISAMPLE_ARB);
+                    fns.glEnable(GL_MULTISAMPLE_ARB);
                 }
                 else{
-                    glDisable(GL_MULTISAMPLE_ARB);
+                    fns.glDisable(GL_MULTISAMPLE_ARB);
                 }
-                bool v = (glGetError() == GL_NO_ERROR);
+                bool v = (fns.glGetError() == GL_NO_ERROR);
                 BTK_LOGINFO("[OpenGL]Set msaa(%d) => %d",int(value),int(v));
                 return v;
             };
-            has_msaa_fn = []() -> bool{
-                return glIsEnabled(GL_MULTISAMPLE_ARB);
+            has_msaa_fn = [](GLES3Functions &fns) -> bool{
+                return fns.glIsEnabled(GL_MULTISAMPLE_ARB);
             };
         }
         //Android Is OpenGLES
         #ifndef __ANDROID__
         if(not is_gles){
-            gl_get_tex_image = (GLGetTexImage)SDL_GL_GetProcAddress("glGetTexImage");
+            gl_get_tex_image = (GLGetTexImage)adapter->get_proc("glGetTexImage");
             BTK_LOGINFO("Founded glGetTexImage");
         }
         #endif
@@ -486,54 +574,36 @@ namespace Btk{
             if(set_msaa(false)){
                 BTK_LOGINFO("[GLDevice]Succeed to disable msaa");
             }
-            else{
-                //On no
-                //We could only recreate the context
-                BTK_LOGWARN("[GLDevice]Recreate OpenGL Context");
-
-                SDL_GL_DeleteContext(_context);
-                //Set new flags
-                int samples;
-                SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES,&samples);
-                SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,0);
-                _context = SDL_GL_CreateContext(win);
-                if(_context == nullptr){
-                    //Reset
-                    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,samples);
-                    throwSDLError();
-                }
-                //Reset flags
-                SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,samples);
-            }
         }
-        
+        owned_adapter = owned;
+    }
+    GLDevice::GLDevice(SDL_Window *win):
+        GLDevice(win,new SDLGL(),true){
     }
     //GL Context
     void GLDevice::make_current(){
         //Already set up the context
-        if(SDL_GL_GetCurrentContext() == _context){
+        if(adapter->get_current_context() == _context){
             return;
         }
-        if(SDL_GL_MakeCurrent(_window,_context) != 0){
-            throwSDLError();
-        }
+        adapter->make_current(_window,_context);
     }
     void GLDevice::gl_begin(){
-        _cur_ctxt = SDL_GL_GetCurrentContext();
+        _cur_ctxt = adapter->get_current_context();
         if(_cur_ctxt == _context){
             //We donnot setup The context
             _cur_win = nullptr;
         }
         else{
-            _cur_win = SDL_GL_GetCurrentWindow();
+            _cur_win = adapter->get_current_window();
             //Setup
-            SDL_GL_MakeCurrent(_window,_context);
+            adapter->make_current(_window,_context);
         }
     }
     void GLDevice::gl_end(){
         //We need to reset to prev
         if(_cur_win != nullptr){
-            SDL_GL_MakeCurrent(_cur_win,_cur_ctxt);
+            adapter->make_current(_cur_win,_cur_ctxt);
             _cur_win = nullptr;
         }
     }
@@ -600,7 +670,7 @@ namespace Btk{
             BTK_LOGINFO("Enable Stencil on create context");
             flags |= NVG_STENCIL_STROKES;
         }
-        return nvgCreateGLES3(flags);
+        return nvgCreateGLES3(flags,this);
         BTK_GL_END();
     }
     void GLDevice::destroy_context(Context ctxt){
@@ -611,7 +681,7 @@ namespace Btk{
     //Check context
     bool GLDevice::has_msaa(){
         BTK_GL_BEGIN();
-        return has_msaa_fn();
+        return has_msaa_fn(*this);
         BTK_GL_END();
     }
     bool GLDevice::set_msaa(bool val){
@@ -620,14 +690,14 @@ namespace Btk{
             return false;
         }
         BTK_GL_BEGIN();
-        return set_msaa_fn(val);
+        return set_msaa_fn(*this,val);
         BTK_GL_END();
     }
     //Output size
     bool GLDevice::output_size(Size *logical_size,Size *physical_size){
         bool val = true;
         if(logical_size != nullptr){
-            SDL_GetWindowSize(
+            adapter->get_window_size(
                 _window,
                 &(logical_size->w),
                 &(logical_size->h)
@@ -635,7 +705,7 @@ namespace Btk{
         }
         if(physical_size != nullptr){
             BTK_GL_BEGIN();
-            SDL_GL_GetDrawableSize(
+            adapter->get_drawable(
                 _window,
                 &(physical_size->w),
                 &(physical_size->h)
@@ -646,7 +716,7 @@ namespace Btk{
     }
     //Buffer
     void GLDevice::swap_buffer(){
-        SDL_GL_SwapWindow(_window);
+        adapter->swap_window(_window);
     }
     void GLDevice::clear_buffer(Color c){
         BTK_GL_BEGIN();
@@ -702,7 +772,7 @@ namespace Btk{
         if(ctxt == nullptr){
             //Read current frame buffer
             Rect rect;
-            Rect screen = GL::CurrentViewPort();
+            Rect screen = glGetCurrentViewPort();
 
             if(screen.empty()){
                 //We cannot get current framebuffer size
@@ -734,7 +804,7 @@ namespace Btk{
             //Read from texture with ext
             auto texture = glnvgFindTexture(ctxt,id);
             //Restore and bind
-            auto cur_tex = GL::CurrentTex(GL_TEXTURE_2D);
+            auto cur_tex = glGetCurrentTexture2D();
             glBindTexture(GL_TEXTURE_2D,texture->tex);
             //Begin get
             //TODO Use helper
@@ -797,7 +867,7 @@ namespace Btk{
         BTK_GL_BEGIN();
         Rect rect = {0,0,0,0};
         if(r == nullptr){
-            SDL_GetWindowSize(_window,&(rect.w),&(rect.h));
+            adapter->get_drawable(_window,&(rect.w),&(rect.h));
         }
         else{
             rect = *r;
@@ -967,7 +1037,7 @@ namespace Btk{
             }
             int imageFlags = int(*flag);
 
-            GLuint cur_tex = GL::CurrentTex();
+            GLuint cur_tex = glGetCurrentTexture2D();
             
             //Code from nanovg_gl.h
         #ifdef NANOVG_GLES2
@@ -1046,17 +1116,17 @@ namespace Btk{
         BTK_GL_BEGIN();
         //Add new target
         auto [w,h] = texture_size(ctxt,id);
-        targets_stack.emplace(w,h,id);
+        targets_stack.emplace(*this,w,h,id);
         //Check is ok
         if(not targets_stack.top().ok){
-            targets_stack.top().destroy();
+            targets_stack.top().destroy(*this);
             targets_stack.pop();
             throwRendererError("Failed to set fbo");
         }
         //End current frame
         end_frame(ctxt);
         //Bind it
-        targets_stack.top().bind();
+        targets_stack.top().bind(*this);
         //Set Viewport
         glViewport(0,0,w,h);
         //Begin the frame at the framebuffer
@@ -1080,8 +1150,8 @@ namespace Btk{
             //Reset the flip state
             nvgRestore(ctxt);
 
-            targets_stack.top().unbind();
-            targets_stack.top().destroy();
+            targets_stack.top().unbind(*this);
+            targets_stack.top().destroy(*this);
             targets_stack.pop();
             if(targets_stack.empty()){
                 //Reset to screen
@@ -1108,103 +1178,104 @@ namespace Btk{
         }
         BTK_GL_END();
     }
-    GLTarget::GLTarget(int w,int h,GLuint tex){
+    inline
+    GLTarget::GLTarget(GLES3Functions &fns,int w,int h,GLuint tex){
         this->tex = tex;
         this->w = w;
         this->h = h;
 
         //Save status
-        prev_fbo = GL::CurrentRBO();
-        prev_rbo = GL::CurrentFBO();
+        prev_fbo = fns.glGetCurrentFrameBuffer();
+        prev_rbo = fns.glGetCurrentRenderBuffer();
         //Create ours fbo and rbo
-        glGenFramebuffers(1,&fbo);
-        glGenRenderbuffers(1,&rbo);
+        fns.glGenFramebuffers(1,&fbo);
+        fns.glGenRenderbuffers(1,&rbo);
         //Bind it
-        bind();
+        bind(fns);
         //Code from nanovg_gl_utils.h
 	    // combine all
 
-	    glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, w, h);
-	    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
-	    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	    fns.glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, w, h);
+	    fns.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+	    fns.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
         
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        if (fns.glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 
         #ifdef GL_DEPTH24_STENCIL8
             // If GL_STENCIL_INDEX8 is not supported, try GL_DEPTH24_STENCIL8 as a fallback.
             // Some graphics cards require a depth buffer along with a stencil.
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+            fns.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+            fns.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+            fns.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
-            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            if (fns.glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         #endif // GL_DEPTH24_STENCIL8
                 ok = false;
         }
         ok = true;
 
-        unbind();
+        unbind(fns);
     }
     bool GLDevice::has_extension(const char *ext){
         BTK_GL_BEGIN();
-        return SDL_GL_ExtensionSupported(ext);
+        return adapter->has_extension(ext);
         BTK_GL_END();
     }
     void *GLDevice::load_proc(const char *name){
         BTK_GL_BEGIN();
-        return SDL_GL_GetProcAddress(name);
+        return adapter->get_proc(name);
         BTK_GL_END();
     }
 }
 //GLCanvas
 namespace Btk{
     void GLCanvas::draw(Renderer &render){
-        //OpenGL Draw
-        //NVGcontext *ctxt = render.get();
-        //End the frame
-        //nvgEndFrame(ctxt);
-        //Restore prev ViewPort
-        if(render.backend() != RendererBackend::OpenGL){
-            return;
-        }
-        render.end_frame();
-        //Try init 
-        if(not _is_inited){
-            gl_init();
-            _is_inited = true;
-        }
-        //Resetore the env
-        GLint viewport[4];
-        glGetIntegerv(GL_VIEWPORT,viewport);
+        // //OpenGL Draw
+        // //NVGcontext *ctxt = render.get();
+        // //End the frame
+        // //nvgEndFrame(ctxt);
+        // //Restore prev ViewPort
+        // if(render.backend() != RendererBackend::OpenGL){
+        //     return;
+        // }
+        // render.end_frame();
+        // //Try init 
+        // if(not _is_inited){
+        //     gl_init();
+        //     _is_inited = true;
+        // }
+        // //Resetore the env
+        // GLint viewport[4];
+        // glGetIntegerv(GL_VIEWPORT,viewport);
 
-        Rect win_rect = window()->rectangle();
+        // Rect win_rect = window()->rectangle();
 
-        Rect area = {
-            x(),
-            win_rect.h - y() - h(),
-            w(),
-            h()
-        };
+        // Rect area = {
+        //     x(),
+        //     win_rect.h - y() - h(),
+        //     w(),
+        //     h()
+        // };
 
-        //Set the viewport
-        glViewport(area.x,area.y,area.w,area.h);
-        glEnable(GL_SCISSOR_TEST);
-        glScissor(area.x,area.y,area.w,area.h);
+        // //Set the viewport
+        // glViewport(area.x,area.y,area.w,area.h);
+        // glEnable(GL_SCISSOR_TEST);
+        // glScissor(area.x,area.y,area.w,area.h);
 
 
-        gl_draw();
+        // gl_draw();
 
-        //Reset the context
-        glDisable(GL_SCISSOR_TEST);
+        // //Reset the context
+        // glDisable(GL_SCISSOR_TEST);
 
-        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+        // glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 
-        auto drawable = render.output_size();
-        //nvgBeginFrame(ctxt,drawable.w,drawable.h,render.pixels_ratio());
-        //TODO A dirty way to begin frame without clear the status 
-        GLDevice *device = static_cast<GLDevice*>(render.device());
-        device->begin_frame_ex(render.nvg_ctxt,drawable.w,drawable.h,render.pixels_ratio());
-        render.is_drawing = true;
+        // auto drawable = render.output_size();
+        // //nvgBeginFrame(ctxt,drawable.w,drawable.h,render.pixels_ratio());
+        // //TODO A dirty way to begin frame without clear the status 
+        // GLDevice *device = static_cast<GLDevice*>(render.device());
+        // device->begin_frame_ex(render.nvg_ctxt,drawable.w,drawable.h,render.pixels_ratio());
+        // render.is_drawing = true;
     }
     GLDevice *GLCanvas::gl_device(){
         Renderer *render = renderer();

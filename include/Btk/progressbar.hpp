@@ -22,9 +22,16 @@ namespace Btk{
             }
         private:
             Signal<void(float)> _signal_value_changed;
-            u8string value_text;
+            u8string value_text = {};
+            u8string fmt_string = "%.2f%%";
             float value = 0;
             bool display_value = true;
+            bool draw_boarder = true;
+            bool draw_background = true;
+
+            Orientation orientation;
+            Color background;
+            Color boarder;
     };
 }
 

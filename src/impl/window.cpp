@@ -158,13 +158,15 @@ namespace Btk{
         else{
             //not to change widgets postion
             //update each Layout
-            Layout *layout;
-            for(auto widget:widgets_list){
-                layout = dynamic_cast<Layout*>(widget);
-                if(layout != nullptr){
-                    layout->update();
-                }
-            }
+            // Layout *layout;
+            // for(auto widget:widgets_list){
+            //     layout = dynamic_cast<Layout*>(widget);
+            //     if(layout != nullptr){
+            //         layout->update();
+            //     }
+            // }
+            Event event(Event::LayoutUpdate);
+            handle(event);
         }
     }
 }
@@ -251,6 +253,9 @@ namespace Btk{
                 if(not sig_leave.empty()){
                     sig_leave();
                 }
+                break;
+            }
+            case SDL_WINDOWEVENT_MOVED:{
                 break;
             }
         }

@@ -217,3 +217,8 @@ namespace Btk{
         return bar_value;
     }
 }
+
+namespace Btk{
+    //AbstractSilder
+    
+}
