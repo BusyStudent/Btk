@@ -182,9 +182,12 @@ namespace Btk{
     }
     Btk_CallOnUnload{
         if(uchardet_lib != nullptr){
-
+            uchardet_delete_fn(
+                static_cast<uchardet_t>(SDL_TLSGet(uchardet_instance))
+            );
+            SDL_TLSSet(uchardet_instance,nullptr,nullptr);
+            SDL_UnloadObject(uchardet_lib);
         }
-        SDL_UnloadObject(uchardet_lib);
     };
     static bool uchardet_init(){
         uchardet_lib = SDL_LoadObject("libuchardet.so");
@@ -331,7 +334,7 @@ namespace Btk{
     }
     u8string u8string::from(const void *buf,size_t n,const char *encoding){
         if(encoding == nullptr){
-            encoding = "UTF-8";
+            encoding = GET_CHARSET_FROM(buf,n);
         }
         u8string s;
         if(buf == nullptr or n == 0){

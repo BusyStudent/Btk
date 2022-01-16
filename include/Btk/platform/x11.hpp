@@ -6,6 +6,7 @@
 #include "../exception.hpp"
 #include <cstdio>
 #include <string>
+struct SDL_Window;
 namespace Btk{
     namespace X11{
         BTKAPI void Init();
@@ -36,6 +37,7 @@ namespace Btk{
         FILE *Popen(Args &&...args){
             return Popen(sizeof...(args),_GetCString(std::forward<Args>(args))...);
         }
+        SDL_Window *CreateTsWindow();
     };
     //X11 Error
     class BTKAPI XError:public RuntimeError{

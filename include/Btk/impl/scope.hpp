@@ -7,11 +7,11 @@
 #define Btk_defer Btk::Impl::ScopeGuard BTK_UNIQUE_NAME(_defer__) = 
 
 #ifdef __GNUC__
-    #define Btk_CallOnLoad static __attribute__((constructor)) void BTK_UNIQUE_NAME(_executer__)()
-    #define Btk_CallOnUnload static __attribute__((destructor)) void BTK_UNIQUE_NAME(_executer__)()
+    #define Btk_CallOnLoad static __attribute__((constructor)) void BTK_UNIQUE_NAME(_onload_executer__)()
+    #define Btk_CallOnUnload static __attribute__((destructor)) void BTK_UNIQUE_NAME(_onunload_executer__)()
 #else
-    #define Btk_CallOnLoad static Btk::Impl::OnloadExecuter BTK_UNIQUE_NAME(_executer__) = []()
-    #define Btk_CallOnUnload static Btk::Impl::OnUnloadExecuter BTK_UNIQUE_NAME(_executer__) = []()
+    #define Btk_CallOnLoad static Btk::Impl::OnloadExecuter BTK_UNIQUE_NAME(_onload_executer__) = []()
+    #define Btk_CallOnUnload static Btk::Impl::OnUnloadExecuter BTK_UNIQUE_NAME(_onunload_executer__) = []()
 #endif
 
 namespace Btk{

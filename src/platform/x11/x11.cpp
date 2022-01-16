@@ -1,5 +1,6 @@
 #include "../../build.hpp"
 
+#include <Btk/gl/opengl_adapter.hpp>
 #include <Btk/platform/popen.hpp>
 #include <Btk/platform/x11.hpp>
 #include <Btk/platform/fs.hpp>
@@ -22,6 +23,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+
+#include <GL/glx.h>
 
 #include "internal.hpp"
 //Need we throw Exception when the error was happened
@@ -56,6 +59,39 @@ Btk_CallOnLoad{
     XInitThreads();    
 };
 #endif
+
+
+namespace{
+    struct GLX:public Btk::GLAdapter{
+        ::Display *display;
+        ::Window   window;
+
+        virtual void *create_context(void *win_handle) = 0;
+        virtual void  destroy_context(void *gl_handle) = 0;
+        //Env
+        virtual bool   make_current(void *win_handle,void *gl_handle) = 0;
+        virtual void  *get_current_context(){
+            return glXGetCurrentContext();
+        };
+        virtual void  *get_current_window(){
+            return reinterpret_cast<void*>(glXGetCurrentDrawable());
+        }
+        virtual void  *get_proc(const char *name){
+            // return glXGetProcAddress((const GLubyte*)name);
+        };
+        virtual void   get_drawable(void *win_handle,int *w,int *h){
+
+        }
+        virtual void   get_window_size(void *win_handle,int *w,int *h){
+
+        }
+        virtual bool   has_extension(const char *extname) = 0;
+        virtual void   swap_window(void *win_handle){
+
+        }
+    };
+}
+
 
 namespace Btk{
 namespace X11{
@@ -234,6 +270,35 @@ namespace X11{
             return fptr;
         }
     }
+    // SDL_Window *CreateTsWindow(u8string_view title,int h,int w){
+    //     ::Display *display = XOpenDisplay(nullptr);
+    //     ::Window win;
+        
+    //     XVisualInfo vinfo;
+    //     XMatchVisualInfo(display, DefaultScreen(display), 32, TrueColor, &vinfo);
+
+    //     XSetWindowAttributes attr;
+    //     attr.colormap = XCreateColormap(display, DefaultRootWindow(display), vinfo.visual, AllocNone);
+    //     attr.border_pixel = 0;
+    //     attr.background_pixel = 0;
+
+    //     win = XCreateWindow(display, DefaultRootWindow(display), 0, 0, w,h, 0, vinfo.depth, InputOutput, vinfo.visual, CWColormap | CWBorderPixel | CWBackPixel, &attr);
+    //     XSelectInput(display, win, StructureNotifyMask);
+
+    //     Atom wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", 0);
+    //     XSetWMProtocols(display, win, &wm_delete_window, 1);
+
+    //     //Setup opengl
+        
+    //     XCloseDisplay(display);
+    //     //X11 End
+    //     SDL_Window *sdl = SDL_CreateWindowFrom(reinterpret_cast<void*>(win));
+
+    //     SDL_SetWindowData(sdl,"btk_x11",0);
+    //     SDL_SetWindowTitle(sdl,title.data());
+
+    //     return sdl;
+    // }
 }
 }
 

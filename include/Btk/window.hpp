@@ -19,6 +19,7 @@ namespace Btk{
         Vulkan      = 1 << 1,
         SkipTaskBar = 1 << 2,
         OpenGLMSAA  = 1 << 3,
+        Transparent = 1 << 4, //< Background transparent
     };
     BTK_FLAGS_OPERATOR(WindowFlags,Uint32);
     /**

@@ -6,6 +6,7 @@
 #include "../string.hpp"
 #include "../render.hpp"
 //Import PFNS and macro
+#include "opengl_adapter.hpp"
 #include "opengl_macro.h"
 
 /**
@@ -191,11 +192,6 @@ namespace Btk{
     #else
         #define BTK_GL_DECL(PFN,NAME) static constexpr PFN NAME = ::NAME;
     #endif
-    struct GLVersion{
-        int  major;
-        int  minor;
-        bool es;
-    };
     /**
      * @brief OpenGLES2 functions
      * 
@@ -308,24 +304,6 @@ namespace Btk{
     };
     struct GLAttributes{
 
-    };
-    class GLAdapter{
-        public:
-            virtual ~GLAdapter(){};
-            virtual void *create_context(void *win_handle) = 0;
-            virtual void  destroy_context(void *gl_handle) = 0;
-            //Env
-            virtual bool   make_current(void *win_handle,void *gl_handle) = 0;
-            virtual void  *get_current_context() = 0;
-            virtual void  *get_current_window() = 0;
-            virtual void  *get_proc(const char *name) = 0;
-            virtual void   get_drawable(void *win_handle,int *w,int *h) = 0;
-            virtual void   get_window_size(void *win_handle,int *w,int *h) = 0;
-            virtual bool   has_extension(const char *extname) = 0;
-            virtual void   swap_window(void *win_handle) = 0;
-
-            BTKAPI
-            GLVersion get_version();
     };
     /**
      * @brief OpenGL Renderer Device

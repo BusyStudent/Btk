@@ -218,6 +218,19 @@ namespace Btk{
             PointImpl<T> map_to_root(const PointImpl<T> &p){
                 return p.translate(x(),y());
             }
+            template<class T = int>
+            RectImpl<T> map_to_root(const RectImpl<T> &p){
+                return p.translate(x(),y());
+            }
+            template<class T = int>
+            PointImpl<T> map_to_self(const PointImpl<T> &p){
+                return p.translate(-x(),-y());
+            }
+            template<class T = int>
+            RectImpl<T> map_to_self(const RectImpl<T> &p){
+                return p.translate(-x(),-y());
+            }
+            
         protected:
             /**
              * @brief Get current window

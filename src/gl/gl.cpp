@@ -32,18 +32,15 @@ namespace Btk::GL{
         //Register our Device
         RegisterDevice([](SDL_Window *win) -> RendererDevice*{
             //Check is OpenGL Window
-            if((SDL_GetWindowFlags(win) & SDL_WINDOW_OPENGL) == SDL_WINDOW_OPENGL){
-                void *loader = SDL_GetWindowData(win,"btk_gl_loader");
-                if(loader != nullptr){
-                    //Use loader
-                    using load_fn = GLAdapter *(*)(SDL_Window *);
-                    auto fn = reinterpret_cast<load_fn>(loader);
-                    GLAdapter *adapter = fn(win);
-                    if(adapter == nullptr){
-                        return nullptr;
-                    }
-                    return new GLDevice(win,adapter,true);
-                }
+            void *loader = SDL_GetWindowData(win,"btk_gl_loader");
+            if(loader != nullptr){
+                //Use loader
+                using load_fn = GLDevice *(*)(SDL_Window *);
+                auto fn = reinterpret_cast<load_fn>(loader);
+                GLDevice *device = fn(win);
+                return device;
+            }
+            else if((SDL_GetWindowFlags(win) & SDL_WINDOW_OPENGL) == SDL_WINDOW_OPENGL){
                 return new GLDevice(win);
             }
             return nullptr;
