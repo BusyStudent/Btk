@@ -59,10 +59,11 @@
         );\
     }
 #define BTK_ENUM_OPERATOR2(ENUM,BASE,OP) \
-    inline ENUM operator OP##=(ENUM a1,ENUM a2) noexcept{\
-        return static_cast<ENUM>(\
+    inline ENUM operator OP##=(ENUM &a1,ENUM a2) noexcept{\
+        a1 = static_cast<ENUM>(\
             static_cast<BASE>(a1) OP static_cast<BASE>(a2)\
         );\
+        return a1;\
     }
 #define BTK_ENUM_ALIAS(ENUM,ALIAS,OP) \
     inline ENUM operator ALIAS(ENUM a1,ENUM a2) noexcept{\

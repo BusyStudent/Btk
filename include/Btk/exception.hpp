@@ -2,6 +2,7 @@
 #define _BTK_EXCEPTION_HPP_
 // #include <stdexcept>
 #include <exception>
+#include <cerrno>
 // #include <thread>
 #include "defs.hpp"
 #include "string.hpp"
@@ -13,12 +14,10 @@ namespace Btk{
      */
     class BTKAPI RuntimeError:public std::exception{
         public:
-            RuntimeError();
+            RuntimeError() = default;
             RuntimeError(const RuntimeError &) = default;
             RuntimeError(RuntimeError &&) = default;
-            RuntimeError(u8string_view message){
-                _message = message;
-            }
+            RuntimeError(u8string_view message):_message(message){}
             ~RuntimeError();
 
             const char *what() const noexcept;
@@ -37,23 +36,50 @@ namespace Btk{
     };
     class BTKAPI SDLError:public RuntimeError{
         public:
-            SDLError(u8string_view err);
-            SDLError(const SDLError &);
+            SDLError(u8string_view err):RuntimeError(err){};
+            SDLError(const SDLError &) = default;
             ~SDLError();
     };
     class BTKAPI BadFunctionCall:public RuntimeError{
         public:
             BadFunctionCall();
-            BadFunctionCall(const BadFunctionCall &);
+            BadFunctionCall(const BadFunctionCall &) = default;
             ~BadFunctionCall();
     };
     class BTKAPI RendererError:public RuntimeError{
         public:
-            RendererError(u8string_view msg);
+            RendererError(u8string_view msg):RuntimeError(msg){};
             RendererError(const RendererError &) = default;
             ~RendererError();
     };
-    
+    /**
+     * @brief Error from errno
+     * 
+     */
+    class BTKAPI CRuntimeError:public RuntimeError{
+        public:
+            CRuntimeError(int _errno){
+                set_errcode(_errno);
+            }
+            CRuntimeError(const CRuntimeError &) = default;
+            ~CRuntimeError();
+
+            void set_errcode(int _errno);
+            int  errcode() const noexcept{
+                return _errno;
+            }
+        private:
+            int _errno = {};
+    };
+    class BTKAPI IndexError:public RuntimeError{
+        public:
+
+        private:
+            union{
+                size_t _ulidx;
+                long   _lidx;
+            };
+    };
     // enum class ThreadType{
     //     AsyncWorker,// The AsyncWorker
     //     Renderer,//< The Rendering thread
@@ -65,7 +91,7 @@ namespace Btk{
     //     ThreadType thread_type;//<The thread type
     // };
     //typedef bool (*ExceptionHandler)(ExceptionData);
-    
+    [[noreturn]] void BTKAPI throwCRuntimeError(int errcode = errno);
     [[noreturn]] void BTKAPI throwRuntimeError(u8string_view msg);
     [[noreturn]] void BTKAPI throwSDLError(u8string_view msg);
     [[noreturn]] void BTKAPI throwSDLError();

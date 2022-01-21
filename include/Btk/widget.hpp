@@ -401,6 +401,13 @@ namespace Btk{
                     }
                 }
             }
+            //TODO add more virtual method
+            //For manage top / bottom
+            // virtual void    make_top();
+            // virtual void    iteration(bool(*callback)(Widget *,size_t n,void *),void *args);
+            // virtul Widget * top_widget();
+            // virtul Widget * bottom_widget();
+
             //Expose find method
             using Widget::find_children;
     };

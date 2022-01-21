@@ -15,6 +15,7 @@ namespace Btk{
     //TODO:The SpinLock is not safe to lock recursively
     //So we are better to write our own recursive spinlock
     BTKAPI void DeferCall(void(* fn)(void*),void *data);
+    BTKAPI void DeferRethrow();
 
     class SignalBase;
     template<class RetT>
@@ -534,6 +535,44 @@ namespace Btk{
                         ret = static_cast<_Slot<RetT,Args...>*>(slot)->invoke(
                             std::forward<Args>(args)...
                         );
+                    }
+                    return ret;
+                }
+            }
+            /**
+             * @brief Emit with nothrow
+             * 
+             * @param args 
+             * @return RetT 
+             */
+            RetT nothrow_emit(Args ...args) const{
+                //lock the signalbase
+                lock_guard<const SignalBase> locker(*this);
+                //why it has complie error on msvc
+                //std::is_same<void,RetT>()
+                if constexpr(std::is_same<void,RetT>::value){
+                    for(auto slot:slots){
+                        try{
+                            static_cast<_Slot<RetT,Args...>*>(slot)->invoke(
+                                std::forward<Args>(args)...
+                            );
+                        }
+                        catch(...){
+                            DeferRethrow();
+                        }
+                    }
+                }
+                else{
+                    RetT ret{};
+                    for(auto slot:slots){
+                        try{
+                            ret = static_cast<_Slot<RetT,Args...>*>(slot)->invoke(
+                                std::forward<Args>(args)...
+                            );
+                        }
+                        catch(...){
+                            DeferRethrow();
+                        }
                     }
                     return ret;
                 }

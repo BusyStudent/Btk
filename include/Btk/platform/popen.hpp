@@ -55,6 +55,7 @@ namespace Btk{
      * @param args
      */
     BTKAPI process_t _vspawn(size_t nargs,const _vspawn_arg args[]);
+    BTKAPI FILE*     _vpopen(size_t nargs,const _vspawn_arg args[]);
     //Translate args
     inline _vspawn_arg _spawn_tr_impl(const char *s){
         return {
@@ -112,6 +113,29 @@ namespace Btk{
             _spawn_tr(std::forward<Args>(args))...
         };
         return _vspawn(sizeof...(Args) + 1,arr);
+    }
+    template<class T,class ...Args>
+    inline FILE*     popen(T &&filename,Args &&...args){
+        const _vspawn_arg arr [] = {
+            _spawn_tr(std::forward<T>(filename)),
+            _spawn_tr(std::forward<Args>(args))...
+        };
+        return _vpopen(sizeof...(Args) + 1,arr);
+    }
+    //version for StringList and StringRefList
+    inline FILE*    vpopen(const StringList &strs){
+        _vspawn_arg args[strs.size()];
+        for(size_t n = 0;n < strs.size();n++){
+            args[n] = {strs[n].c_str(),strs[n].size()};
+        }
+        return _vpopen(strs.size(),args);
+    }
+    inline FILE*    vpopen(const StringRefList &strs){
+        _vspawn_arg args[strs.size()];
+        for(size_t n = 0;n < strs.size();n++){
+            args[n] = {strs[n].data(),strs[n].size()};
+        }
+        return _vpopen(strs.size(),args);
     }
     //Proc function end
 

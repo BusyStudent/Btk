@@ -14,29 +14,6 @@ namespace Btk{
         BTKAPI void HandleSysMsg(const SDL_SysWMmsg &);
         BTKAPI bool MessageBox(u8string_view title,u8string_view msg,int flag = 0);
 
-        [[deprecated]]
-        BTKAPI FILE* VPopen(size_t argc,...);
-
-        inline const char *_GetCString(const char * s){
-            return s;
-        }
-        inline const char *_GetCString(const std::string &s){
-            return s.c_str();
-        }
-        inline const char *_GetCString(const u8string &s){
-            return s.c_str();
-        }
-        inline const char *_GetCString(std::string_view s){
-            return s.data();
-        }
-        inline const char *_GetCString(u8string_view s){
-            return s.data();
-        }
-
-        template<class ...Args>
-        FILE *Popen(Args &&...args){
-            return Popen(sizeof...(args),_GetCString(std::forward<Args>(args))...);
-        }
         SDL_Window *CreateTsWindow();
     };
     //X11 Error

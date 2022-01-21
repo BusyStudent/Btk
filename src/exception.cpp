@@ -6,25 +6,22 @@
 #include <Btk/render.hpp>
 namespace Btk{
     //RuntimeError
-    RuntimeError::RuntimeError() = default;
     RuntimeError::~RuntimeError() = default;
     const char *RuntimeError::what() const noexcept{
         return _message.c_str();
     }
-
-    SDLError::SDLError(u8string_view err):RuntimeError(err){}
-    SDLError::SDLError(const SDLError &err):RuntimeError(err){}
     SDLError::~SDLError() = default;
     //BadFunctionCall
     BadFunctionCall::BadFunctionCall():
         RuntimeError("call an empty function"){}
-    BadFunctionCall::BadFunctionCall(const BadFunctionCall &err):
-        RuntimeError(err){}
     BadFunctionCall::~BadFunctionCall() = default;
 
-    RendererError::RendererError(u8string_view msg):
-        RuntimeError(msg){}
     RendererError::~RendererError() = default;
+    CRuntimeError::~CRuntimeError() = default;
+    void CRuntimeError::set_errcode(int err){
+        _errno = err;
+        set_message(u8format("[errno %d] %s",_errno,std::strerror(_errno)));
+    }
     //throwError
     [[noreturn]] void throwSDLError(){
         _Btk_Backtrace();
@@ -37,6 +34,10 @@ namespace Btk{
     [[noreturn]] void throwRuntimeError(u8string_view str){
         _Btk_Backtrace();
         throw RuntimeError(str);
+    }
+    [[noreturn]] void throwCRuntimeError(int e){
+        _Btk_Backtrace();
+        throw CRuntimeError(e);
     }
     [[noreturn]] void throwBadFunctionCall(){
         _Btk_Backtrace();

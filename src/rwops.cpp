@@ -388,7 +388,7 @@ namespace Btk{
         ret = pipe(fds);
         #endif
         if(ret == -1){
-            throwRuntimeError(strerror(errno));
+            throwCRuntimeError();
         }
         r = RWops::FromFD(fds[0],"rb");
         w = RWops::FromFD(fds[1],"wb");

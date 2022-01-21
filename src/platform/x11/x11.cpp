@@ -161,6 +161,15 @@ namespace X11{
         //Disable the compositor
         //Beacuse it will cause a render error in KDE
         SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR,"0");
+        #if 1
+        //Set visual ID to 32 depth if could
+        auto display = ::XOpenDisplay(nullptr);
+        XVisualInfo vinfo;
+        if(XMatchVisualInfo(display,DefaultScreen(display),32,TrueColor,&vinfo)){
+            SDL_SetHint(SDL_HINT_VIDEO_X11_WINDOW_VISUALID,std::to_string(vinfo.visualid).c_str());
+        }
+        XCloseDisplay(display);
+        #endif
 
         #ifndef NDEBUG
         //Debug crash handler
@@ -207,67 +216,6 @@ namespace X11{
         auto iter = wins_map->find(win);
         if(iter != wins_map->end()){
             // iter->second->handle_x11(&event);
-        }
-    }
-    //Exec
-    FILE *VPopen(size_t argc,...){
-        va_list varg;
-        va_start(varg,argc);
-
-        //Allocate args array
-        char **args = static_cast<char**>(alloca((argc + 1) * sizeof(char*)));
-        size_t i;
-        for(i = 0;i < argc;i++){
-            args[i] = va_arg(varg,char*);
-        }
-        args[argc] = nullptr;
-        va_end(varg);
-
-        int fds[2];
-        int err_fds[2];
-        pipe(fds);
-        pipe2(err_fds,O_CLOEXEC);
-
-        pid_t pid = fork();
-        if(pid == -1){
-            close(fds[0]);
-            close(fds[1]);
-            return nullptr;
-        }
-        else if(pid == 0){
-            close(fds[0]);
-            close(err_fds[0]);
-            dup2(fds[1],STDOUT_FILENO);
-            //Exec it
-            execvp(args[0],args);
-            //Failed, wrtie errno
-            auto err = errno;
-            write(err_fds[1],&err,sizeof(err));
-            _Exit(-1);
-        }
-        else{
-            auto handler = std::signal(SIGPIPE,SIG_IGN);
-            close(fds[1]);
-            close(err_fds[1]);
-            int error;
-            if(read(err_fds[0],&error,sizeof(error)) == sizeof(error)){
-                //has error
-                //cleanup
-                std::signal(SIGPIPE,handler);
-                close(fds[0]);
-                close(err_fds[0]);
-
-                return nullptr;
-            }
-            close(err_fds[0]);
-            std::signal(SIGPIPE,handler);
-            //Convert it to STD FILE*
-            FILE *fptr = fdopen(fds[0],"r");
-            if(fptr == nullptr){
-                //Error,close the fd
-                close(fds[0]);
-            }
-            return fptr;
         }
     }
     // SDL_Window *CreateTsWindow(u8string_view title,int h,int w){
@@ -350,6 +298,68 @@ namespace Btk{
             std::signal(SIGPIPE,handler);
             close(err_fds[0]);
             return pid;
+        }
+    }
+    //Exec
+    FILE *_vpopen(size_t nargs,const _vspawn_arg arr[]){
+
+        //Allocate args array
+        char **args = static_cast<char**>(alloca((nargs + 1) * sizeof(char*)));
+        size_t i;
+        for(i = 0;i < nargs;i++){
+            auto &data = arr[i];
+            args[i] = static_cast<char*>(alloca(data.n + 1));
+            memcpy(args[i],data.str,data.n);
+            args[i][data.n] = '\0';
+        }
+        args[nargs] = nullptr;
+
+        int fds[2];
+        int err_fds[2];
+        pipe(fds);
+        pipe2(err_fds,O_CLOEXEC);
+
+        pid_t pid = fork();
+        if(pid == -1){
+            close(fds[0]);
+            close(fds[1]);
+            return nullptr;
+        }
+        else if(pid == 0){
+            close(fds[0]);
+            close(err_fds[0]);
+            dup2(fds[1],STDOUT_FILENO);
+            //Exec it
+            execvp(args[0],args);
+            //Failed, wrtie errno
+            auto err = errno;
+            write(err_fds[1],&err,sizeof(err));
+            _Exit(-1);
+        }
+        else{
+            auto handler = std::signal(SIGPIPE,SIG_IGN);
+            close(fds[1]);
+            close(err_fds[1]);
+            int error;
+            if(read(err_fds[0],&error,sizeof(error)) == sizeof(error)){
+                //has error
+                //cleanup
+                std::signal(SIGPIPE,handler);
+                close(fds[0]);
+                close(err_fds[0]);
+
+                errno = error;
+                return nullptr;
+            }
+            close(err_fds[0]);
+            std::signal(SIGPIPE,handler);
+            //Convert it to STD FILE*
+            FILE *fptr = fdopen(fds[0],"r");
+            if(fptr == nullptr){
+                //Error,close the fd
+                close(fds[0]);
+            }
+            return fptr;
         }
     }
     //XError

@@ -43,6 +43,13 @@ namespace{
         #endif
         fn(ev.user.data2);
     }
+    void redraw_win_cb(const SDL_Event &ev,void *){
+        auto w = Btk::Instance().get_window_s(ev.user.windowID);
+        if(w == nullptr){
+            return;
+        }
+        w->handle_draw(ev.user.timestamp);
+    }
     /**
      * @brief A wrapper to call function pointer void(*)()
      * 
@@ -269,8 +276,10 @@ namespace Btk{
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
         }
         else{
+            redraw_win_ev_id = defer_call_ev_id + 1;
             //regitser handler
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
+            regiser_eventcb(redraw_win_ev_id,redraw_win_cb,nullptr);
         }
         //Builtin BMP Adapter
         ImageAdapter adapter;

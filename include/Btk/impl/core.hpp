@@ -159,7 +159,7 @@ namespace Btk{
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
         std::recursive_mutex map_mtx;
         Uint32 defer_call_ev_id;//defer call Event ID
-        Uint32 reservered_ev_id;//Reversered
+        Uint32 redraw_win_ev_id;//redraw window Event ID
         Uint32 wait_event_delay = 1;//<Delay in wait event
         //called after a exception was throwed
         //return false to abort program

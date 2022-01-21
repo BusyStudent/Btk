@@ -9,6 +9,7 @@
 //For Reparent Native Window / Move / GetInfo
 
 #if BTK_X11
+#include <X11/extensions/XShm.h>
 #include <X11/Xlib.h>
 namespace Btk::WinUtils{
     struct NativeHandle{
@@ -31,6 +32,10 @@ namespace Btk::WinUtils{
         ::Drawable drawable = {};
         ::GC       gc = {};
     };
+    struct Recoder{
+
+    };
+
     using NativeEvent = ::XEvent;
     //Window Utils
     inline
@@ -114,6 +119,10 @@ namespace Btk::WinUtils{
         }
         return {window.display,root};
     }
+    // inline
+    // Color GetWindowPixel(NativeHandle handle,int x,int y){
+
+    // }
     template<class Callable,class ...Args>
     bool ForChildren(NativeHandle window,Callable callable,Args &&...args){
         unsigned int nchildren;
@@ -186,6 +195,7 @@ namespace Btk::WinUtils{
     void PainterPresent(Painter handle){
         XFlushGC(handle.display,handle.gc);
     }
+    //Recoder for Get Pixels for window / screen
 
 }
 namespace Btk::Platform{

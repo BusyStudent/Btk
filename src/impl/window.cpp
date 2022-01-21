@@ -98,12 +98,27 @@ namespace Btk{
         last_redraw_ticks = current;
         
         SDL_Event event;
-        event.type = SDL_WINDOWEVENT;
-        event.window.timestamp = current;
-        event.window.windowID = SDL_GetWindowID(win);
-        event.window.event = SDL_WINDOWEVENT_EXPOSED;
+        event.type = Instance().redraw_win_ev_id;
+        event.user.timestamp = current;
+        event.user.windowID = SDL_GetWindowID(win);
         SDL_PushEvent(&event);
-       
+    }
+    void WindowImpl::handle_draw(Uint32 ticks){
+        //redraw window
+        if(fps_limit > 0){
+            //Check the limit
+            Uint32 current = SDL_GetTicks();
+            Uint32 durl = 1000 / fps_limit;
+            if(ticks + durl < current and last_draw_ticks > current - durl * 2){
+                //Too late(and has been drawed recently)
+                //2 is a magic number(I think it is fit)
+                //Drop it
+                BTK_LOGINFO("Too Late , Drop the frame");    
+                return;
+            }
+            last_draw_ticks = ticks;
+        }
+        draw(render);
     }
     //TryCloseWIndow
     bool WindowImpl::on_close(){
@@ -189,22 +204,7 @@ namespace Btk{
     void WindowImpl::handle_windowev(const SDL_Event &event){
         switch(event.window.event){
             case SDL_WINDOWEVENT_EXPOSED:{
-                //redraw window
-                if(fps_limit > 0){
-                    //Check the limit
-                    Uint32 current = SDL_GetTicks();
-                    Uint32 ticks = event.window.timestamp;
-                    Uint32 durl = 1000 / fps_limit;
-                    if(ticks + durl < current and last_draw_ticks > current - durl * 2){
-                        //Too late(and has been drawed recently)
-                        //2 is a magic number(I think it is fit)
-                        //Drop it
-                        BTK_LOGINFO("Too Late , Drop the frame");    
-                        break;
-                    }
-                    last_draw_ticks = ticks;
-                }
-                draw(render);
+                handle_draw(event.window.timestamp);
                 break;
             }
             case SDL_WINDOWEVENT_HIDDEN:{

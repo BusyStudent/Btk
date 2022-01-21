@@ -50,52 +50,51 @@ namespace Btk{
     //     }
     // }
     //Normal box
-    MessageBox::MessageBox(u8string_view t,u8string_view m,Flag f){
-        _title = t;
-        _message = m;
-        _flag = f;
+    // MessageBox::MessageBox(u8string_view t,u8string_view m,Flag f){
+    //     _title = t;
+    //     _message = m;
+    //     _flag = f;
 
-        do_run.bind<&MessageBox::_do_run>();
-    }
-    void MessageBox::_do_destroy(){
+    // }
+    // void MessageBox::_do_destroy(){
 
-    }
-    auto MessageBox::_do_run() -> Status{
-        //Has Parent and no zenty and kdialog
-        if(X11::has_kdialog){
-            u8string cmd = "kdialog ";
-        }
-        else if(X11::has_zenity){
-            u8string_view cmd;
-            switch(_flag){
-                case MessageBox::Info:
-                    cmd = "--info";
-                    break;
-                case MessageBox::Warn:
-                    cmd = "--warning";
-                    break;
-                case MessageBox::Error:
-                    cmd = "--error";
-                    break;
-            }
-            auto proc = spawn("zenity","--text",_message,cmd,"--title",_title);
-            ::waitpid(proc,nullptr,0);
-            return Accepted;
-        }
-        else{
-            SDL_Window *pent = nullptr;
-            if(parent() != nullptr){
-                pent = parent()->sdl_window();
-            }
-            SDL_ShowSimpleMessageBox(
-                0,
-                _title.c_str(),
-                _message.c_str(),
-                pent
-            );
-            return Status::Accepted;
-        }
-    }
+    // }
+    // auto MessageBox::_do_run() -> Status{
+    //     //Has Parent and no zenty and kdialog
+    //     if(X11::has_kdialog){
+    //         u8string cmd = "kdialog ";
+    //     }
+    //     else if(X11::has_zenity){
+    //         u8string_view cmd;
+    //         switch(_flag){
+    //             case MessageBox::Info:
+    //                 cmd = "--info";
+    //                 break;
+    //             case MessageBox::Warn:
+    //                 cmd = "--warning";
+    //                 break;
+    //             case MessageBox::Error:
+    //                 cmd = "--error";
+    //                 break;
+    //         }
+    //         auto proc = spawn("zenity","--text",_message,cmd,"--title",_title);
+    //         ::waitpid(proc,nullptr,0);
+    //         return Accepted;
+    //     }
+    //     else{
+    //         SDL_Window *pent = nullptr;
+    //         if(parent() != nullptr){
+    //             pent = parent()->sdl_window();
+    //         }
+    //         SDL_ShowSimpleMessageBox(
+    //             0,
+    //             _title.c_str(),
+    //             _message.c_str(),
+    //             pent
+    //         );
+    //         return Status::Accepted;
+    //     }
+    // }
 }
 namespace Btk::X11{
     //Native MessageBox

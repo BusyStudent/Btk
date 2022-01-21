@@ -76,7 +76,7 @@ namespace{
             Btk::GL::LoadLibaray();
             void *ctxt = SDL_GL_CreateContext(static_cast<SDL_Window*>(win_handle));
             if(ctxt != nullptr){
-                SDL_GL_SetSwapInterval(1);
+                SDL_GL_SetSwapInterval(0);
             }
             return ctxt;
         }

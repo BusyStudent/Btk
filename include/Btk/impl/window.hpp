@@ -51,9 +51,6 @@ namespace Btk{
             ~WindowImpl();
             //Overload the method from widget
             void draw(Renderer &render) override;
-            void draw(){
-                draw(render);
-            }
             /**
              * @brief Send a redraw request
              * 
@@ -75,6 +72,7 @@ namespace Btk{
             void on_resize(int new_w,int new_h);
             void on_dropfile(u8string_view file);
             //handle event 
+            void handle_draw(Uint32 ticks);
             void handle_windowev(const SDL_Event &event);
             
             //update wingets postions

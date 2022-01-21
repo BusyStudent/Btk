@@ -8,6 +8,8 @@
 #define BTK_X_WINDOW(V) reinterpret_cast<Btk::X11::XWindow>(V) 
 #define BTK_X_DISPLAY(V) reinterpret_cast<Btk::X11::XDisplay*>(V) 
 
+#undef Status
+
 namespace Btk{
 namespace X11{
     using XColorMap = ::Colormap;
