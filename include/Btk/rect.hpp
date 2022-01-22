@@ -502,7 +502,7 @@ namespace Btk{
         return center.distance(point) <= r;
     }
     //eps
-    const double eps = 1e-8;
+    inline const double eps = 1e-8;
 
     //Rect utils
     /**

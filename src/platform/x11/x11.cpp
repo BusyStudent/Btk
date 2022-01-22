@@ -161,7 +161,7 @@ namespace X11{
         //Disable the compositor
         //Beacuse it will cause a render error in KDE
         SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR,"0");
-        #if 1
+        #if 1 && defined(SDL_HINT_VIDEO_X11_WINDOW_VISUALID)
         //Set visual ID to 32 depth if could
         auto display = ::XOpenDisplay(nullptr);
         XVisualInfo vinfo;

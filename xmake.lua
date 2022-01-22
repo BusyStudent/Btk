@@ -288,6 +288,10 @@ if is_mode("debug") then
         set_kind("binary")
         add_files("./tests/scroll.cpp")
         add_deps("btk")
+    target("rect_algo")
+        set_kind("binary")
+        add_files("./tests/rect_algo.cpp")
+        add_deps("btk")
 end
 target("btk-rcc")
     set_kind("binary")
