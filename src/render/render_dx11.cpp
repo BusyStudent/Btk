@@ -18,7 +18,7 @@ extern "C"{
 }
 #define BTK_THROW_HRESULT(HR) \
     if(FAILED(hr)){\
-        Btk::throwRendererError(Btk::Win32::StrMessageA(DWORD(hr)));\
+        Btk::throwRendererError(Btk::Win32::StrMessageW(DWORD(hr)).to_utf8());\
     }
 
 namespace Btk{
@@ -332,13 +332,17 @@ namespace Btk{
         dev_flag = D3D11_CREATE_DEVICE_DEBUG;
         #endif
 
+        const D3D_FEATURE_LEVEL req_levels [] = {
+            D3D_FEATURE_LEVEL_11_0,
+        };
+
         hr = d3d11_create(
             nullptr,
-            D3D_DRIVER_TYPE_HARDWARE,
+            D3D_DRIVER_TYPE_REFERENCE,
             nullptr,
             dev_flag,
-            nullptr,
-            0,
+            req_levels,
+            SDL_arraysize(req_levels),
             D3D11_SDK_VERSION,
             &desc,
             &swapchain,

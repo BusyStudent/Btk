@@ -333,7 +333,7 @@ namespace Btk{
                     }
                     win32_draw_ticks = current;
                     //Execute draw right now
-                    draw();
+                    draw(render);
                 }
                 catch (...){
                     DeferCall(std::rethrow_exception, std::current_exception());

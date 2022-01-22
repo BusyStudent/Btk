@@ -198,9 +198,57 @@ namespace Btk::WinUtils{
     //Recoder for Get Pixels for window / screen
 
 }
+#elif BTK_WIN32
+#include <wingdi.h>
+
+namespace Btk::WinUtils{
+    typedef HWND NativeHandle;
+    struct  Painter{
+        HWND window;
+        HDC  dc;
+    };
+    inline
+    bool SetWindowRect(NativeHandle win,const Rect &r){
+        
+    }
+
+    inline
+    NativeHandle GetHandleFrom(SDL_Window *win){
+        SDL_SysWMinfo info;
+        SDL_GetVersion(&info.version);
+        if(!SDL_GetWindowWMInfo(win,&info)){
+            return {};
+        }
+        if(info.subsystem != SDL_SYSWM_WINDOWS){
+            return {};
+        }
+        return info.info.win.window;
+    }
+    //Draw
+    inline
+    Painter GetPainter(NativeHandle win){
+        return {win,GetDC(win)};
+    }
+    inline
+    Painter GetPainter(SDL_Window *win){
+        auto handle = GetHandleFrom(win);
+        return GetPainter(handle);
+    }
+    inline
+    void    ReleasePainter(Painter p){
+        ReleaseDC(p.window,p.dc);
+    }
+    // inline
+    // void PainterSetColor(Painter p,Color c){
+        
+    // }
+};
+
+
+
+#endif
 namespace Btk::Platform{
     using namespace WinUtils;
 }
-#endif
 
 #endif // _BTK_PLATFORM_WINUTILS_HPP_

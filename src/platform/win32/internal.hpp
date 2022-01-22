@@ -45,6 +45,14 @@ namespace Win32{
                 opened = false;
             }
         }
+        RegKey(HKEY hkey,const char16_t *subkey){
+            if(RegOpenKeyW(hkey,reinterpret_cast<const wchar_t*>(subkey),&key) == ERROR_SUCCESS){
+                opened = true;
+            }
+            else{
+                opened = false;
+            }
+        }
         RegKey(const RegKey &) = delete;
         ~RegKey(){
             if(opened){

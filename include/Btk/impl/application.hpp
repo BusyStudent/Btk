@@ -17,7 +17,7 @@
     #define BTK_X11_DECL(X) X
 #elif defined(_WIN32)
     #define NOMINMAX
-    #include <windows.h>
+    #include "../platform/win32.hpp"
     #undef BTK_WIN32_DECL
     #define BTK_WIN32_DECL(X) X
 #else

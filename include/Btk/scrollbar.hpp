@@ -4,6 +4,7 @@
 #include "pixels.hpp"
 #include "widget.hpp"
 namespace Btk{
+    #if 0
     /**
      * @brief AbstractSlider
      * 
@@ -41,6 +42,7 @@ namespace Btk{
     class BTKAPI SilderBar:public AbstractSlider{
 
     };
+    #endif
     class BTKAPI ScrollBar:public Widget{
         public:
             using Widget::set_rect;

@@ -25,13 +25,15 @@ namespace FontUtils{
     void Quit(){
 
     }
-    static std::string get_font_from_name(Win32::RegKey &regkey,const char *name){
-        char buffer[MAX_PATH];
+    static u16string get_font_from_name(Win32::RegKey &regkey,const char16_t *name){
+        wchar_t buffer[MAX_PATH + 1];//Return value buffer
+        buffer[MAX_PATH] = '\0';
+
         DWORD length = MAX_PATH;
         LSTATUS ret;
-        ret = RegQueryValueExA(
+        ret = RegQueryValueExW(
             regkey,
-            name,
+            reinterpret_cast<const wchar_t*>(name),
             nullptr,
             nullptr,
             reinterpret_cast<LPBYTE>(buffer),
@@ -39,9 +41,10 @@ namespace FontUtils{
         );
         if(ret == ERROR_SUCCESS){
             //Succeed to find the name
-            BTK_LOGINFO("Match font => %s",buffer);
-            std::string ret("C:/Windows/Fonts/");
-            ret += buffer;
+            const char16_t *buf = reinterpret_cast<const char16_t*>(buffer);
+            BTK_LOGINFO("Match font => %s",u16string_view(buf).to_utf8().c_str());
+            u16string ret("C:/Windows/Fonts/");
+            ret.append(buf);
             return ret;
         }
         else{
@@ -49,33 +52,25 @@ namespace FontUtils{
             throwWin32Error(GetLastError());
         }
     }
-    //It need impove if the value is 'MS Gothic & MS UI Gothic & MS PGothic (TrueType)'
-    u8string GetFileByName(u8string_view name){
+    static u16string get_file_by_name_impl(const u16string &name){
         using Win32::StrMessageA;
         using Win32::RegKey;
 
-        if(name == ""){
-            //GetDefaultFont
-            return "C:/Windows/Fonts/msyh.ttc";
-        }
-        
-        char buffer[MAX_PATH + 1];//Return value buffer
-        buffer[MAX_PATH] = '\0';
-
-        //Copy into buffer
-        auto &u8buf = FillInternalU8Buffer(name);
         RegKey regkey(HKEY_LOCAL_MACHINE,"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts");
         //Could not open
         if(not regkey.ok()){
             throw Win32Error(GetLastError());
         }
         LSTATUS ret;
+        
+        wchar_t buffer[MAX_PATH + 1];//Return value buffer
+        buffer[MAX_PATH] = '\0';
 
         DWORD index = 0;
         DWORD buflen = MAX_PATH;
 
         do{
-            ret = RegEnumValueA(
+            ret = RegEnumValueW(
                 regkey,
                 index,
                 buffer,
@@ -86,12 +81,17 @@ namespace FontUtils{
                 nullptr
             );
             if(ret == ERROR_SUCCESS){
-                if(SDL_strncasecmp(name.data(),buffer,name.length()) == 0){
-                    return get_font_from_name(regkey,buffer);
+                BTK_LOGINFO("Name of %s",u16string_view((const char16_t*)buffer).to_utf8().c_str());
+                if(SDL_wcsncasecmp(name.w_str(),buffer,name.length()) == 0){
+                    return get_font_from_name(regkey,reinterpret_cast<char16_t*>(buffer));
+                }
+                else if(SDL_wcsstr(buffer,name.w_str()) != 0){
+                    //Like xx & req
+                    return get_font_from_name(regkey,reinterpret_cast<char16_t*>(buffer));
                 }
                 else{
                     //Reset the buffer
-                    memset(buffer,'\0',buflen * sizeof(char));
+                    memset(buffer,'\0',buflen * sizeof(wchar_t));
                     buflen = MAX_PATH;
                 }
             }
@@ -101,8 +101,22 @@ namespace FontUtils{
             index ++;
         }
         while(ret == ERROR_SUCCESS);
-        //Failed
-        return "C:/Windows/Fonts/msyh.ttc";
+        return {};
+    }
+    //It need impove if the value is 'MS Gothic & MS UI Gothic & MS PGothic (TrueType)'
+    u8string GetFileByName(u8string_view name){
+        using Win32::StrMessageA;
+        using Win32::RegKey;
+
+        if(name.empty()){
+            //GetDefaultFont
+            return GetDefaultFont();
+        }
+        u16string s = get_file_by_name_impl(name.to_utf16());
+        if(s.empty()){
+            return GetDefaultFont();
+        }
+        return s.to_utf8();
     }
     //Callback for enum font
     static int CALLBACK font_cb(const LOGFONTA *font,const TEXTMETRICA*,DWORD type,LPARAM data){
@@ -115,27 +129,28 @@ namespace FontUtils{
         return 1;
     };
     u8string GetDefaultFont(){
-        using Win32::HandleDC;
-
-
-        HandleDC hdc(nullptr);
-        //Get the charset
-        int charset = GetTextCharset(hdc);
-        
-        BTK_LOGINFO("HDC charset %d",charset);
-
-        u8string facename;//Get the facename
-        LOGFONTA font_data;
-        SDL_zero(font_data);
-        font_data.lfCharSet = charset;
-        EnumFontFamiliesExA(
-            hdc,
-            &font_data,
-            font_cb,
-            (LPARAM)&facename,
+        NONCLIENTMETRICSW info;
+        info.cbSize = sizeof(NONCLIENTMETRICSW);
+        if(not SystemParametersInfoW(
+            SPI_GETNONCLIENTMETRICS,
+            sizeof(NONCLIENTMETRICSW),
+            &info,
             0
-        );
-        return GetFileByName(facename);
+        )){
+            throwWin32Error(GetLastError());
+        }
+        u16string name = reinterpret_cast<char16_t*>(info.lfMenuFont.lfFaceName);
+        //Remove ' UI'
+        // name.pop_back();
+        // name.pop_back();
+        // name.pop_back();
+
+        auto ret = get_file_by_name_impl(name);
+
+        if(ret.empty()){
+            //Handle default cannot be founded
+        }
+        return ret.to_utf8();
     }
 }
 }

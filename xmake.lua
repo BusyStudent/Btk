@@ -123,7 +123,7 @@ target("btk")
         add_packages("libsdl","libsdl_image","freetype")
 
         add_files("./src/platform/win32/*.cpp")
-        add_links("user32","shell32","advapi32","ole32","oleaut32")
+        add_links("user32","shell32","advapi32","ole32","oleaut32","uuid")
         add_links("gdi32","winmm","imm32","setupapi","version","comctl32")
         --add_links("freetype","bz2","brotlidec-static","brotlicommon-static")
         --add_links("libpng16","zlib")

@@ -1,8 +1,8 @@
 #include "../../build.hpp"
 
 #include <SDL2/SDL_keyboard.h>
-#include <SDL2/SDL_syswm.h>
 
+#include <Btk/platform/win32.hpp>
 #include <Btk/impl/window.hpp>
 #include <Btk/impl/core.hpp>
 #include <Btk/window.hpp>

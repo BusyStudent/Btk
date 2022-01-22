@@ -1,6 +1,5 @@
 #if !defined(_BTK_PLATFORM_WIN32)
 #define _BTK_PLATFORM_WIN32
-#define NOMINMAX
 #include <windows.h>
 #include <combaseapi.h>
 #include <SDL2/SDL_events.h>
@@ -10,8 +9,11 @@
 
 #include <map>
 
+#undef max
+#undef min
 #undef MessageBox
 #undef LoadImage
+#undef CreateWindow
 
 //CoCreateInstance Helper
 #define Btk_CoCreateInstance(T) \
@@ -82,6 +84,25 @@ namespace Win32{
             if(ptr != nullptr){
                 ptr->Release();
             }
+        }
+
+        //Assign
+        ComInstance &operator =(const ComInstance &instance){
+            release();
+            ptr = instance.ptr;
+            if(ptr != nullptr){
+                ptr->AddRef();
+            }
+        }
+        ComInstance &operator =(ComInstance &&instance){
+            release();
+            ptr = instance.ptr;
+            instance.ptr = nullptr;
+        }
+        ComInstance &operator =(T *p){
+            release();
+            ptr = p;
+            return *this;
         }
 
         T *operator ->(){

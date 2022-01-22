@@ -1295,8 +1295,13 @@ namespace Btk{
             u16string(std::wstring_view);
             #endif
 
+            using std::u16string::size;
+            using std::u16string::empty;
             using std::u16string::data;
             using std::u16string::c_str;
+            using std::u16string::length;
+            using std::u16string::append;
+            using std::u16string::pop_back;
 
             std::u16string &base() noexcept{
                 return *this;
@@ -1311,6 +1316,7 @@ namespace Btk{
             void swap(u16string &us){
                 base().swap(us.base());
             }
+
         public:
             //Cast
             operator u16string_view() const noexcept{
@@ -1323,6 +1329,9 @@ namespace Btk{
             static_assert(sizeof(wchar_t) == sizeof(char16_t));
             operator std::wstring_view() const noexcept{
                 return std::wstring_view((const wchar_t*)base().data(),base().length());
+            }
+            const wchar_t *w_str() const{
+                return reinterpret_cast<const wchar_t*>(base().c_str());
             }
             #endif
         
