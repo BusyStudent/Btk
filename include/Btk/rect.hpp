@@ -69,11 +69,11 @@ namespace Btk{
 
     //Rect functions forward defs
     template<class T,class P = _Point<typename T::value_type>>
-    inline bool IntersectRectAndLine(const T &r,const P &p1,const P &p2); 
+    inline bool CheckIntersectRectAndLine(const T &r,const P &p1,const P &p2); 
     template<class T>
     inline T    IntersectRect(const T &r1,const T &r2);
     template<class T>
-    inline T    UnionRect(const T &r1,const T &r2);
+    inline T    RectCoverage(const T &r1,const T &r2);
 
 
     //Point --begin
@@ -141,7 +141,20 @@ namespace Btk{
         bool operator !=(const _Point &p) const noexcept{
             return not operator ==(p);
         }
-
+        
+        //calculation
+        _Point<T> operator -(const _Point &p) const noexcept{
+            return _Point<T>(this->x - p.x,this->y - p.y);
+        }
+        _Point<T> operator +(const _Point &p) const noexcept{
+            return _Point<T>(this->x + p.x,this->y + p.y);
+        }
+        T operator *(const _Point &p) const noexcept{
+            return this->x * p.x + this->y * p.y;
+        }
+        T operator ^(const _Point &p) const noexcept{
+            return this->x * p.y - this->y * p.x;
+        }
 
     };
     //Point --end
@@ -488,7 +501,32 @@ namespace Btk{
     inline bool PointInCircle(const _Point<T1> &center,T2 r,const _Point<T3> &point){
         return center.distance(point) <= r;
     }
+    //eps
+    const double eps = 1e-8;
+
     //Rect utils
+    /**
+     * @brief Judge intersection of line to rect 
+     * 
+     * @tparam T
+     * @param r
+     * @param p1
+     * @param p2
+     * @return true or false
+     */
+    template<class T,class P = _Point<typename T::value_type>>
+    inline bool CheckIntersectRectAndLine(const T &r,const P &p1,const P &p2){
+        P leftTop = P(r.x, r.y);
+        P rightDown = P(r.x + r.w, r.y + r.h);
+        P leftDown = P(r.x, r.y + r.h);
+        P rightTop = P(r.x + r.w, r.y);
+
+        double d1 = ((p2 - p1) ^ (leftTop - p1)) * ((p2 - p1) ^ (rightDown - p1));
+        double d2 = ((p2 - p1) ^ (rightDown - p1)) * ((p2 - p1) ^ (leftDown - p1));
+
+        return (d1 <= eps) || (d2 <= eps);
+    } 
+
     /**
      * @brief Get intersection of two rects
      * 
@@ -511,6 +549,23 @@ namespace Btk{
         );
     }
 
+    /**
+     *@brief Rects Coverage
+     * 
+     * @tparam T rect
+     * @param r1 rect1
+     * @param r2 rect2
+     * @return rect coverage rects
+     */
+    template<class T>
+    inline T RectCoverage(const T &r1,const T &r2){
+        T rect;
+        rect.x = min(r1.x,r2.x);
+        rect.y = min(r1.y,r2.y);
+        rect.w = max(r1.x + r1.w, r2.x + r2.w) - rect.x;
+        rect.h = max(r1.y + r1.h, r2.y + r2.h) - rect.y;
+        return rect;
+    }
     //Do extern template
     // extern template BTKAPI FRect IntersectRect<FRect>(const FRect &,const FRect &);
 
