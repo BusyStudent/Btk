@@ -2,6 +2,10 @@
 #define _BTK_RECT_HPP_
 #include <SDL2/SDL_version.h>
 #include <SDL2/SDL_rect.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_loadso.h>
+#include <SDL2/SDL_thread.h>
+#include <SDL2/SDL_filesystem.h>
 #include <type_traits>
 #include <iosfwd>
 #include <cmath>
@@ -503,7 +507,24 @@ namespace Btk{
     }
     //eps
     inline const double eps = 1e-8;
+    inline int _sgnCheck_(double x){
+        if(fabs(x) < eps) return 0;
+        if(x < 0) return -1;
+        return 1;
+    }
+    template<class P>
+    inline bool _segCrossSeg_(P p1,P p2,P p3,P p4){
+        int d1 = _sgnCheck_((p2-p1)^(p3-p1));
+        int d2 = _sgnCheck_((p2-p1)^(p4-p1));
+        int d3 = _sgnCheck_((p4-p3)^(p1-p3));
+        int d4 = _sgnCheck_((p4-p3)^(p2-p3));
 
+        if ((d1^d2) == -2 && (d3^d4) == -2) return true;
+        return (d1 == 0 && _sgnCheck_((p3 - p1) * (p3 - p2)) <= 0) ||
+               (d2 == 0 && _sgnCheck_((p4 - p1) * (p4 - p2)) <= 0) ||
+               (d3 == 0 && _sgnCheck_((p1 - p3) * (p1 - p4)) <= 0) ||
+               (d4 == 0 && _sgnCheck_((p2 - p3) * (p2 - p4)) <= 0);
+    }
     //Rect utils
     /**
      * @brief Judge intersection of line to rect 
@@ -520,11 +541,20 @@ namespace Btk{
         P rightDown = P(r.x + r.w, r.y + r.h);
         P leftDown = P(r.x, r.y + r.h);
         P rightTop = P(r.x + r.w, r.y);
+        SDL_Log("p1 = {%d,%d}",p1.x,p1.y);
+        SDL_Log("p2 = {%d,%d}",p2.x,p2.y);
+        SDL_Log("leftTop = {%d,%d}",leftTop.x,leftTop.y);
+        SDL_Log("rightDown = {%d,%d}",rightDown.x,rightDown.y);
+        SDL_Log("leftDown = {%d,%d}",leftDown.x,leftDown.y);
+        SDL_Log("rightTop = {%d,%d}",rightTop.x,rightTop.y);
+        bool d1 = _segCrossSeg_(p1,p2,leftTop,rightTop);
+        bool d2 = _segCrossSeg_(p1,p2,rightTop,rightDown);
+        bool d3 = _segCrossSeg_(p1,p2,rightDown,leftDown);
+        bool d4 = _segCrossSeg_(p1,p2,leftDown,leftTop);
 
-        double d1 = ((p2 - p1) ^ (leftTop - p1)) * ((p2 - p1) ^ (rightDown - p1));
-        double d2 = ((p2 - p1) ^ (rightDown - p1)) * ((p2 - p1) ^ (leftDown - p1));
+        SDL_Log("d1 = %d d2 = %d d3 = %d d4 = %d",d1,d2,d3,d4);
 
-        return (d1 <= eps) || (d2 <= eps);
+        return d1 || d2 || d3 || d4;
     } 
 
     /**
