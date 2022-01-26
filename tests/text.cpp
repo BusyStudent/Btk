@@ -1,18 +1,9 @@
 #include <Btk/utils/mem.hpp>
 #include <Btk/string.hpp>
+#include <Btk/regex.hpp>
 #include <iostream>
+
 int main(){
-    #if 0
-    Btk::TextBuffer buf;
-    buf += "HelloWorld";
-    buf += "FFFF";
-    buf += "你好世界";
-    std::cout << buf.to_string();
-    buf.assign("你好");
-    std::cout << buf.length() << std::endl;
-    std::cout << buf.to_string();
-    #endif
-    Btk::Memdup(0);
     std::cout << Btk::ParseInt("  - 1") << std::endl;
     std::cout << Btk::ParseInt("1000") << std::endl;
     std::cout << Btk::ParseInt("1540") << std::endl;
@@ -60,4 +51,10 @@ int main(){
     std::cout << Btk::u8string_view("   He你好ll    ").trim() << std::endl;
 
     std::cout << Btk::u8string_view("16").parse<uint16_t>() << std::endl;
+
+    Btk::Regex regex("[0-9]+");
+    for(auto &each:regex.match("abc123def1111aaa555")){
+        std::cout << "Regex out:" <<each << std::endl;
+    }
+    std::cout << regex.replace_to("abc123def1111aaa555","Number") << std::endl;
 }

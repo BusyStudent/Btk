@@ -95,7 +95,6 @@ namespace Btk{
             T    *userdata(const char *name) const{
                 return static_cast<T*>(SDL_GetWindowData(win,name));
             }
-
         public:
             //Process Event
             bool handle_drop(DropEvent     &) override;

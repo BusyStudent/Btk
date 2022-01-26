@@ -4,21 +4,14 @@
 #include "string.hpp"
 #include "exception.hpp"
 
-#ifndef BTK_REGEX_IMPL
-    #define BTK_REGEX_IMPL void
-    #define BTK_REGEX_RESULT void
-#endif
-
 namespace Btk{
     class BTKAPI RegexError:public RuntimeError{
         public:
             /**
-             * @brief Construct a new Regex Error objectP
-             * @internal The constructor is internal,Donnot use it
-             * @param private_ The private
+             * @brief Construct a new Regex Error object
              */
-            BTKHIDDEN
-            explicit RegexError(void *private_);
+            RegexError() = default;
+            RegexError(const RegexError &) = default;
             ~RegexError();
             /**
              * @brief Get the regex expression
@@ -30,13 +23,17 @@ namespace Btk{
             }
         private:
             u8string _expression;
+        friend class Regex;
     };
-    //TODO ADD regex
+    /**
+     * @brief Simple regex utils
+     * 
+     */
     class BTKAPI Regex{
         public:
             enum Flags:Uint32{
-                Basic = 0,//Posix Expression
-                Extended = 1 << 0,//Posix Extend expression
+                Basic = 0,//Posix Extend Expression
+                ECMAScript = 1 << 1,//< ECMAScript 
                 ICase = 1<< 2//< Ignore the case
             };
         public:
@@ -56,25 +53,44 @@ namespace Btk{
              * @param exp The Regex expression
              * @param flags The Expression Flags
              */
-            Regex(u8string_view exp,Flags flags = Flags::Basic);
-            ~Regex();
+            Regex(u8string_view exp,Flags flags = Flags::Basic):Regex(){
+                compile(exp,flags);
+            }
+            ~Regex(){
+                cleanup();
+            }
+
+            void compile(u8string_view exp,Flags flags = Flags::Basic);
+            void cleanup();
             /**
              * @brief Get the compiled regex expression
              * 
              * @return u8string_view 
              */
-            u8string_view expression() const;
+            auto expression() const -> u8string_view;
+            
+            auto match(const u8string &str,size_t max = size_t(-1)) -> StringList;
+            void replace(u8string &str,u8string_view to,size_t max = size_t(-1));
+
+            auto replace_to(u8string_view str,u8string_view to,size_t max = size_t(-1)) -> u8string{
+                u8string input(str);
+                replace(input,to,max);
+                return input;
+            }
+
+            //Assign
+            Regex &operator =(Regex &&re){
+                if(this == &re){
+                    return *this;
+                }
+                regex = re.regex;
+                re.regex = nullptr;
+            }
         private:
-            BTK_REGEX_IMPL *regex = nullptr;
+            struct Impl;
+            Impl *regex = nullptr;
     };
     BTK_FLAGS_OPERATOR(Regex::Flags,Uint32);
-    class BTKAPI MatchResult{
-        public:
-            MatchResult();
-            ~MatchResult();
-        private:
-            BTK_REGEX_RESULT *result;
-    };
 }
 
 #endif // _BTK_REGEX_HPP_

@@ -5,50 +5,27 @@
 #include <string_view>
 #include <string>
 
-#ifdef __GNUC__
+#if __has_include(<unwind.h>)
 //We could use unwind
-#define BTK_HAS_UNWIND
 #include <unwind.h>
+#include <vector>
 namespace BtkUnwind{
     //...
-    struct Input{
-        void **array;
-        int max_size;
-        int cur;//< cur frame
-    };
-    inline int GetCallStack(void **array,int max_size){
+    using Input = std::vector<void*>;
+    inline auto GetCallStack() -> Input{
         //Backtrace function
         auto fn = [](struct _Unwind_Context *uc, void *p) -> _Unwind_Reason_Code{
             //...
             Input *input = static_cast<Input*>(p);
-
-            if(input->cur >= input->max_size){
-                return _URC_NO_REASON;
-            }
-            
-            (input->cur) ++;
-            auto ptr = _Unwind_GetIP(uc);
-            input->array[input->cur] = reinterpret_cast<void*>(ptr);
+            input->push_back(reinterpret_cast<void*>(_Unwind_GetIP(uc)));
             return _URC_NO_REASON;
         };
-        Input input = {
-            array,
-            max_size,
-            -1
-        };
+        Input input;
         _Unwind_Backtrace(fn,&input);
-        return input.cur;
+        return input;
     }
-    inline int backtrace(void **array,int max_size){
-        return GetCallStack(array,max_size);
-    }
-};
+}
 #endif
-//Use addr2line Get function name
-namespace BtkUnwind{
-    
-};
-
 
 //GNU Linux impl
 #ifdef __gnu_linux__

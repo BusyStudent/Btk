@@ -31,6 +31,11 @@ namespace Btk{
     struct TextInputEvent;
     struct TextEditingEvent;
 
+    struct PaintEvent{
+        Renderer &renderer;
+        Uint32    timestamp;
+    };
+
     enum class FocusPolicy:Uint8{
         None = 0,
         KeyBoard = 1,

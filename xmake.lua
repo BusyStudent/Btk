@@ -1,7 +1,6 @@
 add_rules("mode.debug", "mode.release")
 --add SDL require
 if is_plat("linux") then
-    add_defines("USE_MMX")
     add_requires("SDL2")
     --Linux X11
     add_requires("dbus-1")
@@ -104,7 +103,6 @@ option("wincodec")
     set_description("Add WIC")
 
 target("btk")
-    add_defines("BTK_USE_GFX")
 
     -- Import option
     add_options("software_renderer")
@@ -117,7 +115,7 @@ target("btk")
         add_files("./src/platform/x11/*.cpp")
         --Dbus
         add_packages("dbus-1")
-        add_links("fontconfig")
+        add_links("fontconfig","SDL2","X11")
     elseif is_plat("windows") or is_plat("mingw") then
         --xmake repo
         add_packages("libsdl","libsdl_image","freetype")
@@ -166,7 +164,6 @@ target("btk")
     --     end
     -- )
 
-    add_links("SDL2")
     set_kind("shared")
     --core
     add_files("./src/impl/*.cpp")
@@ -182,9 +179,6 @@ target("btk")
     add_files("./src/platform/*.cpp")
     --Utils
     add_files("./src/utils/*.cpp")
-    --Msgboxs
-    -- add_files("./src/msgbox/*.cpp")
-    add_packages("SDL2","SDL2_image","gif")
     --Mixer
     add_files("./src/mixer/mixer.cpp")
     add_files("./src/mixer/raw.cpp")

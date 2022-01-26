@@ -46,29 +46,11 @@ namespace Btk{
         if(text_.empty()){
             return;
         }
-        #if 0
-        if(texture.empty()){
-            if(text_buf.empty()){
-                text_buf = font_.render_blended(text_,text_color);
-            }
-            texture = render.create_from(text_buf);
-        }
-        #endif
         render.save();
         //begin render
         //limit the position
         //Rect text_rect;
 
-        //Calculate text postiton
-        #if 0
-        text_rect = CalculateRectByAlign(
-            rect,
-            text_buf->w,
-            text_buf->h,
-            v_align,
-            h_align
-        );
-        #endif
         render.intersest_scissor(rect);
         //render.copy(texture,nullptr,&text_rect);
 

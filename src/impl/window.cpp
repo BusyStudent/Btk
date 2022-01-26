@@ -261,8 +261,8 @@ namespace Btk{
         }
     }
     bool WindowImpl::handle_motion(MotionEvent &event){
-        if(mouse_pressed and not drag_rejected){
-            //Is dragging
+        if(mouse_pressed and not drag_rejected and not dragging){
+            //Try gen begin
             DragEvent drag(Event::DragBegin,event);
 
             if(not Group::handle_drag(drag) or drag.is_rejected()){
@@ -276,6 +276,7 @@ namespace Btk{
             }
         }
         if(dragging){
+            //Is dragging
             DragEvent drag(Event::Drag,event);
             handle_drag(drag);
         }

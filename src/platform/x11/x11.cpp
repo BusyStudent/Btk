@@ -161,15 +161,15 @@ namespace X11{
         //Disable the compositor
         //Beacuse it will cause a render error in KDE
         SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR,"0");
-        #if 1
-        //Set visual ID to 32 depth if could
-        auto display = ::XOpenDisplay(nullptr);
-        XVisualInfo vinfo;
-        if(XMatchVisualInfo(display,DefaultScreen(display),32,TrueColor,&vinfo)){
-            SDL_SetHint(SDL_HINT_VIDEO_X11_WINDOW_VISUALID,std::to_string(vinfo.visualid).c_str());
-        }
-        XCloseDisplay(display);
-        #endif
+        // #if 1
+        // //Set visual ID to 32 depth if could
+        // auto display = ::XOpenDisplay(nullptr);
+        // XVisualInfo vinfo;
+        // if(XMatchVisualInfo(display,DefaultScreen(display),32,TrueColor,&vinfo)){
+        //     SDL_SetHint(SDL_HINT_VIDEO_X11_WINDOW_VISUALID,std::to_string(vinfo.visualid).c_str());
+        // }
+        // XCloseDisplay(display);
+        // #endif
 
         #ifndef NDEBUG
         //Debug crash handler
