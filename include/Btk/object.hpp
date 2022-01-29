@@ -41,7 +41,7 @@ namespace Btk{
      * @brief Signal's connection
      * 
      */
-    class Connection{
+    class BTKAPI Connection{
         public:
             Connection(){};
             Connection(const Connection &) = default;
