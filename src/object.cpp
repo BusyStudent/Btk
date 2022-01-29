@@ -64,6 +64,14 @@ namespace Btk{
         }
         return {--functors_cb.end()};
     }
+    _FunctorLocation Object::exec_functor(FunctorLocation location){
+        //Remove this callback
+        if(location.iter != functors_cb.end()){
+            location->_call();
+            functors_cb.erase(location.iter);
+        }
+        return {--functors_cb.end()};
+    }
     _FunctorLocation Object::remove_callback_safe(FunctorLocation location){
         //Remove this callback after do check
         //Check is vaild location
@@ -147,8 +155,14 @@ namespace Btk{
         }
     }
     void Connection::disconnect(bool from_object){
-        (*iter)->cleanup(from_object);
-        current->slots.erase(iter);
+        if(status == WithSignal){
+            (*sig.iter)->cleanup(from_object);
+            sig.current->slots.erase(sig.iter);
+        }
+        else if(status == WithObject){
+            obj.object->exec_functor(obj.loc);
+        }
+        status = None;
     }
 }
 namespace Btk{

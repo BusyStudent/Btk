@@ -113,7 +113,7 @@ namespace Btk{
 //Event translate
 namespace{
     //Btk Translate Event
-    auto tr_event(const SDL_MouseMotionEvent &event) -> Btk::MotionEvent{
+    auto tr_event(const SDL_MouseMotionEvent &event) noexcept -> Btk::MotionEvent{
         Btk::MotionEvent ev;
 
         ev.x = event.x;
@@ -123,7 +123,7 @@ namespace{
 
         return ev;
     };
-    auto tr_event(const SDL_MouseWheelEvent &event) -> Btk::WheelEvent{
+    auto tr_event(const SDL_MouseWheelEvent &event) noexcept -> Btk::WheelEvent{
         Sint64 x,y;
         if(event.direction == SDL_MOUSEWHEEL_FLIPPED){
             x = -event.x;
@@ -135,7 +135,7 @@ namespace{
         }
         return {event.which,x,y};
     }
-    auto tr_event(const SDL_MouseButtonEvent &event) -> Btk::MouseEvent{
+    auto tr_event(const SDL_MouseButtonEvent &event) noexcept -> Btk::MouseEvent{
         Btk::MouseEvent ev;
 
         if(event.state == SDL_PRESSED){
@@ -151,7 +151,7 @@ namespace{
         ev.button.value = event.button;
         return ev;
     }
-    auto tr_event(const SDL_KeyboardEvent &event) -> Btk::KeyEvent{
+    auto tr_event(const SDL_KeyboardEvent &event) noexcept -> Btk::KeyEvent{
         Btk::KeyEvent ev;
         if(event.state == SDL_PRESSED){
             ev.state = Btk::KeyEvent::Pressed;
@@ -167,7 +167,7 @@ namespace{
         ev.repeat = event.repeat;
         return ev;
     }
-    auto tr_event(const SDL_DropEvent &event) -> Btk::DropEvent{
+    auto tr_event(const SDL_DropEvent &event) noexcept -> Btk::DropEvent{
         Btk::Event::Type type;
         Btk::DropEvent ev(Btk::Event::None);
 
@@ -195,7 +195,7 @@ namespace{
         }
         return ev;
     }
-    auto tr_event(const SDL_TextEditingEvent &t) -> Btk::TextEditingEvent{
+    auto tr_event(const SDL_TextEditingEvent &t) noexcept -> Btk::TextEditingEvent{
         Btk::TextEditingEvent event;
 
         event.text = t.text;

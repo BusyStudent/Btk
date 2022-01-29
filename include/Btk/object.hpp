@@ -4,11 +4,12 @@
 #include "utils/traits.hpp"
 #include "utils/sync.hpp"
 #include "impl/invoker.hpp"
+#include "signal/call.hpp"
+#include "signal/base.hpp"
 #include "defs.hpp"
 #include <type_traits>
 #include <cstddef>
 #include <cstdio>
-#include <chrono>
 #include <tuple>
 #include <list>
 namespace Btk{
@@ -42,22 +43,42 @@ namespace Btk{
      */
     class Connection{
         public:
-            Connection() = default;
+            Connection(){};
             Connection(const Connection &) = default;
 
 
             SignalBase *signal() const noexcept{
-                return current;
+                return sig.current;
             }
             void disconnect(bool from_object = false);
         protected:
             typedef std::list<_SlotBase*>::iterator Iterator;
-            SignalBase *current;//< current signal
-            Iterator iter;//<The iterator of the slot ptr
-            Connection(SignalBase *c,Iterator i):
-                current(c),
-                iter(i){
+            union{
+                struct {
+                    SignalBase *current;//< current signal
+                    Iterator iter;//<The iterator of the slot ptr
+                }sig;
+                struct {
+                    Object *object;
+                    _FunctorLocation loc;
+                }obj;
+            };
+            enum{
+                WithSignal,
+                WithObject,
+                None
+            }status;
+            Connection(SignalBase *c,Iterator i){
+                sig.iter = i;
+                sig.current = c;
 
+                status = WithSignal;
+            }
+            Connection(Object *object,_FunctorLocation loc){
+                obj.object = object;
+                obj.loc = loc;
+
+                status = WithObject;
             }
         template<class RetT>
         friend class Signal;
@@ -204,15 +225,14 @@ namespace Btk{
      * @brief Slot for Btk::HasSlots's member function
      * 
      * @tparam Callable 
-     * @tparam Method
      * @tparam RetT 
      * @tparam Args 
      */
-    template<class Class,class Method,class RetT,class ...Args>
+    template<class Callable,class RetT,class ...Args>
     class _ClassSlot:public _Slot<RetT,Args...>{
         protected:
-            Class *object;
-            Method method;
+            Callable callable;
+            Object  *object;
             _FunctorLocation location;
             static void Delete(void *self,bool from_object){
                 Btk::unique_ptr<_ClassSlot > ptr(
@@ -221,8 +241,7 @@ namespace Btk{
                 //Call from object
                 if(not from_object){
                     //< lock the object
-                    Btk::lock_guard<Class> locker(*(ptr->object));
-                    
+                    Btk::lock_guard<Object> locker(*(ptr->object));
                     
                     ptr->object->Object::remove_callback(ptr->location);
                 }
@@ -233,12 +252,12 @@ namespace Btk{
                 );
             }
             RetT invoke(Args ...args){
-                return (object->*method)(std::forward<Args>(args)...);
+                return _Call(callable,std::forward<Args>(args)...);
             }
-            _ClassSlot(Class *o,Method m):
+            _ClassSlot(Callable &&c,Object *o):
                 _Slot<RetT,Args...>(Delete,Invoke),
-                object(o),
-                method(m){
+                callable(c),
+                object(o){
 
             }
         template<class T>
@@ -379,7 +398,8 @@ namespace Btk{
     class BTKAPI Object{
         public:
             Object();
-            Object(const Object &) = delete;
+            Object(const Object &){}
+            Object(Object &&){}
             ~Object();
             using TimerID = _TimerID;
             using Functor = _Functor;
@@ -410,6 +430,9 @@ namespace Btk{
 
             FunctorLocation add_callback(void(*fn)(void*),void *param);
             FunctorLocation add_functor(const Functor &);
+            //Exec and remove
+            FunctorLocation exec_functor(FunctorLocation location);
+            //Remove
             FunctorLocation remove_callback(FunctorLocation location);
             /**
              * @brief Remove callback(safe to pass invalid location,but slower)
@@ -590,22 +613,45 @@ namespace Btk{
             template<class Callable>
             Connection connect(Callable &&callable){
                 lock_guard<const SignalBase> locker(*this);
-                using Slot = _MemSlot<Callable,RetT,Args...>;
-                slots.push_back(
-                    new Slot(std::forward<Callable>(callable))
-                );
-                return Connection{
-                    this,
-                    --slots.end()
-                };
+
+                if constexpr(std::is_base_of_v<_BindWithMemFunction,Callable>){
+                    //For callable bind with HasSlots
+                    using Slot = _ClassSlot<Callable,RetT,Args...>;
+
+                    Object *object = static_cast<_BindWithMemFunction&>(callable).object_ptr;
+
+                    Slot *slot = new Slot(std::forward<Callable>(callable),object);
+                    slots.push_back(
+                        slot
+                    );
+                    //make connection
+                    Connection con = {this,--slots.end()};
+                    
+                    _ConnectionFunctor functor(con);
+
+                    slot->location = object->Object::add_functor(functor);
+                    return {object,slot->location};
+                }
+                else{
+                    //For common callable
+                    using Slot = _MemSlot<Callable,RetT,Args...>;
+                    slots.push_back(
+                        new Slot(std::forward<Callable>(callable))
+                    );
+                    return Connection{
+                        this,
+                        --slots.end()
+                    };
+                }
             }
             template<class Method,class TObject>
-            void connect(Method &&method,TObject *object){
+            Connection connect(Method &&method,TObject *object){
                 static_assert(std::is_base_of<Object,TObject>(),"Object must inherit HasSlots");
                 lock_guard<const SignalBase> locker(*this);
 
-                using Slot = _ClassSlot<TObject,Method,RetT,Args...>;
-                Slot *slot = new Slot(object,method);
+                using ClassWrap = _MemberFunctionBinder<Method>;
+                using Slot = _ClassSlot<ClassWrap,RetT,Args...>;
+                Slot *slot = new Slot(ClassWrap(method,object),object);
                 slots.push_back(
                     slot
                 );
@@ -616,6 +662,7 @@ namespace Btk{
 
                 slot->location = object->Object::add_functor(functor);
                 
+                return {object,slot->location};
             }
     };
     using HasSlots = Object;

@@ -90,22 +90,15 @@ extern "C" inline void _Btk_ReportFailure(
 namespace Btk{
     //Cast event for debugging
     template<class T,class U>
-    T event_cast(U &&u){
+    T event_cast(U &&u) noexcept{
         return static_cast<T>(std::forward<U>(u));
     }
-    inline int vscprintf(const char *fmt,va_list varg){
-        #ifdef _WIN32
-        return _vscprintf(fmt,varg);
-        #else
-        return vsnprintf(nullptr,0,fmt,varg);
-        #endif
-    };
     /**
      * @brief A struct holded demangled string
      * 
      */
     struct _typeinfo_string{
-        _typeinfo_string(const std::type_info &info){
+        _typeinfo_string(const std::type_info &info) noexcept{
             //TODO
             #ifdef __GNUC__
             str = ::abi::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
@@ -121,7 +114,7 @@ namespace Btk{
             str = info.name();
             #endif
         }
-        _typeinfo_string(const _typeinfo_string &s){
+        _typeinfo_string(const _typeinfo_string &s) noexcept{
             #ifdef __GNUC__
             if(s.need_free){
                 //allocate in heap
@@ -135,7 +128,7 @@ namespace Btk{
             str = s.str;
             #endif
         }
-        _typeinfo_string(_typeinfo_string &&s){
+        _typeinfo_string(_typeinfo_string &&s) noexcept{
             str = s.str;
             s.str = nullptr;
             #ifdef __GNUC__
@@ -143,7 +136,7 @@ namespace Btk{
             s.need_free = false;
             #endif
         }
-        ~_typeinfo_string(){
+        ~_typeinfo_string() noexcept{
             #ifdef __GNUC__
             if(need_free){
                 ::free(const_cast<char*>(str));
@@ -179,7 +172,7 @@ namespace Btk{
      * @param info The typeinfo
      * @return The name of the typeinfo(no demangled)
      */
-    inline _typeinfo_string get_typename(const std::type_info &info){
+    inline _typeinfo_string get_typename(const std::type_info &info) noexcept{
         return info;
     }
     template<class T>

@@ -2,8 +2,8 @@
 
 #include <Btk/regex.hpp>
 
-// #if __has_include(<regex.h>)
-#if 0
+#if __has_include(<regex.h>)
+// #if 0
 
 #include <regex.h>
 namespace Btk{

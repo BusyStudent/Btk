@@ -15,8 +15,15 @@
 
 #include "../libs/nanovg.h"
 
-namespace{
+#ifndef BTK_USE_GLES2
+    #define BTK_USE_GLES2 0
     #define NANOVG_GLES3_IMPLEMENTATION
+#else
+    #define BTK_USE_GLES2 1
+    #define NANOVG_GLES2_IMPLEMENTATION
+#endif
+
+namespace{
     #include "../libs/nanovg_gl.h"
 }
 
@@ -670,12 +677,20 @@ namespace Btk{
             BTK_LOGINFO("Enable Stencil on create context");
             flags |= NVG_STENCIL_STROKES;
         }
+        #if BTK_USE_GLES2
+        return nvgCreateGLES2(flags,this);
+        #else
         return nvgCreateGLES3(flags,this);
+        #endif
         BTK_GL_END();
     }
     void GLDevice::destroy_context(Context ctxt){
         BTK_GL_BEGIN();
-        nvgDeleteGLES3(ctxt);
+        #if BTK_USE_GLES2
+        return nvgDeleteGLES2(ctxt);        
+        #else
+        return nvgDeleteGLES3(ctxt);
+        #endif
         BTK_GL_END();
     }
     //Check context
@@ -886,7 +901,11 @@ namespace Btk{
         if(not owned){
             f |= TextureFlags(NVG_IMAGE_NODELETE);
         }
+        #if BTK_USE_GLES2
+        return nvglCreateImageFromHandleGLES2(ctxt,tex,w,h,int(f));
+        #else
         return nvglCreateImageFromHandleGLES3(ctxt,tex,w,h,int(f));
+        #endif
     }
     TextureID GLDevice::clone_texture(Context nvg_ctxt,TextureID texture_id){
         BTK_GL_BEGIN();
@@ -1042,6 +1061,8 @@ namespace Btk{
             //Code from nanovg_gl.h
         #ifdef NANOVG_GLES2
             // Check for non-power of 2.
+            int w = tex->width;
+            int h = tex->height;
             if (glnvg__nearestPow2(w) != (unsigned int)w || glnvg__nearestPow2(h) != (unsigned int)h) {
                 // No repeat
                 if ((imageFlags & NVG_IMAGE_REPEATX) != 0 || (imageFlags & NVG_IMAGE_REPEATY) != 0) {

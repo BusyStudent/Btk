@@ -10,19 +10,19 @@ namespace Btk{
     //ABI For SDL
     template<class Elem>
     struct _RectBase{
-        _RectBase() = default;
+        _RectBase() noexcept = default;
         Elem x,y,w,h;
     };
     template<class Elem>
     struct _PointBase{
-        _PointBase() = default;
+        _PointBase() noexcept = default;
         Elem x,y;
     };
     //SDL Rect and point
     template<>
     struct _RectBase<int>:public SDL_Rect{
-        _RectBase() = default;
-        _RectBase(const SDL_Rect &r){
+        _RectBase() noexcept = default;
+        _RectBase(const SDL_Rect &r) noexcept{
             x = r.w;
             h = r.h;
             x = r.x;
@@ -31,8 +31,8 @@ namespace Btk{
     };
     template<>
     struct _PointBase<int>:public SDL_Point{
-        _PointBase() = default;
-        _PointBase(const SDL_Point &p){
+        _PointBase() noexcept = default;
+        _PointBase(const SDL_Point &p) noexcept{
             x = p.x;
             y = p.y;
         }
@@ -42,8 +42,8 @@ namespace Btk{
     
     template<>
     struct _RectBase<float>:public SDL_FRect{
-        _RectBase() = default;
-        _RectBase(const SDL_FRect &r){
+        _RectBase() noexcept = default;
+        _RectBase(const SDL_FRect &r) noexcept{
             x = r.w;
             h = r.h;
             x = r.x;
@@ -52,8 +52,8 @@ namespace Btk{
     };
     template<>
     struct _PointBase<float>:public SDL_FPoint{
-        _PointBase() = default;
-        _PointBase(const SDL_FPoint &p){
+        _PointBase() noexcept = default;
+        _PointBase(const SDL_FPoint &p) noexcept{
             x = p.x;
             y = p.y;
         }
@@ -69,11 +69,11 @@ namespace Btk{
 
     //Rect functions forward defs
     template<class T,class P = _Point<typename T::value_type>>
-    inline bool IntersectRectAndLine(const T &r,const P &p1,const P &p2); 
+    inline bool IntersectRectAndLine(const T &r,const P &p1,const P &p2) noexcept; 
     template<class T>
-    inline T    IntersectRect(const T &r1,const T &r2);
+    inline T    IntersectRect(const T &r1,const T &r2) noexcept;
     template<class T>
-    inline T    UnionRect(const T &r1,const T &r2);
+    inline T    UnionRect(const T &r1,const T &r2) noexcept;
 
 
     //Point --begin
@@ -88,21 +88,21 @@ namespace Btk{
 
         using _PointBase<T>::_PointBase;
         //Construct
-        _Point() = default;
-        _Point(const _Point &) = default;
-        _Point(T x,T y){
+        _Point() noexcept = default;
+        _Point(const _Point &) noexcept = default;
+        _Point(T x,T y) noexcept{
             this->x = x;
             this->y = y;
         }
         //Autocast
         template<class Elem>
-        _Point(const _Point<Elem> &p){
+        _Point(const _Point<Elem> &p) noexcept{
             this->x = static_cast<T>(p.x);
             this->y = static_cast<T>(p.y);
         }
         //Method
         template<class Elem>
-        _Point<Elem> cast() const{
+        _Point<Elem> cast() const noexcept{
             return *this;
         }
         /**
@@ -155,21 +155,21 @@ namespace Btk{
 
         T w,h;
         //Construct
-        _Size() = default;
-        _Size(const _Size &) = default;
-        _Size(T w,T h){
+        _Size() noexcept = default;
+        _Size(const _Size &) noexcept = default;
+        _Size(T w,T h) noexcept{
             this->w = w;
             this->h = h;
         }
         //Auto cast
         template<class Elem>
-        _Size(const _Size<Elem> &size){
+        _Size(const _Size<Elem> &size) noexcept{
             w = static_cast<T>(size.w);
             h = static_cast<T>(size.h);
         }
         //Method
         template<class Elem>
-        _Size<Elem> cast() const{
+        _Size<Elem> cast() const noexcept{
             return *this;
         }
 
@@ -198,9 +198,9 @@ namespace Btk{
         //Using parent constructor
         using _RectBase<T>::_RectBase;
 
-        _Rect() = default;
-        _Rect(const _Rect&) = default;
-        _Rect(T x,T y,T w,T h){
+        _Rect() noexcept = default;
+        _Rect(const _Rect&) noexcept = default;
+        _Rect(T x,T y,T w,T h) noexcept{
             this->x = x;
             this->y = y;
             this->w = w;
@@ -208,7 +208,7 @@ namespace Btk{
         }
         //From another Elem rect
         template<class Elem>
-        _Rect(const _Rect<Elem> &rect){
+        _Rect(const _Rect<Elem> &rect) noexcept{
             this->x = static_cast<T>(rect.x);
             this->y = static_cast<T>(rect.y);
             this->w = static_cast<T>(rect.w);
@@ -330,9 +330,9 @@ namespace Btk{
         T x1,y1;
         T x2,y2;
         //Construct
-        _Line() = default;
-        _Line(const _Line &) = default;
-        _Line(T x1,T y1,T x2,T y2){
+        _Line() noexcept = default;
+        _Line(const _Line &) noexcept = default;
+        _Line(T x1,T y1,T x2,T y2) noexcept{
             this->x1 = x1;
             this->y1 = y1;
             this->x2 = x2;
@@ -340,7 +340,7 @@ namespace Btk{
         }
         //Autocast
         template<class Elem>
-        _Line(Elem x1,Elem y1,Elem x2,Elem y2){
+        _Line(Elem x1,Elem y1,Elem x2,Elem y2) noexcept{
             this->x1 = static_cast<T>(x1);
             this->y1 = static_cast<T>(y1);
             this->x2 = static_cast<T>(x2);
@@ -369,9 +369,9 @@ namespace Btk{
         T maxx;//Max x
         T maxy;//Max y
         //Construct
-        _Bounds() = default;
-        _Bounds(const _Bounds &) = default;
-        _Bounds(T minx,T miny,T maxx,T maxy){
+        _Bounds() noexcept = default;
+        _Bounds(const _Bounds &) noexcept = default;
+        _Bounds(T minx,T miny,T maxx,T maxy) noexcept{
             this->minx = minx;
             this->miny = miny;
             this->maxx = maxx;
@@ -379,7 +379,7 @@ namespace Btk{
         }
         //Autocast
         template<class Elem>
-        _Bounds(const _Bounds<Elem> &bounds){
+        _Bounds(const _Bounds<Elem> &bounds) noexcept{
             minx = static_cast<T>(bounds.minx);
             miny = static_cast<T>(bounds.miny);
             maxx = static_cast<T>(bounds.maxx);
@@ -392,7 +392,7 @@ namespace Btk{
          * @param rect 
          */
         template<class Elem>
-        _Bounds(const _Rect<Elem> &rect){
+        _Bounds(const _Rect<Elem> &rect) noexcept{
             minx = static_cast<T>(rect.x);
             miny = static_cast<T>(rect.y);
             maxx = static_cast<T>(rect.x + rect.w);
@@ -427,10 +427,10 @@ namespace Btk{
             return *this;
         }
         //Method
-        _Point<T> min() const{
+        _Point<T> min() const noexcept{
             return {minx,miny};
         }
-        _Point<T> max() const{
+        _Point<T> max() const noexcept{
             return {maxx,maxy};
         }
         bool empty() const noexcept{
@@ -457,7 +457,7 @@ namespace Btk{
             return cast<_Rect<Elem>>();
         }
 
-        static _Bounds<T> FromPoints(const _Point<T> &min,const _Point<T> &max){
+        static _Bounds<T> FromPoints(const _Point<T> &min,const _Point<T> &max) noexcept{
             return {
                 min.x,
                 min.y,
@@ -485,7 +485,7 @@ namespace Btk{
 
     //Utils
     template<class T1,class T2,class T3>
-    inline bool PointInCircle(const _Point<T1> &center,T2 r,const _Point<T3> &point){
+    inline bool PointInCircle(const _Point<T1> &center,T2 r,const _Point<T3> &point) noexcept{
         return center.distance(point) <= r;
     }
     //Rect utils
@@ -498,7 +498,7 @@ namespace Btk{
      * @return intersection
      */
     template<class T>
-    inline T IntersectRect(const T &r1,const T &r2){
+    inline T IntersectRect(const T &r1,const T &r2) noexcept{
         auto minx = max(r1.x,r2.x);
         auto miny = max(r1.y,r2.y);
         auto maxx = min(r1.x + r1.w,r2.x + r2.w);

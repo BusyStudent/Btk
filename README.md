@@ -69,10 +69,11 @@ int main(){
 
 * [x] Rewrite font system to get better performence  
 * [ ] Add more useful widgets  
-* [ ] Add Btk::Bind(...) to bind object and functions
+* [x] Add Btk::Bind(...) to bind object and functions
 * [ ] Rewrite ImageView By OpenGL to implement AntiAlias
 * [x] Rewirte themes
 * [ ] Add CMake
+* [ ] Add GLX and WGL OpenGL Adapter
 
 ----
 

@@ -126,12 +126,12 @@ namespace Btk{
             }
         }
     }
-    void HookIconv(IconvFunctions fns){
+    void HookIconv(IconvFunctions fns) noexcept{
         iconv_open = fns.iconv_open;
         iconv_close = fns.iconv_close;
         iconv = fns.iconv;
     }
-    void GetIconv(IconvFunctions &fns){
+    void GetIconv(IconvFunctions &fns) noexcept{
         fns.iconv_open = iconv_open;
         fns.iconv_close = iconv_close;
         fns.iconv = iconv;
@@ -189,7 +189,7 @@ namespace Btk{
             SDL_UnloadObject(uchardet_lib);
         }
     };
-    static bool uchardet_init(){
+    static bool uchardet_init() noexcept{
         uchardet_lib = SDL_LoadObject("libuchardet.so");
         if(uchardet_lib != nullptr){
             #define PROC(X) LOAD(X)
@@ -201,7 +201,7 @@ namespace Btk{
         }
         return false;
     }
-    static uchardet_t udet_get(){
+    static uchardet_t udet_get() noexcept{
         //NO lib loaded
         if(uchardet_lib == nullptr){
             if(not uchardet_init()){
@@ -344,6 +344,24 @@ namespace Btk{
         iconv_string<std::string>(iconv,s.base(),static_cast<const char *>(buf),n);
         return s;
     }
+    u8string u8string::fromfile(const char *filename){
+        FILE *f = fopen(filename,"r");
+        if(f == nullptr){
+            throwCRuntimeError();
+        }
+        fseek(f,0,SEEK_END);
+        auto n = ftell(f);
+        fseek(f,0,SEEK_SET);
+
+        u8string s;
+        s.resize(n);
+        if(fread(f,n,1,f) != 1){
+            fclose(f);
+            throwCRuntimeError();
+        }
+        fclose(f);
+        return s;
+    }
     void u8string::append_vfmt(const char *fmt,std::va_list varg){
         int strsize;
         //Get the size of the string
@@ -458,13 +476,13 @@ namespace Btk{
         va_end(l);
         return r;
     }
-    char32_t Utf8Next(const char *& ch){
+    char32_t Utf8Next(const char *& ch) noexcept{
         return utf8::unchecked::next(ch);
     }
-    char32_t Utf8Prev(const char *& ch){
+    char32_t Utf8Prev(const char *& ch) noexcept{
         return utf8::unchecked::prior(ch);
     }
-    size_t Utf8Strlen(const char *begin,const char *end){
+    size_t Utf8Strlen(const char *begin,const char *end) noexcept{
         if(end == nullptr){
             end = begin + std::strlen(begin);
         }
@@ -475,7 +493,7 @@ namespace Btk{
         }
         return len;
     }
-    size_t Utf32CharSize(char32_t codepoint){
+    size_t Utf32CharSize(char32_t codepoint) noexcept{
         if ((0xffffff80 & codepoint) == 0){
             return 1;
         } 
@@ -489,7 +507,7 @@ namespace Btk{
             return 4;
         }
     }
-    size_t Utf8CharSize(const char *s){
+    size_t Utf8CharSize(const char *s) noexcept{
         #if 0
         return utf8::internal::sequence_length(s);
         #else
@@ -497,13 +515,13 @@ namespace Btk{
         return n - s;
         #endif
     }
-    bool Utf8IsVaild(const char *begin,const char *end){
+    bool Utf8IsVaild(const char *begin,const char *end) noexcept{
         if(end == nullptr){
             end = begin + std::strlen(begin);
         }
         return utf8::is_valid(begin,end);
     }
-    const char *Utf8Advance(const char *beg,const char *end,const char *cur,long n){
+    const char *Utf8Advance(const char *beg,const char *end,const char *cur,long n) noexcept{
         if(cur == nullptr){
             return nullptr;
         }

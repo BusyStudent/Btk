@@ -92,6 +92,7 @@ namespace Btk{
     struct MemberFunctionTraits<RetT (Class::*)(Args...)>{
         using result_type = RetT;
         using object_type = Class;
+        using class_type  = Class;
         static constexpr size_t args_count = sizeof ...(Args);
         static constexpr bool is_const = false;
 
@@ -102,7 +103,8 @@ namespace Btk{
     template<class RetT,class Class,class ...Args>
     struct MemberFunctionTraits<RetT (Class::*)(Args...) const>{
         using result_type = RetT;
-        using object_type = Class;
+        using object_type = const Class;
+        using class_type  = Class;
         static constexpr size_t args_count = sizeof ...(Args);
         static constexpr bool is_const = true;
         

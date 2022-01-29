@@ -84,6 +84,10 @@ option("svg_parser")
     set_default(true)
     set_showmenu(true)
     set_description("Render svg")
+option("opengles2")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Use OpenGLES2")
 -- Win32 Option
 option("directx_renderer")
     if is_plat("windows") or is_plat("mingw") then
@@ -191,11 +195,16 @@ target("btk")
         add_files("./src/render/render_sw.cpp")
         add_defines("BTK_USE_SWDEVICE")
     end
+
     if has_config("opengl_renderer") then
+        if has_config("opengles2") then
+            add_defines("BTK_USE_GLES2")
+        end
         add_files("./src/render/render_gles2.cpp")
     else
         add_defines("BTK_NO_GLDEVICE")
     end
+    
     if has_config("directx_renderer") then
         add_files("./src/render/render_dx11.cpp")
         add_defines("BTK_USE_DXDEVICE")

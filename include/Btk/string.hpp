@@ -19,7 +19,8 @@
  * 
  */
 #define BTK_STRING_OPERATOR(TYPE,OP) \
-    inline auto operator OP(const TYPE &t1,const TYPE &t2){\
+    inline auto operator OP(const TYPE &t1,const TYPE &t2)\
+        BTK_NOEXCEPT_IF(t1.base() OP t2.base()){\
         return t1.base() OP t2.base();\
     }
 
@@ -166,51 +167,51 @@ namespace Btk{
      * @param end The string's end(could be nullptr)
      * @return The string's size
      */
-    BTKAPI size_t Utf8Strlen(const char *beg,const char *end = nullptr);
-    BTKAPI size_t Utf32CharSize(char32_t codepoint);
+    BTKAPI size_t Utf8Strlen(const char *beg,const char *end = nullptr) noexcept;
+    BTKAPI size_t Utf32CharSize(char32_t codepoint) noexcept;
     /**
      * @brief Get size of a utf8 char
      * 
      * @param char 
      * @return size_t 
      */
-    BTKAPI size_t Utf8CharSize(const char *s);
+    BTKAPI size_t Utf8CharSize(const char *s) noexcept;
     /**
      * @brief Move to the next char begin
      * 
      * @param ch The pointer to the char(could not be nullptr)
      * @return The utf32 encoded codepoint
      */
-    BTKAPI char32_t Utf8Next(const char *&);
+    BTKAPI char32_t Utf8Next(const char *&) noexcept;
     /**
      * @brief Move to the prev char begin
      * 
      * @param ch The pointer to the char(could not be nullptr)
      * @return The utf32 encoded codepoint
      */
-    BTKAPI char32_t Utf8Prev(const char *&);
+    BTKAPI char32_t Utf8Prev(const char *&) noexcept;
     /**
      * @brief Get the utf32 codepoint
      * 
      * @param ch The pointer to the char(could not be nullptr)
      * @return char32_t 
      */
-    inline char32_t Utf8Peek(const char *c){
+    inline char32_t Utf8Peek(const char *c) noexcept{
         return Utf8Next(c);
     }
-    inline char32_t Utf8Next(char *& c){
+    inline char32_t Utf8Next(char *& c) noexcept{
         return Utf8Next(const_cast<const char*&>(c));
     }
-    inline char32_t Utf8Prev(char *& c){
+    inline char32_t Utf8Prev(char *& c) noexcept{
         return Utf8Prev(const_cast<const char*&>(c));
     }
     template<class T>
-    inline T Utf8GetPrev(T v){
+    inline T Utf8GetPrev(T v) noexcept{
         Utf8Prev(v);
         return v;
     }
     template<class T>
-    inline T Utf8GetNext(T v){
+    inline T Utf8GetNext(T v) noexcept{
         Utf8Next(v);
         return v;
     }
@@ -221,7 +222,7 @@ namespace Btk{
      * @param p2 
      * @return ptrdiff_t 
      */
-    inline ptrdiff_t Utf8Distance(const char *p1,const char *p2){
+    inline ptrdiff_t Utf8Distance(const char *p1,const char *p2) noexcept{
         if(p1 > p2){
             return -Utf8Strlen(p2,p1);
         }
@@ -237,7 +238,7 @@ namespace Btk{
      * @return true on invaild 
      * @return false on vaild 
      */
-    BTKAPI bool Utf8IsVaild(const char *beg,const char *end = nullptr);
+    BTKAPI bool Utf8IsVaild(const char *beg,const char *end = nullptr) noexcept;
     /**
      * @brief Advance in the string
      * 
@@ -248,7 +249,7 @@ namespace Btk{
      * @return pointer to the char (nullptr on out of range)
      */
     BTKAPI 
-    const char *Utf8Advance(const char *beg,const char *end,const char *cur,long n);
+    const char *Utf8Advance(const char *beg,const char *end,const char *cur,long n) noexcept;
     //If failed,throw outof range
     BTKAPI 
     const char *Utf8AdvanceChecked(const char *beg,const char *end,const char *cur,long n);
@@ -1151,6 +1152,7 @@ namespace Btk{
              * @return u8string 
              */
             static u8string from(const void *,size_t n,const char *encoding = nullptr);
+            static u8string fromfile(const char *filename);
         public:
             //beg and end
             iterator begin(){
@@ -1650,8 +1652,8 @@ namespace Btk{
         int     (*iconv_close)(iconv_t);
         size_t  (*iconv)(iconv_t,const char **,size_t*,char **,size_t*);
     };
-    BTKAPI void HookIconv(IconvFunctions);
-    BTKAPI void GetIconv(IconvFunctions&);
+    BTKAPI void HookIconv(IconvFunctions) noexcept;
+    BTKAPI void GetIconv(IconvFunctions&) noexcept;
     //Std
     inline std::ostream &operator <<(std::ostream &os,const char *s){
         os << u8string_view(s);

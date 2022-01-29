@@ -37,6 +37,21 @@ namespace Btk{
     inline void SetTextInputRect(const Rect &r){
         SetTextInputRect(&r);
     }
+    inline void SetClipboardText(const u8string &us){
+        SDL_SetClipboardText(us.c_str());
+    }
+    inline auto GetClipboardText() -> u8string{
+        char *s = SDL_GetClipboardText();
+        if(s == nullptr){
+            return {};
+        }
+        u8string us(s);
+        SDL_free(s);
+        return us;
+    }
+    inline bool HasClipboardText(){
+        return SDL_HasClipboardText();
+    }
 }
 
 #endif // _BTK_IMPL_INPUT_HPP_

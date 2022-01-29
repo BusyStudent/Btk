@@ -46,6 +46,9 @@
     #define BTK_UNIQUE_NAME(NAME) BTK_MARGE_TOKEN(NAME,__LINE__)
 #endif
 
+//Noexcept
+#define BTK_NOEXCEPT_IF(X) noexcept(noexcept(X))
+
 /**
  * @brief Generate operator for enum
  * @param ENUM The enum type
@@ -131,14 +134,14 @@ namespace Btk{
     #undef min
 
     template<class T>
-    inline T max(const T &v1,const T &v2){
+    inline T max(const T &v1,const T &v2) BTK_NOEXCEPT_IF(v1 < v2){
         if(v1 > v2){
             return v1;
         }
         return v2;
     }
     template<class T>
-    inline T min(const T &v1,const T &v2){
+    inline T min(const T &v1,const T &v2) BTK_NOEXCEPT_IF(v1 < v2){
         if(v1 < v2){
             return v1;
         }
