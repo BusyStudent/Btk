@@ -1,7 +1,7 @@
 #include "./build.hpp"
 
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
@@ -715,8 +715,8 @@ namespace Btk{
     }
     void Renderer::draw_text(float x,float y,u8string_view txt,Color c){
         begin_path();
-        text(x,y,txt);
         fill_color(c);
+        text(x,y,txt);
         fill();
     }
 }

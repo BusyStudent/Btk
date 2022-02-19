@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_rwops.h>
-#include <Btk/impl/codec.hpp>
+#include <Btk/detail/codec.hpp>
 #include <Btk/exception.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION

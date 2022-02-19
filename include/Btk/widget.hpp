@@ -143,16 +143,20 @@ namespace Btk{
             void set_position(const Vec2 &vec2){
                 set_rect(vec2.x,vec2.y,rect.w,rect.h);
             }
-            int x() const noexcept{
+            template<class T = int>
+            T x() const noexcept{
                 return rect.x;
             }
-            int y() const noexcept{
+            template<class T = int>
+            T y() const noexcept{
                 return rect.y;
             }
-            int w() const noexcept{
+            template<class T = int>
+            T w() const noexcept{
                 return rect.w;
             }
-            int h() const noexcept{
+            template<class T = int>
+            T h() const noexcept{
                 return rect.h;
             }
             bool is_enable() const noexcept{

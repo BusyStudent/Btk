@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL_rwops.h>
 #include <SDL2/SDL_timer.h>
-#include <Btk/impl/codec.hpp>
+#include <Btk/detail/codec.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/render.hpp>

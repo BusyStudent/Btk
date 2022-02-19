@@ -1,6 +1,6 @@
 #include "../build.hpp"
 
-#include <Btk/impl/thread.hpp>
+#include <Btk/detail/thread.hpp>
 #include <Btk/themes.hpp>
 #include <atomic>
 #include <mutex>

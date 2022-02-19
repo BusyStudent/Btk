@@ -16,7 +16,7 @@ extern "C"{
 }
 #define BTK_LAYOUT_INTERNAL
 
-#include <Btk/impl/scope.hpp>
+#include <Btk/detail/scope.hpp>
 #include <Btk/layout.hpp>
 #include <Btk/render.hpp>
 #include <Btk/event.hpp>

@@ -1,4 +1,4 @@
 #include "../build.hpp"
 
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/mixer.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/mixer.hpp>

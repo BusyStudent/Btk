@@ -1,7 +1,7 @@
 #include "build.hpp"
 
 #include <Btk/thirdparty/utf8.h>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/string.hpp>
@@ -155,7 +155,7 @@ namespace Btk{
 //Uchardet
 #if __has_include(<uchardet/uchardet.h>)
     #include <uchardet/uchardet.h>
-    #include <Btk/impl/scope.hpp>
+    #include <Btk/detail/scope.hpp>
     #include <SDL2/SDL_thread.h>
     #include <SDL2/SDL_loadso.h>
 

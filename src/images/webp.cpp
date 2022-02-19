@@ -4,8 +4,8 @@
 #include <webp/decode.h>
 #include <webp/encode.h>
 
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/codec.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/codec.hpp>
 #include <Btk/exception.hpp>
 
 namespace{

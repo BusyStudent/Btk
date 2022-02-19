@@ -1,10 +1,10 @@
 #include "../build.hpp"
 
 #include <Btk/thirdparty/utf8.h>
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/input.hpp>
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/input.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/window.hpp>
 #include <Btk/cursor.hpp>

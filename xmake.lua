@@ -88,6 +88,10 @@ option("opengles2")
     set_default(false)
     set_showmenu(true)
     set_description("Use OpenGLES2")
+option("precompiled_header")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Use Precompiled header")
 -- Win32 Option
 option("directx_renderer")
     if is_plat("windows") or is_plat("mingw") then
@@ -170,7 +174,7 @@ target("btk")
 
     set_kind("shared")
     --core
-    add_files("./src/impl/*.cpp")
+    add_files("./src/detail/*.cpp")
     --basic 
     add_files("./src/*.cpp")
     --widgets
@@ -253,6 +257,11 @@ target("btk")
         --No SDL_image use stb_image instead
         add_defines("BTK_HAS_STBII")
         add_files("./src/images/stb_image.cpp")
+    end
+
+    if has_config("precompiled_header") then
+        add_defines("_BTK_PRECOMPILED_HEADER")
+        set_pcxxheader("./src/build.hpp")
     end
 if is_mode("debug") then
     target("hello")

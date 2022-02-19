@@ -11,7 +11,7 @@
 #include "internal.hpp"
 
 #include <Btk/platform/win32.hpp>
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/font.hpp>
 #include <Btk/Btk.hpp>

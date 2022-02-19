@@ -303,7 +303,11 @@ namespace Btk{
         bool ok;
     };
     struct GLAttributes{
-
+        Uint8 red_size;
+        Uint8 green_size;
+        Uint8 blue_size;
+        Uint8 alpha_size;
+        
     };
     /**
      * @brief OpenGL Renderer Device

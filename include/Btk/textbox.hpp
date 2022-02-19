@@ -105,6 +105,7 @@ namespace Btk{
         private:
             u8string cur_text;
     };
+    #endif
     /**
      * @brief Just edit single line
      * 
@@ -117,12 +118,36 @@ namespace Btk{
             
             void draw(Renderer &) override;
             
-            bool handle(Event &) override;
-            bool handle_drag(DragEvent &) override;
-            bool handle_mouse(MouseEvent &) override;
-            bool handle_keyboard(KeyEvent &) override;
-            bool handle_textinput(TextInputEvent&) override;
+            // bool handle(Event &) override;
+            // bool handle_drag(DragEvent &) override;
+            // bool handle_mouse(MouseEvent &) override;
+            // bool handle_keyboard(KeyEvent &) override;
+            // bool handle_textinput(TextInputEvent&) override;
+
+            void set_rect(const Rect &r) override;
         private:
+            //Utils
+            auto get_pos_from(const Point &p) -> size_t;
+            auto get_text(size_t beg,size_t end) -> u8string_view;
+            //Area
+            //(0,0)----------X>
+            //|  |  LimitArea|
+            //|  |           |
+            //Y----------------
+            FRect text_limit_area;
+            FRect text_area;
+            FPoint text_pos;
+            //Text Iterators
+            //
+            //  H e l l o W o r l d
+            //0 1 2 3 4 5 6 7 8 9 10
+            //Section
+            size_t sel_beg;
+            size_t sel_end;
+            bool has_sel;
+            //Cursor
+            size_t cur_pos;
+
             Color    text_color;
             Color    background_color;
             Color    boarder_color;
@@ -131,14 +156,10 @@ namespace Btk{
             Align    align;//< Text align
             bool     clear_btn = false;//Has clear button?
             //select
-            int sel_begin;
-            int sel_end;
-
     };
     class BTKAPI TextBroser:public Widget{
         
     };
-    #endif
 };
 
 

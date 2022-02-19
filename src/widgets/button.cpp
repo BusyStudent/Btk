@@ -1,7 +1,7 @@
 #include "../build.hpp"
 
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/window.hpp>
 #include <Btk/render.hpp>
 #include <Btk/button.hpp>
@@ -243,7 +243,7 @@ namespace Btk{
                 checked = ! checked;
                 redraw();
             }
-            signal_clicked();
+            signal_clicked().emit();
         }
         return event.accept();
     }

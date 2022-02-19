@@ -1,5 +1,5 @@
 #include "../build.hpp"
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/core.hpp>
 #include "adapter.hpp"
 namespace Btk{
     void InitImageAdapter(){

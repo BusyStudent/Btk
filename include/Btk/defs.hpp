@@ -14,12 +14,14 @@
 
 #if BTK_CXX
     #include <cstdint>
+    #include <cstring>
     //For C functions
     #define BTK_CEXTERN extern "C"
     #define BTK_CDECLS_BEGIN extern "C"{
     #define BTK_CDECLS_END }
 #else
     #include <stdint.h>
+    #include <cstring>
     #define BTK_CEXTERN
     #define BTK_CDECLS_BEGIN
     #define BTK_CDECLS_END

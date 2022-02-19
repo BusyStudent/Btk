@@ -3,10 +3,10 @@
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_timer.h>
 
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/utils.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/utils.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <Btk/window.hpp>

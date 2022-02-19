@@ -4,7 +4,7 @@
 
 // #include <Btk/msgbox/impl.hpp>
 #include <Btk/platform/popen.hpp>
-#include <Btk/impl/window.hpp>
+#include <Btk/detail/window.hpp>
 #include <Btk/dialog.hpp>
 
 #include <sys/wait.h>

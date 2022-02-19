@@ -1,9 +1,9 @@
 #if !defined(_BTK_OBJECT_HPP_)
 #define _BTK_OBJECT_HPP_
+#include "detail/invoker.hpp"
 #include "utils/template.hpp"
 #include "utils/traits.hpp"
 #include "utils/sync.hpp"
-#include "impl/invoker.hpp"
 #include "signal/call.hpp"
 #include "signal/base.hpp"
 #include "defs.hpp"

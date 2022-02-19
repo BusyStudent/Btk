@@ -1,6 +1,6 @@
 #include "../build.hpp"
 
-#include <Btk/impl/window.hpp>
+#include <Btk/detail/window.hpp>
 #include <Btk/container.hpp>
 #include <Btk/exception.hpp>
 

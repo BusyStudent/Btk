@@ -13,10 +13,15 @@
 #include <Btk/defs.hpp>
 #include <Btk/string.hpp>
 
-#if defined(_MSC_VER)
-    //MSVC
-    #define BTK_FUNCTION __FUNCSIG__
-#elif defined(__GNUC__)
+#ifdef _BTK_PRECOMPILED_HEADER
+    #include <Btk/signal/bind.hpp>
+    #include <Btk/widget.hpp>
+    #include <Btk/render.hpp>
+    #include <Btk/event.hpp>
+#endif
+
+
+#if BTK_GCC
     //GCC
     #include <strings.h>
     #include <cxxabi.h>
@@ -25,7 +30,7 @@
     #define BTK_FUNCTION SDL_FUNCTION
 #endif
 
-#ifdef _WIN32
+#if BTK_WIN32
     //Suppress the min and max definitions in Windef.h
     #define NOMINMAX
 #endif

@@ -1,6 +1,6 @@
 #include "../../build.hpp"
 
-#include <Btk/impl/application.hpp>
+#include <Btk/detail/application.hpp>
 #include <Btk/platform/dbus.hpp>
 #include <Btk/platform/x11.hpp>
 #include <Btk/application.hpp>

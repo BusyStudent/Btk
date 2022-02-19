@@ -4,9 +4,9 @@
 #include <Btk/platform/popen.hpp>
 #include <Btk/platform/x11.hpp>
 #include <Btk/platform/fs.hpp>
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
 #include <Btk/widget.hpp>
@@ -141,6 +141,7 @@ namespace X11{
     bool has_kdialog = false;
     //Map X11's window to btk's wiondow
     static Constructable<std::map<XWindow,WindowImpl*>> wins_map;
+    static XDisplay *x_display = nullptr;
 
     static void on_add_window(WindowImpl *win){
         //set window 
@@ -155,21 +156,42 @@ namespace X11{
         //Remove it
         wins_map->erase(BTK_X_WINDOW(win->x_window));
     }
+    void *GetXDisplay(){
+        if(x_display != nullptr){
+            return x_display;
+        }
+        SDL_Window *win = SDL_CreateWindow(
+            nullptr,
+            SDL_WINDOWPOS_UNDEFINED,
+            SDL_WINDOWPOS_UNDEFINED,
+            100,
+            100,
+            SDL_WINDOW_HIDDEN
+        );
+        if(win == nullptr){
+            throwSDLError();
+        }
+        auto [display,window] = GetXContext(win);
+
+        SDL_DestroyWindow(win);
+
+        x_display = display;
+        return x_display;
+    }
 
     void Init(){
         //Set SDL Hit
         //Disable the compositor
         //Beacuse it will cause a render error in KDE
         SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR,"0");
-        // #if 1
-        // //Set visual ID to 32 depth if could
-        // auto display = ::XOpenDisplay(nullptr);
-        // XVisualInfo vinfo;
-        // if(XMatchVisualInfo(display,DefaultScreen(display),32,TrueColor,&vinfo)){
-        //     SDL_SetHint(SDL_HINT_VIDEO_X11_WINDOW_VISUALID,std::to_string(vinfo.visualid).c_str());
-        // }
-        // XCloseDisplay(display);
-        // #endif
+        #if 1 && defined(SDL_HINT_VIDEO_X11_WINDOW_VISUALID)
+        //Set visual ID to 32 depth if could
+        auto display = static_cast<XDisplay*>(GetXDisplay());
+        XVisualInfo vinfo;
+        if(XMatchVisualInfo(display,DefaultScreen(display),32,TrueColor,&vinfo)){
+            SDL_SetHint(SDL_HINT_VIDEO_X11_WINDOW_VISUALID,std::to_string(vinfo.visualid).c_str());
+        }
+        #endif
 
         #ifndef NDEBUG
         //Debug crash handler

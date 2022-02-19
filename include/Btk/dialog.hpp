@@ -165,6 +165,9 @@ namespace Btk{
             _Native *native_impl = {};
             _Local *local_impl = {};
     };
+    class BTKAPI TextDialog:public Dialog{
+
+    };
     BTK_FLAGS_OPERATOR(FileDialog::Flags,Uint32);
     //Method
     inline void FileDialog::set_multiple(bool v) noexcept{

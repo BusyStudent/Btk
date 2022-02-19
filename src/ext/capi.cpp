@@ -79,9 +79,9 @@
         }
 #endif
 
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk.hpp>
 #include <Btk.h>
 

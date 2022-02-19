@@ -3,8 +3,8 @@
 #include <SDL2/SDL_keyboard.h>
 
 #include <Btk/platform/win32.hpp>
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/window.hpp>
 #include <Btk/Btk.hpp>
 #include <windows.h>

@@ -1,8 +1,8 @@
 #include "./build.hpp"
 
 #include <Btk/platform/popen.hpp>
-#include <Btk/impl/thread.hpp>
-#include <Btk/impl/atomic.hpp>
+#include <Btk/detail/thread.hpp>
+#include <Btk/detail/atomic.hpp>
 #include <Btk/async.hpp>
 #include <Btk/Btk.hpp>
 

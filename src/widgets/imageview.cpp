@@ -2,7 +2,7 @@
 
 #include "../build.hpp"
 
-#include <Btk/impl/window.hpp>
+#include <Btk/detail/window.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>

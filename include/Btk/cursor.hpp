@@ -3,6 +3,7 @@
 struct SDL_Cursor;
 namespace Btk{
     class PixBuf;
+    class PixBufRef;
     /**
      * @brief SystemCursor from SDL_mouse.h
      * 
@@ -24,7 +25,20 @@ namespace Btk{
              * @brief Construct a new empty Cursor object
              * 
              */
-            Cursor():cursor(nullptr),own(false){};
+            Cursor() noexcept :cursor(nullptr){};
+            /**
+             * @brief Construct a new Cursor object
+             * 
+             * @param c 
+             */
+            Cursor(const Cursor &c) noexcept{
+                cursor = c.cursor;
+                _Ref(cursor);
+            }
+            Cursor(Cursor &&c) noexcept{
+                cursor = c.cursor;
+                c.cursor = nullptr;
+            }
             /**
              * @brief Construct a new System Cursor object
              * 
@@ -37,16 +51,41 @@ namespace Btk{
              * @param hot_x The cursor's x point
              * @param hot_y The cursor's y point
              */
-            Cursor(const PixBuf &pixbuf,int hot_x = 0,int hot_y = 0);
-            ~Cursor();
+            Cursor(PixBufRef pixbuf,int hot_x = 0,int hot_y = 0);
+            ~Cursor(){
+                _Unref(cursor);
+            }
             /**
              * @brief Set the cursor 
              * 
              */
-            void set() const;
+            void set() const{
+                _Set(cursor);
+            }
+            bool empty() const noexcept{
+                return cursor == nullptr;
+            }
+
+            Cursor &operator =(const Cursor &c) noexcept{
+                if(&c != this){
+                    _Unref(cursor);
+                    cursor = c.cursor;
+                    _Ref(cursor);
+                }
+                return *this;
+            }
+
+            Cursor &operator =(Cursor &&c) noexcept{
+                if(&c != this){
+                    _Unref(cursor);
+                    cursor = c.cursor;
+                    c.cursor = nullptr;
+                }
+                return *this;
+            }
 
             /**
-             * @brief Reset the cursor to default
+             * @brief Reset the cursor to prev
              * 
              */
             static void reset();
@@ -62,15 +101,33 @@ namespace Btk{
              * @return Cursor 
              */
             static Cursor Current();
-        private:
-            Cursor(SDL_Cursor *c,bool w):
-                cursor(c),
-                own(w){};
 
+            struct Impl;
+        private:
+            Cursor(Impl *c):cursor(c){}
+
+            static void _Unref(void *cursor) noexcept;
+            static void _Ref(void *cursor) noexcept;
+            static void _Set(void *cursor);
             
-            SDL_Cursor *cursor;
-            bool own;
+            Impl *cursor;
     };
+    /**
+     * @brief Set the Cursor object
+     * 
+     * @return BTKAPI 
+     */
+    BTKAPI void SetCursor(SystemCursor);
+    /**
+     * @brief Reset cursor to prev
+     * 
+     * @return BTKAPI 
+     */
+    BTKAPI void ResetCursor() noexcept;
+
+    inline void Cursor::reset(){
+        ResetCursor();
+    }
 }
 
 

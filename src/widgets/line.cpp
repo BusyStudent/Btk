@@ -1,6 +1,6 @@
 #include "../build.hpp"
 
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/widget.hpp>
 #include <Btk/render.hpp>
 namespace Btk{

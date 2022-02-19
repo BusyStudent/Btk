@@ -335,13 +335,14 @@ namespace Btk{
             ~FontMatcher();
 
             //Mask
-            enum{
+            enum :Uint32{
                 Filename,
                 Fullname,
                 Index,
                 Style,
+                Language,
             };
-
+            void match();
             void get_value(Uint32 mask,void *p);
         private:
             //Impls

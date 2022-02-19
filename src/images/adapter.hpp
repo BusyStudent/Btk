@@ -2,9 +2,9 @@
 #define _BTK_INTERNAL_IMAGE_ADAPTER_HPP_
 
 #include "../build.hpp"
-#include <Btk/impl/loadso.hpp>
-#include <Btk/impl/codec.hpp>
-#include <Btk/impl/scope.hpp>
+#include <Btk/detail/loadso.hpp>
+#include <Btk/detail/codec.hpp>
+#include <Btk/detail/scope.hpp>
 #include <SDL2/SDL_rwops.h>
 
 

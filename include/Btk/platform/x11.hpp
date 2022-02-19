@@ -13,6 +13,7 @@ namespace Btk{
         BTKAPI void Quit();
         BTKAPI void HandleSysMsg(const SDL_SysWMmsg &);
         BTKAPI bool MessageBox(u8string_view title,u8string_view msg,int flag = 0);
+        BTKAPI void *GetXDisplay();
 
         SDL_Window *CreateTsWindow();
     };

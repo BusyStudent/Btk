@@ -753,6 +753,15 @@ namespace Btk{
                 triangle(a.x,a.y,b.x,b.y,c.x,c.y);
             }
 
+            // template<class Container>
+            // void polygon(const Container &c){
+            //     move_to
+            //     for(auto p:c){
+
+            //     }
+            // }
+
+
             void show_path_caches();
             /**
              * @brief Draw text

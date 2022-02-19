@@ -1,6 +1,6 @@
 #include "../build.hpp"
 
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/Btk.hpp>
 #include "adapter.hpp"
 #include <SDL2/SDL_image.h>

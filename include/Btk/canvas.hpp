@@ -32,7 +32,13 @@ namespace Btk{
             //Save / Restore before / after draw
             bool protect_context = true;
     };
-    class BTKAPI Graph{
+    class BTKAPI ShapeNode:public Widget{
+        
+    };
+    class BTKAPI SceneView:public Widget{
+
+    };
+    class BTKAPI Graph:public Widget{
         private:
             Color _background_color;
             Color _text_color;

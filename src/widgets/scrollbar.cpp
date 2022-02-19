@@ -1,7 +1,7 @@
 #include "../build.hpp"
 
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/scrollbar.hpp>
 
 namespace Btk{

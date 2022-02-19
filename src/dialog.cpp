@@ -1,8 +1,8 @@
 #include "./build.hpp"
 
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/thread.hpp>
-#include <Btk/impl/scope.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/thread.hpp>
+#include <Btk/detail/scope.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/window.hpp>
 #include <Btk/dialog.hpp>

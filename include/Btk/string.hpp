@@ -587,7 +587,7 @@ namespace Btk{
              * 
              * @return size_t 
              */
-            size_t length() const{
+            size_t length() const noexcept{
                 return Utf8Strlen(impl_begin(),impl_end());
             }
             size_t raw_length() const noexcept{
@@ -674,6 +674,14 @@ namespace Btk{
              * @return u8string_view 
              */
             u8string_view substr(size_t pos = 0,size_t len = npos) const;
+
+            template<class T>
+            u8string_view substr(const _Utf8IteratorBase<T> beg,const _Utf8IteratorBase<T> end) const{
+                return u8string_view(
+                    _translate_pointer(beg.current),
+                    Utf8GetNext(end->current) - beg.current
+                );
+            }
             /**
              * @brief Split string and copy them into buffer
              * 
@@ -1664,5 +1672,64 @@ namespace Btk{
 
     //     }
     // }
+
+    //Triats for string class
+    template<class T,class = void>
+    struct IsStringClass:std::false_type{};
+    template<class T>
+    struct IsStringClass<T,
+        std::void_t<
+            decltype(std::declval<T>().data()),
+            decltype(std::declval<T>().size()),
+            decltype(std::declval<T>().length())>
+        >
+        :std::true_type{
+
+    };
+    
+    //Strlen for different cstring
+    inline size_t _strlen_ptr(const char *s) noexcept{
+        return std::strlen(s);
+    }
+
+    //For pointer
+    template<class T>
+    size_t _strlen_ptr(const T *str) noexcept{
+        size_t n = 0;
+        while(*str != T('\0')){
+            ++str;
+            ++n;
+        }
+        return n;
+    }
+    // For static string
+    template<class T,size_t N>
+    constexpr size_t _strlen_array(const T (&)[N]) noexcept{
+        //Remove '\0'
+        return N - 1;
+    }
+
+    template<class T>
+    constexpr size_t strlen(T &&p) noexcept{
+        if constexpr(std::is_array_v<std::remove_reference_t<T>>){
+            return _strlen_array(std::forward<T>(p));
+        }
+        else if constexpr(std::is_pointer_v<std::decay_t<T>>){
+            return _strlen_ptr(std::forward<T>(p));
+        }
+        else if constexpr(IsStringClass<std::decay_t<T>>()){
+            if constexpr(std::is_same_v<char,std::decay_t<decltype(*std::declval<T>().data())>>){
+                //use size
+                return p.size();
+            }
+            else{
+                //use length
+                return p.length();
+            }
+        }
+        else{
+            static_assert(std::is_same_v<void,T>());
+        }
+    }
 }
 #endif // _BTK_STRING_HPP_

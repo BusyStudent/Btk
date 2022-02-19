@@ -471,6 +471,18 @@ namespace Btk{
     using FBounds = _Bounds<float>;
     //Bounds --end
 
+    //Bezier curve
+    template<class T>
+    struct _BezierCurve{
+        _Point<T> c1;
+        _Point<T> c2;
+        _Point<T> endpoint;
+    };
+
+    using BezierCurve = _BezierCurve<float>;
+
+    //Paths
+
     //Template alias for User
     template<class T>
     using RectImpl = _Rect<T>;
@@ -488,6 +500,10 @@ namespace Btk{
     inline bool PointInCircle(const _Point<T1> &center,T2 r,const _Point<T3> &point) noexcept{
         return center.distance(point) <= r;
     }
+    //TODO List
+    //PointInShape
+    //LineInShape
+    
     //Rect utils
     /**
      * @brief Get intersection of two rects
@@ -509,6 +525,36 @@ namespace Btk{
             max(static_cast<decltype(minx)>(0),maxx - minx),
             max(static_cast<decltype(minx)>(0),maxy - miny)
         );
+    }
+    //float number utils
+    template<class T>
+    inline size_t GetFloatPrecision(T num) noexcept{
+        //Get decimal fraction
+        T a = num - std::floor(num);
+
+        size_t n = 0;
+
+        while(a != std::floor(a)){
+            n += 1;
+            a *= 10;
+        }
+        return n;
+    }
+    template<class T>
+    inline T SetFloatPrecision(T num,size_t n) noexcept{
+        size_t prec = GetFloatPrecision(num);
+        if(prec <= n){
+            //do nothing
+            return num;
+        }
+        //TODO
+        T result = std::floor(num);
+        T dec = num - result;
+
+        for(size_t i = 0;i < n;i++){
+
+        }
+        return 0;
     }
 
     //Do extern template

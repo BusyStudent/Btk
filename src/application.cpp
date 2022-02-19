@@ -2,8 +2,8 @@
 
 #include <SDL2/SDL_clipboard.h>
 
-#include <Btk/impl/application.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/application.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/application.hpp>
 #include <Btk/Btk.hpp>
 

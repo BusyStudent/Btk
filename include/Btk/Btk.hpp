@@ -7,8 +7,8 @@
 #include <memory>
 #include <tuple>
 #include "defs.hpp"
+#include "detail/invoker.hpp"
 #include "utils/traits.hpp"
-#include "impl/invoker.hpp"
 #include "window.hpp"
 namespace Btk{
 

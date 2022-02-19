@@ -1,6 +1,6 @@
 #include "../build.hpp"
 
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/gl/opengl.hpp>
 #include <Btk/Btk.hpp>
 #include <SDL2/SDL_video.h>
@@ -32,7 +32,7 @@ namespace Btk::GL{
 
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,8);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,4);
 
         #ifndef BTK_NO_GLDEVICE
         //Register our Device

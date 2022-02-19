@@ -230,7 +230,6 @@ struct FONSttFontImpl {
 	#endif
 };
 #else
-//TODO Add mapped memory into FONSFontData
 struct FONSttFontData{
 	FS_REFCOUNTER();
 
@@ -481,7 +480,10 @@ struct Runtime{
 
 	BtkFt (*handle_glyph)(BtkFt cur_font,char32_t want_codepoint);
 
-	BtkFt find_fallback_font(char32_t codepoint);
+	BtkFt find_fallback_font(char32_t codepoint){
+		//TODO
+		return nullptr;			
+	}
 };
 Btk::Constructable<Runtime> runtime;
 
@@ -499,11 +501,13 @@ Runtime::Runtime(){
 		throwRuntimeError("Init freetype failed");
 	}
 	#endif
+
+	auto info = FontUtils::FindFont("");
 	//Add default font
 	default_font = add_font(
 		"<default>",
-		FontUtils::GetFileByName("").c_str(),
-		0
+		info.filename.c_str(),
+		info.index
 	);
 }
 Runtime::~Runtime(){
@@ -1883,11 +1887,24 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	if (g == 0) {
 		for (i = 0; i < font->nfallbacks; ++i) {
 			FONSfont* fallbackFont = BtkFt_GetFromID(font->fallbacks[i]);
+			if(fallbackFont == nullptr){
+				continue;
+			}
 			int fallbackIndex = fons__tt_getGlyphIndex(&fallbackFont->font, codepoint);
 			if (fallbackIndex != 0) {
 				g = fallbackIndex;
 				renderFont = fallbackFont;
 				break;
+			}
+		}
+		//System fallback
+		FONSfont* fallbackFont;
+		fallbackFont = runtime->find_fallback_font(codepoint);
+		if(fallbackFont != nullptr){
+			int fallbackIndex = fons__tt_getGlyphIndex(&fallbackFont->font, codepoint);
+			if (fallbackIndex != 0) {
+				g = fallbackIndex;
+				renderFont = fallbackFont;
 			}
 		}
 		// It is possible that we did not find a fallback glyph.
