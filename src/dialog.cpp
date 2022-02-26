@@ -8,6 +8,7 @@
 #include <Btk/dialog.hpp>
 #include <Btk/button.hpp>
 #include <Btk/label.hpp>
+#include <Btk/Btk.hpp>
 
 #if BTK_X11
     #include <Btk/platform/popen.hpp>
@@ -116,8 +117,12 @@ namespace Btk{
                 break;
             }
         }
+        HWND owner = nullptr;
+        if(parent() != nullptr and not IsMainThread()){
+            owner = WinUtils::GetHandleFrom(parent()->sdl_window());
+        }
         ::MessageBoxW(
-            parent() ? nullptr : WinUtils::GetHandleFrom(parent()->sdl_window()),
+            owner,
             _message.to_utf16().w_str(),
             _title.to_utf16().w_str(),
             type
@@ -213,7 +218,7 @@ namespace Btk{
         SyncEvent event;
         //Init dialog
         void init(Flags f){
-            if(f == last_flags){
+            if(f == last_flags and not dialog.empty()){
                 return;
             }
             //DoParse
@@ -313,7 +318,7 @@ namespace Btk{
             native_impl->dialog->SetTitle(_title.to_utf16().w_str());
         }
         HWND owner = nullptr;
-        if(parent() != nullptr){
+        if(parent() != nullptr and not IsMainThread()){
             owner = WinUtils::GetHandleFrom(parent()->sdl_window());
         }
         if(FAILED(native_impl->dialog->Show(owner))){
@@ -322,6 +327,9 @@ namespace Btk{
         //Parse result
         _result.clear();
         native_impl->collect_result(_result);
+        if(_result.empty()){
+            return Rejected;
+        }
         return Accepted;
         #endif
     }

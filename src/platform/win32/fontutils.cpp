@@ -81,7 +81,7 @@ namespace FontUtils{
                 nullptr
             );
             if(ret == ERROR_SUCCESS){
-                BTK_LOGINFO("Name of %s",u16string_view((const char16_t*)buffer).to_utf8().c_str());
+                // BTK_LOGINFO("Name of %s",u16string_view((const char16_t*)buffer).to_utf8().c_str());
                 if(SDL_wcsncasecmp(name.w_str(),buffer,name.length()) == 0){
                     return get_font_from_name(regkey,reinterpret_cast<char16_t*>(buffer));
                 }

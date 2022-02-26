@@ -2,8 +2,12 @@
 
 #include <Btk/regex.hpp>
 
-#if __has_include(<regex.h>)
+#if __has_include(<regex.h>) && !BTK_MINGW
 // #if 0
+
+#ifndef REG_NOERROR
+    #define REG_NOERROR REG_OK
+#endif
 
 #include <regex.h>
 namespace Btk{
