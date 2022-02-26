@@ -2,6 +2,7 @@
 
 #include <Btk/gl/opengl_adapter.hpp>
 #include <Btk/platform/popen.hpp>
+#include <Btk/platform/alloca.hpp>
 #include <Btk/platform/x11.hpp>
 #include <Btk/platform/fs.hpp>
 #include <Btk/detail/window.hpp>
@@ -63,32 +64,20 @@ Btk_CallOnLoad{
 
 namespace{
     struct GLX:public Btk::GLAdapter{
-        ::Display *display;
-        ::Window   window;
+        ::Display *  display = {};
+        //Current
+        ::Window     window = {};
+        ::GLXContext context = {};
+        //Prev
+        ::Window     prev_window = {};
+        ::GLXContext prev_context = {};
 
-        virtual void *create_context(void *win_handle) = 0;
-        virtual void  destroy_context(void *gl_handle) = 0;
-        //Env
-        virtual bool   make_current(void *win_handle,void *gl_handle) = 0;
-        virtual void  *get_current_context(){
-            return glXGetCurrentContext();
-        };
-        virtual void  *get_current_window(){
-            return reinterpret_cast<void*>(glXGetCurrentDrawable());
-        }
-        virtual void  *get_proc(const char *name){
-            // return glXGetProcAddress((const GLubyte*)name);
-        };
-        virtual void   get_drawable(void *win_handle,int *w,int *h){
+        ~GLX(){
 
         }
-        virtual void   get_window_size(void *win_handle,int *w,int *h){
 
-        }
-        virtual bool   has_extension(const char *extname) = 0;
-        virtual void   swap_window(void *win_handle){
 
-        }
+
     };
 }
 
@@ -280,9 +269,7 @@ namespace Btk{
         size_t i;
         for(i = 0;i < argc;i++){
             auto &data = arr[i];
-            args[i] = static_cast<char*>(alloca(data.n + 1));
-            memcpy(args[i],data.str,data.n);
-            args[i][data.n] = '\0';
+            args[i] = Btk_SmallStrndup(data.str,data.n);
         }
         args[argc] = nullptr;
         //alloc error report pipe
@@ -305,6 +292,11 @@ namespace Btk{
             _Exit(-1);
         }
         else{
+            //Cleanup array
+            for(i = 0;i < argc;i++){
+                Btk_SmallFree(args[i]);
+            }
+
             //Check has error
             auto handler = std::signal(SIGPIPE,SIG_IGN);
             //Close read

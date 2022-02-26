@@ -354,6 +354,10 @@ namespace Btk{
             return {x2,y2};
         }
 
+        T length() const noexcept{
+            return p1().distance(p2());
+        }
+
     };
     //Line --end
 
@@ -556,6 +560,7 @@ namespace Btk{
         }
         return 0;
     }
+    //TODO Shape Utils
 
     //Do extern template
     // extern template BTKAPI FRect IntersectRect<FRect>(const FRect &,const FRect &);

@@ -36,6 +36,8 @@
     #define BTK_PHANDLE   ::pid_t
 #endif
 
+#include "alloca.hpp"
+
 #include "../exception.hpp"
 #include "../string.hpp"
 #include "../defs.hpp"
@@ -124,7 +126,9 @@ namespace Btk{
     }
     //version for StringList and StringRefList
     inline FILE*    vpopen(const StringList &strs){
+        //auto args = (_vspawn_arg*) Btk_SmallAlloc(sizeof(_vspawn_arg) * strs.size());;
         _vspawn_arg args[strs.size()];
+        
         for(size_t n = 0;n < strs.size();n++){
             args[n] = {strs[n].c_str(),strs[n].size()};
         }

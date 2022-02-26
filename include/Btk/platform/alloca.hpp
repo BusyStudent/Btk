@@ -99,6 +99,9 @@
     #define Btk_SmallFree(PTR) _Btk_SmallFree(PTR)
 #endif
 
+#define Btk_SmallCalloc(TYPE,N) static_cast<TYPE*>(Btk_SmallAlloc(sizeof(TYPE) * N))
+
+
 template<class T>
 inline T *_Btk_SmallStrndup(T *dst,const T *src,size_t n) noexcept{
     dst[n] = '\0';

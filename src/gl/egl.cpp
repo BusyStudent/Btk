@@ -1,5 +1,7 @@
 #include "../build.hpp"
 
+#if 0
+
 #include <SDL2/SDL_loadso.h>
 #include <EGL/egl.h>
 
@@ -62,3 +64,5 @@ namespace{
         SDL_UnloadObject(egl_lib);
     }
 }
+
+#endif

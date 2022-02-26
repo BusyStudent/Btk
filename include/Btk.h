@@ -2,292 +2,127 @@
 #define _BTK_CAPI_H_
 
 #ifdef __cplusplus
-    #define BTK_CLINKAGE extern "C"
+    #define BTK_CAPI_BEGIN extern "C"{
+    #define BTK_CAPI_END }
 #else
-    #define BTK_CLINKAGE
+    #define BTK_CAPI_BEGIN
+    #define BTK_CAPI_END
 #endif
 
 
 #ifdef _WIN32
     #ifdef _MSC_VER
-    #define BTK_C_EXPORT __declspec(dllexport)
-    #define BTK_C_IMPORT __declspec(dllimport)
+    #define BTKC_EXPORT __declspec(dllexport)
+    #define BTKC_IMPORT __declspec(dllimport)
     #else
-    #define BTK_C_EXPORT __attribute__((dllexport))
-    #define BTK_C_IMPORT __attribute__((dllimport))
+    #define BTKC_EXPORT __attribute__((dllexport))
+    #define BTKC_IMPORT __attribute__((dllimport))
     #endif
 #elif defined(__GNUC__)
-    #define BTK_C_EXPORT __attribute__((visibility("default"))) 
-    #define BTK_C_IMPORT 
+    #define BTKC_EXPORT __attribute__((visibility("default"))) 
+    #define BTKC_IMPORT 
 #else
-    #define BTK_C_EXPORT 
-    #define BTK_C_IMPORT 
+    #define BTKC_EXPORT 
+    #define BTKC_IMPORT 
 #endif
 
-#ifdef _BTK_SOURCE
-    #define BTK_CAPI BTK_CLINKAGE BTK_C_EXPORT
-    #define BTK_DEF_WIDGET(NAME,SUPER) \
-        typedef Btk::NAME Btk##NAME;\
-        BTK_CAPI bool Btk_##Is##NAME(BtkWidget *widget)\
-        {\
-            return dynamic_cast<Btk##NAME*>(\
-                reinterpret_cast<Btk::Widget*>(widget)\
-            ) != nullptr;\
-        }\
-        BTK_CAPI Btk##NAME* Btk_New##NAME(); 
-#else
-    #define BTK_CAPI BTK_CLINKAGE BTK_C_IMPORT
-    //Define Widget and function
-    #ifdef __cplusplus
-        #define BTK_DEF_WIDGET(NAME,SUPER) \
-        typedef struct Btk##NAME:public Btk##SUPER{}Btk##NAME;\
-        BTK_CAPI bool Btk_Is##NAME(BtkWidget *);\
-        BTK_CAPI Btk##NAME* Btk_New##NAME();
 
-    //strict modes
-    #elif defined(BTK_STRICT)
-        #define BTK_DEF_WIDGET(NAME,SUPER) \
-            typedef struct Btk##NAME Btk##NAME;\
-            BTK_CAPI bool Btk_Is##NAME(BtkWidget *);\
-            BTK_CAPI Btk##NAME* Btk_New##NAME();
-    #else
-        #define BTK_DEF_WIDGET(NAME,SUPER) \
-        typedef BtkWidget Btk##NAME;\
-        BTK_CAPI bool Btk_Is##NAME(BtkWidget *);\
-        BTK_CAPI Btk##NAME* Btk_New##NAME();
-    #endif
+#ifdef _BTK_CAPI_SOURCE
+    #define BTKC_API BTKC_EXPORT
+#else
+    #define BTKC_API
 #endif
-//name begin
-#if !defined(__cplusplus)
-typedef struct BtkWindow BtkWindow;
-typedef struct BtkWidget BtkWidget;
-#define nullptr NULL
+
+//Headers
 #include <stdbool.h>
-#elif defined(_BTK_SOURCE)
-#include <Btk/window.hpp>
-#include <Btk/widget.hpp>
-typedef Btk::Window BtkWindow;
-typedef Btk::Widget BtkWidget;
-#else
-struct BtkWindow{};
-struct BtkWidget{};
-#endif
-
-typedef struct BtkPixBuf BtkPixBuf;
-typedef BtkPixBuf BtkBitmap;
-
-//stack alloc
-#ifdef _WIN32
-    #include <malloc.h>
-    #define Btk_alloca(S) _alloca(S)
-#elif defined(__linux)
-    #include <alloca.h>
-    #define Btk_alloca(S) alloca(S)
-#elif defined(__GNUC__)
-    #define Btk_alloca(S) __builtin_alloca(S)
-#else
-    #define Btk_alloca(S) NULL
-#endif
-
-//format string at stack memory
-#define Btk_format(...) _Btk_impl_sprintf(\
-    (char*)Btk_alloca(_Btk_impl_fmtargs(__VA_ARGS__)),\
-    __VA_ARGS__)
-#define Btk_UNUSED(P) (void)P
-
-//headers
 #include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
 
-struct Btk_typeinfo{
-    const char *name;
-    const char *raw_name;
-    size_t hash_code;
-};
-typedef struct Btk_typeinfo Btk_typeinfo;
-
-
-//name casttinh macro
-#define BTK_WIDGET(PTR) ((BtkWidget*)PTR)
-//name alias
-#define Btk_delete Btk_Delete
-#define Btk_run    Btk_Run
-#define Btk_SetWidgetRect Btk_UpdateRect
-#define Btk_SetRect Btk_UpdateRect
-/**
- * @brief Generic callback
- * 
- */
-typedef void(*Btk_callback_t)(void*);
-typedef void(*Btk_ccallback_t)();
-
-//Buttons
-BTK_DEF_WIDGET(AbstractButton,Widget);
-BTK_DEF_WIDGET(Button,AbstractButton);
-BTK_DEF_WIDGET(RadioButton,AbstractButton);
-//TextBox
-BTK_DEF_WIDGET(TextBox,Widget);
-//Label
-BTK_DEF_WIDGET(Label,Widget);
-//ImageView
-BTK_DEF_WIDGET(ImageView,Widget);
-BTK_DEF_WIDGET(ScrollBar,Widget);
-//Container
-BTK_DEF_WIDGET(Container,Widget);
-BTK_DEF_WIDGET(Group,Container);
-
-#ifndef BTK_NGIF
-BTK_DEF_WIDGET(GifView,Widget);
-#endif
-//name end
-
-//function begin
-BTK_CAPI bool Btk_Init();
-BTK_CAPI int  Btk_Run();
-BTK_CAPI void Btk_AtExit(Btk_callback_t,void *param);
-BTK_CAPI void Btk_Async(Btk_callback_t,void *param);
-BTK_CAPI void Btk_DeferCall(Btk_callback_t,void *param);
-//Memory
-BTK_CAPI void *Btk_malloc(size_t byte);
-BTK_CAPI void *Btk_realloc(void *ptr,size_t byte);
-BTK_CAPI void  Btk_free(void *ptr);
-BTK_CAPI char *Btk_strdup(const char *str);
-//widgets
-BTK_CAPI void Btk_SetWidgetPosition(BtkWidget *,int x,int y);
-/**
- * @brief Update Widget's rect
- * 
- * @param widget
- * @param x 
- * @param y 
- * @param w 
- * @param h 
- * @return BTK_CAPI 
- */
-BTK_CAPI void Btk_UpdateRect(BtkWidget *,int x,int y,int w,int h);
-/**
- * @brief Register callback at widget's destruction
- * 
- * @return BTK_CAPI 
- */
-BTK_CAPI void Btk_AtDelete(BtkWidget *,Btk_callback_t,void*);
-BTK_CAPI void Btk_Delete(BtkWidget *widget);
-//Button
-BTK_CAPI void Btk_AtButtonClicked(BtkButton *btn,Btk_callback_t,void*);
-/**
- * @brief Set button text
- * 
- * @param btn The button pointer
- * @param text The new text(nullptr on no-op)
- * @return The current Button's text  
- */
-BTK_CAPI const char *Btk_SetButtonText(BtkButton *btn,const char *text);
-#define Btk_GetButtonText(BTN) Btk_SetButtonText(BTN,NULL)
-
-//TextBox
-BTK_CAPI void  Btk_SetTextBoxText(BtkTextBox *textbox,const char *text);
-/**
- * @brief Get the text Your shoud free the string by Btk_free
- * 
- * @param textbox 
- * @return char *
- */
-BTK_CAPI char *Btk_GetTextBoxText(BtkTextBox *textbox);
-//Label
-BTK_CAPI const char *Btk_SetLableText(BtkLabel*,const char *text);
-#define Btk_GetLableText(L) Btk_SetLableText(L,NULL)
-//Signal
-/**
- * @brief Connect signal
- * 
- * @param signal The signal name
- * @param ... 
- * @return BTK_CAPI 
- */
-BTK_CAPI void Btk_SignConnect(BtkWidget*,const char *signal,...);
-//Widget
-typedef bool (*Btk_foreach_t)(BtkWidget *widget,void *userdata);
-BTK_CAPI void Btk_ForChildrens(BtkWidget *w,Btk_foreach_t fn,void *p);
-//PixBuf
-BTK_CAPI BtkPixBuf *Btk_LoadImage(const char *filename);
-BTK_CAPI void Btk_FreeImage(BtkPixBuf *);
-//window
-BTK_CAPI BtkContainer *Btk_GetContainer(BtkWindow*);
-BTK_CAPI BtkWindow *Btk_NewWindow(const char *title,int w,int h);
-BTK_CAPI void Btk_ShowWindow(BtkWindow *);
-BTK_CAPI void Btk_SetWindowTitle(BtkWindow*,const char *title);
-BTK_CAPI void Btk_SetWindowResizeable(BtkWindow*,bool resizeable);
-//Container
-
-BTK_CAPI void Btk_ContainerAdd(BtkContainer *c,BtkWidget *w);
-BTK_CAPI void Btk_DumpTree(BtkWidget *w,FILE *output);
-/**
- * @brief Add a widget into a window
- * 
- * @return BTK_CAPI 
- */
-BTK_CAPI bool Btk_WindowAdd(BtkWindow*,BtkWidget*);
-/**
- * @brief Show the window and enter the eventloop
- * 
- * @return BTK_CAPI 
- */
-BTK_CAPI bool Btk_MainLoop(BtkWindow*);
-/**
- * @brief Set the window icon from filename
- * 
- * @param filename 
- * @return BTK_CAPI 
- */
-BTK_CAPI bool Btk_SetWindowIconFromFile(BtkWindow*,const char *filename);
-BTK_CAPI bool Btk_SetWindowCursorFromFile(BtkWindow*,const char *filename);
-//Gif
-#ifndef BTK_NGIF
-BTK_CAPI bool Btk_SetGifViewImageFrom(BtkGifView *view,const char *filename);
-#endif
-//Error
-BTK_CAPI const char *Btk_GetError();
-BTK_CAPI void        Btk_SetError(const char *fmt,...);
-//MessageBox
-BTK_CAPI void Btk_MessageBox(const char *title,const char *message);
-//Debug
-BTK_CAPI char *Btk_typename(BtkWidget *);
-/**
- * @brief Dymaic Cast 
- * 
- */
-#define Btk_dymaic_cast(TYPE,POINTER) \
-    (Btk##TYPE*)_Btk_dymaic_cast(Btk_Is##TYPE,POINTER)
-inline BtkWidget *_Btk_dymaic_cast(bool(*check)(BtkWidget*),BtkWidget* w){
-    if(check(w)){
-        return w;
-    }
-    return NULL;
-}
 //Type
-BTK_CAPI bool  Btk_issame(BtkWidget *,BtkWidget *);
-BTK_CAPI Btk_typeinfo Btk_typeof(BtkWidget *w);
-BTK_CAPI void Btk_freetype(Btk_typeinfo);
-//function end
+#ifdef _BTK_CAPI_SOURCE
+typedef const       std::type_info* BtkType;
+typedef             Btk::Widget   * BtkWidget;
+typedef             Btk::Window   * BtkWindow;
+#else
+typedef const struct _Btk_typeinfo* BtkType;
+typedef struct       _BtkWidget   * BtkWidget;
+typedef struct       _BtkWindow   * BtkWindow;
+#endif
+typedef const        char         * BtkString;
+typedef void                     (* BtkCallback)(BtkWidget,void*);
+typedef void                     (* BtkCallback0)(BtkWidget);
 
-//hidden api begin
-/**
- * @brief Return the size of the buffer
- * 
- * @param fmt 
- * @param ... 
- * @return BTK_CAPI 
- */
-BTK_CAPI size_t _Btk_impl_fmtargs(const char *fmt,...);
-/**
- * @brief format the string into buffer
- * 
- * @param buf 
- * @param fmt 
- * @param ... 
- * @return The buf ptr
- */
-BTK_CAPI char*  _Btk_impl_sprintf(char *buf,const char *fmt,...);
-//hidden api end
+#define BTKC_DECLARE_TYPE(TYPE) \
+    extern BtkType BTKC_TYPEOF(TYPE)
+#define BTKC_TYPEOF(TYPE) _##TYPE##_t
+
+
+#define BTKC_DECLARE_WIDGET_EXTERNAL(WIDGET) \
+    typedef BtkWidget Btk##WIDGET;\
+    BTKC_DECLARE_TYPE(Btk##WIDGET);\
+    inline Btk##WIDGET Btk_New##WIDGET(){\
+        return (Btk##WIDGET)Btk_NewWidget(BTKC_TYPEOF(Btk##WIDGET));\
+    }
+#define BTKC_DECLARE_WIDGET_INTERNAL(WIDGET) \
+    typedef Btk::WIDGET *Btk##WIDGET;\
+    BTKC_DECLARE_TYPE(Btk##WIDGET);\
+    inline Btk##WIDGET Btk_New##WIDGET(){\
+        return (Btk##WIDGET)Btk_NewWidget(BTKC_TYPEOF(Btk##WIDGET));\
+    }
+#define BTKC_WIDGETS_LIST \
+    BTKC_DECLARE_WIDGET(Button) \
+    BTKC_DECLARE_WIDGET(RadioButton) \
+    BTKC_DECLARE_WIDGET(Layout) \
+    BTKC_DECLARE_WIDGET(BoxLayout) \
+    BTKC_DECLARE_WIDGET(HBoxLayout) \
+    BTKC_DECLARE_WIDGET(VBoxLayout) \
+    BTKC_DECLARE_WIDGET(Container) \
+    BTKC_DECLARE_WIDGET(Group) \
+    BTKC_DECLARE_WIDGET(ImageView) \
+
+BTK_CAPI_BEGIN
+
+BTKC_API int       Btk_Run();
+BTKC_API void      Btk_Init();
+
+BTKC_API BtkWidget Btk_NewWidget(BtkType type);
+BTKC_API BtkType   Btk_GetType(BtkWidget widget);
+BTKC_API void      Btk_Delete(BtkWidget widget);
+
+BTKC_API bool      Btk_TypeEqual(BtkType t1,BtkType t2);
+BTKC_API BtkString Btk_TypeName(BtkType t);
+
+
+BTKC_API BtkString Btk_GetError();
+BTKC_API void      Btk_SetError(BtkString fmt,...);
+
+
+BTKC_API void      Btk_SetRectangle(BtkWidget wi,int x,int y,int w,int h);
+BTKC_API void      Btk_Resize(BtkWidget wi,int w,int h);
+BTKC_API void      Btk_Show(BtkWidget wi);
+BTKC_API void      Btk_Hide(BtkWidget wi);
+
+BTKC_API bool      Btk_Add(BtkWidget parent,BtkWidget c);
+BTKC_API bool      Btk_Remove(BtkWidget parent,BtkWidget c);
+BTKC_API bool      Btk_Detach(BtkWidget parent,BtkWidget c);
+
+BTKC_API void      Btk_HookDestroy(BtkWidget w,BtkCallback cb,void *p);
+
+//Window
+BTKC_API BtkWindow Btk_NewWindow(BtkString title,int x,int y);
+BTKC_API BtkWidget Btk_CastWindow(BtkWindow win);
+
+//Expose widget
+#ifdef _BTK_CAPI_SOURCE
+    #define BTKC_DECLARE_WIDGET BTKC_DECLARE_WIDGET_INTERNAL
+#else
+    #define BTKC_DECLARE_WIDGET BTKC_DECLARE_WIDGET_EXTERNAL
+#endif
+
+    BTKC_WIDGETS_LIST
+
+#undef BTKC_DECLARE_WIDGET
+
+
+BTK_CAPI_END
+
 #endif // _BTK_CAPI_H_

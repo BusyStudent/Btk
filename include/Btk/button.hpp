@@ -68,8 +68,8 @@ namespace Btk{
             Button(u8string_view text);
             Button(int x,int y,int w,int h);
             ~Button();
+
             void draw(Renderer &) override;
-            void set_text(u8string_view text);
         protected:
             bool handle_mouse(MouseEvent &) override;
             void onleave() override;

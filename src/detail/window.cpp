@@ -77,6 +77,11 @@ namespace Btk{
                 iter = draw_cbs.erase(iter);
             }
         }
+
+        #ifndef NDEBUG
+        draw_bounds();
+        #endif
+
         render.end();
     }
     void WindowImpl::redraw(){
@@ -137,6 +142,8 @@ namespace Btk{
         if(not sig_resize.empty()){
             sig_resize(new_w,new_h);
         }
+        //Ask layout to update
+        update_postion();
     }
     void WindowImpl::pixels_size(int *w,int *h){
         SDL_GetWindowSize(win,w,h);
@@ -188,16 +195,34 @@ namespace Btk{
 //Event Processing
 namespace Btk{
     bool WindowImpl::handle(Event &event){
-        if(event.type() == Event::SDL){
-            //Is SDL_WindowEvent
-            auto &e = event_cast<SDLEvent&>(event);
-            if(e.sdl_event->type == SDL_WINDOWEVENT){
-                handle_windowev(*(e.sdl_event));
+        switch(event.type()){
+            case Event::SDL:{
+                //Is SDL_WindowEvent
+                auto &e = event_cast<SDLEvent&>(event);
+                if(e.sdl_event->type == SDL_WINDOWEVENT){
+                    handle_windowev(*(e.sdl_event));
+                    return true;
+                }
+                break;
+            }
+            case Event::Resize:{
+                auto &e = event_cast<ResizeEvent&>(event);
+                SDL_SetWindowSize(win,e.w,e.h);
                 return true;
             }
-        }
-        if(Group::handle(event)){
-            return true;
+            case Event::Show:{
+                SDL_ShowWindow(win);
+                return true;
+            }
+            case Event::Hide:{
+                SDL_HideWindow(win);
+                return true;
+            }
+            default:{
+                if(Group::handle(event)){
+                    return true;
+                }
+            }
         }
         return sig_event(event);
     }

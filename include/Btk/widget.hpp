@@ -186,6 +186,11 @@ namespace Btk{
              * 
              */
             void dump_tree(FILE *output = stderr);
+            /**
+             * @brief Debug for draw the bounds 
+             * 
+             */
+            void draw_bounds(Color c = {255,0,0});
 
             Widget *parent() const noexcept{
                return _parent; 
@@ -285,6 +290,9 @@ namespace Btk{
             const char *name() const noexcept{
                 return _name;
             }
+            //TODO Userdata ?
+            //virtual void  set_userdata(const char *name,void *value);
+            //virtual void *userdata(const char *name);
         public:
             //Event Handle Method,It will be called in Widget::handle()
             /**
@@ -310,6 +318,8 @@ namespace Btk{
             std::list<Widget*> childrens;
         private:
             void dump_tree_impl(FILE *output,int depth);
+            void draw_bounds_impl();
+            
             template<class Callable,class ...Args>
             void walk_tree_impl(int depth,Callable &&callable,Args &&...args){
                 callable(depth,this,args...);
@@ -335,6 +345,10 @@ namespace Btk{
      */
     class BTKAPI Container:public Widget{
         public:
+            /**
+             * @brief Construct a new Container object
+             * 
+             */
             Container(){
                 attr.container = true;
             }
@@ -358,7 +372,7 @@ namespace Btk{
                 return *ptr;
             }
             /**
-             * @brief Add child
+             * @brief Add child,the child will be the bottom of the stacks
              * 
              * @param w 
              * @return true 
@@ -416,6 +430,26 @@ namespace Btk{
             // virtual void    iteration(bool(*callback)(Widget *,size_t n,void *),void *args);
             // virtul Widget * top_widget();
             // virtul Widget * bottom_widget();
+            /**
+             * @brief Make the widget into stack's top
+             * 
+             * @param w 
+             */
+            virtual void raise_widget(Widget *w);
+            /**
+             * @brief Make the widget into stack's buttom
+             * 
+             * @param w 
+             */
+            virtual void lower_widget(Widget *w);
+            //TODO
+            /**
+             * @brief Move widget to the new position of the stack
+             * 
+             * @param w 
+             * @param position 
+             */
+            virtual void move_widget(Widget *w,long position);
 
             //Expose find method
             using Widget::find_children;

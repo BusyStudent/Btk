@@ -25,9 +25,6 @@
     //GCC
     #include <strings.h>
     #include <cxxabi.h>
-    #define BTK_FUNCTION __PRETTY_FUNCTION__
-#else
-    #define BTK_FUNCTION SDL_FUNCTION
 #endif
 
 #if BTK_WIN32
@@ -60,11 +57,13 @@
 //Check type macro
 #define BTK_ASSERT_CASTABLE(TYPE,PTR) BTK_ASSERT(dynamic_cast<TYPE*>(PTR) != nullptr)
 //Get type macro
-#define BTK_typenameof(V) Btk::get_typename(T).c_str()
+#define BTK_typenameof(V) Btk::get_typename(V).c_str()
 
 
 //Unimpl
-#define BTK_UNIMPLEMENTED() Btk::throwRuntimeError("unimplemented")
+#define BTK_UNIMPLEMENTED() Btk::throwRuntimeError(\
+    Btk::u8format("TODO require impl at %s:%d fn %s",__FILE__,__LINE__,BTK_FUNCTION)\
+)
 
 #ifndef NDEBUG
 /**

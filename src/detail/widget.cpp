@@ -99,6 +99,10 @@ namespace Btk{
     }
     Renderer *Widget::renderer() const{
         if(parent() == nullptr){
+            if(is_window()){
+                auto w = const_cast<Widget*>(this);
+                return &(static_cast<WindowImpl*>(w)->render);
+            }
             return nullptr;
         }
         return &(window()->render);
@@ -164,6 +168,30 @@ namespace Btk{
         fprintf(output,"- %s:(%d,%d,%d,%d)\n",get_typename(typeid(*this)).c_str(),x(),y(),w(),h());
         for(auto ch:childrens){
             ch->dump_tree_impl(output,depth + 1);
+        }
+    }
+    //Draw the bounds
+    void Widget::draw_bounds(Color c){
+        Renderer *r = renderer();
+        if(r == nullptr){
+            return;
+        }
+        r->save();
+        r->set_antialias(false);
+        r->reset_transform();
+
+        r->begin_path();
+        r->stroke_color(c);
+        
+        draw_bounds_impl();
+        
+        r->stroke();
+        r->restore();
+    }
+    void Widget::draw_bounds_impl(){
+        renderer()->rect(rectangle());
+        for(auto &c:childrens){
+            c->draw_bounds_impl();
         }
     }
     //Hide and show
@@ -238,6 +266,32 @@ namespace Btk{
             return true;
         }
         return false;
+    }
+    void Container::raise_widget(Widget *w){
+        auto iter = std::find(childrens.begin(),childrens.end(),w);
+        if(iter == childrens.end()){
+            throwRuntimeError("unknown widget in container");
+        }
+        childrens.erase(iter);
+        childrens.push_front(w);
+        //Need i call redraw? 
+    }
+    void Container::lower_widget(Widget *w){
+        auto iter = std::find(childrens.begin(),childrens.end(),w);
+        if(iter == childrens.end()){
+            throwRuntimeError("unknown widget in container");
+        }
+        childrens.erase(iter);
+        childrens.push_back(w);
+        //Need i call redraw? 
+    }
+    void Container::move_widget(Widget *w,long position){
+        auto iter = std::find(childrens.begin(),childrens.end(),w);
+        if(iter == childrens.end()){
+            throwRuntimeError("unknown widget in container");
+        }
+        //Get position of
+        BTK_UNIMPLEMENTED();
     }
 }
 namespace Btk{

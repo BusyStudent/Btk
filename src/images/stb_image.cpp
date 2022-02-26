@@ -26,6 +26,27 @@
 #define STBIW_REALLOC SDL_realloc
 #define STBIW_FREE SDL_free
 
+//Use zlib instead of it
+#ifdef BTK_STBIMAGE_USE_ZLIB
+// #if 1
+#define STBIW_ZLIB_COMPRESS zlib_compress
+#include <zlib.h>
+static uint8_t *zlib_compress(uint8_t *data, int data_len, int *out_len, int quality){
+    uLongf dst_len = ::compressBound(data_len);
+    uint8_t *buf = (uint8_t*)STBIW_MALLOC(dst_len * sizeof(uint8_t));
+    if(buf == nullptr){
+        return nullptr;
+    }
+    //call zlib
+    if(::compress2(buf,&dst_len,data,data_len,quality) != Z_OK){
+        STBIW_FREE(buf);
+        return nullptr;
+    }
+    *out_len = dst_len;
+    return buf;
+}
+
+#endif
 
 #endif
 

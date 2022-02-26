@@ -1,10 +1,10 @@
 #if !defined(_BTK_LAYOUT_HPP_)
 #define _BTK_LAYOUT_HPP_
-#include <map>
 #include "rect.hpp"
 #include "widget.hpp"
 #include "container.hpp"
 
+#include <map>
 
 namespace Btk{
     class BTKAPI Layout:public Group{
@@ -13,43 +13,50 @@ namespace Btk{
             ~Layout();
 
             bool handle(Event &) override;
+            void set_rect(const Rect &) override;
 
             //update each widgets postions
             virtual void update() = 0;
-        private:
-            struct [[maybe_unused]] _InternalContext{
-                void *_hidden1;
-                void *_hidden2;
-                Uint32 _hidden3;
-                Uint32 _hidden4;
-            };
-
-            #ifdef BTK_LAYOUT_INTERNAL
-            //Internal defs
-            typedef lay_context context_t;
-
-            static_assert(
-                sizeof(lay_context) == sizeof(_InternalContext),
-                "Wrong def"
-            );
-            #else
-            typedef _InternalContext context_t;
-            #endif
-
-            context_t _lay_ctxt;
-        protected:
-            context_t *context() noexcept{
-                return &_lay_ctxt;
-            }
     };
+    /**
+     * @brief A Box Container
+     * 
+     */
     class BTKAPI BoxLayout:public Layout{
+        public:
+            enum Direction:Uint8{
+                LeftToRight,//H
+                RightToLeft,
+                TopToBottom,//V
+                BottomToTop
+            };
+        public:
+            BoxLayout(Direction d);
+            ~BoxLayout();
 
+            void update() override;
+            void draw(Renderer &) override;
+            // bool add(Widget *w) override;
+            void set_direction(Direction direction);
+            Direction direction() const noexcept{
+                return _direction;
+            }
+        private:
+            bool is_dirty = true;
+            bool lazy = true;
+
+            Direction _direction;
+            float spacing = 0;
     };
     class BTKAPI VBoxLayout:public BoxLayout{
-
+        public:
+            VBoxLayout();
+            ~VBoxLayout();
     };
     class BTKAPI HBoxLayout:public BoxLayout{
-
+        public:
+            HBoxLayout();
+            ~HBoxLayout();
     };
     class BTKAPI GridLayout:public Layout{
         public:

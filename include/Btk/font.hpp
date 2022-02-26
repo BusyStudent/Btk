@@ -123,7 +123,7 @@ namespace Btk{
                 spacing_ = spacing;
             }
             void set_blur(float blur){
-                blur_ = blur_;
+                blur_ = blur;
             }
             /**
              * @brief Get The text's w and h

@@ -44,6 +44,10 @@ namespace Btk{
         Widget::set_parent(w);
         ptsize = theme().font.ptsize();
     }
+    void AbstractButton::set_text(u8string_view text){
+        btext = text;
+        redraw();
+    }
 };
 namespace Btk{
     Button::Button() = default;
@@ -150,10 +154,6 @@ namespace Btk{
     void Button::onleave(){
         is_entered = false;
         is_pressed = false;
-        redraw();
-    }
-    void Button::set_text(u8string_view text){
-        btext = text;
         redraw();
     }
 }

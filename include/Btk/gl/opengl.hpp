@@ -455,12 +455,6 @@ namespace Btk{
                 return glGetCurrentViewPort();
             }
         private:
-            //OpenGL Window and Context
-            void *_window;
-            void *_context;
-            //Var for gl_begin and gl_end
-            void *_cur_win;
-            void *_cur_ctxt;
             //Env
             GLuint screen_fbo;
             GLuint screen_rbo;

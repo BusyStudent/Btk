@@ -107,6 +107,13 @@ namespace Btk{
         image_rect = r;
         redraw();
     }
+    bool ImageView::handle_drop(DropEvent &event){
+        if(accept_drop and event.type() == DropEvent::DropFile){
+            set_image(PixBuf::FromFile(event.text));
+            return event.accept();
+        }
+        return false;
+    }
     bool ImageView::handle_drag(DragEvent &event){
         if(not dragable){
             return event.reject();
