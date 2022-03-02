@@ -1166,6 +1166,10 @@ namespace Btk{
              */
             static u8string from(const void *,size_t n,const char *encoding = nullptr);
             static u8string fromfile(const char *filename);
+
+            static u8string from_utf16(u16string_view view){
+                return view.to_utf8();
+            }
         public:
             //beg and end
             iterator begin(){

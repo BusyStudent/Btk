@@ -93,6 +93,7 @@ namespace Win32{
             if(ptr != nullptr){
                 ptr->AddRef();
             }
+            return *this;
         }
         ComInstance &operator =(ComInstance &&instance) noexcept{
             release();
@@ -185,6 +186,42 @@ namespace Win32{
         }
         throwRuntimeError("CoCreateInstance failed");
     }
+    /**
+     * @brief SmartPointer for HANDLE
+     * 
+     */
+    struct HandlePtr{
+        public:
+            HandlePtr() = default;
+            HandlePtr(HANDLE _h):h(_h){}
+            HandlePtr(const HandlePtr &) = delete;
+            HandlePtr(HandlePtr &&p){
+                h = p.h;
+                p.h = nullptr;
+            }
+            ~HandlePtr(){
+                if(h != INVALID_HANDLE_VALUE){
+                    ::CloseHandle(h);
+                }
+            }
+            HANDLE release() noexcept{
+                HANDLE p = h;
+                h = INVALID_HANDLE_VALUE;
+                return p;
+            }
+            HANDLE get() const noexcept{
+                return h;
+            }
+            HandlePtr &operator =(HANDLE nh){
+                if(nh != INVALID_HANDLE_VALUE){
+                    ::CloseHandle(h);
+                }
+                h = nh;
+                return *this;
+            }
+        private:
+            HANDLE h = INVALID_HANDLE_VALUE;
+    };
 }
 }
 namespace Btk{

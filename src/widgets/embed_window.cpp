@@ -6,6 +6,7 @@
 
 #include <Btk/platform/winutils.hpp>
 
+#if 0
 
 namespace{
     using namespace Btk::WinUtils;
@@ -46,3 +47,5 @@ namespace Btk{
 
     };
 }
+
+#endif

@@ -127,19 +127,23 @@ namespace Btk{
     //version for StringList and StringRefList
     inline FILE*    vpopen(const StringList &strs){
         //auto args = (_vspawn_arg*) Btk_SmallAlloc(sizeof(_vspawn_arg) * strs.size());;
-        _vspawn_arg args[strs.size()];
+        _vspawn_arg *args = Btk_SmallCalloc(_vspawn_arg,strs.size());
         
         for(size_t n = 0;n < strs.size();n++){
             args[n] = {strs[n].c_str(),strs[n].size()};
         }
-        return _vpopen(strs.size(),args);
+        FILE* ret = _vpopen(strs.size(),args);
+        Btk_SmallFree(args);
+        return ret;
     }
     inline FILE*    vpopen(const StringRefList &strs){
-        _vspawn_arg args[strs.size()];
+        _vspawn_arg *args = Btk_SmallCalloc(_vspawn_arg,strs.size());
         for(size_t n = 0;n < strs.size();n++){
             args[n] = {strs[n].data(),strs[n].size()};
         }
-        return _vpopen(strs.size(),args);
+        FILE *ret = _vpopen(strs.size(),args);
+        Btk_SmallFree(args);
+        return ret;
     }
     //Proc function end
 

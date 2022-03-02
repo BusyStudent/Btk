@@ -66,10 +66,14 @@ namespace Btk{
         //Fist draw backgroud
         //Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 1}
         //It makes button look better
-        FRect fixed_rect = {rect.x + 1,rect.y + 1,rect.w - 1,rect.h - 1};
+        FRect fixed_rect = rectangle<float>();
         Color bg;//< Background color
         Color boarder;//< Boarder color
 
+        fixed_rect.x += 1;
+        fixed_rect.y += 1;
+        fixed_rect.w -= 1;
+        fixed_rect.h -= 1;
         
         if(is_pressed){
             bg = theme().active.highlight;

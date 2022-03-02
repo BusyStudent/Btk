@@ -73,6 +73,13 @@ namespace Btk{
     class BTKAPI StackedWidget:public Group{
 
     };
+    /**
+     * @brief A virtual window
+     * 
+     */
+    class BTKAPI VirtualWindow:public Group{
+
+    };
     #if BTK_STILL_DEV
     /**
      * @brief Embed Native Window on here

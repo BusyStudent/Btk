@@ -36,6 +36,7 @@ namespace Btk{
             //Signals
             typedef Signal<bool()> SignalClose;
             typedef Signal<bool(Event&)> SignalEvent;
+            typedef Signal<void(int x,int y)> SignalMove;
             typedef Signal<void(int w,int h)> SignalResize;
             typedef Signal<void(u8string_view)> SignalDropFile;
             //Flags

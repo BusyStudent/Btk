@@ -64,6 +64,16 @@ namespace Btk{
         f.set_ptsize(ptsize);
         return f;
     }
+    Font Font::FromID(int id,float ptsize){
+        auto *f = BtkFt_GetFromID(id);
+        if(f == nullptr){
+            return {};
+        }
+        BtkFt_Dup(f);
+        Font font(f);
+        font.set_ptsize(ptsize);
+        return font;
+    }
     Font::Font(void *f){
         font = f;
     }

@@ -118,6 +118,13 @@ namespace FontUtils{
         }
         return s.to_utf8();
     }
+    //TODO
+    FontInfo FindFont(u8string_view name){
+        FontInfo info;
+        info.filename = GetFileByName(name);
+        info.index = 0;
+        return info;
+    }
     //Callback for enum font
     static int CALLBACK font_cb(const LOGFONTA *font,const TEXTMETRICA*,DWORD type,LPARAM data){
         if(type == TRUETYPE_FONTTYPE){
