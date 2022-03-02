@@ -5,19 +5,29 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-#define BTK_X_WINDOW(V) reinterpret_cast<Btk::X11::XWindow>(V) 
-#define BTK_X_DISPLAY(V) reinterpret_cast<Btk::X11::XDisplay*>(V) 
+#define BTK_X_WINDOW(V) reinterpret_cast<XWindow>(V) 
+#define BTK_X_DISPLAY(V) reinterpret_cast<XDisplay*>(V) 
+
+#define BTK_X_CONSTANTS(V) inline constexpr auto X##V = V;
+#define BTK_X_TYPE(T) typedef T X##T;
+
+BTK_X_CONSTANTS(None);
+BTK_X_CONSTANTS(True);
+BTK_X_CONSTANTS(False);
+
+
+BTK_X_TYPE(Status);
+BTK_X_TYPE(Display);
+BTK_X_TYPE(Colormap);
+BTK_X_TYPE(Pixmap);
+BTK_X_TYPE(Window);
+BTK_X_TYPE(GC);
+BTK_X_TYPE(Atom);
 
 #undef Status
 
 namespace Btk{
 namespace X11{
-    using XColorMap = ::Colormap;
-    using XPixMap = ::Pixmap;
-    using XDisplay = ::Display;
-    using XWindow = ::Window;
-    using XGC = ::GC;
-    using XAtom = ::Atom;
     /**
      * @brief Current Context for SDL_Window
      * 

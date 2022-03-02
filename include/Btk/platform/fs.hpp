@@ -183,6 +183,18 @@ namespace Btk{
         return list;
     }
     #endif
+    
+    struct FileMapping{
+        enum Flags:Uint32{
+            Read = 1 << 0,
+            Write = 1 << 1,
+            ReadAndWrite = Read | Write
+        };
+        void *address;
+        size_t size;
+    };
+    auto MapFile(u8string_view f,FileMapping::Flags flags) -> FileMapping;
+    void UnmapFile(const FileMapping &);
 }
 
 

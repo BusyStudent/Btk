@@ -9,6 +9,36 @@
 
 #include <algorithm>
 
+namespace{
+    struct UserDataItem{
+        UserDataItem *next;
+        void *data;
+        char *name;
+
+        void *operator new(std::size_t s){
+            return SDL_malloc(s);
+        }
+        void operator delete(void *p){
+            SDL_free(p);
+        }
+    };
+    void _free_item(UserDataItem *prev,UserDataItem *cur){
+        if(prev != nullptr){
+            prev->next = cur->next;
+        }
+        SDL_free(cur->name);
+        delete cur;
+    }
+    void _free_item_all(UserDataItem *p){
+        while(p != nullptr){
+            auto next = p->next;
+            SDL_free(p->name);
+            delete p;
+            p = next;
+        }
+    }
+}
+
 namespace Btk{
     Widget::Widget() = default;
     Widget::~Widget(){
@@ -16,6 +46,8 @@ namespace Btk{
         clear_childrens();
         //Free name
         SDL_free(_name);
+        //Has Items
+        _free_item_all(static_cast<UserDataItem*>(_userdata));
     }
     bool Widget::handle(Event& ev){
         //Default Process event
@@ -66,6 +98,56 @@ namespace Btk{
         if(_theme.empty() and _font.empty()){
             inhert_style();
         }
+    }
+    void Widget::set_userdata(const char *key,void *value){
+        if(is_window()){
+            //We use sdl fn
+            SDL_SetWindowData(static_cast<WindowImpl*>(this)->sdl_window(),key,value);
+            return;
+        }
+        //Use our implment
+        UserDataItem *cur = static_cast<UserDataItem*>(_userdata);
+        UserDataItem *prev = nullptr;
+        //TODO
+        while(cur != nullptr){
+            if(strcmp(cur->name,key) == 0){
+                //Same
+                if(value != nullptr){
+                    cur->data = value;
+                    return;
+                }
+                else{
+                    //Remove
+                    if(prev == nullptr){
+                        //First item
+                        _userdata = cur->next;
+                    }
+                    _free_item(prev,cur);
+                    return;
+                }
+            }
+
+            prev = cur;
+            cur = cur->next;
+        }
+        //New a new item
+        cur = new UserDataItem;
+        cur->data = value;
+        cur->name = SDL_strdup(key);
+        cur->next = static_cast<UserDataItem*>(_userdata);
+        _userdata = cur;
+    }
+    void *Widget::userdata(const char *name){
+        if(is_window()){
+            return SDL_GetWindowData(static_cast<WindowImpl*>(this)->sdl_window(),name);
+        }
+        UserDataItem *cur = static_cast<UserDataItem*>(_userdata);
+        while(cur != nullptr){
+            if(strcmp(name,cur->name) == 0){
+                return cur->data;
+            }
+        }
+        return nullptr;
     }
     void Widget::set_rect(const Rect &rect){
         this->rect = rect;    
@@ -189,6 +271,9 @@ namespace Btk{
         r->restore();
     }
     void Widget::draw_bounds_impl(){
+        if(not visible()){
+            return;
+        }
         renderer()->rect(rectangle());
         for(auto &c:childrens){
             c->draw_bounds_impl();

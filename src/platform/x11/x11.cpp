@@ -63,6 +63,22 @@ Btk_CallOnLoad{
 
 
 namespace{
+    static int visual_attribs[] = {
+      GLX_X_RENDERABLE    , True,
+      GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
+      GLX_RENDER_TYPE     , GLX_RGBA_BIT,
+      GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
+      GLX_RED_SIZE        , 8,
+      GLX_GREEN_SIZE      , 8,
+      GLX_BLUE_SIZE       , 8,
+      GLX_ALPHA_SIZE      , 8,
+      GLX_DEPTH_SIZE      , 24,
+      GLX_STENCIL_SIZE    , 8,
+      GLX_DOUBLEBUFFER    , True,
+      GLX_SAMPLE_BUFFERS  , 1,
+      GLX_SAMPLES         , 4,
+      None
+    };
     struct GLX:public Btk::GLAdapter{
         ::Display *  display = {};
         //Current
@@ -75,9 +91,35 @@ namespace{
         ~GLX(){
 
         }
+        void   initialize(void *win_handle){
 
+        }
+        //Env
+        void  *get_proc(const char *name){
 
+        }
+        void   get_drawable(int *w,int *h){
 
+        }
+        void   get_window_size(int *w,int *h){
+
+        }
+        bool   has_extension(const char *extname){
+
+        }
+        void   swap_buffer(){
+
+        }
+
+        void   begin_context(){
+
+        }
+        void   end_context(){
+
+        }
+        void   make_current() {
+
+        }
     };
 }
 

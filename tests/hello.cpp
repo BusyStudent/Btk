@@ -126,7 +126,7 @@ bool Hello::handle(Event &event){
     if(event.type() == Event::KeyBoard){
         auto &key = static_cast<KeyEvent&>(event);
         if(key.state == KeyEvent::Pressed){
-            if(key.keycode == SDLK_F11){
+            if(key.keycode == Keycode::F11){
                 on_fullscreen();
             }
         }
@@ -137,7 +137,7 @@ void Hello::dump_tree(){
     Window::dump_tree();
 }
 int main(){
-    //Btk::HideConsole();
+    // Btk::HideConsole();
     Hello app;
     app.dump_tree();
     app.mainloop();

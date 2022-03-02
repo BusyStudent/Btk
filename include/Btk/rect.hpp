@@ -173,6 +173,10 @@ namespace Btk{
             return *this;
         }
 
+        bool invalid() const noexcept{
+            return w < 0 or h < 0;
+        }
+
 
         //Compare
         bool operator ==(const _Size &size) const noexcept{

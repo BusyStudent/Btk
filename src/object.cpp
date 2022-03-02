@@ -13,10 +13,13 @@ namespace Btk{
 
     }
     Object::~Object(){
-        cleanup();
+        if(_impl != nullptr){
+            _impl->cleanup();
+            delete _impl;
+        }
     }
-    void Object::cleanup(){
-        lock_guard<Object> locker(*this);
+    void Object::Impl::cleanup(){
+        lock_guard<SpinLock> locker(spinlock);
         //cleanup all
         for(auto i = functors_cb.begin();i != functors_cb.end();){
             //Call the functor
@@ -24,8 +27,8 @@ namespace Btk{
             i = functors_cb.erase(i);
         }
     }
-    void Object::disconnect_all(){
-        lock_guard<Object> locker(*this);
+    void Object::Impl::disconnect_all(){
+        lock_guard<SpinLock> locker(spinlock);
         //disconnect the timer
         for(auto i = functors_cb.begin();i != functors_cb.end();){
             //Call the functor
@@ -38,7 +41,7 @@ namespace Btk{
             }
         }
     }
-    _FunctorLocation Object::add_callback(void(*fn)(void*),void*param){
+    _FunctorLocation Object::Impl::add_callback(void(*fn)(void*),void*param){
         if(fn == nullptr){
             return {functors_cb.end()};
         }
@@ -52,11 +55,11 @@ namespace Btk{
         functors_cb.push_back(functor);
         return {--functors_cb.end()};
     }
-    _FunctorLocation Object::add_functor(const Functor &functor){
+    _FunctorLocation Object::Impl::add_functor(const Functor &functor){
         functors_cb.push_back(functor);
         return {--functors_cb.end()};
     }
-    _FunctorLocation Object::remove_callback(FunctorLocation location){
+    _FunctorLocation Object::Impl::remove_callback(FunctorLocation location){
         //Remove this callback
         if(location.iter != functors_cb.end()){
             location->_cleanup();
@@ -64,7 +67,7 @@ namespace Btk{
         }
         return {--functors_cb.end()};
     }
-    _FunctorLocation Object::exec_functor(FunctorLocation location){
+    _FunctorLocation Object::Impl::exec_functor(FunctorLocation location){
         //Remove this callback
         if(location.iter != functors_cb.end()){
             location->_call();
@@ -72,7 +75,7 @@ namespace Btk{
         }
         return {--functors_cb.end()};
     }
-    _FunctorLocation Object::remove_callback_safe(FunctorLocation location){
+    _FunctorLocation Object::Impl::remove_callback_safe(FunctorLocation location){
         //Remove this callback after do check
         //Check is vaild location
         for(auto iter = functors_cb.begin(); iter != functors_cb.end(); ++iter){
@@ -84,11 +87,11 @@ namespace Btk{
         }
         return {--functors_cb.end()};
     }
-    void Object::dump_functors(FILE *output) const{
+    void Object::Impl::dump_functors(FILE *output) const{
         if(output == nullptr){
             output = stderr;
         }
-        lock_guard<const Object> locker(*this);
+        lock_guard<SpinLock> locker(spinlock);
         for(auto &f:functors_cb){
             const char *type = nullptr;
             switch(f.magic){
@@ -101,6 +104,12 @@ namespace Btk{
     }
     Uint32 Object::GetTicks(){
         return SDL_GetTicks();
+    }
+    auto Object::impl() const -> Impl&{
+        if(_impl == nullptr){
+            _impl = new Impl;
+        }
+        return *_impl;
     }
 }
 namespace Btk{

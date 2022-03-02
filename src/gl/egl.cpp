@@ -2,6 +2,7 @@
 
 #if 0
 
+#include <Btk/gl/opengl_adapter.hpp>
 #include <SDL2/SDL_loadso.h>
 #include <EGL/egl.h>
 
@@ -63,6 +64,12 @@ namespace{
     void egl_cleanup() noexcept{
         SDL_UnloadObject(egl_lib);
     }
+    //For EGL
+    struct EGL:public Btk::GLAdapter{
+
+        void *native_window;
+
+    };
 }
 
 #endif

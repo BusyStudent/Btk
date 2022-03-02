@@ -25,6 +25,8 @@ namespace Btk{
     class Widget;
     class Theme;
     class Menu;
+    //Enum
+    enum class WindowFlags:Uint32;
     /**
      * @brief The Internal Window Draw Callback
      */
@@ -84,16 +86,8 @@ namespace Btk{
             SDL_Window *sdl_window() const noexcept{
                 return win;
             }
-            //Set/Get Userdata
-            void  set_userdata(const char *name,void *data){
-                SDL_SetWindowData(win,name,data);
-            }
-            void *userdata(const char *name) const{
-                return SDL_GetWindowData(win,name);
-            }
-            template<class T>
-            T    *userdata(const char *name) const{
-                return static_cast<T*>(SDL_GetWindowData(win,name));
+            void set_modal_for(WindowImpl &parent){
+                SDL_SetWindowModalFor(win,parent.win);
             }
         public:
             //Process Event
@@ -131,6 +125,8 @@ namespace Btk{
 
             //Current menu bar
             Menu *menu_bar = nullptr;
+
+            bool debug_draw_bounds = false;
             
             //Methods for Widget impl
         private:
@@ -178,6 +174,7 @@ namespace Btk{
         friend class System;
         friend void PushEvent(Event *,Window &);
     };
+    BTKAPI WindowImpl *NewWindow(u8string_view title,int x,int y,WindowFlags);
 }
 
 #endif // _BTKIMPL_WINDOW_HPP_

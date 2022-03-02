@@ -63,7 +63,6 @@ namespace Btk{
             rect.y + float(rect.h) / 2,
             text_);
         
-        render.fill_color(text_color);
         render.fill();
         
         render.restore();

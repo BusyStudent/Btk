@@ -563,6 +563,7 @@ namespace Btk{
             u8string_view(const std::string &);
             u8string_view(const u8string &);
             u8string_view(const u8string_view &) = default;
+            
             using std::string_view::basic_string_view;
             using std::string_view::empty;
             using std::string_view::data;
@@ -582,6 +583,8 @@ namespace Btk{
 
             using iterator = _Utf8ConstIterator<u8string_view>;
             using const_iterator = _Utf8ConstIterator<u8string_view>;
+
+            u8string_view(const_iterator beg,const_iterator end);
             /**
              * @brief Get the length of the string_view
              * 
@@ -853,6 +856,10 @@ namespace Btk{
         friend struct std::hash;
         friend class u8string;
         friend std::ostream &operator <<(std::ostream &,u8string_view);
+        template<class _T>
+        friend struct _Utf8IteratorBase;
+        template<class _T>
+        friend struct _Utf8RawCodepointRef;
     };
     class BTKAPI u16string_view:protected std::u16string_view{
         public:
@@ -881,8 +888,6 @@ namespace Btk{
         template<class T>
         friend struct std::hash;
         friend class u16string;
-        template<class _T>
-        friend struct _Utf8IteratorBase;
     };
     /**
      * @brief UTF8 String
@@ -1396,6 +1401,9 @@ namespace Btk{
     }
     inline u8string_view::u8string_view(std::string_view s):
         std::string_view(s){
+    }
+    inline u8string_view::u8string_view(const_iterator beg,const_iterator end):
+        std::string_view(beg.current,Utf8GetNext(end.current) - beg.current){
     }
     inline auto u8string_view::trim() const -> u8string{
         return strip();

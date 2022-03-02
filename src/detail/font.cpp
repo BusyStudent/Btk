@@ -60,11 +60,12 @@ namespace Btk{
     }
     Font Font::FromFile(u8string_view filename,float ptsize){
         auto *font = BtkFt_Open(filename.data(),0);
-        return Font(font,ptsize);
+        Font f(font);
+        f.set_ptsize(ptsize);
+        return f;
     }
-    Font::Font(void *f,float ptsize){
+    Font::Font(void *f){
         font = f;
-        ptsize_ = ptsize;
     }
 
 
@@ -91,7 +92,9 @@ namespace Btk{
         BtkFt_Close(font);
     }
     Font Font::clone() const{
-        return Font(BtkFt_Dup(font),ptsize_);
+        Font f(BtkFt_Dup(font));
+        f.set_ptsize(ptsize_);
+        return f;
     }
 
     // PixBuf Font::render_solid(u8string_view text,Color color){

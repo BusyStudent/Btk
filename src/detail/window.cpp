@@ -47,6 +47,10 @@ namespace Btk{
         //Set window data
         SDL_SetWindowData(win,"btk_impl",this);
         SDL_SetWindowData(win,"btk_dev",_device);
+
+        #ifndef NDEBUG
+        debug_draw_bounds = (std::getenv("BTK_DRAW_BOUNDS") != nullptr);
+        #endif
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -79,7 +83,9 @@ namespace Btk{
         }
 
         #ifndef NDEBUG
-        draw_bounds();
+        if(debug_draw_bounds){
+            draw_bounds();
+        }
         #endif
 
         render.end();

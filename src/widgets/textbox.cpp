@@ -58,6 +58,7 @@ namespace Btk{
                 //Stop Text input
                 event.accept();
                 has_focus = false;
+                editing = false;
                 timer.stop();
                 StopTextInput();
                 redraw();
@@ -177,6 +178,10 @@ namespace Btk{
         render.restore();
     }
     bool TextBox::handle_keyboard(KeyEvent &event){
+        if(editing){
+            //Reject event if text is editing
+            return event.reject();
+        }
         event.accept();
         if(event.state == KeyEvent::Pressed){
             switch(event.keycode){
@@ -242,6 +247,12 @@ namespace Btk{
     }
     bool TextBox::handle_textinput(TextInputEvent &event){
         add_string(event.text);
+        editing = false;
+        return event.accept();
+    }
+    bool TextBox::handle_textediting(TextEditingEvent &event){
+        // editing = true;
+        // BTK_LOGINFO("Editing");
         return event.accept();
     }
     bool TextBox::handle_drag(DragEvent &event){

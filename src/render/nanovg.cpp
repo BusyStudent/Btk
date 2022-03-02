@@ -163,7 +163,8 @@ namespace Btk{
         }
         auto i = BtkFt_GetFromID(idx);
 
-        Font f(BtkFt_Dup(i),state->fontSize);
+        Font f(BtkFt_Dup(i));
+        f.set_ptsize(state->fontSize);
         f.set_blur(state->fontBlur);
         f.set_spacing(state->letterSpacing);
 

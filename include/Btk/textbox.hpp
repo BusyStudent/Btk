@@ -51,6 +51,7 @@ namespace Btk{
             bool handle_mouse(MouseEvent  &) override;
             bool handle_keyboard(KeyEvent &) override;
             bool handle_textinput(TextInputEvent&) override;
+            bool handle_textediting(TextEditingEvent&) override;
             //Add string in where the cur_text point
             void add_string(u8string_view);
             //Font  tb_font;//Text Font
@@ -63,6 +64,7 @@ namespace Btk{
             bool has_focus = false;//Flag of has focus
             bool is_dragging = false;//< Flag of drag
             bool show_line = true;//<Flag of show the edit line
+            bool editing = false;
 
             std::u16string::iterator cur_txt;//Current text
             //It will be point from tb_text.begin() - 1
@@ -87,11 +89,12 @@ namespace Btk{
             bool handle_keyboard(KeyEvent &) override;
 
             struct _Internal;
-        private:
+        protected:
             _Internal *context;
         protected:
             void editor_init(bool single_lines);
             void editor_click(float x,float y);
+            void editor_draw(float x,float y,float w,float h);
 
             u8string editor_cur_insert();
             u8string editor_cur_delete();
@@ -102,6 +105,8 @@ namespace Btk{
         friend struct _Internal;
     };
     class BTKAPI TextEdit:public AbstractEditor{
+        public:
+            void draw(Renderer &) override;
         private:
             u8string cur_text;
     };

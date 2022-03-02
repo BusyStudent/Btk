@@ -118,7 +118,7 @@ static void       UnlockLibrary();
 //Our defs
 #define FS_GET_REFCOUNT(P) ((P) != nullptr ? ((P->_refcount)) : -1)
 
-#ifndef NDEBUG
+#ifdef FS_DEBUG_REFCOUNTING
 	#define FS_DEBUG_REF(P,MARK) \
 	fprintf(stderr,"%s At (%s) Ptr:%p => %d\n",MARK,BTK_FUNCTION,P,FS_GET_REFCOUNT(P));
 #else

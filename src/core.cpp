@@ -1,7 +1,4 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_loadso.h>
-#include <SDL2/SDL_thread.h>
-#include <SDL2/SDL_filesystem.h>
 #include <unordered_map>
 #include <algorithm>
 #include <cstdlib>
@@ -576,7 +573,7 @@ namespace Btk{
         if(signal_quit.empty()){
             //Deafult close all the window and quit
             BTK_LOGINFO("[System::Core]Try to quit");
-            std::lock_guard<std::recursive_mutex> locker(map_mtx);
+            std::lock_guard locker(map_mtx);
             for(auto i = wins_map.begin(); i != wins_map.end();){
                 //Try to close window
                 if(i->second->on_close()){
@@ -603,7 +600,7 @@ namespace Btk{
         if(impl == nullptr){
             return;
         }
-        std::lock_guard<std::recursive_mutex> locker(map_mtx);
+        std::lock_guard locker(map_mtx);
         Uint32 winid = SDL_GetWindowID(impl->win);
         //GetWindowId
         wins_map.insert(std::make_pair(winid,impl));
@@ -612,7 +609,7 @@ namespace Btk{
         if(impl == nullptr){
             return;
         }
-        std::lock_guard<std::recursive_mutex> locker(map_mtx);
+        std::lock_guard locker(map_mtx);
         Uint32 winid = SDL_GetWindowID(impl->win);
         
         auto iter = wins_map.find(winid);

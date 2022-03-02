@@ -361,6 +361,8 @@ namespace Btk{
 //XPM
 #include <unordered_map>
 #include <string_view>
+#include <algorithm>
+#include <cctype>
 namespace Btk{
     // #ifdef BTK_HAS_SDLIMG
     #ifdef BTK_HAS_SDLIMG
@@ -394,7 +396,6 @@ namespace Btk{
             {"green",Color(0,255,0)},
             {"blue",Color(0,0,255)},
         };
-        colormap.rehash(colormap.size() + colors_count);
 
         //For array add all colors
         size_t max_line = colors_count + h;
@@ -419,21 +420,16 @@ namespace Btk{
                     continue;
                 }
                 //Not founded,Try ignore the case
-                for(auto &par:colormap){
-                    if(par.first.length() == colorinfo.length()){
-                        //Same length,Compare ignore the case
-                        int ret = strncasecmp(
-                            par.first.data(),
-                            colorinfo.data(),
-                            colorinfo.length()
-                        );
-                        if(ret == 0){
-                            //Founded
-                            color = par.second;
-                            colormap.insert(std::make_pair(view,color));
-                            continue;
-                        }
-                    }
+                std::string icase(colorinfo);
+                for(auto &c:icase){
+                    c = std::tolower(c);
+                }
+                iter = colormap.find(icase);
+                if(iter != colormap.end()){
+                    //founded
+                    color = iter->second;
+                    colormap.insert(std::make_pair(view,color));
+                    continue;
                 }
                 //Not founded
                 throwRuntimeError("Bad xpm");

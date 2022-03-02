@@ -1,5 +1,6 @@
 #if !defined(_BTK_WIDGET_HPP_)
 #define _BTK_WIDGET_HPP_
+#include <climits>
 #include <cstdio>
 #include <list>
 #include "function.hpp"
@@ -290,9 +291,10 @@ namespace Btk{
             const char *name() const noexcept{
                 return _name;
             }
-            //TODO Userdata ?
-            //virtual void  set_userdata(const char *name,void *value);
-            //virtual void *userdata(const char *name);
+            // TODO Set/Get Userdata?
+            void  set_userdata(const char *name,void *value);
+            void *userdata(const char *name);
+
         public:
             //Event Handle Method,It will be called in Widget::handle()
             /**
@@ -327,9 +329,13 @@ namespace Btk{
                     child->walk_tree_impl(depth + 1,callable,args...);
                 }
             }
+            //Size Hint
+            Size _maximum_size = {INT_MAX,INT_MAX};
+            Size _minimum_size = {0,0};
 
-            Font _font;
+            Font _font = {};
             char *_name = nullptr;//< Widget name
+            void *_userdata = nullptr;
             Widget *_parent = nullptr;//< Parent
             RefPtr<Theme> _theme;//< Theme
             mutable WindowImpl *_window = nullptr;//<Window pointer

@@ -110,6 +110,18 @@ namespace Btk{
         return false;
     }
     inline
+    bool BultinIsXPM(SDL_RWops *rwops){
+        BTK_RW_SAVE_STATUS(rwops);
+        constexpr auto size = sizeof("/* XPM */") - sizeof(char);
+        constexpr auto req_magic = "/* XPM */";
+
+        char magic[size];
+        if(SDL_RWread(rwops,magic,sizeof(magic),1) != 1){
+            return false;
+        }
+        return SDL_strncasecmp(magic,req_magic,size) == 0;
+    }
+    inline
     Sint64 RWtellsize(SDL_RWops *rwops){
         Sint64 cur = SDL_RWtell(rwops);
         SDL_RWseek(rwops,0,RW_SEEK_END);
@@ -117,6 +129,19 @@ namespace Btk{
         SDL_RWseek(rwops,cur,RW_SEEK_SET);
         return end - cur;
     }
+}
+
+inline
+size_t SDL_WriteString(SDL_RWops *rw,const char *str){
+    return SDL_RWwrite(rw,str,sizeof(char),SDL_strlen(str));
+}
+inline
+size_t SDL_RWpinrt(SDL_RWops *rw,const char *fmt,...){
+    va_list varg;
+    va_start(varg,fmt);
+    auto t = Btk::u8vformat(fmt,varg);
+    va_end(varg);
+    return SDL_RWwrite(rw,t.c_str(),sizeof(char),t.size());
 }
 
 #endif // _BTK_INTERNAL_IMAGE_ADAPTER_HPP_

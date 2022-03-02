@@ -407,7 +407,7 @@ namespace Btk{
 
             template<class Callable,class ...Args>
             void on_destroy(Callable &&callable,Args &&...args){
-                using Invoker = Impl::OnceInvoker<Callable,Args...>;
+                using Invoker = Btk::Impl::OnceInvoker<Callable,Args...>;
                 add_callback(
                     Invoker::Run,
                     new Invoker{
@@ -421,26 +421,40 @@ namespace Btk{
              * @brief Disconnect all signal
              * 
              */
-            void disconnect_all();
+            void disconnect_all(){
+                return impl().disconnect_all();
+            }
             /**
              * @brief Disconnect all signal and remove all timer
              * 
              */
-            void cleanup();
+            void cleanup(){
+                return impl().cleanup();
+            }
 
-            FunctorLocation add_callback(void(*fn)(void*),void *param);
-            FunctorLocation add_functor(const Functor &);
+            FunctorLocation add_callback(void(*fn)(void*),void *param){
+                return impl().add_callback(fn,param);
+            }
+            FunctorLocation add_functor(const Functor &f){
+                return impl().add_functor(f);
+            }
             //Exec and remove
-            FunctorLocation exec_functor(FunctorLocation location);
+            FunctorLocation exec_functor(FunctorLocation location){
+                return impl().exec_functor(location);
+            }
             //Remove
-            FunctorLocation remove_callback(FunctorLocation location);
+            FunctorLocation remove_callback(FunctorLocation location){
+                return impl().remove_callback(location);
+            }
             /**
              * @brief Remove callback(safe to pass invalid location,but slower)
              * 
              * @param location 
              * @return FunctorLocation 
              */
-            FunctorLocation remove_callback_safe(FunctorLocation location);
+            FunctorLocation remove_callback_safe(FunctorLocation location){
+                return impl().remove_callback_safe(location);
+            }
             //Timer
             TimerID add_timer(Uint32 internal);
             /**
@@ -489,25 +503,49 @@ namespace Btk{
             }
         public:
             bool try_lock() const{
-                return spinlock.try_lock();
+                return impl().spinlock.try_lock();
             }
             void lock() const{
-                spinlock.lock();
+                impl().spinlock.lock();
             }
             void unlock() const{
-                spinlock.unlock();
+                impl().spinlock.unlock();
             }
             /**
              * @brief Debug for dump functors
              * 
              * @param output 
              */
-            void dump_functors(FILE *output = stderr) const;
+            void dump_functors(FILE *output = stderr) const{
+                impl().dump_functors(output);
+            }
         protected:
             //
         private:
-            std::list<Functor> functors_cb;
-            mutable SpinLock spinlock;//<SDL_spinlock for multithreading
+            struct BTKAPI Impl{                
+                std::list<Functor> functors_cb;
+                mutable SpinLock spinlock;//<SDL_spinlock for multithreading
+
+                //Member
+                void disconnect_all();
+                void cleanup();
+
+                FunctorLocation add_callback(void(*fn)(void*),void *param);
+                FunctorLocation add_functor(const Functor &);
+                FunctorLocation exec_functor(FunctorLocation location);
+                FunctorLocation remove_callback(FunctorLocation location);
+                FunctorLocation remove_callback_safe(FunctorLocation location);
+                TimerID add_timer(Uint32 internal);
+
+                void dump_functors(FILE *output = stderr) const;
+            };
+            /**
+             * @brief Get data,if _data == nullptr,it will create it
+             * 
+             * @return Data& 
+             */
+            Impl &impl() const;
+            mutable Impl *_impl = nullptr;//<For lazy
         template<class RetT>
         friend class Signal;
     };
