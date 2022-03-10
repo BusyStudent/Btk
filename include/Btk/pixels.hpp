@@ -171,6 +171,7 @@ namespace Btk{
              */
             PixBuf convert(Uint32 fmt) const;
             PixBuf resize(int w,int h) const;
+            PixBuf blur(int radius) const;
             PixBuf zoom(double w_factor,double h_factor) const;
             /**
              * @brief Copy a area into a new buf

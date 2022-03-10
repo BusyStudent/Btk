@@ -30,6 +30,9 @@ namespace{
     inline GifFileType *get_gif(void *ptr){
         return static_cast<GifFileType*>(ptr);
     }
+    static SDL_Palette *create_palette_from(){
+        
+    }
     //Decoder
     struct BTKHIDDEN GiflibDecoder:public ImageDecoder{
         GifFileType *gif = nullptr;

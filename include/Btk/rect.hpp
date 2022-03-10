@@ -4,6 +4,7 @@
 #include <SDL2/SDL_rect.h>
 #include <type_traits>
 #include <iosfwd>
+#include <vector> //> For _Polygen
 #include <cmath>
 #include "defs.hpp"
 namespace Btk{
@@ -66,6 +67,8 @@ namespace Btk{
     struct _Point;
     template<class T>
     struct _Bounds;
+    template<class T>
+    struct _Polygen;
 
     //Rect functions forward defs
     template<class T,class P = _Point<typename T::value_type>>
@@ -74,7 +77,6 @@ namespace Btk{
     inline T    IntersectRect(const T &r1,const T &r2) noexcept;
     template<class T>
     inline T    UnionRect(const T &r1,const T &r2) noexcept;
-
 
     //Point --begin
     /**
@@ -482,14 +484,284 @@ namespace Btk{
     //Bezier curve
     template<class T>
     struct _BezierCurve{
-        _Point<T> c1;
-        _Point<T> c2;
-        _Point<T> endpoint;
+        using value_type = T;
+        using point_type = _Point<T>;
+        /**
+         * @brief Constructor
+         * 
+         */
+        _BezierCurve() noexcept = default;
+        /**
+         * @brief Constructor
+         * 
+         * @param p1 
+         * @param p2 
+         * @param p3 
+         * @param p4 
+         */
+        _BezierCurve(const _Point<T> &p1,const _Point<T> &p2,const _Point<T> &p3,const _Point<T> &p4) noexcept{
+            this->p1 = p1;
+            this->p2 = p2;
+            this->p3 = p3;
+            this->p4 = p4;
+        }
+        /**
+         * @brief Construct from a line
+         * 
+         */
+        template<class Elem>
+        _BezierCurve(const _Line<Elem> &line) noexcept{
+            p1 = line.p1();
+            p2 = line.p2();
+            p3 = p2;
+            p4 = p1;
+        }
+        /**
+         * @brief Construct from another bezier curve with different elem
+         * 
+         */
+        template<class Elem>
+        _BezierCurve(const _BezierCurve<Elem> &curve) noexcept{
+            p1 = curve.p1;
+            p2 = curve.p2;
+            p3 = curve.p3;
+            p4 = curve.p4;
+        }
+
+        /**
+         * @brief Copy constructor
+         * 
+         */
+        _BezierCurve(const _BezierCurve &) noexcept = default;
+        ~_BezierCurve() noexcept = default;
+
+        /**
+         * @brief Compare
+         * 
+         */
+        bool compare(const _BezierCurve &curve) const noexcept{
+            return p1 == curve.p1 and p2 == curve.p2 and p3 == curve.p3 and p4 == curve.p4;
+        }
+        /**
+         * @brief Operator for compare
+         * 
+         */
+        bool operator ==(const _BezierCurve &curve) const noexcept{
+            return compare(curve);
+        }
+        /**
+         * @brief Operator for compare
+         * 
+         */
+        bool operator !=(const _BezierCurve &curve) const noexcept{
+            return not compare(curve);
+        }
+
+        _Point<T> p1;//< begin point
+        _Point<T> p2;//< control point 1
+        _Point<T> p3;//< control point 2
+        _Point<T> p4;//< end point
     };
 
     using BezierCurve = _BezierCurve<float>;
+    using FBezierCurve = _BezierCurve<float>;
 
     //Paths
+
+    //Polygen --begin
+    /**
+     * @brief Polygen
+     * @note I think i use github codepilot to generate this code
+     * @tparam T 
+     */
+    template<class T>
+    struct _Polygen{
+        using value_type = T;
+        //Make iterator alias from vector
+        using iterator = typename std::vector<_Point<T>>::iterator;
+        using const_iterator = typename std::vector<_Point<T>>::const_iterator;
+
+        std::vector<_Point<T>> points;
+        
+        //Construct
+        _Polygen() noexcept = default;
+        _Polygen(const _Polygen &) noexcept = default;
+        _Polygen(std::initializer_list<_Point<T>> points) noexcept{
+            this->points = points;
+        }
+        /**
+         * @brief Construct from a rectangle
+         * 
+         * @param points 
+         * @return template<class Elem> 
+         */
+        template<class Elem>
+        _Polygen(const _Rect<Elem> &points) noexcept{
+            this->points = {
+                {points.x,points.y},
+                {points.x + points.w,points.y},
+                {points.x + points.w,points.y + points.h},
+                {points.x,points.y + points.h},
+            };
+        }
+        /**
+         * @brief Construct from a bounds
+         * 
+         * @param points 
+         * @return template<class Elem> 
+         */
+        template<class Elem>
+        _Polygen(const _Bounds<Elem> &points) noexcept{
+            this->points = {
+                {points.minx,points.miny},
+                {points.maxx,points.miny},
+                {points.maxx,points.maxy},
+                {points.minx,points.maxy},
+            };
+        }
+
+        //Autocast
+        template<class Elem>
+        _Polygen(std::initializer_list<_Point<Elem>> points) noexcept{
+            for(auto &p : points){
+                this->points.push_back({p.x,p.y});
+            }
+        }
+        //Method
+        _Point<T> &operator [](size_t index){
+            return points[index];
+        }
+        const _Point<T> &operator [](size_t index) const{
+            return points[index];
+        }
+        size_t size() const noexcept{
+            return points.size();
+        }
+        bool  empty() const noexcept{
+            return points.empty();
+        }
+        void  clear(){
+            points.clear();
+        }
+        /**
+         * @brief Is the invalid
+         * 
+         * @param p 
+         * @return true 
+         * @return false 
+         */
+        bool invalid() const noexcept{
+            return points.size() < 3;
+        }
+
+        //Compare
+        bool compare(const _Polygen &p) const noexcept{
+            if(size() != p.size()){
+                return false;
+            }
+            for(size_t i = 0;i < size();++i){
+                if(points[i] != p[i]){
+                    return false;
+                }
+            }
+            return true;
+        }
+        //Iterator from vector
+        iterator begin(){
+            return points.begin();
+        }
+        const_iterator begin() const{
+            return points.begin();
+        }
+        iterator end(){
+            return points.end();
+        }
+        const_iterator end() const{
+            return points.end();
+        }
+
+        /**
+         * @brief Add point
+         * 
+         */
+        void push_back(const _Point<T> &p){
+            points.push_back(p);
+        }
+        /**
+         * @brief Remove point
+         * 
+         */
+        void pop_back(){
+            points.pop_back();
+        }
+        /**
+         * @brief Add point
+         * 
+         */
+        void add_point(const _Point<T> &p){
+            points.push_back(p);
+        }
+        void add_point(T x,T y){
+            points.push_back({x,y});
+        }
+
+
+        /**
+         * @brief Get the bounds
+         * 
+         */
+        _Bounds<T> bounds() const noexcept{
+            if(empty()){
+                return {};
+            }
+            _Bounds<T> b;
+            b.minx = points[0].x;
+            b.miny = points[0].y;
+            b.maxx = points[0].x;
+            b.maxy = points[0].y;
+            for(size_t i = 1;i < size();++i){
+                b.minx = min(b.minx,points[i].x);
+                b.miny = min(b.miny,points[i].y);
+                b.maxx = max(b.maxx,points[i].x);
+                b.maxy = max(b.maxy,points[i].y);
+            }
+            return b;
+        }
+
+        //Helper
+        bool operator ==(const _Polygen &poly) const noexcept{
+            return compare(poly);
+        }
+        bool operator !=(const _Polygen &poly) const noexcept{
+            return not compare(poly);
+        }
+        //Cast
+        template<class Elem>
+        _Polygen<Elem> cast() const{
+            return *this;
+        }
+        /**
+         * @brief Construct a new Rect from bounds
+         * 
+         * @tparam Elem 
+         */
+        template<class Elem>
+        operator _Polygen<Elem>() const noexcept{
+            _Polygen<Elem> poly;
+            poly.points.resize(size());
+            for(size_t i = 0;i < size();++i){
+                poly.points[i] = {
+                    static_cast<Elem>(points[i].x),
+                    static_cast<Elem>(points[i].y)
+                };
+            }
+            return poly;
+        }
+    };
+
+    using Polygen = _Polygen<int>;
+    using FPolygen = _Polygen<float>;
+    //Polygen --end
 
     //Template alias for User
     template<class T>
@@ -502,6 +774,8 @@ namespace Btk{
     using PointImpl = _Point<T>;
     template<class T>
     using BoundsImpl = _Bounds<T>;
+    template<class T>
+    using PolygenImpl = _Polygen<T>;
 
     //Utils
     template<class T1,class T2,class T3>
@@ -511,7 +785,49 @@ namespace Btk{
     //TODO List
     //PointInShape
     //LineInShape
-    
+
+    /**
+     * @brief Point inside polygen
+     * 
+     */
+    template<class T>
+    inline bool PointInPolygen(const _Polygen<T> &poly,const _Point<T> &point) noexcept{
+        if(poly.size() < 3)
+            return false;
+        bool inside = false;
+        for(size_t i = 0,j = poly.size() - 1;i < poly.size();j = i++){
+            if(
+                (
+                    (
+                        (
+                            poly[i].y > point.y
+                        ) != (
+                            poly[j].y > point.y
+                        )
+                    )
+                    and
+                    (
+                        point.x < (
+                            poly[j].x - poly[i].x
+                        ) * (
+                            point.y - poly[i].y
+                        ) / (
+                            poly[j].y - poly[i].y
+                        ) + poly[i].x
+                    )
+                )
+                or
+                (
+                    poly[i].x == poly[j].x
+                    and
+                    point.x == poly[i].x
+                )
+            )
+                inside = not inside;
+        }
+        return inside;
+    }
+
     //Rect utils
     /**
      * @brief Get intersection of two rects

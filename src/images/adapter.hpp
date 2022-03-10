@@ -122,6 +122,19 @@ namespace Btk{
         return SDL_strncasecmp(magic,req_magic,size) == 0;
     }
     inline
+    bool BultinIsBMP(SDL_RWops *rwops){
+        //Check magic is bm
+        char magic[2] = {0};
+        //Save cur
+        auto cur = SDL_RWtell(rwops);
+        //Read magic
+        SDL_RWread(rwops,magic,sizeof(magic),1);
+        //Reset to the position
+        SDL_RWseek(rwops,cur,RW_SEEK_SET);
+        //Check magic
+        return magic[0] == 'B' and magic[1] == 'M';
+    }
+    inline
     Sint64 RWtellsize(SDL_RWops *rwops){
         Sint64 cur = SDL_RWtell(rwops);
         SDL_RWseek(rwops,0,RW_SEEK_END);

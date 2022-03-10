@@ -21,6 +21,7 @@ namespace Btk{
         public:
             void draw(Renderer             &) override;
             bool handle(Event              &) override;
+            bool handle_drop(DropEvent     &) override;
             bool handle_drag(DragEvent     &) override;
             bool handle_mouse(MouseEvent   &) override;
             bool handle_wheel(WheelEvent   &) override;
@@ -46,7 +47,7 @@ namespace Btk{
     };
     class BTKAPI GroupBox:public Group{
         public:
-            GroupBox() = default;
+            GroupBox();
             ~GroupBox();
             
             void draw(Renderer &) override;

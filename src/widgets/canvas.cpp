@@ -30,4 +30,6 @@ namespace Btk{
         }
         return event_fn(event);
     }
+
+    //ShapeNode
 }

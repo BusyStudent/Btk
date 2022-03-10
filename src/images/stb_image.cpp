@@ -28,7 +28,6 @@
 
 //Use zlib instead of it
 #ifdef BTK_STBIMAGE_USE_ZLIB
-// #if 1
 #define STBIW_ZLIB_COMPRESS zlib_compress
 #include <zlib.h>
 static uint8_t *zlib_compress(uint8_t *data, int data_len, int *out_len, int quality){

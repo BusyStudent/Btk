@@ -91,6 +91,8 @@ namespace Btk{
         for(auto &mod:modules_list){
             mod.unload();
         }
+        //Final Quit System
+        System::Quit();
     }
     //register a exit handler
     inline
@@ -278,28 +280,6 @@ namespace Btk{
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
             regiser_eventcb(redraw_win_ev_id,redraw_win_cb,nullptr);
         }
-        //Builtin BMP Adapter
-        ImageAdapter adapter;
-        adapter.name = "bmp";
-        adapter.fn_load = [](SDL_RWops *rwops){
-            return SDL_LoadBMP_RW(rwops,SDL_FALSE);
-        };
-        adapter.fn_save = [](SDL_RWops *rwops,SDL_Surface *s,int) -> bool{
-            return SDL_SaveBMP_RW(s,rwops,SDL_FALSE) == 0;
-        };
-        adapter.fn_is = [](SDL_RWops *rwops) -> bool{
-            //Check magic is bm
-            char magic[2] = {0};
-            //Save cur
-            auto cur = SDL_RWtell(rwops);
-            //Read magic
-            SDL_RWread(rwops,magic,sizeof(magic),1);
-            //Reset to the position
-            SDL_RWseek(rwops,cur,RW_SEEK_SET);
-            //Check magic
-            return magic[0] == 'B' and magic[1] == 'M';
-        };
-        RegisterImageAdapter(adapter);
 
         //First stop text input
         SDL_StopTextInput();
@@ -344,7 +324,6 @@ namespace Btk{
             }
             #endif
 
-            AtExit(System::Quit);
         }
         return 1;
     }

@@ -74,6 +74,7 @@ int main(){
 * [x] Rewirte themes
 * [ ] Add CMake
 * [ ] Add GLX and WGL OpenGL Adapter
+* [ ] Add API to get system color and system metrics
 
 ----
 

@@ -1,38 +1,19 @@
 add_rules("mode.debug", "mode.release")
 --add SDL require
+add_requires("libsdl")
+add_requires("freetype","libsdl_image",{optional = true})
+add_packages("libsdl","freetype","libsdl_image")
+
 if is_plat("linux") then
-    add_requires("SDL2")
     --Linux X11
     add_requires("dbus-1")
 
     --try add extensions
     add_requires("gif",{optional = true})
     add_requires("webp",{optional = true})
-    add_requires("SDL2_image",{optional = true})
     --add_requires("freetype2",{optional = true})
     add_cxxflags("-Wall","-Wextra","-fPIC")
 else
-    --VCPKG
-    --add_requires("vcpkg::SDL2",{alias = "SDL2"})
-    --add_requires("vcpkg::SDL2-image",{alias = "SDL2_image"})
-    --add_requires("vcpkg::SDL2-ttf",{alias = "SDL2_ttf"})
-    --add_requires("vcpkg::gif",{optional = true,alias = "gif"})
-    --using xmake repo
-    add_requires("libsdl")
-    add_requires("freetype","libsdl_image",{optional = true})
-    add_packages("libsdl","freetype","libsdl_image")
-
-    --add_packages("SDL2","SDL2-image","SDL2-ttf")
-    --add_includedirs("E:/VisualStudio/VCPKG/vcpkg-master/installed/x86-windows/include")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2-image_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2-ttf_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/freetype_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/libpng_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/zlib_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/bzip2_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/brotli_x64-windows-static/lib")
-    --add_requires("SDL2","SDL2_ttf","SDL2_image")
     --VS UTF8
     if is_plat("windows") then
         add_cxxflags("/utf-8")
@@ -45,9 +26,6 @@ add_includedirs("./include")
 
 if is_plat("linux") then
     -- linux has fontconfig freetype2
-    add_requires("freetype2")
-    add_packages("freetype2")
-    add_links("freetype")
     add_links("GL")
     add_defines("BTK_HAS_FREETYPE")
     add_defines("BTK_USE_FONTCONFIG")
@@ -249,7 +227,7 @@ target("btk")
     end
 
     --SDL_image support
-    if has_package("libsdl_image") or has_package("SDL2_image") then
+    if has_package("libsdl_image") then
         add_defines("BTK_HAS_SDLIMG")
         add_files("./src/images/sdl_image.cpp")
         add_links("SDL2_image")
@@ -276,6 +254,10 @@ if is_mode("debug") then
         set_kind("binary")
         add_files("./tests/calc.cpp")
         add_deps("btk")
+    target("pixmap")
+        set_kind("binary")
+        add_files("./tests/pixmap.cpp")
+        add_deps("btk")
 end
 target("btk-rcc")
     set_kind("binary")
@@ -290,5 +272,4 @@ if true and not is_plat("windows")then
 
         set_kind("shared")
         add_files("./src/ext/capi.cpp")
-        add_deps("btk")
 end

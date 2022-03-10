@@ -61,6 +61,7 @@ Btk_CallOnLoad{
 };
 #endif
 
+//TODO use XGetDeafults to get system infomation
 
 namespace{
     static int visual_attribs[] = {
@@ -108,17 +109,29 @@ namespace{
 
         }
         void   swap_buffer(){
-
+            glXSwapBuffers(display,window);
         }
 
         void   begin_context(){
-
+            prev_context = glXGetCurrentContext();
+            if(prev_context == context){
+                //We needed set back
+                prev_window = XNone;
+            }
+            else{
+                prev_window = glXGetCurrentDrawable();
+                //Set up now
+                glXMakeCurrent(display,window,context);
+            }
         }
         void   end_context(){
-
+            if(prev_window != XNone){
+                glXMakeCurrent(display,prev_window,prev_context);
+                prev_window = XNone;
+            }
         }
         void   make_current() {
-
+            glXMakeCurrent(display,window,context);
         }
     };
 }
@@ -271,35 +284,59 @@ namespace X11{
             // iter->second->handle_x11(&event);
         }
     }
-    // SDL_Window *CreateTsWindow(u8string_view title,int h,int w){
-    //     ::Display *display = XOpenDisplay(nullptr);
-    //     ::Window win;
+    SDL_Window *CreateTsWindow(u8string_view title,int h,int w){
+        XDisplay *display = static_cast<XDisplay*>(GetXDisplay());
+        XWindow   win;
         
-    //     XVisualInfo vinfo;
-    //     XMatchVisualInfo(display, DefaultScreen(display), 32, TrueColor, &vinfo);
+        XVisualInfo vinfo;
+        XMatchVisualInfo(display, DefaultScreen(display), 32, TrueColor, &vinfo);
 
-    //     XSetWindowAttributes attr;
-    //     attr.colormap = XCreateColormap(display, DefaultRootWindow(display), vinfo.visual, AllocNone);
-    //     attr.border_pixel = 0;
-    //     attr.background_pixel = 0;
+        XSetWindowAttributes attr;
+        attr.colormap = XCreateColormap(display, DefaultRootWindow(display), vinfo.visual, AllocNone);
+        attr.border_pixel = 0;
+        attr.background_pixel = 0;
 
-    //     win = XCreateWindow(display, DefaultRootWindow(display), 0, 0, w,h, 0, vinfo.depth, InputOutput, vinfo.visual, CWColormap | CWBorderPixel | CWBackPixel, &attr);
-    //     XSelectInput(display, win, StructureNotifyMask);
+        win = XCreateWindow(display, DefaultRootWindow(display), 0, 0, w,h, 0, vinfo.depth, InputOutput, vinfo.visual, CWColormap | CWBorderPixel | CWBackPixel, &attr);
+        XSelectInput(display, win, StructureNotifyMask);
 
-    //     Atom wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", 0);
-    //     XSetWMProtocols(display, win, &wm_delete_window, 1);
+        Atom wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", 0);
+        XSetWMProtocols(display, win, &wm_delete_window, 1);
 
-    //     //Setup opengl
+        //Setup opengl
         
-    //     XCloseDisplay(display);
-    //     //X11 End
-    //     SDL_Window *sdl = SDL_CreateWindowFrom(reinterpret_cast<void*>(win));
+        //X11 End
+        SDL_Window *sdl = SDL_CreateWindowFrom(reinterpret_cast<void*>(win));
 
-    //     SDL_SetWindowData(sdl,"btk_x11",0);
-    //     SDL_SetWindowTitle(sdl,title.data());
+        SDL_SetWindowData(sdl,"btk_x11",0);
+        SDL_SetWindowTitle(sdl,title.data());
 
-    //     return sdl;
-    // }
+        return sdl;
+    }
+    bool GetSystemColor(ColorType t,Color &c){
+        const char *opt = nullptr;
+        const char *prog = "Text";
+        switch(t){
+            case BackgroundColor:
+                opt = "background";
+                break;
+            case ForegroundColor:
+                opt = "foreground";
+                break;
+            case SelectionBackgroundColor:
+                opt = "selectBackground";
+                break;
+        }
+
+        XColor xcolor;
+        XDisplay *display = static_cast<XDisplay*>(GetXDisplay());
+        char *ret = XGetDefault(display,prog,opt);
+
+        if(XParseColor(display,DefaultColormap(display,0),ret,&xcolor) != 0){            
+            c = {xcolor.red >> 8,xcolor.green >> 8,xcolor.blue >> 8};
+            return true;
+        }
+        return false;
+    }
 }
 }
 

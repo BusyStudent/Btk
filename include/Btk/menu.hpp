@@ -14,7 +14,14 @@ namespace Btk{
             void set_parent(Widget*) override;
             void add_menu(Menu *menu);
         private:
+            Color boarder_color;
+
             bool _use_native = true;
+            bool _draw_boarder = true;
+            bool _draw_shadow = true;
+    };
+    class BTKAPI PopupMenu:public Group{
+
     };
     class BTKAPI Action:public HasSlots{
         private:

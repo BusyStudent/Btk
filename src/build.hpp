@@ -68,7 +68,7 @@
     {\
         static bool done = false;\
         if(not done){\
-            fprintf(stderr,"FIXME:%s %s:%s:%d\n",MSG,BTK_FUNCTION,__LINE__);\
+            fprintf(stderr,"FIXME:%s %s:%s:%d\n",MSG,BTK_FUNCTION,__FILE__,__LINE__);\
             done = true;\
         }\
     }

@@ -86,8 +86,15 @@ namespace Btk{
             SDL_Window *sdl_window() const noexcept{
                 return win;
             }
-            void set_modal_for(WindowImpl &parent){
-                SDL_SetWindowModalFor(win,parent.win);
+            void set_modal_for(WindowImpl *parent){
+                if(parent != nullptr){
+                    SDL_SetWindowModalFor(win,parent->win);
+                    modal = true;
+                }
+                else{
+                    SDL_SetWindowModalFor(win,nullptr);
+                    modal = false;
+                }
             }
         public:
             //Process Event
@@ -138,6 +145,7 @@ namespace Btk{
             bool mouse_pressed = false;
             bool drag_rejected = false;
             bool dragging = false;
+            bool modal = false;
         public:
             #ifdef _WIN32
             //Win32 parts

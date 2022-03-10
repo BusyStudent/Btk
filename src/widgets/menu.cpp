@@ -16,6 +16,7 @@ namespace Btk{
             //Set the menu bar
             window()->menu_bar = this;
         }
+        
     }
 
     Menu::Menu() = default;

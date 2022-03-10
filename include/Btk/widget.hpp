@@ -215,6 +215,9 @@ namespace Btk{
             bool is_layout() const noexcept{
                 return attr.layout;
             }
+            bool is_container() const noexcept{
+                return attr.container;
+            }
             /**
              * @brief Send a redraw request to the window
              * 

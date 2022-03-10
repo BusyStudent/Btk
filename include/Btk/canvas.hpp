@@ -1,8 +1,8 @@
 #if !defined(_BTK_CANVAS_HPP_)
 #define _BTK_CANVAS_HPP_
 #include "defs.hpp"
-#include "render.hpp"
 #include "widget.hpp"
+#include "container.hpp"
 
 namespace Btk{
     class BTKAPI Canvas:public Widget{
@@ -32,11 +32,55 @@ namespace Btk{
             //Save / Restore before / after draw
             bool protect_context = true;
     };
+    //Shapes --begin
     class BTKAPI ShapeNode:public Widget{
+        public:
+            ShapeNode();
+            ShapeNode(const ShapeNode &) = delete;
+            ~ShapeNode();
+
+            virtual FPolygen polygen() const = 0;
+
+
+        private:
+            Signal<void()> signal_clicked;
+            Signal<void()> signal_collided;
+    };
+    class BTKAPI ShapeRectNode:public ShapeNode{
+        private:
+            Color c;
+    };
+    class BTKAPI ShapeLineNode:public ShapeNode{
         
     };
-    class BTKAPI SceneView:public Widget{
+    class BTKAPI ShapePolygenNode:public ShapeNode{
+        public:
+            ShapePolygenNode();
+            ~ShapePolygenNode();
 
+            void draw(Renderer&) override;
+
+            bool handle_mouse(MouseEvent &) override;
+            bool handle_motion(MotionEvent &) override;
+
+        private:
+            FPolygen poly = {};
+            Color c = {};
+            bool fill = false;
+    };
+    class BTKAPI ShapeImageNode:public ShapeNode{
+
+    };
+    class BTKAPI ShapeTextNode:public ShapeNode{
+
+    };
+    //Shapes --end
+    class BTKAPI SceneView:public Group{
+        public:
+            SceneView();
+            ~SceneView();
+        private:
+            bool _relative_coordinate = true;
     };
     class BTKAPI Graph:public Widget{
         private:

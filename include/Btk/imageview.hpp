@@ -37,6 +37,9 @@ namespace Btk{
                 dragable = flags;
                 redraw();
             }
+            void set_accept_drop(bool flags = true) noexcept{
+                accept_drop = flags;
+            }
 
             //Event processing
             bool handle_drag(DragEvent   &) override;

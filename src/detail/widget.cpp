@@ -40,7 +40,12 @@ namespace{
 }
 
 namespace Btk{
-    Widget::Widget() = default;
+    Widget::Widget(){
+        //Set theme
+        set_theme(CurrentTheme());
+        //Configure widget
+        set_font(theme().font);
+    }
     Widget::~Widget(){
         //Delete each children
         clear_childrens();
@@ -480,6 +485,14 @@ namespace Btk{
                 return false;
             }
         }
+    }
+    bool Group::handle_drop(DropEvent &event){
+        Widget *w = find_children(event.position());
+        if(w != nullptr){
+            BTK_LOGINFO("[Drop]Send Drop to '%s' %p",BTK_typenameof(w),w);
+            return w->handle(event);
+        }
+        return false;
     }
     bool Group::handle_motion(MotionEvent &event){
         if(cur_widget == nullptr){

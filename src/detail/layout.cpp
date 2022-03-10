@@ -132,6 +132,16 @@ namespace Btk{
         Layout::draw(r);
     }
 
+    HBoxLayout::HBoxLayout():BoxLayout(LeftToRight){
+
+    }
+    VBoxLayout::VBoxLayout():BoxLayout(TopToBottom){
+
+    }
+
+    HBoxLayout::~HBoxLayout() = default;
+    VBoxLayout::~VBoxLayout() = default;
+
 
     GridLayout::GridLayout() = default;
     GridLayout::~GridLayout() = default;

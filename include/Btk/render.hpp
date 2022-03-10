@@ -753,14 +753,17 @@ namespace Btk{
                 triangle(a.x,a.y,b.x,b.y,c.x,c.y);
             }
 
-            // template<class Container>
-            // void polygon(const Container &c){
-            //     move_to
-            //     for(auto p:c){
-
-            //     }
-            // }
-
+            template<class T>
+            void polygen(const PolygenImpl<T> &polygen){
+                if(polygen.invalid()){
+                    return;
+                }
+                move_to(polygen[0]);
+                for(auto &p:polygen){
+                    line_to(p);
+                }
+                close_path();
+            }
 
             void show_path_caches();
             /**

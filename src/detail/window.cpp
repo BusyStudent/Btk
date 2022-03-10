@@ -32,14 +32,10 @@ namespace Btk{
         win(_win),
         _device(create_device(_win)),
         render(*_device){
-        //Set theme
-        set_theme(CurrentTheme());
         //Set background color
         bg_color = theme().active.window;        
         attr.window = true;
 
-        //Configure widget
-        set_font(theme().font);
         //Update window rect
         rect.x = 0;
         rect.y = 0;
@@ -332,6 +328,13 @@ namespace Btk{
     }
     bool WindowImpl::handle_drop(DropEvent &event){
         //TODO Send to current widget
+        int ms_x,ms_y,win_x,win_y;
+        SDL_GetGlobalMouseState(&ms_x,&ms_y);
+        SDL_GetWindowPosition(win,&win_x,&win_y);
+
+        event.x = ms_x - win_x;
+        event.y = ms_y - win_y;
+
         Group::handle_drop(event);
         
         if(event.type() == Event::DropFile){

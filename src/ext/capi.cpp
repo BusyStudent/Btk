@@ -2,8 +2,12 @@
 
 
 #define _BTK_CAPI_SOURCE
-#define BTK_CAPI_BEGIN extern "C"{
-#define BTK_CAPI_END }
+
+#define BTKC_NOEXCEPT_BEGIN() return _noexcept_call([&](){
+#define BTKC_NOEXCEPT_END() });
+
+#define BTKC_CHECK_PTR()
+#define BTKC_CHECK_TYPE(PTR)
 
 #include <typeindex>
 #include <typeinfo>
@@ -79,15 +83,46 @@ namespace{
             Btk_SetError("Unknown Exception");
         }
     }
+    void _noexcept_call_ret_impl(void (*callback)(void *param,void *pret),void *p,void *pret) noexcept{
+        try{
+            callback(p,pret);
+        }
+        catch(std::exception &exp){
+            Btk_SetError("%s",exp.what());
+        }
+        catch(...){
+            Btk_SetError("Unknown Exception");
+        }
+    }
     template<class Callable>
     std::invoke_result_t<Callable> _noexcept_call(Callable &&callable) noexcept{
-        _noexcept_call_impl([](void *cb){
-            (*reinterpret_cast<Callable*>(cb))();
-        },std::addressof(callable));
+        using RetT = std::invoke_result_t<Callable>;
+        if constexpr(std::is_same_v<RetT,void>){
+            _noexcept_call_impl([](void *cb){
+                (*reinterpret_cast<Callable*>(cb))();
+            },std::addressof(callable));
+        }
+        else{
+            //Has return value
+            RetT retvalue {};
+
+            _noexcept_call_ret_impl([](void *cb,void *ret){
+                (*reinterpret_cast<RetT*>(ret)) = (*reinterpret_cast<Callable*>(cb))();
+            },std::addressof(callable),std::addressof(retvalue));
+
+            return retvalue;
+        }
     }
+    void _on_nullptr() noexcept{
+        Btk_SetError("Invalid nullptr param");
+    }
+    void _on_bad_type(BtkType req,BtkType except) noexcept{
+        Btk_SetError("Require '%s' except '%s'",BTK_typenameof(*req),BTK_typenameof(*except));
+    }
+
 }
 
-BTK_CAPI_BEGIN
+BTKC_API_BEGIN
 
 #define BTKC_DECLARE_WIDGET(W) \
     BtkType BTKC_TYPEOF(Btk##W) = &typeid(Btk::W);
@@ -115,6 +150,9 @@ void      Btk_SetError(BtkString fmt,...){
     error_message.append_vfmt(fmt,varg);
     va_end(varg);
 
+}
+void      Btk_ClearError(){
+    error_message.clear();
 }
 
 //Type
@@ -149,21 +187,97 @@ void      Btk_Resize(BtkWidget wi,int w,int h){
         wi->resize(w,h);
     });
 }
+//Container
+bool      Btk_Add(BtkWidget parent,BtkWidget c){
+    BTKC_NOEXCEPT_BEGIN();
+
+    if(parent == nullptr or c == nullptr){
+        _on_nullptr();
+        return false;
+    }
+    if(not parent->is_container()){
+        Btk_SetError("Require Container");
+        return false;
+    }
+    return static_cast<BtkContainer>(parent)->add(c);
+
+    BTKC_NOEXCEPT_END();
+}
+bool      Btk_Remove(BtkWidget parent,BtkWidget c){
+    BTKC_NOEXCEPT_BEGIN();
+
+    if(parent == nullptr or c == nullptr){
+        _on_nullptr();
+        return false;
+    }
+    if(not parent->is_container()){
+        Btk_SetError("Require Container");
+        return false;
+    }
+    return static_cast<BtkContainer>(parent)->remove(c);
+
+    BTKC_NOEXCEPT_END();
+
+}
+bool      Btk_Detach(BtkWidget parent,BtkWidget c){
+    BTKC_NOEXCEPT_BEGIN();
+
+    if(parent == nullptr or c == nullptr){
+        _on_nullptr();
+        return false;
+    }
+    if(not parent->is_container()){
+        Btk_SetError("Require Container");
+        return false;
+    }
+    return static_cast<BtkContainer>(parent)->detach(c);
+
+    BTKC_NOEXCEPT_END();
+}
 
 void      Btk_HookDestroy(BtkWidget w,BtkCallback cb,void *param){
+    BTKC_NOEXCEPT_BEGIN();
+
     w->on_destroy(_wrap_callback(w,cb,param));
+    
+    BTKC_NOEXCEPT_END();
 }
 
 
 BtkWindow Btk_NewWindow(BtkString title,int x,int y){
+    BTKC_NOEXCEPT_BEGIN();
+
     auto win = new Btk::Window(title,x,y);
     Btk_HookDestroy(win->impl(),[](BtkWidget,void *p){
         delete static_cast<BtkWindow>(p);
     },win);
     return win;
+
+    BTKC_NOEXCEPT_END();
 }
 BtkWidget Btk_CastWindow(BtkWindow w){
     return w->impl();
 }
+bool      Btk_MainLoop(BtkWindow w){
+    BTKC_NOEXCEPT_BEGIN();
+    return w->mainloop();
+    BTKC_NOEXCEPT_END();
+}
 
-BTK_CAPI_END
+//Btn
+BtkString Btk_SetButtonText(BtkAbstractButton btn,BtkString txt){
+    BTKC_NOEXCEPT_BEGIN();
+    if(btn == nullptr){
+        return (const char*)nullptr;
+    }
+    if(txt != nullptr){
+        btn->set_text(txt);
+    }
+    return btn->text().data();
+    BTKC_NOEXCEPT_END();
+}
+void     Btk_HookButtonClicked(BtkAbstractButton btn,BtkCallback cb,void *param){
+    btn->signal_clicked().connect(_wrap_callback(btn,cb,param));
+}
+BTKC_API_END
+

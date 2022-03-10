@@ -18,6 +18,9 @@
 #include "../string.hpp"
 #include "../object.hpp"
 
+//Hint for Window
+#define BTK_WINDOWHINT_GLLOADER "btk_gl_loader"
+
 namespace Btk{
     class WindowImpl;
     class RendererDevice;

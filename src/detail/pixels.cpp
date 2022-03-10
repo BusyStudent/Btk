@@ -190,6 +190,18 @@ namespace Btk{
         SDL_BlitSurface(buf.surf,&t,buf.surf,nullptr);
         return buf;
     }
+    PixBuf PixBufRef::blur(int r) const{
+        if(r < 1){
+            return {};
+        }
+        if(empty()){
+            return {};
+        }
+        auto buf = convert(SDL_PIXELFORMAT_RGBA32);
+        //Do Gaussian blur algo
+        BTK_FIXME("Need Impl");
+        return buf;        
+    }
 
     void PixBufRef::bilt(PixBufRef buf,const Rect *src,Rect *dst){
         if(SDL_BlitSurface(buf.get(),src,surf,dst) != 0){

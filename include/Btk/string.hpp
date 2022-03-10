@@ -24,6 +24,12 @@
         return t1.base() OP t2.base();\
     }
 
+#ifdef BTK_VSCODE_SUPPRESS
+    #define BTK_STRING_CONSTANT(NANE,VALUE) extern Btk::u8string_view NAME;
+#else
+    #define BTK_STRING_CONSTANT(NANE,VALUE) inline constexpr Btk::u8string_view NAME = VALUE;
+#endif
+
 
 namespace Btk{
 BTKAPI void __sscanf_chk(int nargs,const char *s,const char *fmt,...);
@@ -433,6 +439,14 @@ namespace Btk{
             return tmp;
         }
         //Advance
+        _Utf8Iterator &operator +=(long n){
+            this->_advance(n);
+            return *this;
+        }
+        _Utf8Iterator &operator -=(long n){
+            this->_advance(- n);
+            return *this;
+        }
         _Utf8Iterator operator +(long n){
             auto tmp = *this;
             tmp._advance(n);
@@ -483,6 +497,14 @@ namespace Btk{
             return tmp;
         }
         //Advance
+        _Utf8ConstIterator &operator +=(long n){
+            this->_advance(n);
+            return *this;
+        }
+        _Utf8ConstIterator &operator -=(long n){
+            this->_advance(- n);
+            return *this;
+        }
         _Utf8ConstIterator operator +(long n){
             auto tmp = *this;
             tmp._advance(n);

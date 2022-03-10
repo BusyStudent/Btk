@@ -38,7 +38,7 @@ namespace Btk::GL{
         //Register our Device
         RegisterDevice([](SDL_Window *win) -> RendererDevice*{
             //Check is OpenGL Window
-            void *loader = SDL_GetWindowData(win,"btk_gl_loader");
+            void *loader = SDL_GetWindowData(win,BTK_WINDOWHINT_GLLOADER);
             if(loader != nullptr){
                 //Use loader
                 using load_fn = GLDevice *(*)(SDL_Window *);

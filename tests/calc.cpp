@@ -25,10 +25,12 @@ int main(){
         lay.set_direction(Btk::BoxLayout::Direction((lay.direction() + 1)  % 4));
         sub.set_direction(Btk::BoxLayout::Direction((sub.direction() + 1)  % 4));
     });
-    sub.add<Btk::ImageView>().set_image(Btk::PixBuf::FromXPMArray(icon));
+    auto &view = sub.add<Btk::ImageView>();
+    view.set_image(Btk::PixBuf::FromXPMArray(icon));
+    view.set_accept_drop();
 
     win.done();
     win.dump_tree();
 
-    win.mainloop();
+    win.mainloop();    
 }
