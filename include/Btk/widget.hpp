@@ -1,5 +1,6 @@
 #if !defined(_BTK_WIDGET_HPP_)
 #define _BTK_WIDGET_HPP_
+#include <climits>
 #include <cstdio>
 #include <list>
 #include "function.hpp"
@@ -30,6 +31,11 @@ namespace Btk{
     struct ResizeEvent;
     struct TextInputEvent;
     struct TextEditingEvent;
+
+    struct PaintEvent{
+        Renderer &renderer;
+        Uint32    timestamp;
+    };
 
     enum class FocusPolicy:Uint8{
         None = 0,
@@ -138,16 +144,20 @@ namespace Btk{
             void set_position(const Vec2 &vec2){
                 set_rect(vec2.x,vec2.y,rect.w,rect.h);
             }
-            int x() const noexcept{
+            template<class T = int>
+            T x() const noexcept{
                 return rect.x;
             }
-            int y() const noexcept{
+            template<class T = int>
+            T y() const noexcept{
                 return rect.y;
             }
-            int w() const noexcept{
+            template<class T = int>
+            T w() const noexcept{
                 return rect.w;
             }
-            int h() const noexcept{
+            template<class T = int>
+            T h() const noexcept{
                 return rect.h;
             }
             bool is_enable() const noexcept{
@@ -177,6 +187,11 @@ namespace Btk{
              * 
              */
             void dump_tree(FILE *output = stderr);
+            /**
+             * @brief Debug for draw the bounds 
+             * 
+             */
+            void draw_bounds(Color c = {255,0,0});
 
             Widget *parent() const noexcept{
                return _parent; 
@@ -199,6 +214,9 @@ namespace Btk{
             }
             bool is_layout() const noexcept{
                 return attr.layout;
+            }
+            bool is_container() const noexcept{
+                return attr.container;
             }
             /**
              * @brief Send a redraw request to the window
@@ -276,6 +294,10 @@ namespace Btk{
             const char *name() const noexcept{
                 return _name;
             }
+            // TODO Set/Get Userdata?
+            void  set_userdata(const char *name,void *value);
+            void *userdata(const char *name);
+
         public:
             //Event Handle Method,It will be called in Widget::handle()
             /**
@@ -301,6 +323,8 @@ namespace Btk{
             std::list<Widget*> childrens;
         private:
             void dump_tree_impl(FILE *output,int depth);
+            void draw_bounds_impl();
+            
             template<class Callable,class ...Args>
             void walk_tree_impl(int depth,Callable &&callable,Args &&...args){
                 callable(depth,this,args...);
@@ -308,9 +332,13 @@ namespace Btk{
                     child->walk_tree_impl(depth + 1,callable,args...);
                 }
             }
+            //Size Hint
+            Size _maximum_size = {INT_MAX,INT_MAX};
+            Size _minimum_size = {0,0};
 
-            Font _font;
+            Font _font = {};
             char *_name = nullptr;//< Widget name
+            void *_userdata = nullptr;
             Widget *_parent = nullptr;//< Parent
             RefPtr<Theme> _theme;//< Theme
             mutable WindowImpl *_window = nullptr;//<Window pointer
@@ -326,6 +354,10 @@ namespace Btk{
      */
     class BTKAPI Container:public Widget{
         public:
+            /**
+             * @brief Construct a new Container object
+             * 
+             */
             Container(){
                 attr.container = true;
             }
@@ -349,7 +381,7 @@ namespace Btk{
                 return *ptr;
             }
             /**
-             * @brief Add child
+             * @brief Add child,the child will be the bottom of the stacks
              * 
              * @param w 
              * @return true 
@@ -407,6 +439,26 @@ namespace Btk{
             // virtual void    iteration(bool(*callback)(Widget *,size_t n,void *),void *args);
             // virtul Widget * top_widget();
             // virtul Widget * bottom_widget();
+            /**
+             * @brief Make the widget into stack's top
+             * 
+             * @param w 
+             */
+            virtual void raise_widget(Widget *w);
+            /**
+             * @brief Make the widget into stack's buttom
+             * 
+             * @param w 
+             */
+            virtual void lower_widget(Widget *w);
+            //TODO
+            /**
+             * @brief Move widget to the new position of the stack
+             * 
+             * @param w 
+             * @param position 
+             */
+            virtual void move_widget(Widget *w,long position);
 
             //Expose find method
             using Widget::find_children;

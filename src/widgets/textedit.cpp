@@ -239,3 +239,55 @@ static void  STB_TEXTEDIT_LAYOUTROW(void *result,STB_TEXTEDIT_STRING *s,int inde
 }
 
 #endif
+
+namespace Btk{
+    LineEdit::LineEdit(){
+        cur_text = "Hello";
+    }
+    LineEdit::~LineEdit() = default;
+    void LineEdit::draw(Renderer &p){
+        auto txt_limit = map_to_root(text_limit_area);
+        auto txt_center = map_to_root(text_area);
+        auto txt_pos = map_to_root(text_pos);
+
+        p.save();
+        //Boarder and background
+        p.draw_box(rect,theme().active.background);
+        p.draw_rect(rect,theme().active.border);
+
+        //Draw txt
+        // p.intersest_scissor(txt_limit);
+
+        // p.use_font(font());
+        p.use_font(font());
+        p.text_size(18);
+        p.draw_text(txt_pos.x,txt_pos.y,cur_text,{0,0,0});
+        // p.draw_line({0,0},txt_pos,{0,0,0});
+
+        p.restore();
+
+    }
+    auto LineEdit::get_pos_from(const Point &p) -> size_t{
+        //Use font
+        renderer()->use_font(font());
+        FSize size;
+
+        map_to_self(p);
+        auto view = cur_text.view();
+        size_t len = view.length();
+
+        for(size_t cur = 0;cur < len;++cur){
+            size = renderer()->text_size(view.substr(0,cur));
+
+            return cur;
+        }
+        //Unknown
+        return size_t(-1);
+    }
+    void LineEdit::set_rect(const Rect &r){
+        Widget::set_rect(r);
+        //Config local
+        text_limit_area = map_to_self(rectangle<float>());
+        text_pos = {text_limit_area.x + 5,h<float>() / 2};
+    }
+}

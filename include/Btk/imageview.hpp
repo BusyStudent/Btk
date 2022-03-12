@@ -37,9 +37,13 @@ namespace Btk{
                 dragable = flags;
                 redraw();
             }
+            void set_accept_drop(bool flags = true) noexcept{
+                accept_drop = flags;
+            }
 
             //Event processing
             bool handle_drag(DragEvent   &) override;
+            bool handle_drop(DropEvent   &) override;
             bool handle_wheel(WheelEvent &) override;
         private:
             PixBuf pixelbuf;
@@ -52,6 +56,7 @@ namespace Btk{
             bool draw_background = false;//< Should we draw the boarder
             bool dragable = false;//Enable drag to set the image_rect
             bool dirty = false;
+            bool accept_drop = false;
 
             float scale_fact = 1.0f;
             

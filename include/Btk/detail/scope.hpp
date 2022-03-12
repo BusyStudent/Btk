@@ -29,7 +29,7 @@ namespace Impl{
     struct SDLScopePtr{
         SDLScopePtr(void *dat):data(dat){};
         SDLScopePtr(const SDLScopePtr & ) = delete;
-        SDLScopePtr(){
+        ~SDLScopePtr(){
             SDL_free(data);
         }
         void *data;

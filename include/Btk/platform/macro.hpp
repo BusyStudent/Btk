@@ -116,16 +116,20 @@
     #define BTKINLINE __forceinline
     
     #define BTK_NODISCARD(MSG) __declspec((nodiscard(MSG)))
+    #define BTK_FUNCTION __FUNCSIG__
 #elif BTK_GCC
     #define BTKWEAK   __attribute__((weak))
     #define BTKHIDDEN __attribute__((visibility("hidden")))
     #define BTKINLINE __attribute__((__always_inline__))
 
     #define BTK_NODISCARD(MSG) __attribute__((nodiscard(MSG)))
+    #define BTK_FUNCTION __PRETTY_FUNCTION__
 #else
     #define BTKWEAK 
     #define BTKHIDDEN
     #define BTKINLINE 
+
+    #define BTK_FUNCTION __FUNCTION__
 #endif
 //Complier attributes --end
 

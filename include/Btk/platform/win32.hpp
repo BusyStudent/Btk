@@ -70,49 +70,53 @@ namespace Win32{
     template<class T>
     struct ComInstance{
         ComInstance() = default;
-        ComInstance(T *p):ptr(p){}
-        ComInstance(const ComInstance &instance){
+        ComInstance(T *p) noexcept:ptr(p){}
+        ComInstance(const ComInstance &instance) noexcept{
             ptr = instance.ptr;
             if(ptr != nullptr){
                 ptr->AddRef();
             }
         }
-        ~ComInstance(){
+        ~ComInstance() noexcept{
             release();
         }
-        void release(){
+        void release() noexcept{
             if(ptr != nullptr){
                 ptr->Release();
             }
         }
 
         //Assign
-        ComInstance &operator =(const ComInstance &instance){
+        ComInstance &operator =(const ComInstance &instance) noexcept{
             release();
             ptr = instance.ptr;
             if(ptr != nullptr){
                 ptr->AddRef();
             }
+            return *this;
         }
-        ComInstance &operator =(ComInstance &&instance){
+        ComInstance &operator =(ComInstance &&instance) noexcept{
             release();
             ptr = instance.ptr;
             instance.ptr = nullptr;
         }
-        ComInstance &operator =(T *p){
+        ComInstance &operator =(T *p) noexcept{
             release();
             ptr = p;
             return *this;
         }
 
-        T *operator ->(){
+        T *operator ->() const noexcept{
             return ptr;
         }
-        T **operator &(){
+        T **operator &() noexcept{
             return &ptr;
         }
         operator T *() const noexcept{
             return ptr;
+        }
+        bool empty() const noexcept{
+            return ptr == nullptr;
         }
         T *ptr = nullptr;
     };
@@ -127,17 +131,20 @@ namespace Win32{
             ptr = p;
         }
         ComMemPtr(const ComMemPtr &) = delete;
-        ~ComMemPtr(){
+        ~ComMemPtr() noexcept{
             CoTaskMemFree(ptr);
         }
-        T *operator ->(){
+        T *operator ->() noexcept{
             return ptr;
         }
-        T **operator &(){
+        T **operator &() noexcept{
             return &ptr;
         }
-        operator T*(){
+        operator T*() noexcept{
             return ptr;
+        }
+        void **to_pvoid() noexcept{
+            return reinterpret_cast<void**>(&ptr);
         }
         T *ptr;
     };
@@ -179,6 +186,42 @@ namespace Win32{
         }
         throwRuntimeError("CoCreateInstance failed");
     }
+    /**
+     * @brief SmartPointer for HANDLE
+     * 
+     */
+    struct HandlePtr{
+        public:
+            HandlePtr() = default;
+            HandlePtr(HANDLE _h):h(_h){}
+            HandlePtr(const HandlePtr &) = delete;
+            HandlePtr(HandlePtr &&p){
+                h = p.h;
+                p.h = nullptr;
+            }
+            ~HandlePtr(){
+                if(h != INVALID_HANDLE_VALUE){
+                    ::CloseHandle(h);
+                }
+            }
+            HANDLE release() noexcept{
+                HANDLE p = h;
+                h = INVALID_HANDLE_VALUE;
+                return p;
+            }
+            HANDLE get() const noexcept{
+                return h;
+            }
+            HandlePtr &operator =(HANDLE nh){
+                if(nh != INVALID_HANDLE_VALUE){
+                    ::CloseHandle(h);
+                }
+                h = nh;
+                return *this;
+            }
+        private:
+            HANDLE h = INVALID_HANDLE_VALUE;
+    };
 }
 }
 namespace Btk{

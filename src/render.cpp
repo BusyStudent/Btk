@@ -1,7 +1,7 @@
 #include "./build.hpp"
 
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
@@ -339,7 +339,7 @@ namespace Btk{
         // restore();
         // return s;
     }
-    FSize Renderer::text_size(u8string_view _view){
+    FSize Renderer::measure_text(u8string_view _view){
         auto view = _view.base();
         NVGtextRow  row;
         nvgTextBreakLinesEx(nvg_ctxt,&view.front(),&view.back() + 1,std::numeric_limits<float>::max(),&row,1);
@@ -715,8 +715,8 @@ namespace Btk{
     }
     void Renderer::draw_text(float x,float y,u8string_view txt,Color c){
         begin_path();
-        text(x,y,txt);
         fill_color(c);
+        text(x,y,txt);
         fill();
     }
 }

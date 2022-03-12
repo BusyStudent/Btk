@@ -15,6 +15,8 @@
     #define BTK_ACCESS ::_access
     #define BTK_CHDIR  ::_chdir
     #define BTK_F_OK 00
+    //We need WinAPI for list dir
+    #include <fileapi.h>
 #else
     #include <unistd.h>
     #include <dirent.h>
@@ -153,7 +155,7 @@ namespace Btk{
         });
         return in_path;
     }
-    #ifdef __linux
+    #if BTK_LINUX
     inline StringList ListDir(u8string_view dirname = {}){
         if(dirname.empty()){
             dirname = "./";
@@ -182,7 +184,40 @@ namespace Btk{
         ::closedir(dir);
         return list;
     }
+    #elif BTK_WIN32
+    inline StringList ListDir(u8string_view dirname = {}){
+        u16string us = dirname.to_utf16();
+        us.append(u"*.*");
+        
+        WIN32_FIND_DATAW data;
+        HANDLE hd = ::FindFirstFileW(us.w_str(),&data);
+
+        StringList strlist;
+        strlist.push_back(u8string::from_utf16(data.cFileName));
+
+        while(::FindNextFileW(hd,&data)){
+            strlist.push_back(u8string::from_utf16(data.cFileName));
+        }
+        ::CloseHandle(hd);
+        return strlist;
+    }
     #endif
+    
+    struct FileMapping{
+        enum Flags:Uint32{
+            Read = 1 << 0,
+            Write = 1 << 1,
+            ReadAndWrite = Read | Write
+        };
+        void *address = nullptr;
+        size_t size = 0;
+        
+        #if BTK_WIN32
+        HANDLE view = INVALID_HANDLE_VALUE;
+        #endif
+    };
+    auto MapFile(u8string_view f,FileMapping::Flags flags) -> FileMapping;
+    void UnmapFile(const FileMapping &);
 }
 
 

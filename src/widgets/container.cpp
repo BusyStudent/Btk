@@ -5,6 +5,10 @@
 
 #include <Btk/event.hpp>
 namespace Btk{
+    GroupBox::GroupBox(){
+        background_color = theme().active.background;
+        borader_color = theme().active.border;
+    }
     GroupBox::~GroupBox() = default;
     void GroupBox::draw(Renderer &render){
         if(draw_background){

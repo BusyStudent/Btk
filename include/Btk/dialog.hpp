@@ -165,6 +165,21 @@ namespace Btk{
             _Native *native_impl = {};
             _Local *local_impl = {};
     };
+    /**
+     * @brief Dialog for input text
+     * 
+     */
+    class BTKAPI TextDialog:public Dialog{
+
+    };
+    /**
+     * @brief Dialog for picking a color
+     * 
+     */
+    class BTKAPI ColorDialog:public Dialog{
+
+    };
+
     BTK_FLAGS_OPERATOR(FileDialog::Flags,Uint32);
     //Method
     inline void FileDialog::set_multiple(bool v) noexcept{

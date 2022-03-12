@@ -3,18 +3,36 @@
 #include <SDL2/SDL_events.h>
 #include "../defs.hpp"
 #include "../string.hpp"
+#include "../window.hpp"
 #include "../exception.hpp"
 #include <cstdio>
 #include <string>
 struct SDL_Window;
+struct SDL_SysWMmsg;
 namespace Btk{
+    struct Color;
     namespace X11{
         BTKAPI void Init();
         BTKAPI void Quit();
         BTKAPI void HandleSysMsg(const SDL_SysWMmsg &);
-        BTKAPI bool MessageBox(u8string_view title,u8string_view msg,int flag = 0);
+        BTKAPI void *GetXDisplay();
+        /**
+         * @brief For Get System Color
+         * 
+         */
+        enum ColorType{
+            BackgroundColor,
+            ForegroundColor,
+            SelectionBackgroundColor
+        };
 
-        SDL_Window *CreateTsWindow();
+        //For SystemMetrics
+        BTK_STRING_CONSTANT(SilderWidth,"silder");
+
+        bool GetSystemColor(ColorType,Color &c);
+        bool GetSystemMetrics(u8string_view t);
+
+        SDL_Window *CreateTsWindow(u8string_view title,int w,int h,WindowFlags);
     };
     //X11 Error
     class BTKAPI XError:public RuntimeError{

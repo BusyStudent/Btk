@@ -1,5 +1,6 @@
 #if !defined(_BTK_GLOBAL_HPP_)
 #define _BTK_GLOBAL_HPP_
+#include <Btk/signal/bind.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/imageview.hpp>

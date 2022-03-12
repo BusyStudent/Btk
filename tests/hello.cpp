@@ -5,18 +5,14 @@
 #include <Btk/imageview.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/button.hpp>
+#include <Btk/dialog.hpp>
 #include <Btk/event.hpp>
-#include <Btk/themes.hpp>
 #include <Btk/event.hpp>
 #include <Btk/label.hpp>
 #include <iostream>
-using Btk::Button;
-using Btk::RadioButton;
-using Btk::Label;
-using Btk::Event;
-using Btk::TextBox;
-using Btk::ImageView;
-using Btk::KeyEvent;
+
+using namespace Btk;
+
 struct Hello:public Btk::Window{
     /**
      * @brief Construct a new Hello object
@@ -26,7 +22,6 @@ struct Hello:public Btk::Window{
     
     void onclose();
     void on_set_icon();
-    void on_select(Btk::u8string_view fname);
     void on_defc_call();//Test defer_call
     void on_fullscreen();
     void on_dump_tree();//Test dump tree
@@ -106,24 +101,23 @@ void Hello::onclose(){
     Window::close();
 }
 void Hello::on_set_icon(){
-    // Btk::FSelectBox box;
-    // box.signal_async().connect(&Hello::on_select,this);
-    // box.show();
-}
-void Hello::on_select(Btk::u8string_view fname){
-    if(fname.empty()){
-        return;
-    }
-    set_icon(fname);
-    img_view->set_image(fname);
+    FileDialog dialog;
+    dialog.set_parent(*this);
+    dialog.signal_accepted().connect([&dialog,this](){
+        u8string fname = dialog.result()[0];
+        set_icon(fname);
+        img_view->set_image(PixBuf::FromFile(fname));
+    });
+    dialog.run();
 }
 void Hello::on_fullscreen(){
     set_fullscreen(fullscreen_flags);
     fullscreen_flags = not fullscreen_flags;
 }
 void Hello::show_text(){
-    // Btk::MessageBox msgbox("Show text",tbox->u8text());
-    // msgbox.show();
+    Btk::MessageBox msgbox("Show text",tbox->u8text());
+    msgbox.set_parent(*this);
+    msgbox.run();
 }
 void Hello::on_defc_call(){
     defer_call(&Hello::show_text);
@@ -132,7 +126,7 @@ bool Hello::handle(Event &event){
     if(event.type() == Event::KeyBoard){
         auto &key = static_cast<KeyEvent&>(event);
         if(key.state == KeyEvent::Pressed){
-            if(key.keycode == SDLK_F11){
+            if(key.keycode == Keycode::F11){
                 on_fullscreen();
             }
         }
@@ -143,7 +137,7 @@ void Hello::dump_tree(){
     Window::dump_tree();
 }
 int main(){
-    //Btk::HideConsole();
+    // Btk::HideConsole();
     Hello app;
     app.dump_tree();
     app.mainloop();

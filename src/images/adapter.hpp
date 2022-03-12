@@ -2,9 +2,9 @@
 #define _BTK_INTERNAL_IMAGE_ADAPTER_HPP_
 
 #include "../build.hpp"
-#include <Btk/impl/loadso.hpp>
-#include <Btk/impl/codec.hpp>
-#include <Btk/impl/scope.hpp>
+#include <Btk/detail/loadso.hpp>
+#include <Btk/detail/codec.hpp>
+#include <Btk/detail/scope.hpp>
 #include <SDL2/SDL_rwops.h>
 
 
@@ -110,6 +110,31 @@ namespace Btk{
         return false;
     }
     inline
+    bool BultinIsXPM(SDL_RWops *rwops){
+        BTK_RW_SAVE_STATUS(rwops);
+        constexpr auto size = sizeof("/* XPM */") - sizeof(char);
+        constexpr auto req_magic = "/* XPM */";
+
+        char magic[size];
+        if(SDL_RWread(rwops,magic,sizeof(magic),1) != 1){
+            return false;
+        }
+        return SDL_strncasecmp(magic,req_magic,size) == 0;
+    }
+    inline
+    bool BultinIsBMP(SDL_RWops *rwops){
+        //Check magic is bm
+        char magic[2] = {0};
+        //Save cur
+        auto cur = SDL_RWtell(rwops);
+        //Read magic
+        SDL_RWread(rwops,magic,sizeof(magic),1);
+        //Reset to the position
+        SDL_RWseek(rwops,cur,RW_SEEK_SET);
+        //Check magic
+        return magic[0] == 'B' and magic[1] == 'M';
+    }
+    inline
     Sint64 RWtellsize(SDL_RWops *rwops){
         Sint64 cur = SDL_RWtell(rwops);
         SDL_RWseek(rwops,0,RW_SEEK_END);
@@ -117,6 +142,19 @@ namespace Btk{
         SDL_RWseek(rwops,cur,RW_SEEK_SET);
         return end - cur;
     }
+}
+
+inline
+size_t SDL_WriteString(SDL_RWops *rw,const char *str){
+    return SDL_RWwrite(rw,str,sizeof(char),SDL_strlen(str));
+}
+inline
+size_t SDL_RWpinrt(SDL_RWops *rw,const char *fmt,...){
+    va_list varg;
+    va_start(varg,fmt);
+    auto t = Btk::u8vformat(fmt,varg);
+    va_end(varg);
+    return SDL_RWwrite(rw,t.c_str(),sizeof(char),t.size());
 }
 
 #endif // _BTK_INTERNAL_IMAGE_ADAPTER_HPP_

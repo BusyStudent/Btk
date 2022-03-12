@@ -19,9 +19,16 @@
  * 
  */
 #define BTK_STRING_OPERATOR(TYPE,OP) \
-    inline auto operator OP(const TYPE &t1,const TYPE &t2){\
+    inline auto operator OP(const TYPE &t1,const TYPE &t2)\
+        BTK_NOEXCEPT_IF(t1.base() OP t2.base()){\
         return t1.base() OP t2.base();\
     }
+
+#ifdef BTK_VSCODE_SUPPRESS
+    #define BTK_STRING_CONSTANT(NANE,VALUE) extern Btk::u8string_view NAME;
+#else
+    #define BTK_STRING_CONSTANT(NANE,VALUE) inline constexpr Btk::u8string_view NAME = VALUE;
+#endif
 
 
 namespace Btk{
@@ -166,51 +173,51 @@ namespace Btk{
      * @param end The string's end(could be nullptr)
      * @return The string's size
      */
-    BTKAPI size_t Utf8Strlen(const char *beg,const char *end = nullptr);
-    BTKAPI size_t Utf32CharSize(char32_t codepoint);
+    BTKAPI size_t Utf8Strlen(const char *beg,const char *end = nullptr) noexcept;
+    BTKAPI size_t Utf32CharSize(char32_t codepoint) noexcept;
     /**
      * @brief Get size of a utf8 char
      * 
      * @param char 
      * @return size_t 
      */
-    BTKAPI size_t Utf8CharSize(const char *s);
+    BTKAPI size_t Utf8CharSize(const char *s) noexcept;
     /**
      * @brief Move to the next char begin
      * 
      * @param ch The pointer to the char(could not be nullptr)
      * @return The utf32 encoded codepoint
      */
-    BTKAPI char32_t Utf8Next(const char *&);
+    BTKAPI char32_t Utf8Next(const char *&) noexcept;
     /**
      * @brief Move to the prev char begin
      * 
      * @param ch The pointer to the char(could not be nullptr)
      * @return The utf32 encoded codepoint
      */
-    BTKAPI char32_t Utf8Prev(const char *&);
+    BTKAPI char32_t Utf8Prev(const char *&) noexcept;
     /**
      * @brief Get the utf32 codepoint
      * 
      * @param ch The pointer to the char(could not be nullptr)
      * @return char32_t 
      */
-    inline char32_t Utf8Peek(const char *c){
+    inline char32_t Utf8Peek(const char *c) noexcept{
         return Utf8Next(c);
     }
-    inline char32_t Utf8Next(char *& c){
+    inline char32_t Utf8Next(char *& c) noexcept{
         return Utf8Next(const_cast<const char*&>(c));
     }
-    inline char32_t Utf8Prev(char *& c){
+    inline char32_t Utf8Prev(char *& c) noexcept{
         return Utf8Prev(const_cast<const char*&>(c));
     }
     template<class T>
-    inline T Utf8GetPrev(T v){
+    inline T Utf8GetPrev(T v) noexcept{
         Utf8Prev(v);
         return v;
     }
     template<class T>
-    inline T Utf8GetNext(T v){
+    inline T Utf8GetNext(T v) noexcept{
         Utf8Next(v);
         return v;
     }
@@ -221,7 +228,7 @@ namespace Btk{
      * @param p2 
      * @return ptrdiff_t 
      */
-    inline ptrdiff_t Utf8Distance(const char *p1,const char *p2){
+    inline ptrdiff_t Utf8Distance(const char *p1,const char *p2) noexcept{
         if(p1 > p2){
             return -Utf8Strlen(p2,p1);
         }
@@ -237,7 +244,7 @@ namespace Btk{
      * @return true on invaild 
      * @return false on vaild 
      */
-    BTKAPI bool Utf8IsVaild(const char *beg,const char *end = nullptr);
+    BTKAPI bool Utf8IsVaild(const char *beg,const char *end = nullptr) noexcept;
     /**
      * @brief Advance in the string
      * 
@@ -248,7 +255,7 @@ namespace Btk{
      * @return pointer to the char (nullptr on out of range)
      */
     BTKAPI 
-    const char *Utf8Advance(const char *beg,const char *end,const char *cur,long n);
+    const char *Utf8Advance(const char *beg,const char *end,const char *cur,long n) noexcept;
     //If failed,throw outof range
     BTKAPI 
     const char *Utf8AdvanceChecked(const char *beg,const char *end,const char *cur,long n);
@@ -432,6 +439,14 @@ namespace Btk{
             return tmp;
         }
         //Advance
+        _Utf8Iterator &operator +=(long n){
+            this->_advance(n);
+            return *this;
+        }
+        _Utf8Iterator &operator -=(long n){
+            this->_advance(- n);
+            return *this;
+        }
         _Utf8Iterator operator +(long n){
             auto tmp = *this;
             tmp._advance(n);
@@ -482,6 +497,14 @@ namespace Btk{
             return tmp;
         }
         //Advance
+        _Utf8ConstIterator &operator +=(long n){
+            this->_advance(n);
+            return *this;
+        }
+        _Utf8ConstIterator &operator -=(long n){
+            this->_advance(- n);
+            return *this;
+        }
         _Utf8ConstIterator operator +(long n){
             auto tmp = *this;
             tmp._advance(n);
@@ -562,6 +585,7 @@ namespace Btk{
             u8string_view(const std::string &);
             u8string_view(const u8string &);
             u8string_view(const u8string_view &) = default;
+            
             using std::string_view::basic_string_view;
             using std::string_view::empty;
             using std::string_view::data;
@@ -581,12 +605,14 @@ namespace Btk{
 
             using iterator = _Utf8ConstIterator<u8string_view>;
             using const_iterator = _Utf8ConstIterator<u8string_view>;
+
+            u8string_view(const_iterator beg,const_iterator end);
             /**
              * @brief Get the length of the string_view
              * 
              * @return size_t 
              */
-            size_t length() const{
+            size_t length() const noexcept{
                 return Utf8Strlen(impl_begin(),impl_end());
             }
             size_t raw_length() const noexcept{
@@ -673,6 +699,14 @@ namespace Btk{
              * @return u8string_view 
              */
             u8string_view substr(size_t pos = 0,size_t len = npos) const;
+
+            template<class T>
+            u8string_view substr(const _Utf8IteratorBase<T> beg,const _Utf8IteratorBase<T> end) const{
+                return u8string_view(
+                    _translate_pointer(beg.current),
+                    Utf8GetNext(end->current) - beg.current
+                );
+            }
             /**
              * @brief Split string and copy them into buffer
              * 
@@ -844,6 +878,10 @@ namespace Btk{
         friend struct std::hash;
         friend class u8string;
         friend std::ostream &operator <<(std::ostream &,u8string_view);
+        template<class _T>
+        friend struct _Utf8IteratorBase;
+        template<class _T>
+        friend struct _Utf8RawCodepointRef;
     };
     class BTKAPI u16string_view:protected std::u16string_view{
         public:
@@ -872,8 +910,6 @@ namespace Btk{
         template<class T>
         friend struct std::hash;
         friend class u16string;
-        template<class _T>
-        friend struct _Utf8IteratorBase;
     };
     /**
      * @brief UTF8 String
@@ -1151,6 +1187,11 @@ namespace Btk{
              * @return u8string 
              */
             static u8string from(const void *,size_t n,const char *encoding = nullptr);
+            static u8string fromfile(const char *filename);
+
+            static u8string from_utf16(u16string_view view){
+                return view.to_utf8();
+            }
         public:
             //beg and end
             iterator begin(){
@@ -1386,6 +1427,9 @@ namespace Btk{
     }
     inline u8string_view::u8string_view(std::string_view s):
         std::string_view(s){
+    }
+    inline u8string_view::u8string_view(const_iterator beg,const_iterator end):
+        std::string_view(beg.current,Utf8GetNext(end.current) - beg.current){
     }
     inline auto u8string_view::trim() const -> u8string{
         return strip();
@@ -1650,8 +1694,8 @@ namespace Btk{
         int     (*iconv_close)(iconv_t);
         size_t  (*iconv)(iconv_t,const char **,size_t*,char **,size_t*);
     };
-    BTKAPI void HookIconv(IconvFunctions);
-    BTKAPI void GetIconv(IconvFunctions&);
+    BTKAPI void HookIconv(IconvFunctions) noexcept;
+    BTKAPI void GetIconv(IconvFunctions&) noexcept;
     //Std
     inline std::ostream &operator <<(std::ostream &os,const char *s){
         os << u8string_view(s);
@@ -1662,5 +1706,64 @@ namespace Btk{
 
     //     }
     // }
+
+    //Triats for string class
+    template<class T,class = void>
+    struct IsStringClass:std::false_type{};
+    template<class T>
+    struct IsStringClass<T,
+        std::void_t<
+            decltype(std::declval<T>().data()),
+            decltype(std::declval<T>().size()),
+            decltype(std::declval<T>().length())>
+        >
+        :std::true_type{
+
+    };
+    
+    //Strlen for different cstring
+    inline size_t _strlen_ptr(const char *s) noexcept{
+        return std::strlen(s);
+    }
+
+    //For pointer
+    template<class T>
+    size_t _strlen_ptr(const T *str) noexcept{
+        size_t n = 0;
+        while(*str != T('\0')){
+            ++str;
+            ++n;
+        }
+        return n;
+    }
+    // For static string
+    template<class T,size_t N>
+    constexpr size_t _strlen_array(const T (&)[N]) noexcept{
+        //Remove '\0'
+        return N - 1;
+    }
+
+    template<class T>
+    constexpr size_t strlen(T &&p) noexcept{
+        if constexpr(std::is_array_v<std::remove_reference_t<T>>){
+            return _strlen_array(std::forward<T>(p));
+        }
+        else if constexpr(std::is_pointer_v<std::decay_t<T>>){
+            return _strlen_ptr(std::forward<T>(p));
+        }
+        else if constexpr(IsStringClass<std::decay_t<T>>()){
+            if constexpr(std::is_same_v<char,std::decay_t<decltype(*std::declval<T>().data())>>){
+                //use size
+                return p.size();
+            }
+            else{
+                //use length
+                return p.length();
+            }
+        }
+        else{
+            static_assert(std::is_same_v<void,T>());
+        }
+    }
 }
 #endif // _BTK_STRING_HPP_

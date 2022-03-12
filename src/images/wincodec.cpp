@@ -2,8 +2,8 @@
 #include "adapter.hpp"
 
 #include <Btk/platform/win32.hpp>
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/codec.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/codec.hpp>
 #include <Btk/Btk.hpp>
 
 #include <Shlwapi.h>

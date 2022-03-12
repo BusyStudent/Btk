@@ -1,7 +1,7 @@
 #include "../build.hpp"
 
 #include <SDL2/SDL_cpuinfo.h>
-#include <Btk/impl/scope.hpp>
+#include <Btk/detail/scope.hpp>
 #include <Btk/pixels.hpp>
 
 using stbi_uc = uint8_t;

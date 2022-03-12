@@ -30,4 +30,8 @@ namespace Btk{
         }
         return event_fn(event);
     }
+
+    //ShapeNode
+    ShapeNode::ShapeNode(){}
+    ShapeNode::~ShapeNode(){}
 }

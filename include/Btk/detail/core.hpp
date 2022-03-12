@@ -18,6 +18,7 @@
 #include "../string.hpp"
 #include "../object.hpp"
 
+
 namespace Btk{
     class WindowImpl;
     class RendererDevice;
@@ -157,7 +158,9 @@ namespace Btk{
 
         std::unordered_map<Uint32,WindowImpl*> wins_map;//Windows map
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
-        std::recursive_mutex map_mtx;
+        // std::recursive_mutex map_mtx;
+        SpinLock map_mtx;
+        
         Uint32 defer_call_ev_id;//defer call Event ID
         Uint32 redraw_win_ev_id;//redraw window Event ID
         Uint32 wait_event_delay = 1;//<Delay in wait event
@@ -199,8 +202,13 @@ namespace Btk{
     BTKAPI void Init();
     //Exit the app
     BTKAPI void Exit(int code);
+    
+    [[deprecated("use Btk::GetSystem() instead")]]
     inline System &Instance(){
         return *(System::instance);
+    }
+    inline System *GetSystem(){
+        return System::instance;
     }
     /**
      * @brief Load a image
@@ -240,7 +248,6 @@ namespace Btk{
      * @return BTKAPI* 
      */
     BTKAPI RendererDevice *CreateDevice(SDL_Window *window);
-    BTKAPI WindowImpl     *CreateWindow(SDL_Window *window);
     BTKAPI WindowImpl     *GetWindowFromID(Uint32 windowid);
 };
 

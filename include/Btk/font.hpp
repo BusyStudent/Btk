@@ -123,7 +123,7 @@ namespace Btk{
                 spacing_ = spacing;
             }
             void set_blur(float blur){
-                blur_ = blur_;
+                blur_ = blur;
             }
             /**
              * @brief Get The text's w and h
@@ -206,7 +206,8 @@ namespace Btk{
             static void Init();
             static void Quit();
         private:
-            Font(void *font_ptr,float ptsize);
+            Font(void *font_ptr);
+
             void *font = nullptr;
             float ptsize_ = -1;
             float spacing_ = 0;
@@ -335,13 +336,14 @@ namespace Btk{
             ~FontMatcher();
 
             //Mask
-            enum{
+            enum :Uint32{
                 Filename,
                 Fullname,
-                Index,
-                Style,
+                Index,//<Uint32
+                Style,//< String
+                Language,//< String
             };
-
+            void match();
             void get_value(Uint32 mask,void *p);
         private:
             //Impls

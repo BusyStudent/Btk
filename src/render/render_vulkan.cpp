@@ -1,7 +1,7 @@
 #include "../build.hpp"
 
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/gl/vulkan.hpp>
 #include <SDL2/SDL_vulkan.h>
 

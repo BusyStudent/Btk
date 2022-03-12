@@ -4,7 +4,7 @@
 #include <SDL2/SDL_version.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_hints.h>
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/gl/software.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>

@@ -2,31 +2,28 @@
 #define _BTK_RECT_HPP_
 #include <SDL2/SDL_version.h>
 #include <SDL2/SDL_rect.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_loadso.h>
-#include <SDL2/SDL_thread.h>
-#include <SDL2/SDL_filesystem.h>
 #include <type_traits>
 #include <iosfwd>
+#include <vector> //> For _Polygen
 #include <cmath>
 #include "defs.hpp"
 namespace Btk{
     //ABI For SDL
     template<class Elem>
     struct _RectBase{
-        _RectBase() = default;
+        _RectBase() noexcept = default;
         Elem x,y,w,h;
     };
     template<class Elem>
     struct _PointBase{
-        _PointBase() = default;
+        _PointBase() noexcept = default;
         Elem x,y;
     };
     //SDL Rect and point
     template<>
     struct _RectBase<int>:public SDL_Rect{
-        _RectBase() = default;
-        _RectBase(const SDL_Rect &r){
+        _RectBase() noexcept = default;
+        _RectBase(const SDL_Rect &r) noexcept{
             x = r.w;
             h = r.h;
             x = r.x;
@@ -35,8 +32,8 @@ namespace Btk{
     };
     template<>
     struct _PointBase<int>:public SDL_Point{
-        _PointBase() = default;
-        _PointBase(const SDL_Point &p){
+        _PointBase() noexcept = default;
+        _PointBase(const SDL_Point &p) noexcept{
             x = p.x;
             y = p.y;
         }
@@ -46,8 +43,8 @@ namespace Btk{
     
     template<>
     struct _RectBase<float>:public SDL_FRect{
-        _RectBase() = default;
-        _RectBase(const SDL_FRect &r){
+        _RectBase() noexcept = default;
+        _RectBase(const SDL_FRect &r) noexcept{
             x = r.w;
             h = r.h;
             x = r.x;
@@ -56,8 +53,8 @@ namespace Btk{
     };
     template<>
     struct _PointBase<float>:public SDL_FPoint{
-        _PointBase() = default;
-        _PointBase(const SDL_FPoint &p){
+        _PointBase() noexcept = default;
+        _PointBase(const SDL_FPoint &p) noexcept{
             x = p.x;
             y = p.y;
         }
@@ -70,12 +67,14 @@ namespace Btk{
     struct _Point;
     template<class T>
     struct _Bounds;
+    template<class T>
+    struct _Polygen;
 
     //Rect functions forward defs
     template<class T,class P = _Point<typename T::value_type>>
     inline bool CheckIntersectRectAndLine(const T &r,const P &p1,const P &p2); 
     template<class T>
-    inline T    IntersectRect(const T &r1,const T &r2);
+    inline T    IntersectRect(const T &r1,const T &r2) noexcept;
     template<class T>
     inline T    RectCoverage(const T &r1,const T &r2);
 
@@ -92,21 +91,21 @@ namespace Btk{
 
         using _PointBase<T>::_PointBase;
         //Construct
-        _Point() = default;
-        _Point(const _Point &) = default;
-        _Point(T x,T y){
+        _Point() noexcept = default;
+        _Point(const _Point &) noexcept = default;
+        _Point(T x,T y) noexcept{
             this->x = x;
             this->y = y;
         }
         //Autocast
         template<class Elem>
-        _Point(const _Point<Elem> &p){
+        _Point(const _Point<Elem> &p) noexcept{
             this->x = static_cast<T>(p.x);
             this->y = static_cast<T>(p.y);
         }
         //Method
         template<class Elem>
-        _Point<Elem> cast() const{
+        _Point<Elem> cast() const noexcept{
             return *this;
         }
         /**
@@ -172,22 +171,26 @@ namespace Btk{
 
         T w,h;
         //Construct
-        _Size() = default;
-        _Size(const _Size &) = default;
-        _Size(T w,T h){
+        _Size() noexcept = default;
+        _Size(const _Size &) noexcept = default;
+        _Size(T w,T h) noexcept{
             this->w = w;
             this->h = h;
         }
         //Auto cast
         template<class Elem>
-        _Size(const _Size<Elem> &size){
+        _Size(const _Size<Elem> &size) noexcept{
             w = static_cast<T>(size.w);
             h = static_cast<T>(size.h);
         }
         //Method
         template<class Elem>
-        _Size<Elem> cast() const{
+        _Size<Elem> cast() const noexcept{
             return *this;
+        }
+
+        bool invalid() const noexcept{
+            return w < 0 or h < 0;
         }
 
 
@@ -215,9 +218,9 @@ namespace Btk{
         //Using parent constructor
         using _RectBase<T>::_RectBase;
 
-        _Rect() = default;
-        _Rect(const _Rect&) = default;
-        _Rect(T x,T y,T w,T h){
+        _Rect() noexcept = default;
+        _Rect(const _Rect&) noexcept = default;
+        _Rect(T x,T y,T w,T h) noexcept{
             this->x = x;
             this->y = y;
             this->w = w;
@@ -225,7 +228,7 @@ namespace Btk{
         }
         //From another Elem rect
         template<class Elem>
-        _Rect(const _Rect<Elem> &rect){
+        _Rect(const _Rect<Elem> &rect) noexcept{
             this->x = static_cast<T>(rect.x);
             this->y = static_cast<T>(rect.y);
             this->w = static_cast<T>(rect.w);
@@ -347,9 +350,9 @@ namespace Btk{
         T x1,y1;
         T x2,y2;
         //Construct
-        _Line() = default;
-        _Line(const _Line &) = default;
-        _Line(T x1,T y1,T x2,T y2){
+        _Line() noexcept = default;
+        _Line(const _Line &) noexcept = default;
+        _Line(T x1,T y1,T x2,T y2) noexcept{
             this->x1 = x1;
             this->y1 = y1;
             this->x2 = x2;
@@ -357,7 +360,7 @@ namespace Btk{
         }
         //Autocast
         template<class Elem>
-        _Line(Elem x1,Elem y1,Elem x2,Elem y2){
+        _Line(Elem x1,Elem y1,Elem x2,Elem y2) noexcept{
             this->x1 = static_cast<T>(x1);
             this->y1 = static_cast<T>(y1);
             this->x2 = static_cast<T>(x2);
@@ -369,6 +372,10 @@ namespace Btk{
         }
         _Point<T> p2() const noexcept{
             return {x2,y2};
+        }
+
+        T length() const noexcept{
+            return p1().distance(p2());
         }
 
     };
@@ -386,9 +393,9 @@ namespace Btk{
         T maxx;//Max x
         T maxy;//Max y
         //Construct
-        _Bounds() = default;
-        _Bounds(const _Bounds &) = default;
-        _Bounds(T minx,T miny,T maxx,T maxy){
+        _Bounds() noexcept = default;
+        _Bounds(const _Bounds &) noexcept = default;
+        _Bounds(T minx,T miny,T maxx,T maxy) noexcept{
             this->minx = minx;
             this->miny = miny;
             this->maxx = maxx;
@@ -396,7 +403,7 @@ namespace Btk{
         }
         //Autocast
         template<class Elem>
-        _Bounds(const _Bounds<Elem> &bounds){
+        _Bounds(const _Bounds<Elem> &bounds) noexcept{
             minx = static_cast<T>(bounds.minx);
             miny = static_cast<T>(bounds.miny);
             maxx = static_cast<T>(bounds.maxx);
@@ -409,7 +416,7 @@ namespace Btk{
          * @param rect 
          */
         template<class Elem>
-        _Bounds(const _Rect<Elem> &rect){
+        _Bounds(const _Rect<Elem> &rect) noexcept{
             minx = static_cast<T>(rect.x);
             miny = static_cast<T>(rect.y);
             maxx = static_cast<T>(rect.x + rect.w);
@@ -444,10 +451,10 @@ namespace Btk{
             return *this;
         }
         //Method
-        _Point<T> min() const{
+        _Point<T> min() const noexcept{
             return {minx,miny};
         }
-        _Point<T> max() const{
+        _Point<T> max() const noexcept{
             return {maxx,maxy};
         }
         bool empty() const noexcept{
@@ -474,7 +481,7 @@ namespace Btk{
             return cast<_Rect<Elem>>();
         }
 
-        static _Bounds<T> FromPoints(const _Point<T> &min,const _Point<T> &max){
+        static _Bounds<T> FromPoints(const _Point<T> &min,const _Point<T> &max) noexcept{
             return {
                 min.x,
                 min.y,
@@ -488,6 +495,426 @@ namespace Btk{
     using FBounds = _Bounds<float>;
     //Bounds --end
 
+    //Margin --begin
+    /**
+     * @brief A margin struct
+     * 
+     * @tparam T The element type
+     */
+    template<class T>
+    struct _Margin{
+        using value_type = T;
+
+        T left = {};
+        T top = {};
+        T right = {};
+        T bottom = {};
+        /**
+         * @brief Construct a new margin object(init all value to 0)
+         * 
+         */
+        _Margin() noexcept = default;
+        _Margin(const _Margin &) noexcept = default;
+        _Margin(T left,T top,T right,T bottom) noexcept{
+            this->left = left;
+            this->top = top;
+            this->right = right;
+            this->bottom = bottom;
+        }
+        //Autocast
+        template<class Elem>
+        _Margin(Elem left,Elem top,Elem right,Elem bottom) noexcept{
+            this->left = static_cast<T>(left);
+            this->top = static_cast<T>(top);
+            this->right = static_cast<T>(right);
+            this->bottom = static_cast<T>(bottom);
+        }
+        template<class Elem>
+        _Margin(const _Margin<Elem> &margin) noexcept{
+            left = static_cast<T>(margin.left);
+            top = static_cast<T>(margin.top);
+            right = static_cast<T>(margin.right);
+            bottom = static_cast<T>(margin.bottom);
+        }
+
+        //Compare
+        bool compare(const _Margin &m) const noexcept{
+            return  left == m.left 
+                and top == m.top
+                and right == m.right
+                and bottom == m.bottom;
+        }
+        //Test
+        bool empty() const noexcept{
+            return left == 0 and top == 0 and right == 0 and bottom == 0;
+        }
+        bool invalid() const noexcept{
+            return left < 0 or top < 0 or right < 0 or bottom < 0;
+        }
+        /**
+         * @brief Set all value to args
+         * 
+         * @param v 
+         * @return _Margin 
+         */
+        _Margin &set(T v) noexcept{
+            left = v;
+            top = v;
+            right = v;
+            bottom = v;
+            return *this;
+        }
+        //Scale
+        _Margin scale(T scale) const noexcept{
+            return {
+                left * scale,
+                top * scale,
+                right * scale,
+                bottom * scale,
+            };
+        }
+        //Operator
+        bool operator ==(const _Margin &m) const noexcept{
+            return compare(m);
+        }
+        bool operator !=(const _Margin &m) const noexcept{
+            return not operator ==(m);
+        }
+        /**
+         * @brief Apply margin to bounds
+         * 
+         */
+        template<class Elem>
+        _Bounds<Elem> apply(const _Bounds<Elem> &bounds) const noexcept{
+            return {
+                bounds.minx + left,
+                bounds.miny + top,
+                bounds.maxx - right,
+                bounds.maxy - bottom
+            };
+        }
+        /**
+         * @brief Apply margin to rect
+         * 
+         */
+        template<class Elem>
+        _Rect<Elem> apply(const _Rect<Elem> &rect) const noexcept{
+            return {
+                rect.x + left,
+                rect.y + top,
+                rect.w - right - left,
+                rect.h - bottom - top
+            };
+        }
+        template<class Elem>
+        _Margin<Elem> cast() const noexcept{
+            return {
+                static_cast<Elem>(left),
+                static_cast<Elem>(top),
+                static_cast<Elem>(right),
+                static_cast<Elem>(bottom)
+            };
+        }
+    };
+
+    using Margin = _Margin<int>;
+    using FMargin = _Margin<float>;
+    //Margin --end
+
+    //Bezier curve
+    template<class T>
+    struct _BezierCurve{
+        using value_type = T;
+        using point_type = _Point<T>;
+        /**
+         * @brief Constructor
+         * 
+         */
+        _BezierCurve() noexcept = default;
+        /**
+         * @brief Constructor
+         * 
+         * @param p1 
+         * @param p2 
+         * @param p3 
+         * @param p4 
+         */
+        _BezierCurve(const _Point<T> &p1,const _Point<T> &p2,const _Point<T> &p3,const _Point<T> &p4) noexcept{
+            this->p1 = p1;
+            this->p2 = p2;
+            this->p3 = p3;
+            this->p4 = p4;
+        }
+        /**
+         * @brief Construct from a line
+         * 
+         */
+        template<class Elem>
+        _BezierCurve(const _Line<Elem> &line) noexcept{
+            p1 = line.p1();
+            p2 = line.p2();
+            p3 = p2;
+            p4 = p1;
+        }
+        /**
+         * @brief Construct from another bezier curve with different elem
+         * 
+         */
+        template<class Elem>
+        _BezierCurve(const _BezierCurve<Elem> &curve) noexcept{
+            p1 = curve.p1;
+            p2 = curve.p2;
+            p3 = curve.p3;
+            p4 = curve.p4;
+        }
+
+        /**
+         * @brief Copy constructor
+         * 
+         */
+        _BezierCurve(const _BezierCurve &) noexcept = default;
+        ~_BezierCurve() noexcept = default;
+        /**
+         * @brief Cast template
+         * 
+         */
+        template<class Elem>
+        _BezierCurve<Elem> cast() const noexcept{
+            return {
+                p1.template cast<Elem>(),
+                p2.template cast<Elem>(),
+                p3.template cast<Elem>(),
+                p4.template cast<Elem>()
+            };
+        }
+        /**
+         * @brief Compare
+         * 
+         */
+        bool compare(const _BezierCurve &curve) const noexcept{
+            return p1 == curve.p1 and p2 == curve.p2 and p3 == curve.p3 and p4 == curve.p4;
+        }
+        /**
+         * @brief Operator for compare
+         * 
+         */
+        bool operator ==(const _BezierCurve &curve) const noexcept{
+            return compare(curve);
+        }
+        /**
+         * @brief Operator for compare
+         * 
+         */
+        bool operator !=(const _BezierCurve &curve) const noexcept{
+            return not compare(curve);
+        }
+
+        _Point<T> p1;//< begin point
+        _Point<T> p2;//< control point 1
+        _Point<T> p3;//< control point 2
+        _Point<T> p4;//< end point
+    };
+
+    using BezierCurve = _BezierCurve<float>;
+    using FBezierCurve = _BezierCurve<float>;
+
+    //Paths
+
+    //Polygen --begin
+    /**
+     * @brief Polygen
+     * @note I think i use github codepilot to generate this code
+     * @tparam T 
+     */
+    template<class T>
+    struct _Polygen{
+        using value_type = T;
+        //Make iterator alias from vector
+        using iterator = typename std::vector<_Point<T>>::iterator;
+        using const_iterator = typename std::vector<_Point<T>>::const_iterator;
+
+        std::vector<_Point<T>> points;
+        
+        //Construct
+        _Polygen() noexcept = default;
+        _Polygen(const _Polygen &) noexcept = default;
+        _Polygen(std::initializer_list<_Point<T>> points) noexcept{
+            this->points = points;
+        }
+        /**
+         * @brief Construct from a rectangle
+         * 
+         * @param points 
+         * @return template<class Elem> 
+         */
+        template<class Elem>
+        _Polygen(const _Rect<Elem> &points) noexcept{
+            this->points = {
+                {points.x,points.y},
+                {points.x + points.w,points.y},
+                {points.x + points.w,points.y + points.h},
+                {points.x,points.y + points.h},
+            };
+        }
+        /**
+         * @brief Construct from a bounds
+         * 
+         * @param points 
+         * @return template<class Elem> 
+         */
+        template<class Elem>
+        _Polygen(const _Bounds<Elem> &points) noexcept{
+            this->points = {
+                {points.minx,points.miny},
+                {points.maxx,points.miny},
+                {points.maxx,points.maxy},
+                {points.minx,points.maxy},
+            };
+        }
+
+        //Autocast
+        template<class Elem>
+        _Polygen(std::initializer_list<_Point<Elem>> points) noexcept{
+            for(auto &p : points){
+                this->points.push_back({p.x,p.y});
+            }
+        }
+        //Method
+        _Point<T> &operator [](size_t index){
+            return points[index];
+        }
+        const _Point<T> &operator [](size_t index) const{
+            return points[index];
+        }
+        size_t size() const noexcept{
+            return points.size();
+        }
+        bool  empty() const noexcept{
+            return points.empty();
+        }
+        void  clear(){
+            points.clear();
+        }
+        /**
+         * @brief Is the invalid
+         * 
+         * @param p 
+         * @return true 
+         * @return false 
+         */
+        bool invalid() const noexcept{
+            return points.size() < 3;
+        }
+
+        //Compare
+        bool compare(const _Polygen &p) const noexcept{
+            if(size() != p.size()){
+                return false;
+            }
+            for(size_t i = 0;i < size();++i){
+                if(points[i] != p[i]){
+                    return false;
+                }
+            }
+            return true;
+        }
+        //Iterator from vector
+        iterator begin(){
+            return points.begin();
+        }
+        const_iterator begin() const{
+            return points.begin();
+        }
+        iterator end(){
+            return points.end();
+        }
+        const_iterator end() const{
+            return points.end();
+        }
+
+        /**
+         * @brief Add point
+         * 
+         */
+        void push_back(const _Point<T> &p){
+            points.push_back(p);
+        }
+        /**
+         * @brief Remove point
+         * 
+         */
+        void pop_back(){
+            points.pop_back();
+        }
+        /**
+         * @brief Add point
+         * 
+         */
+        void add_point(const _Point<T> &p){
+            points.push_back(p);
+        }
+        void add_point(T x,T y){
+            points.push_back({x,y});
+        }
+
+
+        /**
+         * @brief Get the bounds
+         * 
+         */
+        _Bounds<T> bounds() const noexcept{
+            if(empty()){
+                return {};
+            }
+            _Bounds<T> b;
+            b.minx = points[0].x;
+            b.miny = points[0].y;
+            b.maxx = points[0].x;
+            b.maxy = points[0].y;
+            for(size_t i = 1;i < size();++i){
+                b.minx = min(b.minx,points[i].x);
+                b.miny = min(b.miny,points[i].y);
+                b.maxx = max(b.maxx,points[i].x);
+                b.maxy = max(b.maxy,points[i].y);
+            }
+            return b;
+        }
+
+        //Helper
+        bool operator ==(const _Polygen &poly) const noexcept{
+            return compare(poly);
+        }
+        bool operator !=(const _Polygen &poly) const noexcept{
+            return not compare(poly);
+        }
+        //Cast
+        template<class Elem>
+        _Polygen<Elem> cast() const{
+            return *this;
+        }
+        /**
+         * @brief Construct a new Rect from bounds
+         * 
+         * @tparam Elem 
+         */
+        template<class Elem>
+        operator _Polygen<Elem>() const noexcept{
+            _Polygen<Elem> poly;
+            poly.points.resize(size());
+            for(size_t i = 0;i < size();++i){
+                poly.points[i] = {
+                    static_cast<Elem>(points[i].x),
+                    static_cast<Elem>(points[i].y)
+                };
+            }
+            return poly;
+        }
+    };
+
+    using Polygen = _Polygen<int>;
+    using FPolygen = _Polygen<float>;
+    //Polygen --end
+
     //Template alias for User
     template<class T>
     using RectImpl = _Rect<T>;
@@ -498,11 +925,17 @@ namespace Btk{
     template<class T>
     using PointImpl = _Point<T>;
     template<class T>
+    using MarginImpl = _Margin<T>;
+    template<class T>
     using BoundsImpl = _Bounds<T>;
+    template<class T>
+    using PolygenImpl = _Polygen<T>;
+    template<class T>
+    using BezierCurveImpl = _BezierCurve<T>;
 
     //Utils
     template<class T1,class T2,class T3>
-    inline bool PointInCircle(const _Point<T1> &center,T2 r,const _Point<T3> &point){
+    inline bool PointInCircle(const _Point<T1> &center,T2 r,const _Point<T3> &point) noexcept{
         return center.distance(point) <= r;
     }
     //eps
@@ -525,6 +958,52 @@ namespace Btk{
                (d3 == 0 && _sgnCheck_((p1 - p3) * (p1 - p4)) <= 0) ||
                (d4 == 0 && _sgnCheck_((p2 - p3) * (p2 - p4)) <= 0);
     }
+    //TODO List
+    //PointInShape
+    //LineInShape
+
+    /**
+     * @brief Point inside polygen
+     * 
+     */
+    template<class T>
+    inline bool PointInPolygen(const _Polygen<T> &poly,const _Point<T> &point) noexcept{
+        if(poly.size() < 3)
+            return false;
+        bool inside = false;
+        for(size_t i = 0,j = poly.size() - 1;i < poly.size();j = i++){
+            if(
+                (
+                    (
+                        (
+                            poly[i].y > point.y
+                        ) != (
+                            poly[j].y > point.y
+                        )
+                    )
+                    and
+                    (
+                        point.x < (
+                            poly[j].x - poly[i].x
+                        ) * (
+                            point.y - poly[i].y
+                        ) / (
+                            poly[j].y - poly[i].y
+                        ) + poly[i].x
+                    )
+                )
+                or
+                (
+                    poly[i].x == poly[j].x
+                    and
+                    point.x == poly[i].x
+                )
+            )
+                inside = not inside;
+        }
+        return inside;
+    }
+
     //Rect utils
     /**
      * @brief Judge intersection of line to rect 
@@ -541,18 +1020,11 @@ namespace Btk{
         P rightDown = P(r.x + r.w, r.y + r.h);
         P leftDown = P(r.x, r.y + r.h);
         P rightTop = P(r.x + r.w, r.y);
-        SDL_Log("p1 = {%d,%d}",p1.x,p1.y);
-        SDL_Log("p2 = {%d,%d}",p2.x,p2.y);
-        SDL_Log("leftTop = {%d,%d}",leftTop.x,leftTop.y);
-        SDL_Log("rightDown = {%d,%d}",rightDown.x,rightDown.y);
-        SDL_Log("leftDown = {%d,%d}",leftDown.x,leftDown.y);
-        SDL_Log("rightTop = {%d,%d}",rightTop.x,rightTop.y);
+
         bool d1 = _segCrossSeg_(p1,p2,leftTop,rightTop);
         bool d2 = _segCrossSeg_(p1,p2,rightTop,rightDown);
         bool d3 = _segCrossSeg_(p1,p2,rightDown,leftDown);
         bool d4 = _segCrossSeg_(p1,p2,leftDown,leftTop);
-
-        SDL_Log("d1 = %d d2 = %d d3 = %d d4 = %d",d1,d2,d3,d4);
 
         return d1 || d2 || d3 || d4;
     } 
@@ -566,7 +1038,7 @@ namespace Btk{
      * @return intersection
      */
     template<class T>
-    inline T IntersectRect(const T &r1,const T &r2){
+    inline T IntersectRect(const T &r1,const T &r2) noexcept{
         auto minx = max(r1.x,r2.x);
         auto miny = max(r1.y,r2.y);
         auto maxx = min(r1.x + r1.w,r2.x + r2.w);
@@ -578,6 +1050,56 @@ namespace Btk{
             max(static_cast<decltype(minx)>(0),maxy - miny)
         );
     }
+    /**
+     * @brief Get union of two rects
+     * 
+     * @param num 
+     * @return template<class T> 
+     */
+    template<class T>
+    inline T UnionRect(const T &r1,const T &r2) noexcept{
+        auto minx = min(r1.x,r2.x);
+        auto miny = min(r1.y,r2.y);
+        auto maxx = max(r1.x + r1.w,r2.x + r2.w);
+        auto maxy = max(r1.y + r1.h,r2.y + r2.h);
+        return T(
+            minx,
+            miny,
+            max(static_cast<decltype(minx)>(0),maxx - minx),
+            max(static_cast<decltype(minx)>(0),maxy - miny)
+        );
+    }
+    //float number utils
+    template<class T>
+    inline size_t GetFloatPrecision(T num) noexcept{
+        //Get decimal fraction
+        T a = num - std::floor(num);
+
+        size_t n = 0;
+
+        while(a != std::floor(a)){
+            n += 1;
+            a *= 10;
+        }
+        return n;
+    }
+    template<class T>
+    inline T SetFloatPrecision(T num,size_t n) noexcept{
+        size_t prec = GetFloatPrecision(num);
+        if(prec <= n){
+            //do nothing
+            return num;
+        }
+        //TODO
+        T result = std::floor(num);
+        T dec = num - result;
+
+        for(size_t i = 0;i < n;i++){
+
+        }
+        return 0;
+    }
+    //TODO Shape Utils
 
     /**
      *@brief Rects Coverage
@@ -605,5 +1127,6 @@ namespace Btk{
     BTKAPI std::ostream &operator <<(std::ostream&,const FSize &);
     BTKAPI std::ostream &operator <<(std::ostream&,const Vec2 &);
     BTKAPI std::ostream &operator <<(std::ostream&,const FVec2 &);
+    BTKAPI std::ostream &operator <<(std::ostream&,const FMargin &);
 }
 #endif // _BTK_RECT_HPP_

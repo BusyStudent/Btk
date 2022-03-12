@@ -1,21 +1,58 @@
 //Widget impl
 #include "../build.hpp"
 
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/container.hpp>
 #include <Btk/widget.hpp>
 #include <Btk/event.hpp>
 
 #include <algorithm>
 
+namespace{
+    struct UserDataItem{
+        UserDataItem *next;
+        void *data;
+        char *name;
+
+        void *operator new(std::size_t s){
+            return SDL_malloc(s);
+        }
+        void operator delete(void *p){
+            SDL_free(p);
+        }
+    };
+    void _free_item(UserDataItem *prev,UserDataItem *cur){
+        if(prev != nullptr){
+            prev->next = cur->next;
+        }
+        SDL_free(cur->name);
+        delete cur;
+    }
+    void _free_item_all(UserDataItem *p){
+        while(p != nullptr){
+            auto next = p->next;
+            SDL_free(p->name);
+            delete p;
+            p = next;
+        }
+    }
+}
+
 namespace Btk{
-    Widget::Widget() = default;
+    Widget::Widget(){
+        //Set theme
+        set_theme(CurrentTheme());
+        //Configure widget
+        set_font(theme().font);
+    }
     Widget::~Widget(){
         //Delete each children
         clear_childrens();
         //Free name
         SDL_free(_name);
+        //Has Items
+        _free_item_all(static_cast<UserDataItem*>(_userdata));
     }
     bool Widget::handle(Event& ev){
         //Default Process event
@@ -67,6 +104,56 @@ namespace Btk{
             inhert_style();
         }
     }
+    void Widget::set_userdata(const char *key,void *value){
+        if(is_window()){
+            //We use sdl fn
+            SDL_SetWindowData(static_cast<WindowImpl*>(this)->sdl_window(),key,value);
+            return;
+        }
+        //Use our implment
+        UserDataItem *cur = static_cast<UserDataItem*>(_userdata);
+        UserDataItem *prev = nullptr;
+        //TODO
+        while(cur != nullptr){
+            if(strcmp(cur->name,key) == 0){
+                //Same
+                if(value != nullptr){
+                    cur->data = value;
+                    return;
+                }
+                else{
+                    //Remove
+                    if(prev == nullptr){
+                        //First item
+                        _userdata = cur->next;
+                    }
+                    _free_item(prev,cur);
+                    return;
+                }
+            }
+
+            prev = cur;
+            cur = cur->next;
+        }
+        //New a new item
+        cur = new UserDataItem;
+        cur->data = value;
+        cur->name = SDL_strdup(key);
+        cur->next = static_cast<UserDataItem*>(_userdata);
+        _userdata = cur;
+    }
+    void *Widget::userdata(const char *name){
+        if(is_window()){
+            return SDL_GetWindowData(static_cast<WindowImpl*>(this)->sdl_window(),name);
+        }
+        UserDataItem *cur = static_cast<UserDataItem*>(_userdata);
+        while(cur != nullptr){
+            if(strcmp(name,cur->name) == 0){
+                return cur->data;
+            }
+        }
+        return nullptr;
+    }
     void Widget::set_rect(const Rect &rect){
         this->rect = rect;    
     }
@@ -99,6 +186,10 @@ namespace Btk{
     }
     Renderer *Widget::renderer() const{
         if(parent() == nullptr){
+            if(is_window()){
+                auto w = const_cast<Widget*>(this);
+                return &(static_cast<WindowImpl*>(w)->render);
+            }
             return nullptr;
         }
         return &(window()->render);
@@ -164,6 +255,33 @@ namespace Btk{
         fprintf(output,"- %s:(%d,%d,%d,%d)\n",get_typename(typeid(*this)).c_str(),x(),y(),w(),h());
         for(auto ch:childrens){
             ch->dump_tree_impl(output,depth + 1);
+        }
+    }
+    //Draw the bounds
+    void Widget::draw_bounds(Color c){
+        Renderer *r = renderer();
+        if(r == nullptr){
+            return;
+        }
+        r->save();
+        r->set_antialias(false);
+        r->reset_transform();
+
+        r->begin_path();
+        r->stroke_color(c);
+        
+        draw_bounds_impl();
+        
+        r->stroke();
+        r->restore();
+    }
+    void Widget::draw_bounds_impl(){
+        if(not visible()){
+            return;
+        }
+        renderer()->rect(rectangle());
+        for(auto &c:childrens){
+            c->draw_bounds_impl();
         }
     }
     //Hide and show
@@ -238,6 +356,32 @@ namespace Btk{
             return true;
         }
         return false;
+    }
+    void Container::raise_widget(Widget *w){
+        auto iter = std::find(childrens.begin(),childrens.end(),w);
+        if(iter == childrens.end()){
+            throwRuntimeError("unknown widget in container");
+        }
+        childrens.erase(iter);
+        childrens.push_front(w);
+        //Need i call redraw? 
+    }
+    void Container::lower_widget(Widget *w){
+        auto iter = std::find(childrens.begin(),childrens.end(),w);
+        if(iter == childrens.end()){
+            throwRuntimeError("unknown widget in container");
+        }
+        childrens.erase(iter);
+        childrens.push_back(w);
+        //Need i call redraw? 
+    }
+    void Container::move_widget(Widget *w,long position){
+        auto iter = std::find(childrens.begin(),childrens.end(),w);
+        if(iter == childrens.end()){
+            throwRuntimeError("unknown widget in container");
+        }
+        //Get position of
+        BTK_UNIMPLEMENTED();
     }
 }
 namespace Btk{
@@ -341,6 +485,14 @@ namespace Btk{
                 return false;
             }
         }
+    }
+    bool Group::handle_drop(DropEvent &event){
+        Widget *w = find_children(event.position());
+        if(w != nullptr){
+            BTK_LOGINFO("[Drop]Send Drop to '%s' %p",BTK_typenameof(w),w);
+            return w->handle(event);
+        }
+        return false;
     }
     bool Group::handle_motion(MotionEvent &event){
         if(cur_widget == nullptr){

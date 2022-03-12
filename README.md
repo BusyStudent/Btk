@@ -67,12 +67,14 @@ int main(){
 
 ## TODO List  
 
-* [x] Rewrite font system to get better performence  
-* [ ] Add more useful widgets  
-* [ ] Add Btk::Bind(...) to bind object and functions
-* [ ] Rewrite ImageView By OpenGL to implement AntiAlias
-* [x] Rewirte themes
-* [ ] Add CMake
+- [x] Rewrite font system to get better performence  
+- [ ] Add more useful widgets  
+- [x] Add Btk::Bind(...) to bind object and functions
+- [ ] Rewrite ImageView By OpenGL to implement AntiAlias
+- [ ] To implement Menu
+- [ ] Add CMake
+- [ ] Add GLX and WGL OpenGL Adapter
+- [ ] Add API to get system color and system metrics
 
 ----
 
@@ -114,7 +116,7 @@ int main(){
 - SDL2  
 - SDL2-image (optional)  
 - fontconfig (optional,for select font)  
-- libgif (optional,for display gif) 
+- libgif (optional,for display gif)
 - freetype2  (optional)  
 - scons or xmake
 

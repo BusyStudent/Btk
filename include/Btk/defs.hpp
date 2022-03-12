@@ -14,12 +14,14 @@
 
 #if BTK_CXX
     #include <cstdint>
+    #include <cstring>
     //For C functions
     #define BTK_CEXTERN extern "C"
     #define BTK_CDECLS_BEGIN extern "C"{
     #define BTK_CDECLS_END }
 #else
     #include <stdint.h>
+    #include <cstring>
     #define BTK_CEXTERN
     #define BTK_CDECLS_BEGIN
     #define BTK_CDECLS_END
@@ -45,6 +47,9 @@
 #else
     #define BTK_UNIQUE_NAME(NAME) BTK_MARGE_TOKEN(NAME,__LINE__)
 #endif
+
+//Noexcept
+#define BTK_NOEXCEPT_IF(X) noexcept(noexcept(X))
 
 /**
  * @brief Generate operator for enum
@@ -117,7 +122,6 @@ namespace Btk{
     class u16string;
     class u8string_view;
     class u8string;
-    //Generic Align
     
     enum class Orientation:Uint8{
         Vertical = 0,
@@ -125,20 +129,23 @@ namespace Btk{
         V = Vertical,
         H = Horizontal
     };
+    inline constexpr auto Vertical = Orientation::Vertical; 
+    inline constexpr auto Horizontal = Orientation::Horizontal; 
+
     //Useful min max climp template
     //Avoid to include algorithm in the headers
     #undef max
     #undef min
 
     template<class T>
-    inline T max(const T &v1,const T &v2){
+    inline T max(const T &v1,const T &v2) BTK_NOEXCEPT_IF(v1 < v2){
         if(v1 > v2){
             return v1;
         }
         return v2;
     }
     template<class T>
-    inline T min(const T &v1,const T &v2){
+    inline T min(const T &v1,const T &v2) BTK_NOEXCEPT_IF(v1 < v2){
         if(v1 < v2){
             return v1;
         }

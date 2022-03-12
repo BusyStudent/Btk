@@ -1,6 +1,7 @@
 #include "../build.hpp"
 
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/gl/opengl.hpp>
 #include <Btk/Btk.hpp>
 #include <SDL2/SDL_video.h>
@@ -13,10 +14,16 @@ namespace Btk::GL{
         #else
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_CORE);
         #endif
+
+        #ifdef BTK_USE_GLES2
+        //Use OpenGL 2.0
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,2);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,0);
+        #else
         //Use OpenGL 3.0
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,0);
-        
+        #endif        
         SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
         SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,8);
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,8);
@@ -26,13 +33,13 @@ namespace Btk::GL{
 
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,8);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,4);
 
         #ifndef BTK_NO_GLDEVICE
         //Register our Device
         RegisterDevice([](SDL_Window *win) -> RendererDevice*{
             //Check is OpenGL Window
-            void *loader = SDL_GetWindowData(win,"btk_gl_loader");
+            void *loader = SDL_GetWindowData(win,BTK_WINDOWHINT_GLLOADER);
             if(loader != nullptr){
                 //Use loader
                 using load_fn = GLDevice *(*)(SDL_Window *);

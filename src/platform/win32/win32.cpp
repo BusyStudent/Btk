@@ -2,8 +2,9 @@
 
 #include <Btk/utils/template.hpp>
 #include <Btk/platform/win32.hpp>
-#include <Btk/impl/utils.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/platform/fs.hpp>
+#include <Btk/detail/utils.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/string.hpp>
 #include <Btk/Btk.hpp>
 #include <SDL2/SDL_syswm.h>
@@ -30,13 +31,13 @@ namespace{
             virtual void OnCallstackEntry(CallstackEntryType,CallstackEntry &addr){
                 if(addr.lineNumber == 0){
                     //No line number
-                    Btk::u8format(msg,"  at %p: %s (in %s)\n",
+                    msg.append_fmt("  at %p: %s (in %s)\n",
                         reinterpret_cast<void*>(addr.offset),
                         addr.name,
                         addr.moduleName);
                 }
                 else{
-                    Btk::u8format(msg,"  at %p: %s (in %s:%d)\n",
+                    msg.append_fmt("  at %p: %s (in %s:%d)\n",
                         reinterpret_cast<void*>(addr.offset),
                         addr.name,
                         addr.lineFileName,
@@ -292,6 +293,13 @@ namespace Btk{
     bool HideConsole(){
         return FreeConsole();
     }
+    // auto MapFile(u8string_view filename,FileMapping::Flags f) -> FileMapping{
+
+    // }
+    // void UnmapFile(const FileMapping &mp){
+    //     UnmapViewOfFile(mp.address);
+    //     CloseHandle(mp.view);
+    // }
 }
 namespace Btk{
     void WindowImpl::handle_win32(
@@ -333,7 +341,7 @@ namespace Btk{
                     }
                     win32_draw_ticks = current;
                     //Execute draw right now
-                    draw(render);
+                    draw(*render);
                 }
                 catch (...){
                     DeferCall(std::rethrow_exception, std::current_exception());

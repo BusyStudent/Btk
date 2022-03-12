@@ -1,4 +1,5 @@
 #include <Btk/function.hpp>
+#include <Btk/signal/bind.hpp>
 #include <Btk/signal.hpp>
 #include <Btk/module.hpp>
 #include <iostream>
@@ -10,10 +11,14 @@ struct Test:public Btk::HasSlots{
     void fn(){
         std::cout << "Hello World from Class Test" << std::endl;
     };
+    void fn_with_args(int i){
+        std::cout << "FN With Args : " << i << std::endl;
+    }
     template<class T>
     void con(T &signal){
         connect(signal,&Test::fn);
     }
+
 };
 int main(){
     int i = 0;
@@ -38,11 +43,14 @@ int main(){
         std::cout << "Hello World from signal slot :"  << i << std::endl;
     });
     signal.connect(&Test::fn,&test);
+    //Test disconnect right now
+    signal.connect(Btk::Bind(&Test::fn_with_args,&test,1)).disconnect();
     signal.emit();
     {
         //It should auto disconnect 
         Test t;
         t.con(signal);
+        signal.connect(Btk::Bind(&Test::fn_with_args,&test,1));
         signal.connect(&Test::fn,&t);
         t.on_destroy([&t](){
             std::cout << "Object Test was destroyed" << std::endl; 

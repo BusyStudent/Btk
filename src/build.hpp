@@ -13,19 +13,21 @@
 #include <Btk/defs.hpp>
 #include <Btk/string.hpp>
 
-#if defined(_MSC_VER)
-    //MSVC
-    #define BTK_FUNCTION __FUNCSIG__
-#elif defined(__GNUC__)
+#ifdef _BTK_PRECOMPILED_HEADER
+    #include <Btk/signal/bind.hpp>
+    #include <Btk/widget.hpp>
+    #include <Btk/render.hpp>
+    #include <Btk/event.hpp>
+#endif
+
+
+#if BTK_GCC
     //GCC
     #include <strings.h>
     #include <cxxabi.h>
-    #define BTK_FUNCTION __PRETTY_FUNCTION__
-#else
-    #define BTK_FUNCTION SDL_FUNCTION
 #endif
 
-#ifdef _WIN32
+#if BTK_WIN32
     //Suppress the min and max definitions in Windef.h
     #define NOMINMAX
 #endif
@@ -55,11 +57,21 @@
 //Check type macro
 #define BTK_ASSERT_CASTABLE(TYPE,PTR) BTK_ASSERT(dynamic_cast<TYPE*>(PTR) != nullptr)
 //Get type macro
-#define BTK_typenameof(V) Btk::get_typename(T).c_str()
+#define BTK_typenameof(V) Btk::get_typename(V).c_str()
 
 
 //Unimpl
-#define BTK_UNIMPLEMENTED() Btk::throwRuntimeError("unimplemented")
+#define BTK_UNIMPLEMENTED() Btk::throwRuntimeError(\
+    Btk::u8format("TODO require impl at %s:%d fn %s",__FILE__,__LINE__,BTK_FUNCTION)\
+)
+#define BTK_FIXME(MSG) \
+    {\
+        static bool done = false;\
+        if(not done){\
+            fprintf(stderr,"FIXME:%s %s:%s:%d\n",MSG,BTK_FUNCTION,__FILE__,__LINE__);\
+            done = true;\
+        }\
+    }
 
 #ifndef NDEBUG
 /**
@@ -90,22 +102,15 @@ extern "C" inline void _Btk_ReportFailure(
 namespace Btk{
     //Cast event for debugging
     template<class T,class U>
-    T event_cast(U &&u){
+    T event_cast(U &&u) noexcept{
         return static_cast<T>(std::forward<U>(u));
     }
-    inline int vscprintf(const char *fmt,va_list varg){
-        #ifdef _WIN32
-        return _vscprintf(fmt,varg);
-        #else
-        return vsnprintf(nullptr,0,fmt,varg);
-        #endif
-    };
     /**
      * @brief A struct holded demangled string
      * 
      */
     struct _typeinfo_string{
-        _typeinfo_string(const std::type_info &info){
+        _typeinfo_string(const std::type_info &info) noexcept{
             //TODO
             #ifdef __GNUC__
             str = ::abi::__cxa_demangle(info.name(),nullptr,nullptr,nullptr);
@@ -121,7 +126,7 @@ namespace Btk{
             str = info.name();
             #endif
         }
-        _typeinfo_string(const _typeinfo_string &s){
+        _typeinfo_string(const _typeinfo_string &s) noexcept{
             #ifdef __GNUC__
             if(s.need_free){
                 //allocate in heap
@@ -135,7 +140,7 @@ namespace Btk{
             str = s.str;
             #endif
         }
-        _typeinfo_string(_typeinfo_string &&s){
+        _typeinfo_string(_typeinfo_string &&s) noexcept{
             str = s.str;
             s.str = nullptr;
             #ifdef __GNUC__
@@ -143,7 +148,7 @@ namespace Btk{
             s.need_free = false;
             #endif
         }
-        ~_typeinfo_string(){
+        ~_typeinfo_string() noexcept{
             #ifdef __GNUC__
             if(need_free){
                 ::free(const_cast<char*>(str));
@@ -179,7 +184,7 @@ namespace Btk{
      * @param info The typeinfo
      * @return The name of the typeinfo(no demangled)
      */
-    inline _typeinfo_string get_typename(const std::type_info &info){
+    inline _typeinfo_string get_typename(const std::type_info &info) noexcept{
         return info;
     }
     template<class T>

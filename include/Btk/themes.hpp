@@ -43,6 +43,8 @@ namespace Btk{
             Font font;
             //Button 
             float button_rad = 0;
+            //Menu
+            float menubar_height = 20;//???
     };
     RefPtr<Theme> CurrentTheme();
     void   UseTheme(u8string_view name);

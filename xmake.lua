@@ -1,39 +1,19 @@
 add_rules("mode.debug", "mode.release")
 --add SDL require
+add_requires("libsdl")
+add_requires("freetype","libsdl_image",{optional = true})
+add_packages("libsdl","freetype","libsdl_image")
+
 if is_plat("linux") then
-    add_defines("USE_MMX")
-    add_requires("SDL2")
     --Linux X11
     add_requires("dbus-1")
 
     --try add extensions
     add_requires("gif",{optional = true})
     add_requires("webp",{optional = true})
-    add_requires("SDL2_image",{optional = true})
     --add_requires("freetype2",{optional = true})
     add_cxxflags("-Wall","-Wextra","-fPIC")
 else
-    --VCPKG
-    --add_requires("vcpkg::SDL2",{alias = "SDL2"})
-    --add_requires("vcpkg::SDL2-image",{alias = "SDL2_image"})
-    --add_requires("vcpkg::SDL2-ttf",{alias = "SDL2_ttf"})
-    --add_requires("vcpkg::gif",{optional = true,alias = "gif"})
-    --using xmake repo
-    add_requires("libsdl")
-    add_requires("freetype","libsdl_image",{optional = true})
-    add_packages("libsdl","freetype","libsdl_image")
-
-    --add_packages("SDL2","SDL2-image","SDL2-ttf")
-    --add_includedirs("E:/VisualStudio/VCPKG/vcpkg-master/installed/x86-windows/include")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2-image_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/sdl2-ttf_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/freetype_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/libpng_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/zlib_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/bzip2_x64-windows-static/lib")
-    --add_linkdirs("E:/VisualStudio/VCPKG/vcpkg-master/packages/brotli_x64-windows-static/lib")
-    --add_requires("SDL2","SDL2_ttf","SDL2_image")
     --VS UTF8
     if is_plat("windows") then
         add_cxxflags("/utf-8")
@@ -46,9 +26,6 @@ add_includedirs("./include")
 
 if is_plat("linux") then
     -- linux has fontconfig freetype2
-    add_requires("freetype2")
-    add_packages("freetype2")
-    add_links("freetype")
     add_links("GL")
     add_defines("BTK_HAS_FREETYPE")
     add_defines("BTK_USE_FONTCONFIG")
@@ -85,6 +62,14 @@ option("svg_parser")
     set_default(true)
     set_showmenu(true)
     set_description("Render svg")
+option("opengles2")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Use OpenGLES2")
+option("precompiled_header")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Use Precompiled header")
 -- Win32 Option
 option("directx_renderer")
     if is_plat("windows") or is_plat("mingw") then
@@ -104,7 +89,6 @@ option("wincodec")
     set_description("Add WIC")
 
 target("btk")
-    add_defines("BTK_USE_GFX")
 
     -- Import option
     add_options("software_renderer")
@@ -117,7 +101,7 @@ target("btk")
         add_files("./src/platform/x11/*.cpp")
         --Dbus
         add_packages("dbus-1")
-        add_links("fontconfig")
+        add_links("fontconfig","SDL2","X11")
     elseif is_plat("windows") or is_plat("mingw") then
         --xmake repo
         add_packages("libsdl","libsdl_image","freetype")
@@ -166,10 +150,9 @@ target("btk")
     --     end
     -- )
 
-    add_links("SDL2")
     set_kind("shared")
     --core
-    add_files("./src/impl/*.cpp")
+    add_files("./src/detail/*.cpp")
     --basic 
     add_files("./src/*.cpp")
     --widgets
@@ -182,9 +165,6 @@ target("btk")
     add_files("./src/platform/*.cpp")
     --Utils
     add_files("./src/utils/*.cpp")
-    --Msgboxs
-    -- add_files("./src/msgbox/*.cpp")
-    add_packages("SDL2","SDL2_image","gif")
     --Mixer
     add_files("./src/mixer/mixer.cpp")
     add_files("./src/mixer/raw.cpp")
@@ -197,11 +177,16 @@ target("btk")
         add_files("./src/render/render_sw.cpp")
         add_defines("BTK_USE_SWDEVICE")
     end
+
     if has_config("opengl_renderer") then
+        if has_config("opengles2") then
+            add_defines("BTK_USE_GLES2")
+        end
         add_files("./src/render/render_gles2.cpp")
     else
         add_defines("BTK_NO_GLDEVICE")
     end
+    
     if has_config("directx_renderer") then
         add_files("./src/render/render_dx11.cpp")
         add_defines("BTK_USE_DXDEVICE")
@@ -242,7 +227,7 @@ target("btk")
     end
 
     --SDL_image support
-    if has_package("libsdl_image") or has_package("SDL2_image") then
+    if has_package("libsdl_image") then
         add_defines("BTK_HAS_SDLIMG")
         add_files("./src/images/sdl_image.cpp")
         add_links("SDL2_image")
@@ -251,42 +236,31 @@ target("btk")
         add_defines("BTK_HAS_STBII")
         add_files("./src/images/stb_image.cpp")
     end
+
+    if has_config("precompiled_header") then
+        add_defines("_BTK_PRECOMPILED_HEADER")
+        set_pcxxheader("./src/build.hpp")
+    end
 if is_mode("debug") then
     target("hello")
         set_kind("binary")
         add_files("./tests/hello.cpp")
         add_deps("btk")
-    target("opfont")
-        set_kind("binary")
-        add_files("./tests/opfont.cpp")
-        add_deps("btk")
-    target("image")
-        set_kind("binary")
-        add_files("./tests/image.cpp")
-        add_deps("btk")
-    target("fn")
-        set_kind("binary")
-        add_files("./tests/fn.cpp")
-        add_deps("btk")
-    target("async")
-        set_kind("binary")
-        add_files("./tests/async.cpp")
-        add_deps("btk")
     target("text")
         set_kind("binary")
         add_files("./tests/text.cpp")
         add_deps("btk")
-    target("timer")
+    target("calc")
         set_kind("binary")
-        add_files("./tests/timer.cpp")
+        add_files("./tests/calc.cpp")
         add_deps("btk")
-    target("draw")
+    target("pixmap")
         set_kind("binary")
-        add_files("./tests/draw.cpp")
+        add_files("./tests/pixmap.cpp")
         add_deps("btk")
-    target("scroll")
+    target("sliderable")
         set_kind("binary")
-        add_files("./tests/scroll.cpp")
+        add_files("./tests/sliderable.cpp")
         add_deps("btk")
     target("rect_algo")
         set_kind("binary")
@@ -306,5 +280,4 @@ if true and not is_plat("windows")then
 
         set_kind("shared")
         add_files("./src/ext/capi.cpp")
-        add_deps("btk")
 end

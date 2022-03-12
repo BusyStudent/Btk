@@ -1,7 +1,7 @@
 #include "../../build.hpp"
 #include "internal.hpp"
 
-#include <Btk/impl/application.hpp>
+#include <Btk/detail/application.hpp>
 #include <Btk/application.hpp>
 
 #include <shellapi.h>

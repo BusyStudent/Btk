@@ -3,11 +3,12 @@
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_timer.h>
 
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/utils.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/utils.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/exception.hpp>
+#include <Btk/platform.hpp>
 #include <Btk/render.hpp>
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
@@ -30,16 +31,13 @@ namespace Btk{
     }
     WindowImpl::WindowImpl(SDL_Window *_win):
         win(_win),
-        _device(create_device(_win)),
-        render(*_device){
-        //Set theme
-        set_theme(CurrentTheme());
+        _device(create_device(_win)){
+        //Construct renderer
+        render.construct(*_device);
         //Set background color
         bg_color = theme().active.window;        
         attr.window = true;
 
-        //Configure widget
-        set_font(theme().font);
         //Update window rect
         rect.x = 0;
         rect.y = 0;
@@ -47,6 +45,10 @@ namespace Btk{
         //Set window data
         SDL_SetWindowData(win,"btk_impl",this);
         SDL_SetWindowData(win,"btk_dev",_device);
+
+        #ifndef NDEBUG
+        debug_draw_bounds = (std::getenv("BTK_DRAW_BOUNDS") != nullptr);
+        #endif
     }
     WindowImpl::~WindowImpl(){
         //Delete widgets
@@ -77,6 +79,13 @@ namespace Btk{
                 iter = draw_cbs.erase(iter);
             }
         }
+
+        #ifndef NDEBUG
+        if(debug_draw_bounds){
+            draw_bounds();
+        }
+        #endif
+
         render.end();
     }
     void WindowImpl::redraw(){
@@ -118,7 +127,7 @@ namespace Btk{
             }
             last_draw_ticks = ticks;
         }
-        draw(render);
+        draw(*render);
     }
     //TryCloseWIndow
     bool WindowImpl::on_close(){
@@ -137,6 +146,8 @@ namespace Btk{
         if(not sig_resize.empty()){
             sig_resize(new_w,new_h);
         }
+        //Ask layout to update
+        update_postion();
     }
     void WindowImpl::pixels_size(int *w,int *h){
         SDL_GetWindowSize(win,w,h);
@@ -144,12 +155,21 @@ namespace Btk{
         //SDL_GL_GetDrawableSize(win,w,h);
     }
     void WindowImpl::buffer_size(int *w,int *h){
-        auto size = render.output_size();
+        auto size = render->output_size();
         if(w != nullptr){
             *w = size.w;
         }
         if(h != nullptr){
             *h = size.h;
+        }
+    }
+    void WindowImpl::query_dpi(float *ddpi,float *hdpi,float *vdpi){
+        int idx = SDL_GetWindowDisplayIndex(win);
+        if(idx == -1){
+            throwSDLError();
+        }
+        if(SDL_GetDisplayDPI(idx,ddpi,hdpi,vdpi) == -1){
+            throwSDLError();
         }
     }
     //update widgets postions
@@ -184,20 +204,56 @@ namespace Btk{
             handle(event);
         }
     }
+    void WindowImpl::set_modal(bool v){
+        BTK_LOGINFO("[Window::set_modal] %s",v?"true":"false");
+        modal = v;
+        //Update window attr
+        if(modal){
+            //Set modal save sdl_flags
+            last_win_flags = SDL_GetWindowFlags(win);
+            //Make it unresizable
+            SDL_SetWindowResizable(win,SDL_FALSE);
+        }
+        else{
+            //Restore sdl_flags
+            //If has SDL_Window_Resizable flag,it will be set
+            if(last_win_flags & SDL_WINDOW_RESIZABLE){
+                SDL_SetWindowResizable(win,SDL_TRUE);
+            }
+        }
+    }
 }
 //Event Processing
 namespace Btk{
     bool WindowImpl::handle(Event &event){
-        if(event.type() == Event::SDL){
-            //Is SDL_WindowEvent
-            auto &e = event_cast<SDLEvent&>(event);
-            if(e.sdl_event->type == SDL_WINDOWEVENT){
-                handle_windowev(*(e.sdl_event));
+        switch(event.type()){
+            case Event::SDL:{
+                //Is SDL_WindowEvent
+                auto &e = event_cast<SDLEvent&>(event);
+                if(e.sdl_event->type == SDL_WINDOWEVENT){
+                    handle_windowev(*(e.sdl_event));
+                    return true;
+                }
+                break;
+            }
+            case Event::Resize:{
+                auto &e = event_cast<ResizeEvent&>(event);
+                SDL_SetWindowSize(win,e.w,e.h);
                 return true;
             }
-        }
-        if(Group::handle(event)){
-            return true;
+            case Event::Show:{
+                SDL_ShowWindow(win);
+                return true;
+            }
+            case Event::Hide:{
+                SDL_HideWindow(win);
+                return true;
+            }
+            default:{
+                if(Group::handle(event)){
+                    return true;
+                }
+            }
         }
         return sig_event(event);
     }
@@ -216,6 +272,10 @@ namespace Btk{
                 break;
             }
             case SDL_WINDOWEVENT_CLOSE:{
+                //Drop event if modal
+                if(modal){
+                    return ;
+                }
                 //Close window;
                 Instance().close_window(this);
                 break;
@@ -255,14 +315,27 @@ namespace Btk{
                 }
                 break;
             }
+            case SDL_WINDOWEVENT_FOCUS_GAINED:{
+                signal_keyboard_take_focus();
+                break;
+            }
+            case SDL_WINDOWEVENT_FOCUS_LOST:{
+                signal_keyboard_lost_focus();
+                break;
+            }
             case SDL_WINDOWEVENT_MOVED:{
                 break;
             }
         }
     }
     bool WindowImpl::handle_motion(MotionEvent &event){
-        if(mouse_pressed and not drag_rejected){
-            //Is dragging
+        //Drop event if modal
+        if(modal){
+            return false;
+        }
+
+        if(mouse_pressed and not drag_rejected and not dragging){
+            //Try gen begin
             DragEvent drag(Event::DragBegin,event);
 
             if(not Group::handle_drag(drag) or drag.is_rejected()){
@@ -276,12 +349,18 @@ namespace Btk{
             }
         }
         if(dragging){
+            //Is dragging
             DragEvent drag(Event::Drag,event);
             handle_drag(drag);
         }
         return Group::handle_motion(event);
     }
     bool WindowImpl::handle_mouse(MouseEvent &event){
+        //Drop event if modal
+        if(modal){
+            return false;
+        }
+
         if(event.state == MouseEvent::Pressed){
             mouse_pressed = true;
         }
@@ -299,7 +378,19 @@ namespace Btk{
         return Group::handle_mouse(event);
     }
     bool WindowImpl::handle_drop(DropEvent &event){
+        //Drop event if modal
+        if(modal){
+            return false;
+        }
+
         //TODO Send to current widget
+        int ms_x,ms_y,win_x,win_y;
+        SDL_GetGlobalMouseState(&ms_x,&ms_y);
+        SDL_GetWindowPosition(win,&win_x,&win_y);
+
+        event.x = ms_x - win_x;
+        event.y = ms_y - win_y;
+
         Group::handle_drop(event);
         
         if(event.type() == Event::DropFile){
@@ -335,44 +426,8 @@ namespace Btk{
 namespace Btk{
     Window::Window(u8string_view title,int w,int h,Flags f){
         Init();
-        #ifdef __ANDROID__
-        //Android need full screen
-        Uint32 flags = 
-            SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL;
-        #elif defined(_WIN32)
-        //In Win32 we can use direct3d
-        Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN;
 
-        #if !defined(BTK_USE_DXDEVICE) && !defined(BTK_NO_GLDEVICE) && !defined(BTK_USE_SWDEVICE)
-        flags |= SDL_WINDOW_OPENGL;
-        #endif
-
-        #else
-        Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
-        #endif
-
-        if((f & Flags::OpenGL) == Flags::OpenGL){
-            flags |= SDL_WINDOW_OPENGL;
-        }
-        if((f & Flags::Vulkan) == Flags::Vulkan){
-            flags |= SDL_WINDOW_VULKAN;
-        }
-        if((f & Flags::SkipTaskBar) == Flags::SkipTaskBar){
-            flags |= SDL_WINDOW_SKIP_TASKBAR;
-        }
-        SDL_Window *sdl_window = SDL_CreateWindow(
-            title.data(),
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED,
-            w,h,
-            flags
-        );
-        if(sdl_window == nullptr){
-            pimpl = nullptr;
-            throwSDLError();
-        }
-
-        pimpl = Instance().create_window(sdl_window);
+        pimpl = CreateWindow(title,w,h,f);
         // pimpl->container.window = pimpl;
         SDL_SetWindowData(pimpl->win,"btk_win",this);
         winid = SDL_GetWindowID(pimpl->win);
@@ -576,4 +631,64 @@ namespace Btk{
         }
         return {mode.w,mode.h};
     }
+    WindowImpl *CreateWindow(u8string_view title,int w,int h,WindowFlags flags){
+        auto has_flag = [](WindowFlags f1,WindowFlags f2){
+            return (f1 & f2) == f2;
+        };
+        SDL_Window *sdl_win;
+        if(has_flag(flags,WindowFlags::Transparent)){
+            //Use transparent window
+            //Send to platform
+            #if BTK_X11
+            sdl_win = Platform::CreateTsWindow(title,w,h,flags);
+            #else
+            BTK_UNIMPLEMENTED();
+            #endif
+        }
+        else{
+            //Translate flags into SDL flags
+            Uint32 sdl_flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN;
+
+            #if (BTK_X11 && !defined(BTK_NO_GLDEVICE)) || (BTK_WIN32 && !defined(BTK_USE_DXDEVICE))
+            sdl_flags |= SDL_WINDOW_OPENGL;
+            #endif
+
+
+            if(has_flag(flags,WindowFlags::Resizeable)){
+                sdl_flags |= SDL_WINDOW_RESIZABLE;
+            }
+            if(has_flag(flags,WindowFlags::Borderless)){
+                sdl_flags |= SDL_WINDOW_BORDERLESS;
+            }
+            if(has_flag(flags,WindowFlags::Fullscreen)){
+                sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+            }
+            if(has_flag(flags,WindowFlags::OpenGL)){
+                sdl_flags |= SDL_WINDOW_OPENGL;
+            }
+            if(has_flag(flags,WindowFlags::Vulkan)){
+                sdl_flags |= SDL_WINDOW_VULKAN;
+            }
+            if(has_flag(flags,WindowFlags::SkipTaskBar)){
+                sdl_flags |= SDL_WINDOW_SKIP_TASKBAR;
+            }
+            if(has_flag(flags,WindowFlags::PopupMenu)){
+                sdl_flags |= SDL_WINDOW_POPUP_MENU;
+            }
+
+            //Create window
+            sdl_win = SDL_CreateWindow(
+                title.data(),
+                SDL_WINDOWPOS_UNDEFINED,
+                SDL_WINDOWPOS_UNDEFINED,
+                w,h,
+                sdl_flags
+            );
+        }
+        if(sdl_win == nullptr){
+            throwSDLError();
+        }
+        return GetSystem()->create_window(sdl_win);
+    }
+
 }

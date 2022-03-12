@@ -11,7 +11,7 @@
 #include "internal.hpp"
 
 #include <Btk/platform/win32.hpp>
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/font.hpp>
 #include <Btk/Btk.hpp>
@@ -81,7 +81,7 @@ namespace FontUtils{
                 nullptr
             );
             if(ret == ERROR_SUCCESS){
-                BTK_LOGINFO("Name of %s",u16string_view((const char16_t*)buffer).to_utf8().c_str());
+                // BTK_LOGINFO("Name of %s",u16string_view((const char16_t*)buffer).to_utf8().c_str());
                 if(SDL_wcsncasecmp(name.w_str(),buffer,name.length()) == 0){
                     return get_font_from_name(regkey,reinterpret_cast<char16_t*>(buffer));
                 }
@@ -117,6 +117,13 @@ namespace FontUtils{
             return GetDefaultFont();
         }
         return s.to_utf8();
+    }
+    //TODO
+    FontInfo FindFont(u8string_view name){
+        FontInfo info;
+        info.filename = GetFileByName(name);
+        info.index = 0;
+        return info;
     }
     //Callback for enum font
     static int CALLBACK font_cb(const LOGFONTA *font,const TEXTMETRICA*,DWORD type,LPARAM data){

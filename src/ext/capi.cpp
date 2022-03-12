@@ -1,425 +1,283 @@
 #include "../build.hpp"
 
 
-#define BTK_CAPI_BEGIN extern "C"{
-#define BTK_CAPI_END }
-//Enable/Disable TypeChecking
-#ifdef BTK_UNSAFE
-    #define BTK_TYPE_CHK(WIDGET,TYPE) 
-    #define BTK_TYPE_CHK2(WIDGET,TYPE,ERR_RET)
+#define _BTK_CAPI_SOURCE
 
-    #define BTK_NUL_CHK(VAL)
-    #define BTK_NUL_CHK2(VAL,RET)
-    /**
-     * @brief Begin the catch
-     * 
-     */
-    #define BTK_BEGIN_CATCH()
-    /**
-     * @brief End the catch
-     * 
-     */
-    #define BTK_END_CATCH()
-    /**
-     * @brief End the catch
-     * @param ERR_RET The return value if the exception happended
-     */
-    #define BTK_END_CATCH2(ERR_RET)
+#define BTKC_NOEXCEPT_BEGIN() return _noexcept_call([&](){
+#define BTKC_NOEXCEPT_END() });
 
+#define BTKC_CHECK_PTR()
+#define BTKC_CHECK_TYPE(PTR)
 
-#else
-    #define BTK_NUL_CHK(VAL) \
-        if(VAL == nullptr){\
-            Btk_SetError("nullptr");\
-            return;\
-        }
-    #define BTK_NUL_CHK2(VAL,RET) \
-        if(VAL == nullptr){\
-            Btk_SetError("nullptr");\
-            return RET;\
-        }
+#include <typeindex>
+#include <typeinfo>
+#include <mutex>
+#include <map>
 
-    #define BTK_TYPE_CHK(WIDGET,TYPE) \
-        if(!Btk_Is##TYPE(BTK_WIDGET(WIDGET)))\
-        {   set_typeerror(#TYPE,WIDGET);\
-            return;}
-    #define BTK_TYPE_CHK2(WIDGET,TYPE,ERR_RET) \
-        if(!Btk_Is##TYPE(BTK_WIDGET(WIDGET)))\
-        {   set_typeerror(#TYPE,WIDGET);\
-            return ERR_RET;}
-
-    /**
-     * @brief Begin the catch
-     * 
-     */
-    #define BTK_BEGIN_CATCH() try{
-    /**
-     * @brief End the catch
-     * 
-     */
-    #define BTK_END_CATCH() } \
-        catch(std::exception &exp){\
-            Btk_SetError("%s",exp.what());\
-        }\
-        catch(...){\
-            Btk_SetError("Unknown Exception");\
-        }
-    /**
-     * @brief End the catch
-     * @param ERR_RET The return value if the exception happended
-     */
-    #define BTK_END_CATCH2(ERR_RET) } \
-        catch(std::exception &exp){\
-            Btk_SetError("%s",exp.what());\
-            return ERR_RET;\
-        }\
-        catch(...){\
-            Btk_SetError("Unknown Exception");\
-            return ERR_RET;\
-        }
-#endif
-
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/window.hpp>
 #include <Btk.hpp>
 #include <Btk.h>
 
-static thread_local std::string global_error;
-static bool show_typerrror = true;//< default show typerrror
-static void set_typeerror(const char *req,BtkWidget *widget){
-    Btk_SetError("TypeError:(%s,%s)",req,Btk::get_typename(widget).c_str());
-    if(show_typerrror){
-        fputs(Btk_GetError(),stderr);
-        fputc('\n',stderr);
+namespace{
+    template<class T,class = void>
+    struct _constructable:std::false_type{};
+    template<class T>
+    struct _constructable<T,
+        std::void_t<
+            decltype(new T())
+        >>
+        :std::true_type{
+
+    };
+    struct WidgetFactroy{
+        std::map<std::type_index,BtkWidget (*)()> ctors;
+
+        BtkWidget create(BtkType type) noexcept{
+            std::type_index idx(*type);
+            auto iter = ctors.find(idx);
+            if(iter == ctors.end()){
+                Btk_SetError("Couldnot create widget %s",BTK_typenameof(*type));
+                return nullptr;
+            }
+            return iter->second();
+        }
+        template<class T>
+        void register_type(){
+            //Not virtual and can be constructable without args
+            if constexpr(not std::is_abstract_v<T> and _constructable<T>::value){
+                ctors[typeid(T)] = []() -> BtkWidget{
+                    return new T;
+                };
+            }
+        }
+    };
+    Btk::Constructable<WidgetFactroy> factory;
+    thread_local Btk::u8string error_message;
+    std::once_flag init_once;
+
+    void _callback_forward(BtkWidget w,BtkCallback callback,void *param){
+        callback(w,param);
     }
-}
-BTK_CAPI_BEGIN
+    auto _wrap_callback(BtkWidget w,BtkCallback callback,void *param){
+        return Btk::Bind(_callback_forward,w,callback,param);
+    }
+    void _cleanup(){
+        factory.destroy();
+    }
+    void _init(){
+        factory.construct();
+        Btk::AtExit(_cleanup);
 
-//Global Init/Quit
-bool Btk_Init(){
-    BTK_BEGIN_CATCH();
+        #define BTKC_DECLARE_WIDGET(T) factory->register_type<Btk::T>();
+        BTKC_WIDGETS_LIST
+        #undef BTKC_DECLARE_WIDGET
+    }
+    void _noexcept_call_impl(void (*callback)(void *param),void *p) noexcept{
+        try{
+            callback(p);
+        }
+        catch(std::exception &exp){
+            Btk_SetError("%s",exp.what());
+        }
+        catch(...){
+            Btk_SetError("Unknown Exception");
+        }
+    }
+    void _noexcept_call_ret_impl(void (*callback)(void *param,void *pret),void *p,void *pret) noexcept{
+        try{
+            callback(p,pret);
+        }
+        catch(std::exception &exp){
+            Btk_SetError("%s",exp.what());
+        }
+        catch(...){
+            Btk_SetError("Unknown Exception");
+        }
+    }
+    template<class Callable>
+    std::invoke_result_t<Callable> _noexcept_call(Callable &&callable) noexcept{
+        using RetT = std::invoke_result_t<Callable>;
+        if constexpr(std::is_same_v<RetT,void>){
+            _noexcept_call_impl([](void *cb){
+                (*reinterpret_cast<Callable*>(cb))();
+            },std::addressof(callable));
+        }
+        else{
+            //Has return value
+            RetT retvalue {};
 
-    Btk::Init();
-    return true;
+            _noexcept_call_ret_impl([](void *cb,void *ret){
+                (*reinterpret_cast<RetT*>(ret)) = (*reinterpret_cast<Callable*>(cb))();
+            },std::addressof(callable),std::addressof(retvalue));
 
-    BTK_END_CATCH2(false);
-}
-int  Btk_Run(){
-    return Btk::run();
-}
-void Btk_AtExit(Btk_callback_t callback,void *param){
-    Btk::AtExit(callback,param);
-}
-void Btk_DeferCall(Btk_callback_t callback,void *param){
-    Btk::DeferCall(callback,param);
+            return retvalue;
+        }
+    }
+    void _on_nullptr() noexcept{
+        Btk_SetError("Invalid nullptr param");
+    }
+    void _on_bad_type(BtkType req,BtkType except) noexcept{
+        Btk_SetError("Require '%s' except '%s'",BTK_typenameof(*req),BTK_typenameof(*except));
+    }
+
 }
 
+BTKC_API_BEGIN
 
-//Widget
+#define BTKC_DECLARE_WIDGET(W) \
+    BtkType BTKC_TYPEOF(Btk##W) = &typeid(Btk::W);
+BTKC_WIDGETS_LIST
+#undef BTKC_DECLARE_WIDGET
 
-void Btk_UpdateRect(BtkWidget *widget,int x,int y,int w,int h){
-    BTK_NUL_CHK(widget);
-    widget->set_rect(x,y,w,h);
+
+BtkWidget Btk_NewWidget(BtkType info){
+    return factory->create(info);
 }
-void Btk_AtDelete(BtkWidget *widget,Btk_callback_t fn,void*param){
-    BTK_NUL_CHK(widget);
-    widget->add_callback(fn,param);
-}
-void Btk_Delete(BtkWidget *widget){
+void      Btk_Delete(BtkWidget widget){
     delete widget;
 }
+void      Btk_Init(){
+    std::call_once(init_once,_init);
+}
+
+BtkString Btk_GetError(){
+    return error_message.c_str();
+}
+void      Btk_SetError(BtkString fmt,...){
+    std::va_list varg;
+    va_start(varg,fmt);
+    error_message.clear();
+    error_message.append_vfmt(fmt,varg);
+    va_end(varg);
+
+}
+void      Btk_ClearError(){
+    error_message.clear();
+}
+
+//Type
+BtkType   Btk_GetType(BtkWidget w){
+    return &typeid(*w);
+}
+bool      Btk_TypeEqual(BtkType t1,BtkType t2){
+    return *t1 == *t2;
+}
+BtkString Btk_TypeName(BtkType t){
+    return t->name();
+}
 
 
-
-
-//Button
-void Btk_AtButtonClicked(BtkButton *button,Btk_callback_t fn,void *param){
-    BTK_NUL_CHK(button);
-    BTK_NUL_CHK(fn);
-    BTK_TYPE_CHK(button,Button);
-
-    button->signal_clicked().connect([fn,param](){
-        fn(param);
+void      Btk_SetRectangle(BtkWidget wi,int x,int y,int w,int h){
+    return _noexcept_call([&](){
+        wi->set_rectangle(x,y,w,h);
     });
 }
-BtkButton *Btk_NewButton(){
-    return new BtkButton();
+void      Btk_Hide(BtkWidget wi){
+    return _noexcept_call([&](){
+        wi->hide();
+    });
 }
-const char *Btk_SetButtonText(BtkButton *btn,const char *text){
-    BTK_NUL_CHK2(btn,nullptr);
-    BTK_TYPE_CHK2(btn,Button,nullptr);
+void      Btk_Show(BtkWidget wi){
+    return _noexcept_call([&](){
+        wi->show();
+    });
+}
+void      Btk_Resize(BtkWidget wi,int w,int h){
+    return _noexcept_call([&](){
+        wi->resize(w,h);
+    });
+}
+//Container
+bool      Btk_Add(BtkWidget parent,BtkWidget c){
+    BTKC_NOEXCEPT_BEGIN();
+
+    if(parent == nullptr or c == nullptr){
+        _on_nullptr();
+        return false;
+    }
+    if(not parent->is_container()){
+        Btk_SetError("Require Container");
+        return false;
+    }
+    return static_cast<BtkContainer>(parent)->add(c);
+
+    BTKC_NOEXCEPT_END();
+}
+bool      Btk_Remove(BtkWidget parent,BtkWidget c){
+    BTKC_NOEXCEPT_BEGIN();
+
+    if(parent == nullptr or c == nullptr){
+        _on_nullptr();
+        return false;
+    }
+    if(not parent->is_container()){
+        Btk_SetError("Require Container");
+        return false;
+    }
+    return static_cast<BtkContainer>(parent)->remove(c);
+
+    BTKC_NOEXCEPT_END();
+
+}
+bool      Btk_Detach(BtkWidget parent,BtkWidget c){
+    BTKC_NOEXCEPT_BEGIN();
+
+    if(parent == nullptr or c == nullptr){
+        _on_nullptr();
+        return false;
+    }
+    if(not parent->is_container()){
+        Btk_SetError("Require Container");
+        return false;
+    }
+    return static_cast<BtkContainer>(parent)->detach(c);
+
+    BTKC_NOEXCEPT_END();
+}
+
+void      Btk_HookDestroy(BtkWidget w,BtkCallback cb,void *param){
+    BTKC_NOEXCEPT_BEGIN();
+
+    w->on_destroy(_wrap_callback(w,cb,param));
     
-    if(text != nullptr){
-        btn->set_text(text);
+    BTKC_NOEXCEPT_END();
+}
+
+
+BtkWindow Btk_NewWindow(BtkString title,int x,int y){
+    BTKC_NOEXCEPT_BEGIN();
+
+    auto win = new Btk::Window(title,x,y);
+    Btk_HookDestroy(win->impl(),[](BtkWidget,void *p){
+        delete static_cast<BtkWindow>(p);
+    },win);
+    return win;
+
+    BTKC_NOEXCEPT_END();
+}
+BtkWidget Btk_CastWindow(BtkWindow w){
+    return w->impl();
+}
+bool      Btk_MainLoop(BtkWindow w){
+    BTKC_NOEXCEPT_BEGIN();
+    return w->mainloop();
+    BTKC_NOEXCEPT_END();
+}
+
+//Btn
+BtkString Btk_SetButtonText(BtkAbstractButton btn,BtkString txt){
+    BTKC_NOEXCEPT_BEGIN();
+    if(btn == nullptr){
+        return (const char*)nullptr;
+    }
+    if(txt != nullptr){
+        btn->set_text(txt);
     }
     return btn->text().data();
+    BTKC_NOEXCEPT_END();
 }
+void     Btk_HookButtonClicked(BtkAbstractButton btn,BtkCallback cb,void *param){
+    btn->signal_clicked().connect(_wrap_callback(btn,cb,param));
+}
+BTKC_API_END
 
-//TextBox
-BtkTextBox *Btk_NewTextBox(){
-    return new BtkTextBox();
-}
-void Btk_SetTextBoxText(BtkTextBox *textbox,const char *text){
-    BTK_NUL_CHK(textbox);
-    BTK_NUL_CHK(text);
-    BTK_TYPE_CHK(textbox,TextBox);
-    textbox->set_text(text);
-}
-char* Btk_GetTextBoxText(BtkTextBox *textbox){
-    BTK_NUL_CHK2(textbox,nullptr);
-    BTK_TYPE_CHK2(textbox,TextBox,nullptr);
-    return Btk_strdup(textbox->u8text().c_str());
-}
-//Label
-const char *Btk_SetLableText(BtkLabel *label,const char *text){
-    BTK_NUL_CHK2(label,nullptr);
-    if(text != nullptr){
-        label->set_text(text);
-    }
-    return label->text().c_str();
-}
-//Window
-BtkWindow *Btk_NewWindow(const char *title,int w,int h){
-    BTK_BEGIN_CATCH();
-    auto win = new Btk::Window(title,w,h);
-    win->impl()->on_destroy([win](){
-        delete win;
-    });
-    return win;
-    BTK_END_CATCH2(nullptr);
-}
-void Btk_ShowWindow(BtkWindow *win){
-    BTK_NUL_CHK(win);
-    win->done();
-}
-void Btk_SetWindowTitle(BtkWindow *win,const char *title){
-    BTK_NUL_CHK(win);
-    win->set_title(title);
-}
-void Btk_SetWindowResizeable(BtkWindow *win,bool val){
-    BTK_NUL_CHK(win);
-    win->set_resizeable(val);
-}
-bool Btk_SetWindowIconFromFile(BtkWindow *win,const char *filename){
-    BTK_NUL_CHK2(win,false);
-    BTK_NUL_CHK2(filename,false);
-
-    BTK_BEGIN_CATCH();
-
-    win->set_icon(Btk::PixBuf::FromFile(filename));
-    return true;
-    BTK_END_CATCH2(false);
-}
-bool Btk_SetWindowCursorFromFile(BtkWindow *win,const char *filename){
-    BTK_NUL_CHK2(win,false);
-    BTK_NUL_CHK2(filename,false);
-
-    BTK_BEGIN_CATCH();
-
-    win->set_cursor(Btk::PixBuf::FromFile(filename));
-    return true;
-    BTK_END_CATCH2(false);
-}
-bool Btk_WindowAdd(BtkWindow*win,BtkWidget*widget){
-    BTK_NUL_CHK2(win,false);
-    BTK_NUL_CHK2(widget,false);
-
-    return win->add(widget);
-}
-bool Btk_MainLoop(BtkWindow *win){
-    BTK_BEGIN_CATCH();
-    return win->mainloop();
-    BTK_END_CATCH2(false);
-}
-BtkContainer *Btk_GetContainer(BtkWindow *w){
-    BTK_NUL_CHK2(w,nullptr);
-    return &(w->container());
-}
-void Btk_ForChildrens(BtkWidget *w,Btk_foreach_t c,void *p){
-    BTK_NUL_CHK(w);
-    BTK_NUL_CHK(c);
-   for(auto i:w->get_childrens()){
-       c(i,p);
-   }
-}
-void Btk_ContainerAdd(BtkContainer *c,BtkWidget *w){
-    BTK_NUL_CHK(c);
-    c->add(w);
-}
-void Btk_DumpTree(BtkWidget *w,FILE *f){
-    w->dump_tree(f);
-}
-//ImageView
-BtkImageView *Btk_NewImageView(){
-    return new BtkImageView();
-}
-//GifView
-#ifndef BTK_NGIF
-BtkGifView *Btk_NewGifView(){
-    return new BtkGifView();
-}
-bool Bkt_SetGifViewImageFrom(BtkGifView *view,const char *filename){
-    BTK_NUL_CHK2(view,false);
-    BTK_NUL_CHK2(filename,false);
-    BTK_BEGIN_CATCH();
-    view->set_image(Btk::GifImage::FromFile(filename));
-    BTK_END_CATCH2(false);
-}
-#endif
-//Error
-const char *Btk_GetError(){
-    return global_error.c_str();
-}
-
-void Btk_SetError(const char *fmt,...){
-    int strsize;
-
-    //Get the size of the string
-    va_list varg;
-    va_start(varg,fmt);
-    #ifdef _WIN32
-    strsize = _vscprintf(fmt,varg);
-    #else
-    strsize = vsnprintf(nullptr,0,fmt,varg);
-    #endif
-    va_end(varg);
-    
-    global_error.clear();
-    global_error.resize(strsize);
-
-    //start formatting
-    va_start(varg,fmt);
-    vsprintf(&global_error[0],fmt,varg);
-    va_end(varg);
-}
-char *Btk_typename(BtkWidget *w){
-    BTK_NUL_CHK2(w,nullptr);
-    auto s = Btk::get_typename(w);
-    char *mem = (char*)Btk_malloc(s.size() + 1);
-    if(mem == nullptr){
-        return nullptr;
-    }
-    strcpy(mem,s.c_str());
-    return mem;
-}
-Btk_typeinfo Btk_typeof(BtkWidget *w){
-    Btk_typeinfo info = {nullptr};
-    if(w != nullptr){
-        const std::type_info &type = typeid(*w);
-        info.hash_code = type.hash_code();
-        #ifdef __GNUC__
-        info.raw_name = type.name();
-        info.name = abi::__cxa_demangle(
-            type.name(),
-            nullptr,
-            nullptr,
-            nullptr
-        );
-        #elif defined(_MSC_VER)
-        info.name = type.name();
-        info.raw_name = type.raw_name();
-        #else
-        info.name = nullptr;
-        info.raw_name = type.name();
-        #endif
-    }
-    return info;
-}
-void Btk_typefree(Btk_typeinfo info){
-    #ifdef __GNUC__
-    std::free(const_cast<char*>(info.name));
-    #endif
-}
-//Memory
-void *Btk_malloc(size_t byte){
-    void *ptr = malloc(byte);
-    if(ptr == nullptr){
-        Btk_SetError("malloc(%zu) failed",byte);
-        return nullptr;
-    }
-    return ptr;
-}
-void *Btk_realloc(void *p,size_t byte){
-    void *ptr = realloc(p,byte);
-    if(ptr == nullptr){
-        Btk_SetError("realloc(%p,%zu) failed",p,byte);
-        return nullptr;
-    }
-    return ptr;
-}
-void  Btk_free(void *ptr){
-    BTK_NUL_CHK(ptr);
-    free(ptr);
-}
-char *Btk_strdup(const char *str){
-    BTK_NUL_CHK2(str,nullptr);
-    size_t len = strlen(str);
-    char *ptr = static_cast<char*>(Btk_malloc((len + 1) * sizeof(char)));
-    
-    BTK_NUL_CHK2(ptr,nullptr);
-
-    memcpy(ptr,str,(len + 1) * sizeof(char));
-    return ptr;
-}
-//MessageBox
-void Btk_MessageBox(const char *title,const char *message){
-    // Btk::MessageBox msgbox;
-    // msgbox.set_title(title);
-    // msgbox.set_message(message);
-    // msgbox.show();
-}
-//Signal
-void Btk_SignConnect(BtkWidget *widget,const char *signal,...){
-    BTK_NUL_CHK(widget);
-    BTK_NUL_CHK(signal);
-    va_list varg;
-    va_start(varg,signal);
-    Btk::Impl::VaListGuard vguard(varg);
-
-    Btk_SetError("Unsupported");
-}
-BtkPixBuf *Btk_LoadImage(const char *filename){
-    static_assert(sizeof(Btk::PixBuf) == sizeof(SDL_Surface*));
-    Btk::Constructable<Btk::PixBuf> buf;
-    BTK_BEGIN_CATCH();
-    buf.construct(Btk::PixBuf::FromFile(filename));
-    BTK_END_CATCH2(nullptr);
-    BtkPixBuf *p;
-    memcpy(&p,buf.get(),sizeof(void*));
-    return p;
-}
-void Btk_FreeImage(BtkPixBuf *b){
-    SDL_FreeSurface(reinterpret_cast<SDL_Surface*>(b));
-}
-bool Btk_issame(BtkWidget *w1,BtkWidget *w2){
-    return typeid(*w1) == typeid(*w2);
-}
-//Format
-size_t _Btk_impl_fmtargs(const char *fmt,...){
-    if(fmt == nullptr){
-        return 0;
-    }
-    size_t strsize;
-    va_list varg;
-    va_start(varg,fmt);
-    #ifdef _WIN32
-    strsize = _vscprintf(fmt,varg);
-    #else
-    strsize = vsnprintf(nullptr,0,fmt,varg);
-    #endif
-    va_end(varg);
-
-    return (strsize + 1) * sizeof(char);
-}
-char* _Btk_impl_sprintf(char *buf,const char *fmt,...){
-    if(buf == nullptr or fmt == nullptr){
-        return nullptr;
-    }
-    va_list varg;
-    va_start(varg,fmt);
-    vsprintf(buf,fmt,varg);
-    va_end(varg);
-    return buf;
-}
-BTK_CAPI_END

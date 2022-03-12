@@ -2,7 +2,7 @@
 
 #include "../build.hpp"
 
-#include <Btk/impl/window.hpp>
+#include <Btk/detail/window.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
@@ -106,6 +106,13 @@ namespace Btk{
     void ImageView::set_clip(const Rect &r){
         image_rect = r;
         redraw();
+    }
+    bool ImageView::handle_drop(DropEvent &event){
+        if(accept_drop and event.type() == DropEvent::DropFile){
+            set_image(PixBuf::FromFile(event.text));
+            return event.accept();
+        }
+        return false;
     }
     bool ImageView::handle_drag(DragEvent &event){
         if(not dragable){

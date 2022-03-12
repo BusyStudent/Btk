@@ -7,8 +7,8 @@
 #include <memory>
 #include <tuple>
 #include "defs.hpp"
+#include "detail/invoker.hpp"
 #include "utils/traits.hpp"
-#include "impl/invoker.hpp"
 #include "window.hpp"
 namespace Btk{
 
@@ -158,6 +158,19 @@ namespace Btk{
      * @return false on asked to quit
      */
     BTKAPI bool PollEvent();
+    /**
+     * @brief Wait event and update status
+     * 
+     * @code {.cpp}
+     * while(WaitEvent()){
+     *     //Process your ...
+     * }
+     * @endcode
+     * 
+     * 
+     * @return BTKAPI 
+     */
+    BTKAPI bool WaitEvent();
 
     /**
      * @brief Enter the EventLoop

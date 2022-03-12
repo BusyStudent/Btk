@@ -20,10 +20,10 @@ namespace Btk{
         fixed_rect.w -= 1;
         fixed_rect.h -= 1;
 
-        render.begin_path();
-        render.rect(fixed_rect);
-        render.fill_color(theme().active.button);
-        render.fill();
+        // render.begin_path();
+        // render.rect(fixed_rect);
+        // render.fill_color(theme().active.button);
+        // render.fill();
 
         render.begin_path();
         render.rect(fixed_rect);

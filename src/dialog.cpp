@@ -1,13 +1,14 @@
 #include "./build.hpp"
 
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/thread.hpp>
-#include <Btk/impl/scope.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/thread.hpp>
+#include <Btk/detail/scope.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/window.hpp>
 #include <Btk/dialog.hpp>
 #include <Btk/button.hpp>
 #include <Btk/label.hpp>
+#include <Btk/Btk.hpp>
 
 #if BTK_X11
     #include <Btk/platform/popen.hpp>
@@ -20,6 +21,37 @@
     #include <ShObjIdl.h>
 #endif
 
+#if BTK_X11
+#include <csignal>
+namespace{
+    void main_thrd_wait_and_dispatch(pid_t pid){
+        //Dispatch
+        bool *has_got = new bool(false);
+        auto sig_handle = std::signal(SIGCHLD,[](int){
+            //Got a sigchld
+            //Ask the btk to quit loop
+            Btk::Exit();
+        });
+
+        Btk_defer [pid,has_got,sig_handle](){
+            std::signal(SIGCHLD,sig_handle);
+            if(not *has_got){
+                //Wait until exit
+                waitpid(pid,nullptr,0);
+            }
+            delete has_got;
+        };
+
+        while(Btk::WaitEvent()){
+            if(::waitpid(pid,nullptr,WNOHANG) == pid){
+                //Got this
+                *has_got = true;
+                return;
+            }
+        }
+    }
+}
+#endif
 
 namespace Btk{
     Dialog::Dialog() = default;
@@ -116,8 +148,12 @@ namespace Btk{
                 break;
             }
         }
+        HWND owner = nullptr;
+        if(parent() != nullptr and not IsMainThread()){
+            owner = WinUtils::GetHandleFrom(parent()->sdl_window());
+        }
         ::MessageBoxW(
-            parent() ? nullptr : WinUtils::GetHandleFrom(parent()->sdl_window()),
+            owner,
             _message.to_utf16().w_str(),
             _title.to_utf16().w_str(),
             type
@@ -191,7 +227,15 @@ namespace Btk{
     }
     auto MessageBox::do_wait() -> Status{
         #if BTK_X11
-        ::waitpid(native_impl->proc,nullptr,0);
+        if(parent() != nullptr and IsMainThread()){
+            //Is main thrd and has parent
+            parent()->set_modal(true);
+            main_thrd_wait_and_dispatch(native_impl->proc);
+            parent()->set_modal(false);
+        }
+        else{
+            ::waitpid(native_impl->proc,nullptr,0);
+        }
         return Accepted;
         #elif BTK_WIN32
         native_impl->event.wait();
@@ -213,7 +257,7 @@ namespace Btk{
         SyncEvent event;
         //Init dialog
         void init(Flags f){
-            if(f == last_flags){
+            if(f == last_flags and not dialog.empty()){
                 return;
             }
             //DoParse
@@ -313,7 +357,7 @@ namespace Btk{
             native_impl->dialog->SetTitle(_title.to_utf16().w_str());
         }
         HWND owner = nullptr;
-        if(parent() != nullptr){
+        if(parent() != nullptr and not IsMainThread()){
             owner = WinUtils::GetHandleFrom(parent()->sdl_window());
         }
         if(FAILED(native_impl->dialog->Show(owner))){
@@ -322,6 +366,9 @@ namespace Btk{
         //Parse result
         _result.clear();
         native_impl->collect_result(_result);
+        if(_result.empty()){
+            return Rejected;
+        }
         return Accepted;
         #endif
     }

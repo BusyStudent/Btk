@@ -1,6 +1,6 @@
 #include "../build.hpp"
 
-#include <Btk/impl/window.hpp>
+#include <Btk/detail/window.hpp>
 #include <Btk/gl/opengl.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
@@ -15,8 +15,15 @@
 
 #include "../libs/nanovg.h"
 
-namespace{
+#ifndef BTK_USE_GLES2
+    #define BTK_USE_GLES2 0
     #define NANOVG_GLES3_IMPLEMENTATION
+#else
+    #define BTK_USE_GLES2 1
+    #define NANOVG_GLES2_IMPLEMENTATION
+#endif
+
+namespace{
     #include "../libs/nanovg_gl.h"
 }
 
@@ -26,6 +33,9 @@ namespace{
     Btk::GL::GLGuard _glguard(this);
 //Reset to prev context
 #define BTK_GL_END() 
+
+#define BTK_GL_BEGIN_SCOPE() {BTK_GL_BEGIN()
+#define BTK_GL_END_SCOPE() BTK_GL_END()}
 
 #ifndef NDEBUG
 
@@ -71,43 +81,69 @@ namespace Btk::GL{
 }
 
 namespace{
-    struct SDLGL:public Btk::GLAdapter{
-        void *create_context(void *win_handle){
-            Btk::GL::LoadLibaray();
-            void *ctxt = SDL_GL_CreateContext(static_cast<SDL_Window*>(win_handle));
-            if(ctxt != nullptr){
-                SDL_GL_SetSwapInterval(0);
-            }
-            return ctxt;
-        }
-        void  destroy_context(void *gl_handle){
-            SDL_GL_DeleteContext(gl_handle);
-        }
+    struct BTKHIDDEN SDLGL:public Btk::GLAdapter{
         //Env
-        bool  make_current(void *win_handle,void *gl_handle){
-            return SDL_GL_MakeCurrent(static_cast<SDL_Window*>(win_handle),gl_handle) == 0;
+        ~SDLGL(){
+            SDL_GL_DeleteContext(_context);
         }
-        void  *get_current_context(){
-            return SDL_GL_GetCurrentContext();
+
+        void   initialize(void *win_handle) override{
+            Btk::GL::LoadLibaray();
+            _window = static_cast<SDL_Window*>(win_handle);
+            _context = SDL_GL_CreateContext(_window);
+
+            if(_context == nullptr){
+                Btk::throwSDLError();
+            }
         }
-        void  *get_current_window(){
-            return SDL_GL_GetCurrentWindow();
+        void   begin_context() override{
+            _cur_ctxt = SDL_GL_GetCurrentContext();
+            if(_cur_ctxt == _context){
+                //We donnot setup The context
+                _cur_win = nullptr;
+            }
+            else{
+                _cur_win = SDL_GL_GetCurrentWindow();
+                //Setup
+                SDL_GL_MakeCurrent(_window,_context);
+            }
         }
-        void  *get_proc(const char *name){
+        void  end_context() override{
+            //We need to reset to prev
+            if(_cur_win != nullptr){
+                SDL_GL_MakeCurrent(_cur_win,_cur_ctxt);
+                _cur_win = nullptr;
+            }
+        }
+        void   make_current() override{
+            if(SDL_GL_GetCurrentContext() == _context){
+                return;
+            }
+            SDL_GL_MakeCurrent(_window,_context);
+        }
+
+        void  *get_proc(const char *name) override{
             return SDL_GL_GetProcAddress(name);
         }
-        void   get_drawable(void *win_handle,int *w,int *h){
-            return SDL_GL_GetDrawableSize(static_cast<SDL_Window*>(win_handle),w,h);
+        void   get_drawable(int *w,int *h) override{
+            return SDL_GL_GetDrawableSize(_window,w,h);
         }
-        void   get_window_size(void *win_handle,int *w,int *h){
-            return SDL_GetWindowSize(static_cast<SDL_Window*>(win_handle),w,h);
+        void   get_window_size(int *w,int *h) override{
+            return SDL_GetWindowSize(_window,w,h);
         }
-        bool   has_extension(const char *extname){
+        bool   has_extension(const char *extname) override{
             return SDL_GL_ExtensionSupported(extname);
         }
-        void   swap_window(void *win_handle){
-            return SDL_GL_SwapWindow(static_cast<SDL_Window*>(win_handle));
+        void   swap_buffer() override{
+            return SDL_GL_SwapWindow(_window);
         }
+
+        //OpenGL Window and Context
+        SDL_Window    *_window = nullptr;
+        SDL_GLContext  _context = nullptr;
+        //Var for enter_context and leave_context
+        SDL_Window    *_cur_win = nullptr;
+        SDL_GLContext  _cur_ctxt = nullptr;
     };
 }
 
@@ -495,14 +531,14 @@ namespace Btk{
 namespace Btk{
     GLDevice::~GLDevice(){
         //Delete OpenGL context
-        BTK_GL_BEGIN();
+        BTK_GL_BEGIN_SCOPE();
         //Clear target stack
         while(not targets_stack.empty()){
             targets_stack.top().destroy(*this);
             targets_stack.pop();
         }
-        adapter->destroy_context(_context);
-        BTK_GL_END();
+        BTK_GL_END_SCOPE();
+        
 
         if(owned_adapter){
             delete adapter;
@@ -510,14 +546,9 @@ namespace Btk{
     }
     GLDevice::GLDevice(void *win_handle,GLAdapter *_adapter,bool owned){
         //Create context
+        owned_adapter = owned;
         adapter = _adapter;
-        _window = win_handle;
-        _context = adapter->create_context(win_handle);
-        if(_context == nullptr){
-            throwRuntimeError("Could not create gl context");
-        }
-        //Configure
-        // SDL_GL_SetSwapInterval(1);
+        adapter->initialize(win_handle);
 
         //Load proc
         GLES3Functions::load_proc([this](const char *name){
@@ -575,37 +606,19 @@ namespace Btk{
                 BTK_LOGINFO("[GLDevice]Succeed to disable msaa");
             }
         }
-        owned_adapter = owned;
     }
     GLDevice::GLDevice(SDL_Window *win):
         GLDevice(win,new SDLGL(),true){
     }
     //GL Context
     void GLDevice::make_current(){
-        //Already set up the context
-        if(adapter->get_current_context() == _context){
-            return;
-        }
-        adapter->make_current(_window,_context);
+        adapter->make_current();
     }
     void GLDevice::gl_begin(){
-        _cur_ctxt = adapter->get_current_context();
-        if(_cur_ctxt == _context){
-            //We donnot setup The context
-            _cur_win = nullptr;
-        }
-        else{
-            _cur_win = adapter->get_current_window();
-            //Setup
-            adapter->make_current(_window,_context);
-        }
+        adapter->begin_context();
     }
     void GLDevice::gl_end(){
-        //We need to reset to prev
-        if(_cur_win != nullptr){
-            adapter->make_current(_cur_win,_cur_ctxt);
-            _cur_win = nullptr;
-        }
+        adapter->end_context();
     }
     void GLDevice::gl_enter(Context ctxt){
         gl_begin();
@@ -670,12 +683,20 @@ namespace Btk{
             BTK_LOGINFO("Enable Stencil on create context");
             flags |= NVG_STENCIL_STROKES;
         }
+        #if BTK_USE_GLES2
+        return nvgCreateGLES2(flags,this);
+        #else
         return nvgCreateGLES3(flags,this);
+        #endif
         BTK_GL_END();
     }
     void GLDevice::destroy_context(Context ctxt){
         BTK_GL_BEGIN();
-        nvgDeleteGLES3(ctxt);
+        #if BTK_USE_GLES2
+        return nvgDeleteGLES2(ctxt);        
+        #else
+        return nvgDeleteGLES3(ctxt);
+        #endif
         BTK_GL_END();
     }
     //Check context
@@ -698,7 +719,6 @@ namespace Btk{
         bool val = true;
         if(logical_size != nullptr){
             adapter->get_window_size(
-                _window,
                 &(logical_size->w),
                 &(logical_size->h)
             );
@@ -706,7 +726,6 @@ namespace Btk{
         if(physical_size != nullptr){
             BTK_GL_BEGIN();
             adapter->get_drawable(
-                _window,
                 &(physical_size->w),
                 &(physical_size->h)
             );
@@ -716,7 +735,7 @@ namespace Btk{
     }
     //Buffer
     void GLDevice::swap_buffer(){
-        adapter->swap_window(_window);
+        adapter->swap_buffer();
     }
     void GLDevice::clear_buffer(Color c){
         BTK_GL_BEGIN();
@@ -867,7 +886,7 @@ namespace Btk{
         BTK_GL_BEGIN();
         Rect rect = {0,0,0,0};
         if(r == nullptr){
-            adapter->get_drawable(_window,&(rect.w),&(rect.h));
+            adapter->get_drawable(&(rect.w),&(rect.h));
         }
         else{
             rect = *r;
@@ -886,7 +905,11 @@ namespace Btk{
         if(not owned){
             f |= TextureFlags(NVG_IMAGE_NODELETE);
         }
+        #if BTK_USE_GLES2
+        return nvglCreateImageFromHandleGLES2(ctxt,tex,w,h,int(f));
+        #else
         return nvglCreateImageFromHandleGLES3(ctxt,tex,w,h,int(f));
+        #endif
     }
     TextureID GLDevice::clone_texture(Context nvg_ctxt,TextureID texture_id){
         BTK_GL_BEGIN();
@@ -1042,6 +1065,8 @@ namespace Btk{
             //Code from nanovg_gl.h
         #ifdef NANOVG_GLES2
             // Check for non-power of 2.
+            int w = tex->width;
+            int h = tex->height;
             if (glnvg__nearestPow2(w) != (unsigned int)w || glnvg__nearestPow2(h) != (unsigned int)h) {
                 // No repeat
                 if ((imageFlags & NVG_IMAGE_REPEATX) != 0 || (imageFlags & NVG_IMAGE_REPEATY) != 0) {

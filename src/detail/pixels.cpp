@@ -17,9 +17,9 @@
 
 #include "../build.hpp"
 
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/utils.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/utils.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
@@ -189,6 +189,18 @@ namespace Btk{
         PixBuf buf(t.w,t.h,surf->format->format);
         SDL_BlitSurface(buf.surf,&t,buf.surf,nullptr);
         return buf;
+    }
+    PixBuf PixBufRef::blur(int r) const{
+        if(r < 1){
+            return {};
+        }
+        if(empty()){
+            return {};
+        }
+        auto buf = convert(SDL_PIXELFORMAT_RGBA32);
+        //Do Gaussian blur algo
+        BTK_FIXME("Need Impl");
+        return buf;        
     }
 
     void PixBufRef::bilt(PixBufRef buf,const Rect *src,Rect *dst){
@@ -361,6 +373,8 @@ namespace Btk{
 //XPM
 #include <unordered_map>
 #include <string_view>
+#include <algorithm>
+#include <cctype>
 namespace Btk{
     // #ifdef BTK_HAS_SDLIMG
     #ifdef BTK_HAS_SDLIMG
@@ -394,7 +408,6 @@ namespace Btk{
             {"green",Color(0,255,0)},
             {"blue",Color(0,0,255)},
         };
-        colormap.rehash(colormap.size() + colors_count);
 
         //For array add all colors
         size_t max_line = colors_count + h;
@@ -419,21 +432,16 @@ namespace Btk{
                     continue;
                 }
                 //Not founded,Try ignore the case
-                for(auto &par:colormap){
-                    if(par.first.length() == colorinfo.length()){
-                        //Same length,Compare ignore the case
-                        int ret = strncasecmp(
-                            par.first.data(),
-                            colorinfo.data(),
-                            colorinfo.length()
-                        );
-                        if(ret == 0){
-                            //Founded
-                            color = par.second;
-                            colormap.insert(std::make_pair(view,color));
-                            continue;
-                        }
-                    }
+                std::string icase(colorinfo);
+                for(auto &c:icase){
+                    c = std::tolower(c);
+                }
+                iter = colormap.find(icase);
+                if(iter != colormap.end()){
+                    //founded
+                    color = iter->second;
+                    colormap.insert(std::make_pair(view,color));
+                    continue;
                 }
                 //Not founded
                 throwRuntimeError("Bad xpm");

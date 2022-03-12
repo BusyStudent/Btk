@@ -37,6 +37,7 @@ namespace Btk{
         bool transparent() const noexcept{
             return a == 0;
         }
+
     };
     /**
      * @brief Color in opengl
@@ -78,6 +79,38 @@ namespace Btk{
             this->s = s;
             this->v = v;
             this->a = a;
+        }
+        /**
+         * @brief Construct A HSVColor from color
+         * 
+         */
+        HSVColor(Color c){
+            float r = c.r / 255.0f;
+            float g = c.g / 255.0f;
+            float b = c.b / 255.0f;
+            float max = Btk::max(r,Btk::max(g,b));
+            float min = Btk::min(r,Btk::min(g,b));
+            float delta = max - min;
+            if(max == min){
+                h = 0;
+            }
+            else if(max == r){
+                h = 60 * (g - b) / delta;
+            }
+            else if(max == g){
+                h = 60 * (b - r) / delta + 120;
+            }
+            else if(max == b){
+                h = 60 * (r - g) / delta + 240;
+            }
+            if(max == 0){
+                s = 0;
+            }
+            else{
+                s = delta / max;
+            }
+            v = max;
+            a = c.a;
         }
         float h;
         float s;
@@ -171,6 +204,7 @@ namespace Btk{
              */
             PixBuf convert(Uint32 fmt) const;
             PixBuf resize(int w,int h) const;
+            PixBuf blur(int radius) const;
             PixBuf zoom(double w_factor,double h_factor) const;
             /**
              * @brief Copy a area into a new buf
@@ -195,6 +229,7 @@ namespace Btk{
             void bilt(PixBufRef buf,const Rect *src,Rect *dst);
         protected:
             SDL_Surface *surf;
+        friend class PixBuf;
     };
     class BTKAPI PixBuf:public PixBufRef{
         public:
@@ -203,6 +238,17 @@ namespace Btk{
             PixBuf(int w,int h,Uint32 format);//Create a buffer
             //Simple take ref
             PixBuf(const PixBuf &buf){
+                surf = buf.surf;
+                if(surf != nullptr){
+                    ++(surf->refcount);
+                }
+            }
+            /**
+             * @brief Construct a new Pix Buf object
+             * 
+             * @param buf 
+             */
+            PixBuf(PixBufRef buf){
                 surf = buf.surf;
                 if(surf != nullptr){
                     ++(surf->refcount);

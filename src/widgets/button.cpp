@@ -1,14 +1,18 @@
 #include "../build.hpp"
 
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/utils.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/window.hpp>
 #include <Btk/render.hpp>
 #include <Btk/button.hpp>
 #include <Btk/themes.hpp>
 #include <Btk/event.hpp>
 #include <Btk/font.hpp>
+#include <Btk/Btk.hpp>
 namespace Btk{
+    AbstractButton::AbstractButton(){
+
+    }
     bool AbstractButton::handle(Event &event){
         //The Widget had already processd it
         if(Widget::handle(event)){
@@ -41,8 +45,34 @@ namespace Btk{
         redraw();
     }
     void AbstractButton::set_parent(Widget *w){
+        if(w == nullptr){
+            //Clear texture
+            bicon_tex.clear();
+        }
         Widget::set_parent(w);
-        ptsize = theme().font.ptsize();
+    }
+    void AbstractButton::set_text(u8string_view text){
+        btext = text;
+        redraw();
+    }
+    void AbstractButton::set_icon(PixBufRef icon){
+        bicon = icon;
+
+        //Create texture
+        if(window() != nullptr and IsMainThread()){
+            bicon_tex = renderer()->create_from(bicon);
+        }
+        else{
+            need_crt_tex = true;
+        }
+
+        redraw();
+    }
+    void AbstractButton::crt_tex(){
+        if(need_crt_tex){
+            bicon_tex = renderer()->create_from(bicon);
+            need_crt_tex = false;
+        }
     }
 };
 namespace Btk{
@@ -62,10 +92,14 @@ namespace Btk{
         //Fist draw backgroud
         //Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 1}
         //It makes button look better
-        FRect fixed_rect = {rect.x + 1,rect.y + 1,rect.w - 1,rect.h - 1};
+        FRect fixed_rect = rectangle<float>();
         Color bg;//< Background color
         Color boarder;//< Boarder color
 
+        fixed_rect.x += 1;
+        fixed_rect.y += 1;
+        fixed_rect.w -= 1;
+        fixed_rect.h -= 1;
         
         if(is_pressed){
             bg = theme().active.highlight;
@@ -121,11 +155,12 @@ namespace Btk{
             render.restore();
         }
         //draw the boarder
-        render.begin_path();
-        render.stroke_color(boarder);
-        render.rounded_rect(fixed_rect,theme().button_rad);
-        render.stroke();
-        
+        if(draw_border and not is_entered){
+            render.draw_rounded_rect(fixed_rect,theme().button_rad,boarder);
+        }
+        else if(draw_border_on_hover and is_entered){
+            render.draw_rounded_rect(fixed_rect,theme().button_rad,boarder);
+        }
     }
     bool Button::handle_mouse(MouseEvent &event){
         if(event.is_pressed() and event.button.is_left()){
@@ -152,10 +187,6 @@ namespace Btk{
         is_pressed = false;
         redraw();
     }
-    void Button::set_text(u8string_view text){
-        btext = text;
-        redraw();
-    }
 }
 //RadioButton
 namespace Btk{
@@ -167,13 +198,14 @@ namespace Btk{
     void RadioButton::draw(Renderer &render){
         //Draw text
         if(not btext.empty()){
-            render.begin_path();
-            render.use_font(theme().font);
-            // render.text_size(theme().font_size());
+            render.use_font(font());
             render.text_align(TextAlign::Middle);
-            render.fill_color(theme().active.text);
-            render.text(text_center,btext);
-            render.fill();
+            render.draw_text(
+                text_center.x,
+                text_center.y,
+                btext,
+                theme().active.text
+            );
         }
         
         Color circle_c;
@@ -243,7 +275,7 @@ namespace Btk{
                 checked = ! checked;
                 redraw();
             }
-            signal_clicked();
+            signal_clicked().emit();
         }
         return event.accept();
     }

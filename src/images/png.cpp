@@ -1,7 +1,7 @@
 #include "../build.hpp"
 
-#include <Btk/impl/loadso.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/loadso.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/rwops.hpp>
 #include <csetjmp>
 #include <png.h>

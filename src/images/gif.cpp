@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL_rwops.h>
 #include <SDL2/SDL_timer.h>
-#include <Btk/impl/codec.hpp>
+#include <Btk/detail/codec.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/imageview.hpp>
 #include <Btk/render.hpp>
@@ -29,6 +29,9 @@ namespace{
 
     inline GifFileType *get_gif(void *ptr){
         return static_cast<GifFileType*>(ptr);
+    }
+    static SDL_Palette *create_palette_from(){
+        
     }
     //Decoder
     struct BTKHIDDEN GiflibDecoder:public ImageDecoder{

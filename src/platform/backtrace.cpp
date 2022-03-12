@@ -5,50 +5,33 @@
 #include <string_view>
 #include <string>
 
-#ifdef __GNUC__
+#if __has_include(<unwind.h>)
 //We could use unwind
-#define BTK_HAS_UNWIND
 #include <unwind.h>
+#include <vector>
 namespace BtkUnwind{
     //...
-    struct Input{
-        void **array;
-        int max_size;
-        int cur;//< cur frame
-    };
-    inline int GetCallStack(void **array,int max_size){
+    using Input = std::vector<void*>;
+    inline auto GetCallStack() -> Input{
         //Backtrace function
         auto fn = [](struct _Unwind_Context *uc, void *p) -> _Unwind_Reason_Code{
             //...
             Input *input = static_cast<Input*>(p);
-
-            if(input->cur >= input->max_size){
-                return _URC_NO_REASON;
+            auto pc = _Unwind_GetIP(uc);
+            if(pc == 0){
+                return _URC_END_OF_STACK;
             }
-            
-            (input->cur) ++;
-            auto ptr = _Unwind_GetIP(uc);
-            input->array[input->cur] = reinterpret_cast<void*>(ptr);
+            input->push_back(reinterpret_cast<void*>(pc));
             return _URC_NO_REASON;
         };
-        Input input = {
-            array,
-            max_size,
-            -1
-        };
+        Input input;
         _Unwind_Backtrace(fn,&input);
-        return input.cur;
+        //Remove self
+        input.erase(input.begin());
+        return input;
     }
-    inline int backtrace(void **array,int max_size){
-        return GetCallStack(array,max_size);
-    }
-};
+}
 #endif
-//Use addr2line Get function name
-namespace BtkUnwind{
-    
-};
-
 
 //GNU Linux impl
 #ifdef __gnu_linux__
@@ -164,6 +147,176 @@ extern "C" void _Btk_Backtrace(){
     if(not walker.ShowCallstack()){
         fprintf(stderr,"  Fail to show backtrace\n");
     }
+}
+
+#elif BTK_MINGW
+
+#include <Btk/platform/win32.hpp>
+#include <dbgeng.h>
+#include <cxxabi.h>
+
+__CRT_UUID_DECL(IDebugClient,0x27fe5639,0x8407,0x4f47,0x83,0x64,0xee,0x11,0x8f,0xb0,0x8a,0xc8)
+__CRT_UUID_DECL(IDebugControl,0x5182e668,0x105e,0x416e,0xad,0x92,0x24,0xef,0x80,0x04,0x24,0xba)
+__CRT_UUID_DECL(IDebugSymbols,0x8c31e98c,0x983a,0x48a5,0x90,0x16,0x6f,0xe5,0xd6,0x67,0xa9,0x50)
+
+#define C_RED FOREGROUND_RED
+#define C_GREEN FOREGROUND_GREEN
+#define C_BLUE FOREGROUND_BLUE
+
+#define C_YELLOW (C_GREEN | C_RED)
+#define C_PURPLE (C_RED | C_BLUE)
+#define C_TBLUE  (C_GREEN | C_BLUE)
+#define C_WHITE (C_RED | C_GREEN | C_BLUE)
+
+#define SET_COLOR(C) \
+    SetConsoleTextAttribute( \
+        GetStdHandle(STD_ERROR_HANDLE), \
+        C \
+    );
+
+
+static HMODULE dbg_eng = nullptr;
+static decltype(DebugCreate) *dbg_crt;
+
+static void init_dbg_help(){
+    if(dbg_crt == nullptr){
+        dbg_eng = LoadLibraryA("DBGENG.dll");
+        if(dbg_eng == nullptr){
+            std::abort();
+        }
+        dbg_crt = (decltype(DebugCreate)*)GetProcAddress(dbg_eng,"DebugCreate");
+    }
+}
+
+extern "C" void _Btk_Backtrace(){
+    auto callstack = BtkUnwind::GetCallStack();
+
+    // DWORD n = RtlCaptureStackBackTrace(
+    //     0,
+    //     callstack.size(),
+    //     callstack.data(),
+    //     0
+    // );
+    // BTK_ASSERT(n == callstack.size());
+
+    init_dbg_help();
+    //create debug interface
+    Btk::Win32::ComInstance<IDebugClient> client;
+    Btk::Win32::ComInstance<IDebugControl> control;
+    
+    dbg_crt(__uuidof(IDebugClient),reinterpret_cast<void**>(&client));
+    client->QueryInterface(__uuidof(IDebugControl),reinterpret_cast<void**>(&control));
+    //attach
+    client->AttachProcess(
+        0,
+        GetCurrentProcessId(),
+        DEBUG_ATTACH_NONINVASIVE | DEBUG_ATTACH_NONINVASIVE_NO_SUSPEND
+    );
+    control->WaitForEvent(DEBUG_WAIT_DEFAULT,INFINITE);
+    //Get symbols
+    Btk::Win32::ComInstance<IDebugSymbols> symbols;
+    client->QueryInterface(__uuidof(IDebugSymbols),reinterpret_cast<void**>(&symbols));
+    //Done
+
+    //Print Stack
+    bool has_fn_line;
+    char  buf[256];
+    char  file[256];
+
+    ULONG size;
+    ULONG  line;
+
+    int naddr = callstack.size();
+
+    SET_COLOR(C_RED);
+    fputs("--Backtrace Begin--\n",stderr);
+    fflush(stderr);
+
+    for(auto addr:callstack){
+        //try get name
+        if(symbols->GetNameByOffset(
+            reinterpret_cast<ULONG64>(addr),
+            buf,
+            sizeof(buf),
+            &size,
+            0
+        ) == S_OK){
+            buf[size] = '\0';
+        }
+        else{
+            std::strcpy(buf,"???");
+        }
+        //try find !
+        char *n_start = std::strchr(buf,'!');
+        if(n_start != nullptr){
+            *n_start = '_';
+            //To __Znxxx
+            //Begin demangle
+            char *ret_name = abi::__cxa_demangle(n_start,nullptr,nullptr,nullptr);
+            if(ret_name != nullptr){
+                //has it name
+                strcpy(n_start + 1,ret_name);
+                std::free(ret_name);
+            }
+            *n_start = '!';
+        }
+        else{
+            //didnot has function name
+            strcat(buf,"!Unknown");
+        }
+        //Try get source file
+        if(symbols->GetLineByOffset(
+            reinterpret_cast<ULONG64>(addr),
+            &line,
+            file,
+            sizeof(file),
+            &size,
+            0
+        ) == S_OK){
+            file[size] = '\0';
+            has_fn_line = true;
+            // fprintf(stderr,"[%d] %s at %s:%d\n",naddr,buf,file,line);
+        }
+        else{
+            has_fn_line = false;
+            // fprintf(stderr,"[%d] %s\n",naddr,buf);
+        }
+
+        SET_COLOR(C_WHITE);
+        fputc('[',stderr);
+        fflush(stderr);
+        
+        SET_COLOR(C_YELLOW);
+        //Print number
+        fprintf(stderr,"%d",naddr);
+        fflush(stderr);
+
+        SET_COLOR(C_WHITE);
+        fputc(']',stderr);
+        fflush(stderr);
+
+        //Print fn name
+        fprintf(stderr," %s",buf);
+        fflush(stderr);
+
+        if(has_fn_line){
+            fprintf(stderr," at %s:",file);
+            fflush(stderr);
+            SET_COLOR(C_TBLUE);
+            fprintf(stderr,"%d",line);
+            fflush(stderr);
+        }
+
+
+        fputc('\n',stderr);
+        naddr--;
+    }
+
+    SET_COLOR(C_RED);
+    fputs("--Backtrace End--\n",stderr);
+    fflush(stderr);
+
+    SET_COLOR(C_WHITE);
 }
 
 #else

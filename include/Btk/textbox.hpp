@@ -51,6 +51,7 @@ namespace Btk{
             bool handle_mouse(MouseEvent  &) override;
             bool handle_keyboard(KeyEvent &) override;
             bool handle_textinput(TextInputEvent&) override;
+            bool handle_textediting(TextEditingEvent&) override;
             //Add string in where the cur_text point
             void add_string(u8string_view);
             //Font  tb_font;//Text Font
@@ -63,6 +64,7 @@ namespace Btk{
             bool has_focus = false;//Flag of has focus
             bool is_dragging = false;//< Flag of drag
             bool show_line = true;//<Flag of show the edit line
+            bool editing = false;
 
             std::u16string::iterator cur_txt;//Current text
             //It will be point from tb_text.begin() - 1
@@ -87,11 +89,12 @@ namespace Btk{
             bool handle_keyboard(KeyEvent &) override;
 
             struct _Internal;
-        private:
+        protected:
             _Internal *context;
         protected:
             void editor_init(bool single_lines);
             void editor_click(float x,float y);
+            void editor_draw(float x,float y,float w,float h);
 
             u8string editor_cur_insert();
             u8string editor_cur_delete();
@@ -102,9 +105,12 @@ namespace Btk{
         friend struct _Internal;
     };
     class BTKAPI TextEdit:public AbstractEditor{
+        public:
+            void draw(Renderer &) override;
         private:
             u8string cur_text;
     };
+    #endif
     /**
      * @brief Just edit single line
      * 
@@ -117,12 +123,36 @@ namespace Btk{
             
             void draw(Renderer &) override;
             
-            bool handle(Event &) override;
-            bool handle_drag(DragEvent &) override;
-            bool handle_mouse(MouseEvent &) override;
-            bool handle_keyboard(KeyEvent &) override;
-            bool handle_textinput(TextInputEvent&) override;
+            // bool handle(Event &) override;
+            // bool handle_drag(DragEvent &) override;
+            // bool handle_mouse(MouseEvent &) override;
+            // bool handle_keyboard(KeyEvent &) override;
+            // bool handle_textinput(TextInputEvent&) override;
+
+            void set_rect(const Rect &r) override;
         private:
+            //Utils
+            auto get_pos_from(const Point &p) -> size_t;
+            auto get_text(size_t beg,size_t end) -> u8string_view;
+            //Area
+            //(0,0)----------X>
+            //|  |  LimitArea|
+            //|  |           |
+            //Y----------------
+            FRect text_limit_area;
+            FRect text_area;
+            FPoint text_pos;
+            //Text Iterators
+            //
+            //  H e l l o W o r l d
+            //0 1 2 3 4 5 6 7 8 9 10
+            //Section
+            size_t sel_beg;
+            size_t sel_end;
+            bool has_sel;
+            //Cursor
+            size_t cur_pos;
+
             Color    text_color;
             Color    background_color;
             Color    boarder_color;
@@ -131,14 +161,10 @@ namespace Btk{
             Align    align;//< Text align
             bool     clear_btn = false;//Has clear button?
             //select
-            int sel_begin;
-            int sel_end;
-
     };
     class BTKAPI TextBroser:public Widget{
         
     };
-    #endif
 };
 
 

@@ -1,4 +1,5 @@
 #include <Btk/window.hpp>
+#include <Btk/render.hpp>
 #include <Btk/button.hpp>
 #include <Btk/canvas.hpp>
 

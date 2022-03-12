@@ -1,7 +1,4 @@
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_loadso.h>
-#include <SDL2/SDL_thread.h>
-#include <SDL2/SDL_filesystem.h>
 #include <unordered_map>
 #include <algorithm>
 #include <cstdlib>
@@ -12,11 +9,11 @@
 #include "build.hpp"
 
 #include <Btk/platform/platform.hpp>
-#include <Btk/impl/window.hpp>
-#include <Btk/impl/thread.hpp>
-#include <Btk/impl/scope.hpp>
-#include <Btk/impl/utils.hpp>
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/window.hpp>
+#include <Btk/detail/thread.hpp>
+#include <Btk/detail/scope.hpp>
+#include <Btk/detail/utils.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/gl/opengl.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/module.hpp>
@@ -94,6 +91,8 @@ namespace Btk{
         for(auto &mod:modules_list){
             mod.unload();
         }
+        //Final Quit System
+        System::Quit();
     }
     //register a exit handler
     inline
@@ -113,7 +112,7 @@ namespace Btk{
 //Event translate
 namespace{
     //Btk Translate Event
-    auto tr_event(const SDL_MouseMotionEvent &event) -> Btk::MotionEvent{
+    auto tr_event(const SDL_MouseMotionEvent &event) noexcept -> Btk::MotionEvent{
         Btk::MotionEvent ev;
 
         ev.x = event.x;
@@ -123,7 +122,7 @@ namespace{
 
         return ev;
     };
-    auto tr_event(const SDL_MouseWheelEvent &event) -> Btk::WheelEvent{
+    auto tr_event(const SDL_MouseWheelEvent &event) noexcept -> Btk::WheelEvent{
         Sint64 x,y;
         if(event.direction == SDL_MOUSEWHEEL_FLIPPED){
             x = -event.x;
@@ -135,7 +134,7 @@ namespace{
         }
         return {event.which,x,y};
     }
-    auto tr_event(const SDL_MouseButtonEvent &event) -> Btk::MouseEvent{
+    auto tr_event(const SDL_MouseButtonEvent &event) noexcept -> Btk::MouseEvent{
         Btk::MouseEvent ev;
 
         if(event.state == SDL_PRESSED){
@@ -151,7 +150,7 @@ namespace{
         ev.button.value = event.button;
         return ev;
     }
-    auto tr_event(const SDL_KeyboardEvent &event) -> Btk::KeyEvent{
+    auto tr_event(const SDL_KeyboardEvent &event) noexcept -> Btk::KeyEvent{
         Btk::KeyEvent ev;
         if(event.state == SDL_PRESSED){
             ev.state = Btk::KeyEvent::Pressed;
@@ -167,7 +166,7 @@ namespace{
         ev.repeat = event.repeat;
         return ev;
     }
-    auto tr_event(const SDL_DropEvent &event) -> Btk::DropEvent{
+    auto tr_event(const SDL_DropEvent &event) noexcept -> Btk::DropEvent{
         Btk::Event::Type type;
         Btk::DropEvent ev(Btk::Event::None);
 
@@ -195,7 +194,7 @@ namespace{
         }
         return ev;
     }
-    auto tr_event(const SDL_TextEditingEvent &t) -> Btk::TextEditingEvent{
+    auto tr_event(const SDL_TextEditingEvent &t) noexcept -> Btk::TextEditingEvent{
         Btk::TextEditingEvent event;
 
         event.text = t.text;
@@ -270,6 +269,19 @@ namespace Btk{
             return false;
         }
     }
+    bool WaitEvent(){
+        try{
+            SDL_Event event;
+            while(SDL_WaitEvent(&event)){
+                Instance().dispatch_event(event);
+            }
+            Instance().on_idle();
+            return true;
+        }
+        catch(int){
+            return false;
+        }
+    }
     System::System(){
         defer_call_ev_id = SDL_RegisterEvents(2);
         if(defer_call_ev_id == (Uint32)-1){
@@ -281,28 +293,6 @@ namespace Btk{
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
             regiser_eventcb(redraw_win_ev_id,redraw_win_cb,nullptr);
         }
-        //Builtin BMP Adapter
-        ImageAdapter adapter;
-        adapter.name = "bmp";
-        adapter.fn_load = [](SDL_RWops *rwops){
-            return SDL_LoadBMP_RW(rwops,SDL_FALSE);
-        };
-        adapter.fn_save = [](SDL_RWops *rwops,SDL_Surface *s,int) -> bool{
-            return SDL_SaveBMP_RW(s,rwops,SDL_FALSE) == 0;
-        };
-        adapter.fn_is = [](SDL_RWops *rwops) -> bool{
-            //Check magic is bm
-            char magic[2] = {0};
-            //Save cur
-            auto cur = SDL_RWtell(rwops);
-            //Read magic
-            SDL_RWread(rwops,magic,sizeof(magic),1);
-            //Reset to the position
-            SDL_RWseek(rwops,cur,RW_SEEK_SET);
-            //Check magic
-            return magic[0] == 'B' and magic[1] == 'M';
-        };
-        RegisterImageAdapter(adapter);
 
         //First stop text input
         SDL_StopTextInput();
@@ -347,7 +337,6 @@ namespace Btk{
             }
             #endif
 
-            AtExit(System::Quit);
         }
         return 1;
     }
@@ -576,7 +565,7 @@ namespace Btk{
         if(signal_quit.empty()){
             //Deafult close all the window and quit
             BTK_LOGINFO("[System::Core]Try to quit");
-            std::lock_guard<std::recursive_mutex> locker(map_mtx);
+            std::lock_guard locker(map_mtx);
             for(auto i = wins_map.begin(); i != wins_map.end();){
                 //Try to close window
                 if(i->second->on_close()){
@@ -603,7 +592,7 @@ namespace Btk{
         if(impl == nullptr){
             return;
         }
-        std::lock_guard<std::recursive_mutex> locker(map_mtx);
+        std::lock_guard locker(map_mtx);
         Uint32 winid = SDL_GetWindowID(impl->win);
         //GetWindowId
         wins_map.insert(std::make_pair(winid,impl));
@@ -612,7 +601,7 @@ namespace Btk{
         if(impl == nullptr){
             return;
         }
-        std::lock_guard<std::recursive_mutex> locker(map_mtx);
+        std::lock_guard locker(map_mtx);
         Uint32 winid = SDL_GetWindowID(impl->win);
         
         auto iter = wins_map.find(winid);

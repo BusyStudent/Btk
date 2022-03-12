@@ -1,5 +1,5 @@
 
-#include <Btk/impl/core.hpp>
+#include <Btk/detail/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/platform.hpp>
 #include <Btk/Btk.hpp>
