@@ -17,14 +17,19 @@
 #include "../font.hpp"
 #include "../font.hpp"
 #include "atomic.hpp"
+
+//Hint for Window
+#define BTK_WINDOWHINT_GLLOADER "btk_gl_loader"
+#define BTK_WINDOWHINT_VKLOADER "btk_vk_loader"
+
 namespace Btk{
     class Window;
     class Event;
     //Impl for Window
     class Renderer;
+    class MenuBar;
     class Widget;
     class Theme;
-    class Menu;
     //Enum
     enum class WindowFlags:Uint32;
     /**
@@ -89,13 +94,20 @@ namespace Btk{
             void set_modal_for(WindowImpl *parent){
                 if(parent != nullptr){
                     SDL_SetWindowModalFor(win,parent->win);
-                    modal = true;
+                    set_modal(true);
                 }
                 else{
                     SDL_SetWindowModalFor(win,nullptr);
-                    modal = false;
+                    set_modal(false);
                 }
             }
+            /**
+             * @brief Set the modal flags
+             * 
+             * @param v 
+             */
+            void set_modal(bool v = true);
+            void query_dpi(float *ddpi,float *hdpi,float *vdpi);
         public:
             //Process Event
             bool handle_drop(DropEvent     &) override;
@@ -103,9 +115,10 @@ namespace Btk{
             bool handle_motion(MotionEvent &) override;
         private:
             SDL_Window *win = nullptr;
+            //The renderer
+            Constructable<Renderer> render;
             //Render's device
             RendererDevice *_device = nullptr;
-            Renderer    render;
             //Signals
             Signal<void()> sig_leave;//mouse leave
             Signal<void()> sig_enter;//mouse enter
@@ -113,6 +126,8 @@ namespace Btk{
             Signal<void(u8string_view)> sig_dropfile;//DropFile
             Signal<void(int new_w,int new_h)> sig_resize;//WindowResize
             Signal<bool(Event &)> sig_event;//Process Unhandled Event
+            Signal<void()> signal_keyboard_take_focus;
+            Signal<void()> signal_keyboard_lost_focus;
             //BackGroud Color
             Color bg_color;
             //Background cursor
@@ -126,12 +141,14 @@ namespace Btk{
             Uint32 last_draw_ticks = 0;
             //FPS limit(0 on unlimited)
             Uint32 fps_limit = 60;
+            //Window flags
+            Uint32 last_win_flags = 0;//< The last window flags
             //The draw callback
             //It will be called at last
             std::list<DrawCallback> draw_cbs;
 
             //Current menu bar
-            Menu *menu_bar = nullptr;
+            MenuBar *menu_bar = nullptr;
 
             bool debug_draw_bounds = false;
             
@@ -145,7 +162,8 @@ namespace Btk{
             bool mouse_pressed = false;
             bool drag_rejected = false;
             bool dragging = false;
-            bool modal = false;
+            //Modal Datas
+            bool modal = false;//< Is the window modal?
         public:
             #ifdef _WIN32
             //Win32 parts

@@ -263,11 +263,17 @@ namespace Btk{
             const T *get() const noexcept{
                 return reinterpret_cast<const T*>(buffer);
             }
+            T *operator &() noexcept{
+                return get();
+            }
             T *operator ->() noexcept{
                 return get();
             }
             T &operator *() noexcept{
                 return *get();
+            }
+            const T *operator &() const noexcept{
+                return get();
             }
             const T *operator ->() const noexcept{
                 return get();

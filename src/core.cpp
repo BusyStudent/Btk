@@ -269,6 +269,19 @@ namespace Btk{
             return false;
         }
     }
+    bool WaitEvent(){
+        try{
+            SDL_Event event;
+            while(SDL_WaitEvent(&event)){
+                Instance().dispatch_event(event);
+            }
+            Instance().on_idle();
+            return true;
+        }
+        catch(int){
+            return false;
+        }
+    }
     System::System(){
         defer_call_ev_id = SDL_RegisterEvents(2);
         if(defer_call_ev_id == (Uint32)-1){

@@ -18,8 +18,6 @@
 #include "../string.hpp"
 #include "../object.hpp"
 
-//Hint for Window
-#define BTK_WINDOWHINT_GLLOADER "btk_gl_loader"
 
 namespace Btk{
     class WindowImpl;
@@ -204,8 +202,13 @@ namespace Btk{
     BTKAPI void Init();
     //Exit the app
     BTKAPI void Exit(int code);
+    
+    [[deprecated("use Btk::GetSystem() instead")]]
     inline System &Instance(){
         return *(System::instance);
+    }
+    inline System *GetSystem(){
+        return System::instance;
     }
     /**
      * @brief Load a image
@@ -245,7 +248,6 @@ namespace Btk{
      * @return BTKAPI* 
      */
     BTKAPI RendererDevice *CreateDevice(SDL_Window *window);
-    BTKAPI WindowImpl     *CreateWindow(SDL_Window *window);
     BTKAPI WindowImpl     *GetWindowFromID(Uint32 windowid);
 };
 

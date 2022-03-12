@@ -6,17 +6,23 @@
 #include "font.hpp"
 #include "defs.hpp"
 namespace Btk{
-    class MouseEvent;
     /**
      * @brief Basic button
      * 
      */
     class BTKAPI AbstractButton:public Widget{
         public:
+            /**
+             * @brief Construct a new Abstract Button object
+             * @note It will init theme here
+             */
+            AbstractButton();
+
             //Process event
             bool handle(Event &) override;
             
             template<class ...T>
+            [[deprecated("Use signal_clicked")]]
             void on_click(T &&...args){
                 clicked.connect(std::forward<T>(args)...);
             }
@@ -41,13 +47,34 @@ namespace Btk{
             // void set_parent(Widget *) override;
             void set_text(u8string_view view);
             void set_icon(PixBufRef     icon);
+
+            //< control draw style
+            void set_draw_border(bool b){
+                draw_border = b;
+                redraw();
+            }
+            void set_draw_border_on_hover(bool b){
+                draw_border_on_hover = b;
+                redraw();
+            }
+
         protected:
             virtual void set_parent(Widget *) override;
             virtual void onenter();
             virtual void onleave();
+            /**
+             * @brief Create the texture for the icon
+             * 
+             */
+            void crt_tex();
+
             bool is_entered = false;//< Is mouse on the button?
             bool is_pressed = false;//< Is mouse pressed the button?
-            float ptsize = 0;//< fontsize
+
+            //For control the button draw style
+            bool draw_border_on_hover = true;//< Draw border when mouse on the button?
+            bool draw_border = true;//< Draw border on normal status?
+            
             //For RadioButton and CheckButton
             bool checked = false;
             bool checkable = true;
@@ -57,6 +84,8 @@ namespace Btk{
             Texture  bicon_tex;//< Button icon's texture
 
             Signal<void()> clicked;
+        private:
+            bool need_crt_tex = false;
     };
     /**
      * @brief A simple pushbutton
@@ -77,6 +106,10 @@ namespace Btk{
             //Texture texture;
             //Font    textfont;
     };
+    /**
+     * @brief RadioButton
+     * 
+     */
     class BTKAPI RadioButton:public AbstractButton{
         public:
             using Widget::set_rect;
@@ -109,6 +142,10 @@ namespace Btk{
              */
             FPoint text_center;
     };
+    /**
+     * @brief CheckButton
+     * 
+     */
     class BTKAPI CheckButton:public AbstractButton{
         public:
             using Widget::set_rect;

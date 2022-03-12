@@ -40,10 +40,12 @@
 //Type
 #ifdef _BTK_CAPI_SOURCE
 typedef const       std::type_info* BtkType;
+typedef struct      SDL_Surface   * BtkPixBuf;
 typedef             Btk::Widget   * BtkWidget;
 typedef             Btk::Window   * BtkWindow;
 #else
 typedef const struct _Btk_typeinfo* BtkType;
+typedef struct       _BtkPixBuf   * BtkPixBuf;
 typedef struct       _BtkWidget   * BtkWidget;
 typedef struct       _BtkWindow   * BtkWindow;
 #endif
@@ -51,6 +53,8 @@ typedef const        char         * BtkString;
 typedef void                     (* BtkCallback)(BtkWidget,void*);
 typedef void                     (* BtkCallback1)(BtkWidget);
 typedef void                     (* BtkCallback0)();
+
+typedef BtkPixBuf BtkBitmap;
 
 #define BTKC_DECLARE_TYPE(TYPE) \
     extern BtkType BTKC_TYPEOF(TYPE)
@@ -144,7 +148,8 @@ BTKC_API void      Btk_SetWindowTitle(BtkWindow win,BtkString title);
 //Button Method
 BTKC_API BtkString Btk_SetButtonText(BtkAbstractButton btn,BtkString txt);
 BTKC_API void      Btk_HookButtonClicked(BtkAbstractButton btn,BtkCallback cb,void *p);
-
+//ImageView
+BTKC_API void      Btk_SetViewImage(BtkImageView view,BtkPixBuf bitmap);
 
 
 BTKC_API_END

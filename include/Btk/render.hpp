@@ -501,14 +501,31 @@ namespace Btk{
             void draw_image(PixBufRef  buf,const FRect *src = nullptr,const FRect *dst = nullptr);
 
             void draw_box(const FRect &r,Color c);
+            void draw_box(float x,float y,float w,float h,Color c){
+                draw_box(FRect(x,y,w,h),c);
+            }
+
             void draw_rect(const FRect &r,Color c);
+            void draw_rect(float x,float y,float w,float h,Color c){
+                draw_rect(FRect(x,y,w,h),c);
+            }
+
             void draw_line(float x1,float y1,float x2,float y2,Color c);
             void draw_line(const FVec2 &beg,const FVec2 &end,Color c){
-                return draw_line(beg.x,beg.y,end.x,end.y,c);
+                draw_line(beg.x,beg.y,end.x,end.y,c);
             }
 
             void draw_rounded_rect(const FRect &r,float rad,Color c);
+            void draw_rounded_rect(float x,float y,float w,float h,float rad,Color c){
+                draw_rounded_rect(FRect(x,y,w,h),rad,c);
+            }
+
             void draw_rounded_box(const FRect &r,float rad,Color c);
+            void draw_rounded_box(float x,float y,float w,float h,float rad,Color c){
+                draw_rounded_box(FRect(x,y,w,h),rad,c);
+            }
+
+
             void draw_ellipse(float x,float y,float rx,float ry,Color c);
             void fill_ellipse(float x,float y,float rx,float ry,Color c);
             void draw_circle(float x,float y,float r,Color c);
@@ -799,8 +816,18 @@ namespace Btk{
              * 
              * @return FSize 
              */
-            FSize text_size(u8string_view);
+            [[deprecated("use measure_text instead")]]
+            FSize text_size(u8string_view t){
+                return measure_text(t);
+            }
+            [[deprecated("use measure_text instead")]]
             FSize text_size(u16string_view);
+            /**
+             * @brief Measure the text
+             * 
+             * @return FSize 
+             */
+            FSize measure_text(u8string_view str);
             /**
              * @brief Set the text's size
              * 

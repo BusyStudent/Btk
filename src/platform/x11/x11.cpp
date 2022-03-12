@@ -284,7 +284,7 @@ namespace X11{
             // iter->second->handle_x11(&event);
         }
     }
-    SDL_Window *CreateTsWindow(u8string_view title,int h,int w){
+    SDL_Window *CreateTsWindow(u8string_view title,int h,int w,WindowFlags){
         XDisplay *display = static_cast<XDisplay*>(GetXDisplay());
         XWindow   win;
         

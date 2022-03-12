@@ -143,8 +143,80 @@ namespace Btk{
         bool operator !=(const _Point &p) const noexcept{
             return not operator ==(p);
         }
-
-
+        //Operator for vector
+        _Point<T> operator -() const noexcept{
+            return {
+                -this->x,
+                -this->y
+            };
+        }
+        _Point<T> operator +(const _Point &p) const noexcept{
+            return {
+                this->x + p.x,
+                this->y + p.y
+            };
+        }
+        _Point<T> operator -(const _Point &p) const noexcept{
+            return {
+                this->x - p.x,
+                this->y - p.y
+            };
+        }
+        _Point<T> operator *(T f) const noexcept{
+            return {
+                this->x * f,
+                this->y * f
+            };
+        }
+        _Point<T> operator /(T f) const noexcept{
+            return {
+                this->x / f,
+                this->y / f
+            };
+        }
+        _Point<T> operator *(const _Point &p) const noexcept{
+            return {
+                this->x * p.x,
+                this->y * p.y
+            };
+        }
+        _Point<T> operator /(const _Point &p) const noexcept{
+            return {
+                this->x / p.x,
+                this->y / p.y
+            };
+        }
+        _Point<T> &operator +=(const _Point &p) noexcept{
+            this->x += p.x;
+            this->y += p.y;
+            return *this;
+        }
+        _Point<T> &operator -=(const _Point &p) noexcept{
+            this->x -= p.x;
+            this->y -= p.y;
+            return *this;
+        }
+        _Point<T> &operator *=(T f) noexcept{
+            this->x *= f;
+            this->y *= f;
+            return *this;
+        }
+        _Point<T> &operator /=(T f) noexcept{
+            this->x /= f;
+            this->y /= f;
+            return *this;
+        }
+        _Point<T> &operator *=(const _Point &p) noexcept{
+            this->x *= p.x;
+            this->y *= p.y;
+            return *this;
+        }
+        _Point<T> &operator /=(const _Point &p) noexcept{
+            this->x /= p.x;
+            this->y /= p.y;
+            return *this;
+        }
+        //Operator for vector end
     };
     //Point --end
     /**
@@ -481,6 +553,132 @@ namespace Btk{
     using FBounds = _Bounds<float>;
     //Bounds --end
 
+    //Margin --begin
+    /**
+     * @brief A margin struct
+     * 
+     * @tparam T The element type
+     */
+    template<class T>
+    struct _Margin{
+        using value_type = T;
+
+        T left = {};
+        T top = {};
+        T right = {};
+        T bottom = {};
+        /**
+         * @brief Construct a new margin object(init all value to 0)
+         * 
+         */
+        _Margin() noexcept = default;
+        _Margin(const _Margin &) noexcept = default;
+        _Margin(T left,T top,T right,T bottom) noexcept{
+            this->left = left;
+            this->top = top;
+            this->right = right;
+            this->bottom = bottom;
+        }
+        //Autocast
+        template<class Elem>
+        _Margin(Elem left,Elem top,Elem right,Elem bottom) noexcept{
+            this->left = static_cast<T>(left);
+            this->top = static_cast<T>(top);
+            this->right = static_cast<T>(right);
+            this->bottom = static_cast<T>(bottom);
+        }
+        template<class Elem>
+        _Margin(const _Margin<Elem> &margin) noexcept{
+            left = static_cast<T>(margin.left);
+            top = static_cast<T>(margin.top);
+            right = static_cast<T>(margin.right);
+            bottom = static_cast<T>(margin.bottom);
+        }
+
+        //Compare
+        bool compare(const _Margin &m) const noexcept{
+            return  left == m.left 
+                and top == m.top
+                and right == m.right
+                and bottom == m.bottom;
+        }
+        //Test
+        bool empty() const noexcept{
+            return left == 0 and top == 0 and right == 0 and bottom == 0;
+        }
+        bool invalid() const noexcept{
+            return left < 0 or top < 0 or right < 0 or bottom < 0;
+        }
+        /**
+         * @brief Set all value to args
+         * 
+         * @param v 
+         * @return _Margin 
+         */
+        _Margin &set(T v) noexcept{
+            left = v;
+            top = v;
+            right = v;
+            bottom = v;
+            return *this;
+        }
+        //Scale
+        _Margin scale(T scale) const noexcept{
+            return {
+                left * scale,
+                top * scale,
+                right * scale,
+                bottom * scale,
+            };
+        }
+        //Operator
+        bool operator ==(const _Margin &m) const noexcept{
+            return compare(m);
+        }
+        bool operator !=(const _Margin &m) const noexcept{
+            return not operator ==(m);
+        }
+        /**
+         * @brief Apply margin to bounds
+         * 
+         */
+        template<class Elem>
+        _Bounds<Elem> apply(const _Bounds<Elem> &bounds) const noexcept{
+            return {
+                bounds.minx + left,
+                bounds.miny + top,
+                bounds.maxx - right,
+                bounds.maxy - bottom
+            };
+        }
+        /**
+         * @brief Apply margin to rect
+         * 
+         */
+        template<class Elem>
+        _Rect<Elem> apply(const _Rect<Elem> &rect) const noexcept{
+            return {
+                rect.x + left,
+                rect.y + top,
+                rect.w - right - left,
+                rect.h - bottom - top
+            };
+        }
+        template<class Elem>
+        _Margin<Elem> cast() const noexcept{
+            return {
+                static_cast<Elem>(left),
+                static_cast<Elem>(top),
+                static_cast<Elem>(right),
+                static_cast<Elem>(bottom)
+            };
+        }
+    };
+
+    using Margin = _Margin<int>;
+    using FMargin = _Margin<float>;
+    //Margin --end
+
     //Bezier curve
     template<class T>
     struct _BezierCurve{
@@ -534,7 +732,19 @@ namespace Btk{
          */
         _BezierCurve(const _BezierCurve &) noexcept = default;
         ~_BezierCurve() noexcept = default;
-
+        /**
+         * @brief Cast template
+         * 
+         */
+        template<class Elem>
+        _BezierCurve<Elem> cast() const noexcept{
+            return {
+                p1.template cast<Elem>(),
+                p2.template cast<Elem>(),
+                p3.template cast<Elem>(),
+                p4.template cast<Elem>()
+            };
+        }
         /**
          * @brief Compare
          * 
@@ -773,9 +983,13 @@ namespace Btk{
     template<class T>
     using PointImpl = _Point<T>;
     template<class T>
+    using MarginImpl = _Margin<T>;
+    template<class T>
     using BoundsImpl = _Bounds<T>;
     template<class T>
     using PolygenImpl = _Polygen<T>;
+    template<class T>
+    using BezierCurveImpl = _BezierCurve<T>;
 
     //Utils
     template<class T1,class T2,class T3>
@@ -850,6 +1064,25 @@ namespace Btk{
             max(static_cast<decltype(minx)>(0),maxy - miny)
         );
     }
+    /**
+     * @brief Get union of two rects
+     * 
+     * @param num 
+     * @return template<class T> 
+     */
+    template<class T>
+    inline T UnionRect(const T &r1,const T &r2) noexcept{
+        auto minx = min(r1.x,r2.x);
+        auto miny = min(r1.y,r2.y);
+        auto maxx = max(r1.x + r1.w,r2.x + r2.w);
+        auto maxy = max(r1.y + r1.h,r2.y + r2.h);
+        return T(
+            minx,
+            miny,
+            max(static_cast<decltype(minx)>(0),maxx - minx),
+            max(static_cast<decltype(minx)>(0),maxy - miny)
+        );
+    }
     //float number utils
     template<class T>
     inline size_t GetFloatPrecision(T num) noexcept{
@@ -891,5 +1124,6 @@ namespace Btk{
     BTKAPI std::ostream &operator <<(std::ostream&,const FSize &);
     BTKAPI std::ostream &operator <<(std::ostream&,const Vec2 &);
     BTKAPI std::ostream &operator <<(std::ostream&,const FVec2 &);
+    BTKAPI std::ostream &operator <<(std::ostream&,const FMargin &);
 }
 #endif // _BTK_RECT_HPP_

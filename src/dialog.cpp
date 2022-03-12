@@ -21,6 +21,37 @@
     #include <ShObjIdl.h>
 #endif
 
+#ifdef BTK_X11
+#include <csignal>
+namespace{
+    void main_thrd_wait_and_dispatch(pid_t pid){
+        //Dispatch
+        bool *has_got = new bool(false);
+        auto sig_handle = std::signal(SIGCHLD,[](int){
+            //Got a sigchld
+            //Ask the btk to quit loop
+            Btk::Exit();
+        });
+
+        Btk_defer [pid,has_got,sig_handle](){
+            std::signal(SIGCHLD,sig_handle);
+            if(not *has_got){
+                //Wait until exit
+                waitpid(pid,nullptr,0);
+            }
+            delete has_got;
+        };
+
+        while(Btk::WaitEvent()){
+            if(::waitpid(pid,nullptr,WNOHANG) == pid){
+                //Got this
+                *has_got = true;
+                return;
+            }
+        }
+    }
+}
+#endif
 
 namespace Btk{
     Dialog::Dialog() = default;
@@ -196,7 +227,15 @@ namespace Btk{
     }
     auto MessageBox::do_wait() -> Status{
         #if BTK_X11
-        ::waitpid(native_impl->proc,nullptr,0);
+        if(parent() != nullptr and IsMainThread()){
+            //Is main thrd and has parent
+            parent()->set_modal(true);
+            main_thrd_wait_and_dispatch(native_impl->proc);
+            parent()->set_modal(false);
+        }
+        else{
+            ::waitpid(native_impl->proc,nullptr,0);
+        }
         return Accepted;
         #elif BTK_WIN32
         native_impl->event.wait();

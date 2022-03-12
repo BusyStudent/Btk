@@ -3,6 +3,7 @@
 #include <SDL2/SDL_events.h>
 #include "../defs.hpp"
 #include "../string.hpp"
+#include "../window.hpp"
 #include "../exception.hpp"
 #include <cstdio>
 #include <string>
@@ -31,7 +32,7 @@ namespace Btk{
         bool GetSystemColor(ColorType,Color &c);
         bool GetSystemMetrics(u8string_view t);
 
-        SDL_Window *CreateTsWindow(u8string_view title,int x,int y);
+        SDL_Window *CreateTsWindow(u8string_view title,int w,int h,WindowFlags);
     };
     //X11 Error
     class BTKAPI XError:public RuntimeError{

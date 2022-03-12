@@ -158,6 +158,19 @@ namespace Btk{
      * @return false on asked to quit
      */
     BTKAPI bool PollEvent();
+    /**
+     * @brief Wait event and update status
+     * 
+     * @code {.cpp}
+     * while(WaitEvent()){
+     *     //Process your ...
+     * }
+     * @endcode
+     * 
+     * 
+     * @return BTKAPI 
+     */
+    BTKAPI bool WaitEvent();
 
     /**
      * @brief Enter the EventLoop

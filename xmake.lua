@@ -258,6 +258,10 @@ if is_mode("debug") then
         set_kind("binary")
         add_files("./tests/pixmap.cpp")
         add_deps("btk")
+    target("sliderable")
+        set_kind("binary")
+        add_files("./tests/sliderable.cpp")
+        add_deps("btk")
 end
 target("btk-rcc")
     set_kind("binary")

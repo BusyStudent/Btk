@@ -339,7 +339,7 @@ namespace Btk{
         // restore();
         // return s;
     }
-    FSize Renderer::text_size(u8string_view _view){
+    FSize Renderer::measure_text(u8string_view _view){
         auto view = _view.base();
         NVGtextRow  row;
         nvgTextBreakLinesEx(nvg_ctxt,&view.front(),&view.back() + 1,std::numeric_limits<float>::max(),&row,1);

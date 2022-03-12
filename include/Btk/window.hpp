@@ -5,6 +5,10 @@
 #include "rect.hpp"
 #include "defs.hpp"
 #include <cstdio>
+
+//Debug macro
+#define BTK_DEBUGHINT_WINDOW_DRAW_BOUNDS() ::setenv("BTK_DRAW_BOUNDS", "1", 1);
+
 namespace Btk{
     class WindowImpl;
     class Container;
@@ -14,12 +18,16 @@ namespace Btk{
     class Event;
     class Font;
     enum class WindowFlags:Uint32{
-        None        = 0,
-        OpenGL      = 1 << 0,
-        Vulkan      = 1 << 1,
-        SkipTaskBar = 1 << 2,
-        OpenGLMSAA  = 1 << 3,
+        None        = 0, //< Default
+        OpenGL      = 1 << 0, //< Use OpenGL
+        Vulkan      = 1 << 1, //< Use Vulkan
+        SkipTaskBar = 1 << 2, //< Skip taskbar
+        OpenGLMSAA  = 1 << 3, //< Use OpenGL Multisample
         Transparent = 1 << 4, //< Background transparent
+        Resizeable  = 1 << 5, //< Resizeable
+        Borderless  = 1 << 6, //< Borderless
+        PopupMenu   = 1 << 7, //< Treat as a popup menu
+        Fullscreen  = 1 << 8, //< Fullscreen
     };
     BTK_FLAGS_OPERATOR(WindowFlags,Uint32);
     /**

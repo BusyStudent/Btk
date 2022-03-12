@@ -1,5 +1,6 @@
 #include "../build.hpp"
 
+#include <Btk/detail/window.hpp>
 #include <Btk/detail/core.hpp>
 #include <Btk/gl/opengl.hpp>
 #include <Btk/Btk.hpp>

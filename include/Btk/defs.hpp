@@ -122,7 +122,6 @@ namespace Btk{
     class u16string;
     class u8string_view;
     class u8string;
-    //Generic Align
     
     enum class Orientation:Uint8{
         Vertical = 0,
@@ -130,6 +129,9 @@ namespace Btk{
         V = Vertical,
         H = Horizontal
     };
+    inline constexpr auto Vertical = Orientation::Vertical; 
+    inline constexpr auto Horizontal = Orientation::Horizontal; 
+
     //Useful min max climp template
     //Avoid to include algorithm in the headers
     #undef max
