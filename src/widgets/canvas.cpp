@@ -32,4 +32,6 @@ namespace Btk{
     }
 
     //ShapeNode
+    ShapeNode::ShapeNode(){}
+    ShapeNode::~ShapeNode(){}
 }

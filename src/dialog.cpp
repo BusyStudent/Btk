@@ -21,7 +21,7 @@
     #include <ShObjIdl.h>
 #endif
 
-#ifdef BTK_X11
+#if BTK_X11
 #include <csignal>
 namespace{
     void main_thrd_wait_and_dispatch(pid_t pid){

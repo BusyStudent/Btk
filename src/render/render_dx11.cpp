@@ -338,7 +338,7 @@ namespace Btk{
 
         hr = d3d11_create(
             nullptr,
-            D3D_DRIVER_TYPE_REFERENCE,
+            D3D_DRIVER_TYPE_HARDWARE,
             nullptr,
             dev_flag,
             req_levels,
