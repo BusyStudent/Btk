@@ -135,7 +135,7 @@ namespace Btk{
      * @brief Info of the renderer devices
      * 
      */
-    struct RebdererDeviceInfo{
+    struct RendererDeviceInfo{
         //Limits
         Uint32 *pixels_formats;
         Size max_texture_size;
@@ -242,6 +242,7 @@ namespace Btk{
                                         Size *p_size,
                                         void *p_handle,
                                         TextureFlags *p_flags) = 0;
+        //TODO:add pitch here?
         virtual void*     lock_texture(
             Context ctxt,
             TextureID id,

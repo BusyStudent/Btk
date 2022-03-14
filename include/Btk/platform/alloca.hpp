@@ -128,7 +128,7 @@ struct _Btk_TypeofString<const T (&)[N]>{
     #define Btk_SmallStrndupTyped(T,STR,N) ({\
         BTK_SMALL_SIZE_T n = N;\
         BTK_SMALL_SIZE_T alloc_size = (n + 1) * sizeof(T);\
-        void *ptr = _malloca(alloc_size);
+        void *ptr = _malloca(alloc_size);\
         _Btk_SmallStrndup(static_cast<T*>(ptr),STR,n);\
     })
 #elif BTK_GCC

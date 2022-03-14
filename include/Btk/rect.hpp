@@ -573,6 +573,24 @@ namespace Btk{
          */
         _Margin() noexcept = default;
         _Margin(const _Margin &) noexcept = default;
+        /**
+         * @brief Construct a new margin object and init all value
+         * @param value The all element value
+         */
+        _Margin(T value) noexcept{
+            left = value;
+            top = value;
+            right = value;
+            bottom = value;
+        }
+        /**
+         * @brief Construct a new margin object
+         * 
+         * @param left The left margin
+         * @param top The top margin
+         * @param right The right margin
+         * @param bottom The bottom margin
+         */
         _Margin(T left,T top,T right,T bottom) noexcept{
             this->left = left;
             this->top = top;

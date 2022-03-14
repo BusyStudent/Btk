@@ -17,12 +17,23 @@ extern "C"{
     #include "../libs/nanovg_d3d11.h"
 }
 #define BTK_THROW_HRESULT(HR) \
-    if(FAILED(hr)){\
-        Btk::throwRendererError(Btk::Win32::StrMessageW(DWORD(hr)).to_utf8());\
-    }
+    check_hr(HR);
+#if !defined(NDEBUG) && !BTK_MINGW
+    #define BTK_D3D11_SET_DEBUG_NAME(OBJ,NAME) \
+        OBJ->SetPrivateData(WKPDID_D3DDebugObjectName,strlen(NAME)-1,NAME)
+#else
+    #define BTK_D3D11_SET_DEBUG_NAME(OBJ,NAME)
+#endif
 
-namespace Btk{
-    static inline Size win32_win_size(HWND win){
+//Utility for D3D11
+namespace {
+    using D3D11InitFn = decltype(D3D11CreateDeviceAndSwapChain);
+    static void *d3d11_lib = nullptr;
+    static HHOOK d3d11_hook = nullptr;
+    static D3D11InitFn *d3d11_create;
+    static Btk::Constructable<Btk::Win32::HWNDMap<Btk::DxDevice*>> hdevs_map;
+    //Begin
+    static Btk::Size win32_win_size(HWND win){
         RECT rect;
         GetClientRect(win,&rect);
         return {
@@ -30,108 +41,11 @@ namespace Btk{
             rect.bottom - rect.top
         };
     }
-    DxDevice::Context DxDevice::create_context(){
-        return nvgCreateD3D11(device,NVG_ANTIALIAS);
-    }
-    void DxDevice::destroy_context(Context ctxt){
-        nvgDeleteD3D11(ctxt);
-    }
-    // void DxDevice::set_viewport(const Rect *r){
-    //     D3D11_VIEWPORT viewport;
-    //     if(r == nullptr){
-    //         //Reset
-    //     }
-    //     else{
-    //         viewport.Width  = r->w;
-    //         viewport.Height = r->h;
-    //     }
-    //     context->RSSetViewports(1,&viewport);
-    // }
-    // Renderer::Renderer(SDL_Window *win){
-    //     //Create d3d context
-    //     device = nullptr;
-    //     device = new RendererDevice(win);
-    //     nvg_ctxt = nvgCreateD3D11(device->device,NVG_STENCIL_STROKES | NVG_ANTIALIAS);
-    //     if(nvg_ctxt == nullptr){
-    //         //HandleErrr
-    //         //throwRendererError();
-    //     }
-    //     window = win;
-    // }
-    // Renderer::~Renderer(){
-    //     destroy();
-    // }
-    // void Renderer::destroy(){
-    //     if(nvg_ctxt != nullptr){
-    //         nvgDeleteD3D11(nvg_ctxt);
-    //         //Release the d3d device
-    //         delete device;
-    //         nvg_ctxt = nvg_ctxt;
-    //         device = nullptr;
-    //     }
-    // }
-    // RendererBackend Renderer::backend() const{
-    //     return RendererBackend::Dx11;
-    // }
-    void DxDevice::clear_buffer(Color c){
-        const FLOAT color[] = {
-            1.0f / 255 * c.r, 
-            1.0f / 255 * c.g, 
-            1.0f / 255 * c.b, 
-            1.0f / 255 * c.a 
-        };
-        context->ClearRenderTargetView(render_view,color);
-        context->ClearDepthStencilView(stencil_view,D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,0.0f,0);
-    }
-    void DxDevice::swap_buffer(){
-        swapchain->Present(0,0);
-    }
-    bool DxDevice::output_size( 
-            Size *p_logical_size,
-            Size *p_physical_size){
-        if(p_logical_size != nullptr){
-            *p_logical_size = win32_win_size(window);
-        }
-        if(p_physical_size != nullptr){
-            p_physical_size->w = buf_w;
-            p_physical_size->h = buf_h;
-        }
-        return true;
-    }
-    // void Renderer::begin(){
-    //     int w,h;
-    //     SDL_GetWindowSize(window,&w,&h);
-
-    //     if(w != device->buf_w or h != device->buf_h){
-    //         //Resize the buf
-    //         DX_SWAPCHAIN()->ResizeBuffers(1,w,h,DXGI_FORMAT_UNKNOWN,0);
-    //         device->buf_h = h;
-    //         device->buf_w = w;
-    //         //Reset the viewport
-    //         D3D11_VIEWPORT viewport;
-    //         viewport.Height = h;
-    //         viewport.Width = w;
-    //         viewport.MaxDepth = 1.f;
-    //         viewport.MinDepth = 0.f;
-    //         viewport.TopLeftX = 0.f;
-    //         viewport.TopLeftY = 0.f;
-
-    //         DX_CONTEXT()->RSSetViewports(1,&viewport);
-    //     }
-    //     nvgBeginFrame(nvg_ctxt,w,h,1);
-    // }
-}
-namespace Btk{
-    using D3D11InitFn = decltype(D3D11CreateDeviceAndSwapChain);
-    static void *d3d11_lib = nullptr;
-    static HHOOK d3d11_hook = nullptr;
-    static D3D11InitFn *d3d11_create;
-    static Constructable<Win32::HWNDMap<DxDevice*>> hdevs_map;
     //Map HWND to DxDevice
     static LRESULT CALLBACK dx_msghook(int code, WPARAM wParam, LPARAM lParam){
         // BTK_ASSERT(code == WH_CALLWNDPROC);
         CWPSTRUCT *window = reinterpret_cast<CWPSTRUCT*>(lParam);
-        DxDevice *device = nullptr;
+        Btk::DxDevice *device = nullptr;
         switch(window->message){
             //We only query the map when the WM_SIZING or WM_SIZE
             case WM_SIZING:{
@@ -141,7 +55,7 @@ namespace Btk{
                     break;
                 }
                 //TODO Improve algo here
-                BTK_LOGINFO("[DxDevice]WM SIZING");
+                BTK_LOGINFO("[DxDevice]WM SIZING for device %p",device);
                 auto[w,h] = win32_win_size(window->hwnd);
                 device->resize_buffer(w,h);
                 break;
@@ -152,7 +66,7 @@ namespace Btk{
                     //Is not the hwnd we managed
                     break;
                 }
-                BTK_LOGINFO("[DxDevice]WM SIZE");
+                BTK_LOGINFO("[DxDevice]WM SIZE for device %p",device);
                 device->resize_buffer(LOWORD(window->lParam),HIWORD(window->lParam));
                 break;
             }
@@ -171,10 +85,12 @@ namespace Btk{
     static void load_d3d11(){
         if(d3d11_lib == nullptr){
             HRESULT hr = CoInitializeEx(0,COINIT_MULTITHREADED);
-            BTK_THROW_HRESULT(hr);
+            if(FAILED(hr)){
+                Btk::throwWin32Error(DWORD(hr));
+            }
             d3d11_lib = SDL_LoadObject("D3D11.dll");
             if(d3d11_lib == nullptr){
-                throwRendererError(SDL_GetError());
+                Btk::throwRendererError(SDL_GetError());
             }
             //Get pointer
             d3d11_create = reinterpret_cast<D3D11InitFn*>(
@@ -188,103 +104,9 @@ namespace Btk{
                 nullptr,
                 GetCurrentThreadId()
             );
-            AtExit(quit_d3d11);
+            Btk::AtExit(quit_d3d11);
         }
     }
-//     DxDevice::DxDevice(SDL_Window *win){
-//         SDL_SysWMinfo info;
-//         SDL_GetVersion(&info.version);
-//         SDL_GetWindowWMInfo(win,&info);
-
-//         BTK_ASSERT(info.subsystem == SDL_SYSWM_WINDOWS);
-
-//         HWND handle = info.info.win.window;
-//         load_d3d11();
-//         //Init d3d11
-//         const D3D_FEATURE_LEVEL level[] = {
-//             D3D_FEATURE_LEVEL_11_0
-//         };
-//         //Current level
-//         D3D_FEATURE_LEVEL cur;
-//         HRESULT ret = d3d11_create(
-//             nullptr,
-//             D3D_DRIVER_TYPE_HARDWARE,
-//             nullptr,
-//             0,
-//             level,
-//             SDL_arraysize(level),
-//             D3D11_SDK_VERSION,
-//             &device,
-//             &cur,
-//             &context
-//         );
-//         if(FAILED(ret)){
-//             throwRendererError("Could not create d3d11 device");
-//         }
-//         this->win = win;
-//         //Get factory
-//         ComInstance<IDXGIDevice> dxgi_dev;
-//         ComInstance<IDXGIAdapter> dxgi_apt;
-//         ComInstance<IDXGIFactory> dxgi_fct;
-        
-//         ret = device->QueryInterface(&dxgi_dev);
-//         ret = dxgi_dev->GetParent(__uuidof(IDXGIAdapter),reinterpret_cast<void**>(&dxgi_apt));
-//         ret = dxgi_apt->GetParent(__uuidof(IDXGIFactory),reinterpret_cast<void**>(&dxgi_fct));
-//         //Do check...
-//         //Create SwapChain
-//         SDL_DisplayMode display;
-//         SDL_GetWindowDisplayMode(win,&display);
-//         int w;
-//         int h;
-//         SDL_GetWindowSize(win,&w,&h);
-
-//         buf_w = w;
-//         buf_h = h;
-
-//         DXGI_SWAP_CHAIN_DESC desc;
-//         SDL_zero(desc);
-//         //Buffer
-//         desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-//         desc.BufferDesc.Width = w;
-//         desc.BufferDesc.Height = h;
-//         desc.BufferDesc.RefreshRate.Denominator = 1;
-//         desc.BufferDesc.RefreshRate.Numerator = display.refresh_rate;
-//         desc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-//         desc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-//         //Sample
-//         desc.SampleDesc.Count = 4;
-//         desc.SampleDesc.Quality = 0;
-
-//         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-//         desc.BufferCount = 1;
-//         desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-//         if(SDL_GetWindowFlags(win) & SDL_WINDOW_FULLSCREEN == SDL_WINDOW_FULLSCREEN){
-//             //Full screen
-//             desc.Windowed = TRUE;
-//         }
-//         else{
-//             desc.Windowed = FALSE;
-//         }
-//         desc.OutputWindow = handle;
-//         ret = dxgi_fct->CreateSwapChain(dxgi_dev,&desc,&swapchain);
-//         //SwapChain end
-//         //Create view
-//         ComInstance<ID3D11Buffer> buffer;
-//         ret = swapchain->GetBuffer(0,__uuidof(ID3D11Buffer),reinterpret_cast<void**>(&buffer));
-//         ret = device->CreateRenderTargetView(buffer,nullptr,&render_view);
-//         //Bind it
-//         context->OMSetRenderTargets(1,&render_view,nullptr);
-//         //ViewPort
-//         D3D11_VIEWPORT viewport;
-//         viewport.Height = h;
-//         viewport.Width = w;
-//         viewport.MaxDepth = 1.f;
-//         viewport.MinDepth = 0.f;
-//         viewport.TopLeftX = 0.f;
-//         viewport.TopLeftY = 0.f;
-
-//         context->RSSetViewports(1,&viewport);
-//     }
     static int win32_refresh_rate(HWND hw){
         HDC dc = GetDC(hw);
         int rate = GetDeviceCaps(dc,VREFRESH);
@@ -292,6 +114,21 @@ namespace Btk{
         BTK_LOGINFO("[GDI]Get VRefresh rate %d at %p",rate,hw);
         return rate;
     }
+    static auto dxdev_findtexture(NVGcontext *ctxt,Btk::TextureID id){
+        auto d3d = static_cast<D3DNVGcontext*>(nvgInternalParams(ctxt)->userPtr);
+        auto texture = D3Dnvg__findTexture(d3d,id);
+        if(texture == nullptr){
+            Btk::throwRendererError("Invaid texture");
+        }
+        return texture;
+    }
+    static auto dxdev_alloctexture(NVGcontext *ctxt){
+        auto d3d = static_cast<D3DNVGcontext*>(nvgInternalParams(ctxt)->userPtr);
+        auto texture = D3Dnvg__allocTexture(d3d);
+        return texture;
+    }
+}
+namespace Btk{
     DxDevice::DxDevice(HWND win){
         set_backend(RendererBackend::Dx11);
         load_d3d11();
@@ -305,7 +142,6 @@ namespace Btk{
         desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         desc.BufferDesc.Width = w;
         desc.BufferDesc.Height = h;
-        //TODO ADD code to get refresh rate
         desc.BufferDesc.RefreshRate.Denominator = 1;
         desc.BufferDesc.RefreshRate.Numerator = win32_refresh_rate(win);
 
@@ -328,28 +164,37 @@ namespace Btk{
         //Fix resize buffer algo
 
         UINT dev_flag = 0;
-        #ifndef NDEBUG
+        #if !defined(NDEBUG) && !BTK_MINGW
         dev_flag = D3D11_CREATE_DEVICE_DEBUG;
         #endif
 
         const D3D_FEATURE_LEVEL req_levels [] = {
             D3D_FEATURE_LEVEL_11_0,
         };
-
-        hr = d3d11_create(
-            nullptr,
-            D3D_DRIVER_TYPE_HARDWARE,
-            nullptr,
-            dev_flag,
-            req_levels,
-            SDL_arraysize(req_levels),
-            D3D11_SDK_VERSION,
-            &desc,
-            &swapchain,
-            &device,
-            nullptr,
-            &context
-        );
+        auto dev_types = {
+            D3D_DRIVER_TYPE_HARDWARE,//< First try hardware
+            D3D_DRIVER_TYPE_WARP,//< If hardware not found, try WARP
+            D3D_DRIVER_TYPE_SOFTWARE//< If WARP not found, try software
+        };
+        for(auto type:dev_types){
+            hr = d3d11_create(
+                nullptr,
+                D3D_DRIVER_TYPE_HARDWARE,
+                nullptr,
+                dev_flag,
+                req_levels,
+                SDL_arraysize(req_levels),
+                D3D11_SDK_VERSION,
+                &desc,
+                &swapchain,
+                &device,
+                nullptr,
+                &context
+            );
+            if(SUCCEEDED(hr)){
+                break;
+            }
+        }
         BTK_THROW_HRESULT(hr);
         //Get Buffer
         resize_buffer(w,h);
@@ -357,30 +202,67 @@ namespace Btk{
         //Register self
         hdevs_map->insert(window,this);
     }
-    auto dxdev_findtexture(NVGcontext *ctxt,TextureID id){
-        auto d3d = static_cast<D3DNVGcontext*>(nvgInternalParams(ctxt)->userPtr);
-        auto texture = D3Dnvg__findTexture(d3d,id);
-        if(texture == nullptr){
-            throwRendererError("Invaid texture");
-        }
-        return texture;
-    }
-    auto dxdev_alloctexture(NVGcontext *ctxt){
-        auto d3d = static_cast<D3DNVGcontext*>(nvgInternalParams(ctxt)->userPtr);
-        auto texture = D3Dnvg__allocTexture(d3d);
-        return texture;
-    }
     DxDevice::~DxDevice(){
         hdevs_map->erase(window);
+    }
+
+    auto DxDevice::create_context() -> Context{
+        return nvgCreateD3D11(device,NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+    }
+    void DxDevice::destroy_context(Context ctxt){
+        nvgDeleteD3D11(ctxt);
+    }
+    void DxDevice::clear_buffer(Color c){
+        const FLOAT color[] = {
+            1.0f / 255 * c.r, 
+            1.0f / 255 * c.g, 
+            1.0f / 255 * c.b, 
+            1.0f / 255 * c.a 
+        };
+        ID3D11RenderTargetView *rview;
+        ID3D11DepthStencilView *sview;
+        if(not targets.empty()){
+            //Using render target
+            rview = targets.top().render_view;
+            sview = targets.top().stencil_view;
+        }
+        else{
+            //using swap chain
+            rview = render_view;
+            sview = stencil_view;
+        }
+        context->ClearRenderTargetView(rview,color);
+        context->ClearDepthStencilView(sview,D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,0.0f,0);
+    }
+    void DxDevice::swap_buffer(){
+        swapchain->Present(0,0);
+    }
+    bool DxDevice::output_size( 
+            Size *p_logical_size,
+            Size *p_physical_size){
+        if(p_logical_size != nullptr){
+            *p_logical_size = win32_win_size(window);
+        }
+        if(p_physical_size != nullptr){
+            p_physical_size->w = buf_w;
+            p_physical_size->h = buf_h;
+        }
+        return true;
     }
     void DxDevice::resize_buffer(UINT new_w,UINT new_h){
         BTK_LOGINFO("Resize DxBuffer to %u %u",new_w,new_h);
 
         //Check 
+        if(not has_internal_target_binded){
+            return;
+        }
         if(new_h == 0 or new_h == 0){
             return;
         }
-        else if(new_h == buf_h and new_w == buf_w){
+        //Process with ssaa ratio
+        new_w = UINT(float(new_w) * ssaa_ratio);
+        new_h = UINT(float(new_h) * ssaa_ratio);
+        if(new_h == buf_h and new_w == buf_w){
             //Is same size
             return;
         }
@@ -390,9 +272,8 @@ namespace Btk{
         //Here are some code from d3d11 nvg demo
         //Release prev view
         HRESULT hr;
-        ID3D11RenderTargetView *empty_view[1] = {nullptr};
-        //
-        context->OMSetRenderTargets(1,empty_view,nullptr);
+        //Reset binding
+        unbind();
 
         stencil_view.release();
         render_view.release();
@@ -400,32 +281,40 @@ namespace Btk{
         buffer.release();
 
         //SwapChain
-        hr = swapchain->ResizeBuffers(1,new_w,new_h,DXGI_FORMAT_B8G8R8A8_UNORM,0);
+        hr = swapchain->ResizeBuffers(1,new_w,new_h,DXGI_FORMAT_R8G8B8A8_UNORM,0);
         BTK_THROW_HRESULT(hr);
         //Get buffer
         hr = swapchain->GetBuffer(0,__uuidof(ID3D11Texture2D),reinterpret_cast<void**>(&buffer));
         BTK_THROW_HRESULT(hr);
         //Make view
-        D3D11_RENDER_TARGET_VIEW_DESC view_desc;
-        view_desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-        view_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-        view_desc.Texture2D.MipSlice = 0;
-
-        hr = device->CreateRenderTargetView(
-            buffer,
-            &view_desc,
-            &render_view
-        );
-        BTK_THROW_HRESULT(hr);
+        render_view = create_render_target_view(buffer);
         //Make stencil buffer
+        stencil = create_stencil_buffer(new_w,new_h);
+        //Make stencil view
+        stencil_view = create_stencil_view(stencil);
+
+        //set render target now
+        bind();
+
+        //Mark name
+        BTK_D3D11_SET_DEBUG_NAME(buffer,"DxDevice swapchain buffer");
+        BTK_D3D11_SET_DEBUG_NAME(render_view,"DxDevice swapchain render view");
+        BTK_D3D11_SET_DEBUG_NAME(stencil,"DxDevice swapchain stencil");
+        BTK_D3D11_SET_DEBUG_NAME(stencil_view,"DxDevice swapchain stencil view");
+
+    }
+    auto DxDevice::create_stencil_buffer(UINT w,UINT h) -> ComInstance<ID3D11Texture2D> {
+        //Make stencil buffer
+        ComInstance<ID3D11Texture2D> stencil;
         D3D11_TEXTURE2D_DESC stencil_desc;
+        HRESULT hr;
         
         stencil_desc.ArraySize = 1;
         stencil_desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
         stencil_desc.CPUAccessFlags = 0;
         stencil_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-        stencil_desc.Height = buf_h;
-        stencil_desc.Width = buf_w;
+        stencil_desc.Height = h;
+        stencil_desc.Width = w;
         stencil_desc.MipLevels = 1;
         stencil_desc.MiscFlags = 0;
         stencil_desc.SampleDesc.Count = 1;
@@ -435,23 +324,69 @@ namespace Btk{
         hr = device->CreateTexture2D(&stencil_desc,nullptr,&stencil);
         BTK_THROW_HRESULT(hr);
 
+        return stencil;
+    }
+    auto DxDevice::create_stencil_view(ID3D11Texture2D *texture) -> ComInstance<ID3D11DepthStencilView>{
         //Make stencil view
+        ComInstance<ID3D11DepthStencilView> stencil_view;
         D3D11_DEPTH_STENCIL_VIEW_DESC stencil_vdesc;
+        D3D11_TEXTURE2D_DESC tex_desc;
+        HRESULT hr;
 
-        stencil_vdesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        texture->GetDesc(&tex_desc);
+
+        stencil_vdesc.Format = tex_desc.Format;
         stencil_vdesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
         stencil_vdesc.Flags = 0;
         stencil_vdesc.Texture2D.MipSlice = 0;
 
         hr = device->CreateDepthStencilView(
-            stencil,
+            texture,
             &stencil_vdesc,
             &stencil_view
         );
         BTK_THROW_HRESULT(hr);
+        return stencil_view;
+    }
+    auto DxDevice::create_render_target_view(ID3D11Texture2D *texture) -> ComInstance<ID3D11RenderTargetView>{
+        //Make view
+        ComInstance<ID3D11RenderTargetView> render_view;
+        D3D11_RENDER_TARGET_VIEW_DESC view_desc;
+        D3D11_TEXTURE2D_DESC tex_desc;
+        HRESULT hr;
 
-        //set render target now
-        context->OMSetRenderTargets(1,&render_view,stencil_view);
+        //Mainly for pixel format
+        texture->GetDesc(&tex_desc);
+
+        view_desc.Format = tex_desc.Format;
+        view_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        view_desc.Texture2D.MipSlice = 0;
+
+        hr = device->CreateRenderTargetView(
+            texture,
+            &view_desc,
+            &render_view
+        );
+        BTK_THROW_HRESULT(hr);
+
+        return render_view;
+    }
+    //TODO:Need we set viewport?
+    void DxDevice::unbind(){
+        ID3D11RenderTargetView *empty_view[1] = {nullptr};
+        //Reset binding
+        context->OMSetRenderTargets(1,empty_view,nullptr);
+        has_internal_target_binded = false;
+    }
+    void DxDevice::bind(){
+        if(targets.empty()){
+            context->OMSetRenderTargets(1,&render_view,stencil_view);
+        }
+        else{
+            auto &top = targets.top();
+            context->OMSetRenderTargets(1,&top.render_view,top.stencil_view);
+        }
+        has_internal_target_binded = true;
     }
     bool DxDevice::query_texture(Context ctxt,
                                 TextureID id,
@@ -488,7 +423,6 @@ namespace Btk{
         context->CopyResource(dtex,texture->tex);
         //Alloc context texture
         auto new_texture = dxdev_alloctexture(ctxt);
-        //TODO 
         new_texture->tex = dtex;
         new_texture->type = texture->type;
         new_texture->flags = texture->flags;
@@ -510,13 +444,102 @@ namespace Btk{
             nvgDeleteImage(ctxt,new_texture->id);
             BTK_THROW_HRESULT(hr);
         }
+        if(desc.MipLevels == 0){
+            context->GenerateMips(new_texture->resourceView);
+        }
         return new_texture->id;
     }
     void DxDevice::set_target(Context ctxt,TextureID id){
-        BTK_UNIMPLEMENTED();
+        if(not has_internal_target_binded){
+            throwRendererError("No internal target binded");
+        }
+        auto texture = dxdev_findtexture(ctxt,id);
+        //End current frame
+        end_frame(ctxt);
+        //Unbind
+        ID3D11RenderTargetView *empty_view[1] = {nullptr};
+        context->OMSetRenderTargets(1,empty_view,0);
+
+        //Set up a new target
+        DxTarget target;
+        target.stencil = create_stencil_buffer(texture->height,texture->width);
+        target.render_view = create_render_target_view(texture->tex);
+        target.stencil_view = create_stencil_view(target.stencil);
+        target.texture = texture->tex;
+        targets.emplace(target);
+
+        //Mark texture name for debug
+        BTK_D3D11_SET_DEBUG_NAME(target.stencil,u8format("stencil for tex:%d",id).c_str());
+        BTK_D3D11_SET_DEBUG_NAME(target.render_view,u8format("render view for tex:%d",id).c_str());
+        BTK_D3D11_SET_DEBUG_NAME(target.stencil_view,u8format("stencil view for tex:%d",id).c_str());
+        BTK_D3D11_SET_DEBUG_NAME(target.texture,u8format("texture for tex:%d",id).c_str());
+
+        //Add ref count(Because dx target will be released when pop)
+        texture->tex->AddRef();
+        //Bind
+        context->OMSetRenderTargets(1,&target.render_view,target.stencil_view);
+        //Set viewport
+        D3D11_VIEWPORT vp;
+        vp.Width = texture->width;
+        vp.Height = texture->height;
+        vp.MinDepth = 0.0f;
+        vp.MaxDepth = 1.0f;
+        vp.TopLeftX = 0;
+        vp.TopLeftY = 0;
+        context->RSSetViewports(1,&vp);
+        //Begin a new frame
+        begin_frame_ex(ctxt,texture->width,texture->height,1);
+        //Save current state
+        nvgSave(ctxt);
     }
     void DxDevice::reset_target(Context ctxt){
-        BTK_UNIMPLEMENTED();
+        if(not has_internal_target_binded){
+            throwRendererError("No internal target binded");
+        }
+        if(targets.empty()){
+            return;
+        }
+        //FIXME:D3D11 Warning The Pixel Shader unit expects a Sampler at slot 0.
+        //End current frame
+        end_frame(ctxt);
+        nvgRestore(ctxt);
+        //Unbind
+        ID3D11RenderTargetView *empty_view[1] = {nullptr};
+        context->OMSetRenderTargets(1,empty_view,nullptr);
+        //Pop target
+        targets.pop();
+        //Begin a new frame according to the top target
+        if(targets.empty()){
+            //To set up internal target
+            auto [win_w,win_h] = win32_win_size(window);
+            context->OMSetRenderTargets(1,&render_view,stencil_view);
+            set_viewport(nullptr);
+            begin_frame_ex(
+                ctxt,
+                win_w,
+                win_h,
+                float(buf_w) / float(win_w)
+            );
+        }
+        else{
+            auto &top = targets.top();
+            //Get texture width and height
+            D3D11_TEXTURE2D_DESC tex_desc;
+            top.texture->GetDesc(&tex_desc);
+            //Bind
+            context->OMSetRenderTargets(1,&top.render_view,top.stencil_view);
+            //Viewport
+            D3D11_VIEWPORT vp;
+            vp.Width = tex_desc.Width;
+            vp.Height = tex_desc.Height;
+            vp.MinDepth = 0.0f;
+            vp.MaxDepth = 1.0f;
+            vp.TopLeftX = 0;
+            vp.TopLeftY = 0;
+            context->RSSetViewports(1,&vp);
+            //Begin a new frame
+            begin_frame_ex(ctxt,tex_desc.Width,tex_desc.Height,1);
+        }
     }
     void DxDevice::set_viewport(const Rect *r){
         //TODO 
@@ -537,8 +560,127 @@ namespace Btk{
             viewport.TopLeftX = r->x;
             viewport.TopLeftY = r->y;
         }
+        //Process viewport by ssaa ratio
+        if(ssaa_ratio > 1){
+            viewport.Height *= ssaa_ratio;
+            viewport.Width *= ssaa_ratio;
+            viewport.TopLeftX *= ssaa_ratio;
+            viewport.TopLeftY *= ssaa_ratio;
+        }
 
         context->RSSetViewports(1,&viewport);
+    }
+    void *DxDevice::lock_texture(
+        Context ctxt,
+        TextureID id,
+        const Rect *r,
+        LockFlag flag
+    ){
+        BTK_FIXME("DxDevice::lock_texture temporarily unsupport Read flag");
+        if((flag & LockFlag::Write) == LockFlag::Write){
+            // throwRendererError("LockFlag::WRITE is not supported");
+            return nullptr;
+        }
+
+        auto texture = dxdev_findtexture(ctxt,id);
+        if(texture == nullptr){
+            return nullptr;
+        }
+        ComInstance<ID3D11Texture2D> dtex;
+        //Copy texture to dtex
+        D3D11_TEXTURE2D_DESC desc;
+
+        texture->tex->GetDesc(&desc);
+        if(desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM){
+            // throwRendererError("Unsupported texture format");
+            return nullptr;
+        }
+
+        desc.Usage = D3D11_USAGE_STAGING;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+        //Modify desc by r
+        if(r != nullptr){
+            desc.Width = r->w;
+            desc.Height = r->h;
+            desc.MipLevels = 1;
+            desc.ArraySize = 1;
+            desc.BindFlags = 0;
+            desc.MiscFlags = 0;
+        }
+        else{
+            desc.Width = texture->width;
+            desc.Height = texture->height;
+            desc.MipLevels = 1;
+            desc.ArraySize = 1;
+            desc.BindFlags = 0;
+            desc.MiscFlags = 0;
+        }
+
+        //Create a staging texture
+        if(FAILED(device->CreateTexture2D(&desc,nullptr,&dtex))){
+            return nullptr;
+        }
+        BTK_D3D11_SET_DEBUG_NAME(dtex,"TmpTexture for lock");
+        //Copy texture to staging texture by rect
+        if(r == nullptr){
+            context->CopyResource(dtex,texture->tex);
+        }
+        else{
+            D3D11_BOX box;
+            box.left = r->x;
+            box.top = r->y;
+            box.right = r->x + r->w;
+            box.bottom = r->y + r->h;
+            box.front = 0;
+            box.back = 1;
+            context->CopySubresourceRegion(
+                dtex,
+                0,
+                0,
+                0,
+                0,
+                texture->tex,
+                0,
+                &box
+            );
+        }
+        //Begin map
+        D3D11_MAPPED_SUBRESOURCE map;
+        if(FAILED(context->Map(dtex,0,D3D11_MAP_READ,0,&map))){
+            return nullptr;
+        }
+        //Create a memory buffer
+        auto buf = new uint32_t[desc.Width * desc.Height];
+        //Copy data by pitch
+        SDL_ConvertPixels(
+            desc.Width,
+            desc.Height,
+            SDL_PIXELFORMAT_RGBA32,
+            map.pData,
+            map.RowPitch,
+            SDL_PIXELFORMAT_RGBA32,
+            buf,
+            desc.Width * sizeof(uint32_t)
+        );
+        //End map
+        context->Unmap(dtex,0);
+        //Return
+        return buf;
+    }
+    void  DxDevice::unlock_texture(
+        Context ctxt,
+        TextureID id,
+        void *pixels
+    ){
+        //Free memory
+        delete[] static_cast<uint32_t*>(pixels);
+    }
+    void DxDevice::check_hr(HRESULT hr){
+        if(FAILED(hr)){
+            set_error(Win32::StrMessageA(DWORD(hr)));
+            throwRendererError(get_error());   
+        }
     }
     RendererDevice *CreateD3D11Device(HWND h){
         return new DxDevice(h);

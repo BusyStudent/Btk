@@ -63,6 +63,7 @@ namespace Btk{
         locked.store(true,std::memory_order_release);
         owner = SDL_ThreadID();
         counts = 1;
+        return true;
     }
     /**
      * @brief Construct a new Semaphore object

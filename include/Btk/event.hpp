@@ -46,8 +46,8 @@ namespace Btk{
                 Disable = 14,//The widget was disabled
                 
                 Wheel = 15,//The mouse Wheel
-                WindowEnter = 16,//The mouse enter the window
-                WindowLeave = 17,//The mouse leave the window
+                // WindowEnter = 16,//The mouse enter the window
+                // WindowLeave = 17,//The mouse leave the window
                 Resize = 18,//< The widget is be resized
 
                 //Drop
@@ -73,7 +73,7 @@ namespace Btk{
             /**
              * @brief Register a event type
              * @note This function is thread safe
-             * @return Type::ERROR if failed
+             * @return Type::Error if failed
              */
             static Type Register();
             Type type() const noexcept{

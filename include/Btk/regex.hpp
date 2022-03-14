@@ -85,6 +85,7 @@ namespace Btk{
                 }
                 regex = re.regex;
                 re.regex = nullptr;
+                return *this;
             }
         private:
             struct Impl;

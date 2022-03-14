@@ -1655,10 +1655,9 @@ error:
 
 int fonsGetFontByName(FONScontext* s, const char* name)
 {
-	int i;
 	for (auto &e:s->fonts_map) {
 		if (e.second->name == name)
-			return i;
+			return e.second->id;
 	}
 	//Try in Global space
 	return BtkFt_GetID(BtkFt_GlobalFind(name));

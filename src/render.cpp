@@ -410,14 +410,33 @@ namespace Btk{
             is_drawing = false;
         }
     }
+    //Target
+    void Renderer::set_target(Texture &target){
+        if(target.empty()){
+            throwRuntimeError("empty texture");
+        }
+        device()->set_target(nvg_ctxt,target.get());
+    }
+    void Renderer::reset_target(){
+        device()->reset_target(nvg_ctxt);
+    }
     void Renderer::set_antialias(bool val){
         nvgShapeAntiAlias(nvg_ctxt,val);
     }
     //Transform
-
     void Renderer::scale(float x_factor,float y_factor){
         nvgScale(nvg_ctxt,x_factor,y_factor);
     }
+    void Renderer::skew_x(float angle){
+        nvgSkewX(nvg_ctxt,angle);
+    }
+    void Renderer::skew_y(float angle){
+        nvgSkewY(nvg_ctxt,angle);
+    }
+    void Renderer::rotate(float angle){
+        nvgRotate(nvg_ctxt,angle);
+    }
+
     void Renderer::translate(float x,float y){
         nvgTranslate(nvg_ctxt,x,y);
     }

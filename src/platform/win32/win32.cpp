@@ -2,6 +2,7 @@
 
 #include <Btk/utils/template.hpp>
 #include <Btk/platform/win32.hpp>
+#include <Btk/platform/popen.hpp>
 #include <Btk/platform/fs.hpp>
 #include <Btk/detail/utils.hpp>
 #include <Btk/detail/core.hpp>
@@ -277,6 +278,53 @@ namespace Win32{
     WindowImpl *GetWindow(HWND h){
         return hwnd_map->find(h);
     }
+    SDL_Window *CreateTsWindow(u8string_view title,int w,int h,WindowFlags flags){
+        //Create a sdl window
+        //Should i write a wrapper for SDL_CreateWindow?
+        Uint32 sdl_flags = 0;
+        
+        auto has_flag = [](WindowFlags f1,WindowFlags f2){
+            return (f1 & f2) == f2;
+        };
+
+        if(has_flag(flags,WindowFlags::Resizeable)){
+            sdl_flags |= SDL_WINDOW_RESIZABLE;
+        }
+        if(has_flag(flags,WindowFlags::Borderless)){
+            sdl_flags |= SDL_WINDOW_BORDERLESS;
+        }
+        if(has_flag(flags,WindowFlags::Fullscreen)){
+            sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+        }
+        if(has_flag(flags,WindowFlags::OpenGL)){
+            sdl_flags |= SDL_WINDOW_OPENGL;
+        }
+        if(has_flag(flags,WindowFlags::Vulkan)){
+            sdl_flags |= SDL_WINDOW_VULKAN;
+        }
+        if(has_flag(flags,WindowFlags::SkipTaskBar)){
+            sdl_flags |= SDL_WINDOW_SKIP_TASKBAR;
+        }
+        if(has_flag(flags,WindowFlags::PopupMenu)){
+            sdl_flags |= SDL_WINDOW_POPUP_MENU;
+        }
+
+        SDL_Window *win = SDL_CreateWindow(
+            title.data(),
+            SDL_WINDOWPOS_UNDEFINED,
+            SDL_WINDOWPOS_UNDEFINED,
+            w,
+            h,
+            sdl_flags
+        );
+        if(win == nullptr){
+            return nullptr;
+        }
+        //Set The window transparent by winapi
+        SetWindowLongPtr(get_hwnd(win),GWL_EXSTYLE,GetWindowLongPtr(get_hwnd(win),GWL_EXSTYLE) | WS_EX_LAYERED);
+        SetLayeredWindowAttributes(get_hwnd(win),0,0,LWA_ALPHA);        
+        return win;
+    }
 }
 }
 namespace Btk{
@@ -300,6 +348,17 @@ namespace Btk{
     //     UnmapViewOfFile(mp.address);
     //     CloseHandle(mp.view);
     // }
+    process_t _vspawn(size_t nargs,const _vspawn_arg args[]){
+        //Create a new process by _wvspawn
+        //Alloc a new wchar array 
+        wchar_t *a = Btk_SmallCalloc(wchar_t,nargs + 1);
+
+        for(size_t n = 0;n < nargs;n++){
+            //Convert Utf8 to 16 by winapi
+            
+        }
+        return {};
+    }
 }
 namespace Btk{
     void WindowImpl::handle_win32(
@@ -314,7 +373,12 @@ namespace Btk{
             win32_hooks(hwnd,message,wParam,lParam);
         }
         switch(message){
-        case WM_SIZING:{
+            case WM_SIZING:{
+                if(win32_sizing_draw){
+                    win32_poll_draw();
+                }
+
+                
                 RECT rect;
                 GetClientRect(hwnd,&rect);
                 SDL_Event event;
@@ -344,9 +408,22 @@ namespace Btk{
                     draw(*render);
                 }
                 catch (...){
-                    DeferCall(std::rethrow_exception, std::current_exception());
+                    DeferRethrow();
                 }
                 break;
+            }
+        }
+    }
+    void WindowImpl::win32_poll_draw(){
+        Uint32 evid = GetSystem()->redraw_win_ev_id;
+        SDL_Event event;
+        while(SDL_PeepEvents(&event,1,SDL_GETEVENT,evid,evid) == 1){
+            BTK_LOGINFO("[Win32]Polling redraw event tick:%d",event.window.timestamp);
+            try{
+                GetSystem()->dispatch_event(event);
+            }
+            catch(...){
+                DeferRethrow();
             }
         }
     }

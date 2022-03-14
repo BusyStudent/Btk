@@ -223,6 +223,11 @@ namespace Btk{
              * 
              */
             void redraw() const;
+            /**
+             * @brief raise self to the top of the parent's childrens
+             * 
+             */
+            void raise() const;
             
             Widget *root() const;
             /**

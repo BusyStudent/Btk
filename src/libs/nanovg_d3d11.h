@@ -618,7 +618,7 @@ static int D3Dnvg__renderCreateTexture(void* uptr, int type, int w, int h, int i
 
 	memset(&texDesc, 0, sizeof(texDesc));
 	texDesc.ArraySize = 1;
-	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 	texDesc.CPUAccessFlags = 0;
 	texDesc.MipLevels = 1;
 	if (type == NVG_TEXTURE_RGBA)

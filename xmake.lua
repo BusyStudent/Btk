@@ -4,6 +4,8 @@ add_requires("libsdl")
 add_requires("freetype","libsdl_image",{optional = true})
 add_packages("libsdl","freetype","libsdl_image")
 
+is_windows = is_plat("windows") or is_plat("mingw")
+
 if is_plat("linux") then
     --Linux X11
     add_requires("dbus-1")
@@ -72,19 +74,11 @@ option("precompiled_header")
     set_description("Use Precompiled header")
 -- Win32 Option
 option("directx_renderer")
-    if is_plat("windows") or is_plat("mingw") then
-        set_default(true)
-    else
-        set_default(false)
-    end
+    set_default(is_windows)
     set_showmenu(true)
     set_description("Add DirectX renderer in DeviceList")
 option("wincodec")
-    if is_plat("windows") or is_plat("mingw") then
-        set_default(true)
-    else
-        set_default(false)
-    end
+    set_default(is_windows)
     set_showmenu(true)
     set_description("Add WIC")
 
@@ -190,6 +184,7 @@ target("btk")
     if has_config("directx_renderer") then
         add_files("./src/render/render_dx11.cpp")
         add_defines("BTK_USE_DXDEVICE")
+        add_links("dxguid")
     end
 
     --SVG
@@ -202,8 +197,6 @@ target("btk")
     if has_config("stb_truetype") then
         add_defines("BTK_USE_STBTT")
     end
-    -- add_files("./src/font/cache.cpp")
-    -- add_files("./src/font/ft_font.cpp")
     --Image
     add_files("./src/images/adapter.cpp")
     --Check Image Library

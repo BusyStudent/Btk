@@ -32,7 +32,7 @@ namespace Btk::WinUtils{
         ::Drawable drawable = {};
         ::GC       gc = {};
     };
-    struct Recoder{
+    struct Recorder{
 
     };
 
@@ -195,7 +195,7 @@ namespace Btk::WinUtils{
     void PainterPresent(Painter handle){
         XFlushGC(handle.display,handle.gc);
     }
-    //Recoder for Get Pixels for window / screen
+    //Recorder for Get Pixels for window / screen
 
 }
 #elif BTK_WIN32
@@ -207,9 +207,58 @@ namespace Btk::WinUtils{
         HWND window;
         HDC  dc;
     };
+    /**
+     * @brief A struct for capturing window pixels by using GDI
+     * 
+     */
+    struct Recorder{
+        HWND window;
+        HDC  windc;//< Out source DC
+        HDC  memdc;//< Our destination DC
+        HBITMAP bitmap;//< Cached bitmap
+        int bitmap_w;
+        int bitmap_h;
+    };
     inline
     bool SetWindowRect(NativeHandle win,const Rect &r){
-        
+        return ::MoveWindow(win,r.x,r.y,r.w,r.h,true);
+    }
+    inline
+    Rect GetWindowRect(NativeHandle win){
+        RECT rect;
+        ::GetWindowRect(win,&rect);
+        return {
+            rect.left,
+            rect.top,
+            rect.right - rect.left,
+            rect.bottom - rect.top
+        };
+    }
+
+    inline
+    bool ReparentWindow(NativeHandle parent,NativeHandle child){
+        return ::SetParent(child,parent);
+    }
+
+    inline
+    NativeHandle GetParentWindow(NativeHandle win){
+        return ::GetParent(win);
+    }
+    inline
+    NativeHandle GetRootWindow(NativeHandle win){
+        return ::GetAncestor(win,GA_ROOT);
+    }
+    using ::GetDesktopWindow;
+
+    template<class Callable,class ...Args>
+    bool ForChildren(NativeHandle win,Callable callable,Args &&...args){
+        //Get all children
+        HWND child = ::GetWindow(win,GW_CHILD);
+        while(child){
+            callable(child,args...);
+            child = ::GetWindow(child,GW_HWNDNEXT);
+        }
+        return true;
     }
 
     inline
@@ -242,6 +291,127 @@ namespace Btk::WinUtils{
     // void PainterSetColor(Painter p,Color c){
         
     // }
+    inline
+    Recorder GetRecoder(NativeHandle win){
+        Recorder recorder;
+        recorder.window = win;
+        recorder.windc = GetDC(win);
+        recorder.memdc = CreateCompatibleDC(recorder.windc);
+        recorder.bitmap = nullptr;
+        recorder.bitmap_w = 0;
+        recorder.bitmap_h = 0;
+        return recorder;
+    }
+    inline
+    void RecorderQuery(Recorder &recorder,int *w,int *h){
+        RECT win_rect;
+        ::GetWindowRect(recorder.window,&win_rect);
+        //Check pointer
+        if(w){
+            *w = win_rect.right - win_rect.left;
+        }
+        if(h){
+            *h = win_rect.bottom - win_rect.top;
+        }
+    }
+    /**
+     * @brief Read Pixels from Recorder
+     * 
+     * @param recorder 
+     * @note In windows the rgb is a BGR(so do not use it unless you know what you are doing)
+     * @param pixels The Win32 RGB pixels(4 bytes per pixel)
+     */
+    inline
+    void RecorderReadInternal(Recorder &recorder,void *pixels){
+        RECT win_rect;
+        ::GetWindowRect(recorder.window,&win_rect);
+        int win_w = win_rect.right - win_rect.left;
+        int win_h = win_rect.bottom - win_rect.top;
+
+        //Cretae a bitmap info
+        BITMAPINFO bmi;
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = win_w;
+        bmi.bmiHeader.biHeight = -(win_h);
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB;
+        bmi.bmiHeader.biSizeImage = 0;
+        bmi.bmiHeader.biXPelsPerMeter = 0;
+        bmi.bmiHeader.biYPelsPerMeter = 0;
+        bmi.bmiHeader.biClrUsed = 0;
+        bmi.bmiHeader.biClrImportant = 0;
+        //Read pixels
+        //Check bitmap size is same as last time
+        if(recorder.bitmap_h != win_h or recorder.bitmap_w != win_w){
+            ::DeleteObject(recorder.bitmap);
+            recorder.bitmap = nullptr;
+            recorder.bitmap_w = win_w;
+            recorder.bitmap_h = win_h;
+        }
+        if(recorder.bitmap == nullptr){
+            recorder.bitmap = ::CreateCompatibleBitmap(
+                recorder.windc,
+                win_w,
+                win_h
+            );
+        }
+        //Do bitblt
+        ::SelectObject(recorder.memdc,recorder.bitmap);
+        ::BitBlt(
+            recorder.memdc,
+            0,
+            0,
+            win_w,
+            win_h,
+            recorder.windc,
+            0,
+            0,
+            SRCCOPY
+        );
+        //Get pixels
+        ::GetDIBits(
+            recorder.memdc,
+            recorder.bitmap,
+            0,
+            win_h,
+            pixels,
+            &bmi,
+            DIB_RGB_COLORS
+        );
+    }
+    /**
+     * @brief Read RGBA pixels from Recorder
+     * 
+     * @param recorder 
+     * @param pixels The RGBA pixels(4 bytes per pixel)
+     */
+    inline
+    void RecorderReadRGBA(Recorder &recorder,void *pixels){
+        RecorderReadInternal(recorder,pixels);
+        //We need to convert the pixels to RGBA
+        auto p = (Uint32 *)pixels;
+        int w = recorder.bitmap_w;
+        int h = recorder.bitmap_h;
+
+        for(int i = 0;i < w * h;i++){
+            Uint32 pixel = p[i];
+            //Get BGR
+            Uint8 b = GetRValue(pixel);
+            Uint8 g = GetGValue(pixel);
+            Uint8 r = GetBValue(pixel);
+            //Set RGBA
+            p[i] = MapRGBA32(r,g,b,255);
+        }
+    }
+
+    inline
+    void ReleaseRecoder(Recorder recorder){
+        ::DeleteObject(recorder.bitmap);
+        ::DeleteDC(recorder.memdc);
+        ::ReleaseDC(recorder.window,recorder.windc);
+    }
+    
 };
 
 

@@ -176,6 +176,25 @@ namespace Btk{
         }
         win->WindowImpl::redraw();
     }
+    void Widget::raise() const{
+        Widget *w = const_cast<Widget*>(this);
+        if(is_window()){
+            //Self is window
+            SDL_RaiseWindow(static_cast<WindowImpl*>(w)->sdl_window());
+            return;
+        }
+        //Check has parent
+        if(parent() == nullptr){
+            throwRuntimeError("no parent");
+        }
+        if(parent()->is_container()){
+            //Is dynmaic safer?
+            dynamic_cast<Container*>(parent())->raise_widget(w);
+        }
+        else{
+            throwRuntimeError("not container");
+        }
+    }
     //Get the window
     Window &Widget::master() const{
         auto *pimpl = window();
@@ -380,8 +399,18 @@ namespace Btk{
         if(iter == childrens.end()){
             throwRuntimeError("unknown widget in container");
         }
-        //Get position of
-        BTK_UNIMPLEMENTED();
+        //Get widget iter by position
+        auto iter_pos = childrens.begin();
+        if(position < 0){
+            iter_pos = std::prev(iter_pos,std::abs(position));
+        }
+        else{
+            std::advance(iter_pos,position);
+        }
+        //Insert the widget
+        childrens.erase(iter);
+        childrens.insert(iter_pos,w);
+        //Need i call redraw?
     }
 }
 namespace Btk{

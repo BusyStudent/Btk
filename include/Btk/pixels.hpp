@@ -396,7 +396,17 @@ namespace Btk{
     };
     //TextureFlags operators
     BTK_FLAGS_OPERATOR(TextureFlags,int);
-    //RendererTexture
+    /**
+     * @brief The lock data from texture
+     * @todo Using this struct to instead of void*
+     */
+    struct LockData{
+        void *pixels;
+        int pitch;
+        //< Drvier specific data
+        void *priv;
+    };
+
     using TextureID = int;
     class Texture;
     /**

@@ -21,11 +21,13 @@
         CLSID_##T,IID_I##T\
     )
 
+struct SDL_Window;
 namespace Btk{
     class WindowImpl;
     class RendererDevice;
-}
 
+    enum class WindowFlags:Uint32;
+}
 namespace Btk{
 namespace Win32{
     BTKAPI void Init();
@@ -62,6 +64,8 @@ namespace Win32{
      * @return nullptr on error
      */
     BTKAPI WindowImpl *GetWindow(HWND hwnd);
+
+    BTKHIDDEN SDL_Window *CreateTsWindow(u8string_view t,int w,int h,WindowFlags);
         /**
      * @brief A Helper class to manager com
      * 
@@ -77,13 +81,33 @@ namespace Win32{
                 ptr->AddRef();
             }
         }
+        ComInstance(ComInstance &&instance) noexcept{
+            ptr = instance.ptr;
+            instance.ptr = nullptr;
+        }
+
         ~ComInstance() noexcept{
             release();
         }
+        /**
+         * @brief Release the com object
+         * 
+         */
         void release() noexcept{
             if(ptr != nullptr){
                 ptr->Release();
+                ptr = nullptr;
             }
+        }
+        /**
+         * @brief Detach the com object
+         * 
+         * @return T* 
+         */
+        T *detach() noexcept{
+            T *p = ptr;
+            ptr = nullptr;
+            return p;
         }
 
         //Assign
@@ -99,6 +123,7 @@ namespace Win32{
             release();
             ptr = instance.ptr;
             instance.ptr = nullptr;
+            return *this;
         }
         ComInstance &operator =(T *p) noexcept{
             release();
@@ -225,6 +250,10 @@ namespace Win32{
 }
 }
 namespace Btk{
+    //Short name for Win32 ComInstance?
+    template<class T>
+    using ComPtr = Win32::ComInstance<T>;
+
     /**
      * @brief Windows error
      * 

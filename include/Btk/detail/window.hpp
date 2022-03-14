@@ -168,6 +168,8 @@ namespace Btk{
             #ifdef _WIN32
             //Win32 parts
             Uint32 win32_draw_ticks = 0;
+            // Process draw event in win event loop when sizing
+            bool win32_sizing_draw = true;
             
             void __stdcall handle_win32(
                 void *hwnd,
@@ -175,6 +177,7 @@ namespace Btk{
                 Uint64 wParam,
                 Sint64 lParam
             );
+            void __stdcall win32_poll_draw();
             //Win32 MessageHook
             Function<void(void *,unsigned int,Uint64,Sint64)> win32_hooks;
             

@@ -206,6 +206,7 @@ namespace Btk{
     }
     void WindowImpl::set_modal(bool v){
         BTK_LOGINFO("[Window::set_modal] %s",v?"true":"false");
+        std::lock_guard locker(mtx);
         modal = v;
         //Update window attr
         if(modal){
@@ -293,7 +294,7 @@ namespace Btk{
                     //set cursor
                     SDL_SetCursor(cursor);
                 }
-                Event enter(Event::WindowEnter);
+                Event enter(Event::Enter);
                 handle(enter);
                 if(not sig_enter.empty()){
                     sig_enter();
@@ -639,7 +640,7 @@ namespace Btk{
         if(has_flag(flags,WindowFlags::Transparent)){
             //Use transparent window
             //Send to platform
-            #if BTK_X11
+            #if BTK_X11 || BTK_WIN32
             sdl_win = Platform::CreateTsWindow(title,w,h,flags);
             #else
             BTK_UNIMPLEMENTED();
