@@ -16,7 +16,7 @@ namespace Btk{
             ~TextBox();
 
             bool handle(Event &);
-            void draw(Renderer &);
+            void draw(Renderer &,Uint32);
             /**
              * @brief Get TextBox's text
              * 
@@ -121,7 +121,7 @@ namespace Btk{
             LineEdit(u8string_view text);
             ~LineEdit();
             
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
             
             // bool handle(Event &) override;
             // bool handle_drag(DragEvent &) override;

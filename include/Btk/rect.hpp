@@ -435,7 +435,28 @@ namespace Btk{
         T length() const noexcept{
             return p1().distance(p2());
         }
+        /**
+         * @brief Does the point is on the line
+         * 
+         * @param x 
+         * @param y 
+         * @return true 
+         * @return false 
+         */
+        bool has_point(T x,T y) const noexcept{
+            return 
+                (x1 - x) * (y2 - y) - (y1 - y) * (x2 - x) == 0
+                and
+                (x1 - x) * (x2 - x) + (y1 - y) * (y2 - y) >= 0;
+        }
+        bool has_point(const _Point<T> &point) const noexcept{
+            return has_point(point.x,point.y);
+        }
 
+        template<class Elem>
+        _Line<Elem> cast() const noexcept{
+            return *this;
+        }
     };
     //Line --end
 
@@ -680,6 +701,36 @@ namespace Btk{
                 rect.y + top,
                 rect.w - right - left,
                 rect.h - bottom - top
+            };
+        }
+        /**
+         * @brief Unapply margin to bounds
+         * 
+         * @tparam Elem 
+         * @return _Bounds<Elem> 
+         */
+        template<class Elem>
+        _Bounds<Elem> unapply(const _Bounds<Elem> &bounds) const noexcept{
+            return {
+                bounds.minx - left,
+                bounds.miny - top,
+                bounds.maxx + right,
+                bounds.maxy + bottom
+            };
+        }
+        /**
+         * @brief Unapply margin to rect
+         * 
+         * @tparam Elem 
+         * @return _Rect<Elem> 
+         */
+        template<class Elem>
+        _Rect<Elem> unapply(const _Rect<Elem> &rect) const noexcept{
+            return {
+                rect.x - left,
+                rect.y - top,
+                rect.w + right + left,
+                rect.h + bottom + top
             };
         }
         template<class Elem>
@@ -1117,19 +1168,13 @@ namespace Btk{
     }
     template<class T>
     inline T SetFloatPrecision(T num,size_t n) noexcept{
-        size_t prec = GetFloatPrecision(num);
-        if(prec <= n){
-            //do nothing
-            return num;
-        }
-        //TODO
-        T result = std::floor(num);
-        T dec = num - result;
+        //Get decimal fraction
+        T a = num - std::floor(num);
 
-        for(size_t i = 0;i < n;i++){
-
+        while(n--){
+            a *= 10;
         }
-        return 0;
+        return std::floor(a) + a;
     }
     //TODO Shape Utils
 

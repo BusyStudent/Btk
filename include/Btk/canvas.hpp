@@ -58,7 +58,7 @@ namespace Btk{
             ShapePolygenNode();
             ~ShapePolygenNode();
 
-            void draw(Renderer&) override;
+            void draw(Renderer&,Uint32) override;
 
             bool handle_mouse(MouseEvent &) override;
             bool handle_motion(MotionEvent &) override;

@@ -22,7 +22,7 @@ namespace Btk{
             //ref image
             void ref_image(PixBuf &buf);
             //called from parent widget
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
             //Clip this image
             void set_clip(const Rect &r);
 

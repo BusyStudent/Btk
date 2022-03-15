@@ -12,7 +12,7 @@ namespace Btk{
     }
     ProgressBar::~ProgressBar() = default;
 
-    void ProgressBar::draw(Renderer &render){
+    void ProgressBar::draw(Renderer &render,Uint32){
         FRect fixed_rect = rect;
 
         fixed_rect.y += 1;

@@ -338,6 +338,11 @@ namespace Btk{
         if(w == nullptr){
             return false;
         }
+        //Probably we should check the parent
+        if(w->parent() != nullptr){
+            //Unallowed
+            return false;
+        }
         childrens.push_back(w);
         //Tell the widget
         try{
@@ -400,17 +405,34 @@ namespace Btk{
             throwRuntimeError("unknown widget in container");
         }
         //Get widget iter by position
-        auto iter_pos = childrens.begin();
-        if(position < 0){
-            iter_pos = std::prev(iter_pos,std::abs(position));
-        }
-        else{
-            std::advance(iter_pos,position);
-        }
+        auto iter_pos = _index_widget(position);
         //Insert the widget
         childrens.erase(iter);
         childrens.insert(iter_pos,w);
         //Need i call redraw?
+    }
+    auto Container::_index_widget(long position) const -> std::list<Widget*>::const_iterator{
+        //Get widget iter by position
+        auto iter_pos = childrens.begin();
+        if(position < 0){
+            if(position < -childrens.size()){
+                throwRuntimeError("unknown widget in container");
+            }
+
+            iter_pos = childrens.end();
+            iter_pos = std::prev(iter_pos,std::abs(position) - 1);
+        }
+        else{
+            if(position >= childrens.size()){
+                throwRuntimeError("unknown widget in container");
+            }
+            std::advance(iter_pos,position);
+        }
+        return iter_pos;
+    }
+    auto Container::index_widget(long position) const -> Widget*{
+        auto iter = _index_widget(position);
+        return *iter;
     }
 }
 namespace Btk{
@@ -429,11 +451,11 @@ namespace Btk{
         }
         return w->handle(event);
     }
-    void Group::draw(Renderer &render){
+    void Group::draw(Renderer &render,Uint32 timestamp){
         for(auto i = childrens.rbegin();i != childrens.rend();++i){
             Widget *w = *i;
             if(w->visible() and not w->rectangle().empty()){
-                w->draw(render);
+                w->draw(render,timestamp);
             }
         }
     }
@@ -465,14 +487,19 @@ namespace Btk{
         switch(event.type()){
             case Event::DragBegin:{
                 BTK_LOGINFO("[%s->Group:%p]DragBegin (%d,%d)",
-                    get_typename(this).c_str(),
+                    BTK_typenameof(this),
                     this,
                     event.x,
                     event.y
                 );
                 
-                auto widget = find_children(event.position());
+                auto widget = find_visible_children(event.position());
                 if(widget == nullptr){
+                    //No finded
+                    BTK_LOGINFO("[%s->Group:%p]Nothing finded, leaveing...",
+                        BTK_typenameof(this),
+                        this
+                    );
                     return false;
                 }
                 if(widget->handle(event)){
@@ -482,13 +509,18 @@ namespace Btk{
                         return true;
                     }
                 }
-                BTK_LOGINFO("Drag rejected");
+                BTK_LOGINFO("[%s->Group:%p]DragRejected %s => %p",
+                    BTK_typenameof(this),
+                    this,
+                    BTK_typenameof(widget),
+                    widget
+                );
                 return false;
             }
             case Event::Drag:{
                 //Dragging
                 BTK_LOGINFO("[%s->Group:%p]Drag (%d,%d)",
-                    get_typename(this).c_str(),
+                    BTK_typenameof(this),
                     this,
                     event.x,
                     event.y
@@ -499,7 +531,7 @@ namespace Btk{
             case Event::DragEnd:{
                 //Drag is end
                 BTK_LOGINFO("[%s->Group:%p]DragEnd (%d,%d)",
-                    get_typename(this).c_str(),
+                    BTK_typenameof(this),
                     this,
                     event.x,
                     event.y
@@ -516,7 +548,7 @@ namespace Btk{
         }
     }
     bool Group::handle_drop(DropEvent &event){
-        Widget *w = find_children(event.position());
+        Widget *w = find_visible_children(event.position());
         if(w != nullptr){
             BTK_LOGINFO("[Drop]Send Drop to '%s' %p",BTK_typenameof(w),w);
             return w->handle(event);
@@ -526,7 +558,7 @@ namespace Btk{
     bool Group::handle_motion(MotionEvent &event){
         if(cur_widget == nullptr){
             //Try to find the widget
-            cur_widget = find_children(event.position());
+            cur_widget = find_visible_children(event.position());
             if(cur_widget == nullptr){
                 return false;
             }
@@ -545,7 +577,7 @@ namespace Btk{
                 cur_widget = nullptr;
 
                 //Try to find the widget
-                cur_widget = find_children(event.position());
+                cur_widget = find_visible_children(event.position());
                 if(cur_widget == nullptr){
                     return false;
                 }

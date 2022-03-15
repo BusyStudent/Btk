@@ -58,6 +58,24 @@ namespace{
             f();
         }
     }
+    //For timer in event loop
+    // struct sdl_timer_event_detail{
+    //     bool (*cb)(Uint32 timeout_time,void *data);
+    //     SDL_TimerID id;
+    // };
+    // Uint32 sdl_timer_event_cb(Uint32 interval,void *param){
+    //     SDL_Event event;
+    //     event.type = Btk::GetSystem()->timer_timeout_ev_id;
+    //     event.user.timestamp = SDL_GetTicks();
+    //     event.user.data1 = param;//< For mark which timer
+    //     return interval;
+    // }
+    // void sdl_timer_stop_internal(sdl_timer_event_detail *p){
+    //     SDL_RemoveTimer(p->id);
+    //     //Check event queue has this event belong to this timer
+    //     int SDL_HasEvent(Uint32 type);
+    //     delete p;
+    // }
     //ResourceBase
     Btk::Constructable<Btk::BasicResource> resource_base;
     bool resource_inited = false;
@@ -283,12 +301,13 @@ namespace Btk{
         }
     }
     System::System(){
-        defer_call_ev_id = SDL_RegisterEvents(2);
+        defer_call_ev_id = SDL_RegisterEvents(3);
         if(defer_call_ev_id == (Uint32)-1){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Could not regitser event");
         }
         else{
             redraw_win_ev_id = defer_call_ev_id + 1;
+            timer_timeout_ev_id = redraw_win_ev_id + 1;
             //regitser handler
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
             regiser_eventcb(redraw_win_ev_id,redraw_win_cb,nullptr);
@@ -718,7 +737,7 @@ namespace Btk{
     }
     inline
     void AsyncSystem::add_task(const Task &task){
-        //TODO Find the worker witch has slowest task
+        //TODO Find the worker witch has fewest tasks
         for(auto &worker:workers){
             if(worker.idle){
                 worker.add_task(task);
@@ -1050,3 +1069,26 @@ namespace Btk{
         return u16buf;
     }
 }
+
+BTK_CDECLS_BEGIN
+
+void _BtkL_Info(const char *fmt, ...){
+    std::va_list varg;
+    va_start(varg,fmt);
+    SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION,SDL_LOG_PRIORITY_INFO,fmt,varg);
+    va_end(varg);
+}
+void _BtkL_Warn(const char *fmt, ...){
+    std::va_list varg;
+    va_start(varg,fmt);
+    SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION,SDL_LOG_PRIORITY_WARN,fmt,varg);
+    va_end(varg);
+}
+void _BtkL_Error(const char *fmt, ...){
+    std::va_list varg;
+    va_start(varg,fmt);
+    SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION,SDL_LOG_PRIORITY_ERROR,fmt,varg);
+    va_end(varg);
+}
+
+BTK_CDECLS_END

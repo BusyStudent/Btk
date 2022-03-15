@@ -189,7 +189,7 @@ namespace Btk{
     //SVGView
     SVGView::SVGView(){}
     SVGView::~SVGView(){}
-    void SVGView::draw(Renderer &renderer){
+    void SVGView::draw(Renderer &renderer,Uint32){
         if(not image.empty()){
             //Save the status
             renderer.save();

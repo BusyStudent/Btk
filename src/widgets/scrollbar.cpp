@@ -114,7 +114,7 @@ namespace Btk{
         }
         return event.accept();
     }
-    void ScrollBar::draw(Renderer &render){
+    void ScrollBar::draw(Renderer &render,Uint32){
         render.save();
         render.intersest_scissor(rect);
         //draw background
@@ -373,7 +373,7 @@ namespace Btk{
         redraw();
         return event.accept();
     }
-    void  SliderBar::draw(Renderer &r){
+    void  SliderBar::draw(Renderer &r,Uint32){
         auto rect = content_rect();
         auto circle = content_circle();
         //Draw background

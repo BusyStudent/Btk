@@ -101,7 +101,7 @@ namespace Btk{
         Widget::set_parent(w);
         ptsize = theme().font.ptsize();
     }
-    void TextBox::draw(Renderer &render){
+    void TextBox::draw(Renderer &render,Uint32){
         render.draw_box(rect,theme().active.background);
         
         //BTK_LOGINFO("RendererLineH %f,ft_h %d",render.font_height(),ft_h);

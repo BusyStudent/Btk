@@ -98,7 +98,7 @@ namespace Btk{
             Button(int x,int y,int w,int h);
             ~Button();
 
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
         protected:
             bool handle_mouse(MouseEvent &) override;
             void onleave() override;
@@ -119,7 +119,7 @@ namespace Btk{
             RadioButton(u8string_view text);
             ~RadioButton();
 
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
             void set_rect(const Rect &r) override;
             /**
              * @brief Config the circle's r
@@ -155,7 +155,7 @@ namespace Btk{
                 btext = text;
             }
             ~CheckButton();
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
             //Event handle
             void set_rect(const Rect &r) override;
             bool handle_motion(MotionEvent &event) override;

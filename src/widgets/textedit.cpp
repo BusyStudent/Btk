@@ -245,7 +245,7 @@ namespace Btk{
         cur_text = "Hello";
     }
     LineEdit::~LineEdit() = default;
-    void LineEdit::draw(Renderer &p){
+    void LineEdit::draw(Renderer &p,Uint32){
         auto txt_limit = map_to_root(text_limit_area);
         auto txt_center = map_to_root(text_area);
         auto txt_pos = map_to_root(text_pos);

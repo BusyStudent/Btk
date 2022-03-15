@@ -103,7 +103,7 @@ namespace Btk{
             SVGView();
             ~SVGView();
 
-            void draw(Renderer &renderer) override;
+            void draw(Renderer &rendere,Uint32) override;
             void set_image(SVGImage &&s){
                 image = std::move(s);
                 redraw();

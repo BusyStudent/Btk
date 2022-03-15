@@ -13,7 +13,7 @@ namespace Btk{
             ~ProgressBar();
 
             void set_value(float value);
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
 
 
 

@@ -29,7 +29,7 @@ namespace Btk{
             MenuBar();
             ~MenuBar();
 
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
             void set_parent(Widget *parent) override;
         private:
             bool native_menu = false;

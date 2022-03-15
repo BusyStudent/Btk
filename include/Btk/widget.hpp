@@ -91,7 +91,13 @@ namespace Btk{
             Widget();
             Widget(const Widget &) = delete;
             virtual ~Widget();
-            virtual void draw(Renderer &render) = 0;
+            /**
+             * @brief Draw the widget
+             * 
+             * @param render The renderer
+             * @param timestamp The timestamp of the draw request
+             */
+            virtual void draw(Renderer &render,Uint32 timestamp) = 0;
             /**
              * @brief Process event
              * 
@@ -202,7 +208,10 @@ namespace Btk{
              */
             void clear_childrens();
             
-            auto &get_childrens(){
+            auto get_childrens() -> std::list<Widget*> &{
+                return childrens;
+            }
+            auto get_childrens() const -> const std::list<Widget*> &{
                 return childrens;
             }
             WidgetAttr attribute() const noexcept{
@@ -253,7 +262,13 @@ namespace Btk{
             RectImpl<T> map_to_self(const RectImpl<T> &p){
                 return p.translate(-x(),-y());
             }
+            // TODO Set/Get Userdata?
+            void  set_userdata(const char *name,void *value);
+            void *userdata(const char *name);
             
+            const char *name() const noexcept{
+                return _name;
+            }
         protected:
             /**
              * @brief Get current window
@@ -274,6 +289,13 @@ namespace Btk{
              */
             Widget *find_children(const Vec2 position) const;
             Widget *find_children(u8string_view name) const;
+            /**
+             * @brief Find children by position,but must visible
+             * 
+             * @param position 
+             * @return Widget* 
+             */
+            Widget *find_visible_children(const Vec2 position) const;
             /**
              * @brief Set theme and font from parent
              * 
@@ -296,13 +318,6 @@ namespace Btk{
                 redraw();
             }
             void set_name(u8string_view name);
-            const char *name() const noexcept{
-                return _name;
-            }
-            // TODO Set/Get Userdata?
-            void  set_userdata(const char *name,void *value);
-            void *userdata(const char *name);
-
         public:
             //Event Handle Method,It will be called in Widget::handle()
             /**
@@ -423,7 +438,7 @@ namespace Btk{
              * @param args 
              */
             template<class Callable,class ...Args>
-            void for_each(Callable &&callable,Args &&...args){
+            void for_each(Callable &&callable,Args &&...args) const{
                 if constexpr(std::is_same_v<std::invoke_result_t<Callable,Args...>,bool>){
                     //Has bool return type
                     for(auto w:childrens){
@@ -464,12 +479,33 @@ namespace Btk{
              * @param position 
              */
             virtual void move_widget(Widget *w,long position);
+            /**
+             * @brief Index widget in the container
+             * 
+             * @note Did we need virtual method here?
+             * @param position (negative value means the buttom)
+             * @return Widget* 
+             */
+            Widget *index_widget(long position) const;
 
             //Expose find method
             using Widget::find_children;
+        private:
+            auto _index_widget(long) const -> std::list<Widget*>::const_iterator;
     };
     inline Widget *Widget::find_children(Vec2 position) const{
         for(auto widget:childrens){
+            if(widget->rect.has_point(position)){
+                return widget;
+            }
+        }
+        return nullptr;
+    }
+    inline Widget *Widget::find_visible_children(Vec2 position) const{
+        for(auto widget:childrens){
+            if(not widget->visible()){
+                continue;
+            }
             if(widget->rect.has_point(position)){
                 return widget;
             }

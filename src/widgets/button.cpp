@@ -88,7 +88,7 @@ namespace Btk{
     }
     Button::~Button() = default;
     //draw button
-    void Button::draw(Renderer &render){
+    void Button::draw(Renderer &render,Uint32){
         //Fist draw backgroud
         //Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 1}
         //It makes button look better
@@ -195,7 +195,7 @@ namespace Btk{
     RadioButton::RadioButton(u8string_view t){
         btext = t;
     }
-    void RadioButton::draw(Renderer &render){
+    void RadioButton::draw(Renderer &render,Uint32){
         //Draw text
         if(not btext.empty()){
             render.use_font(font());
@@ -290,7 +290,7 @@ namespace Btk{
         Widget::set_rect(r);
 
     }
-    void CheckButton::draw(Renderer &render){
+    void CheckButton::draw(Renderer &render,Uint32){
         if(not btext.empty()){
             //Draw the text
             render.begin_path();

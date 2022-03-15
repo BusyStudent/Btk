@@ -351,12 +351,27 @@ namespace Btk{
     process_t _vspawn(size_t nargs,const _vspawn_arg args[]){
         //Create a new process by _wvspawn
         //Alloc a new wchar array 
-        wchar_t *a = Btk_SmallCalloc(wchar_t,nargs + 1);
+        wchar_t **arr = Btk_SmallCalloc(wchar_t*,nargs + 1);
 
         for(size_t n = 0;n < nargs;n++){
             //Convert Utf8 to 16 by winapi
-            
+            arr[n] = Btk_SmallCalloc(wchar_t,args[n].n + 1);
+            ::MultiByteToWideChar(
+                CP_UTF8,
+                0,
+                args[n].str,
+                args[n].n,
+                arr[n],
+                args[n].n
+            );
         }
+        process_t ret = ::_wspawnv(0,arr[0],arr);
+
+        //Cleanup
+        for(size_t n = 0;n < nargs;n++){
+            Btk_SmallFree(arr[n]);
+        }
+        Btk_SmallFree(arr); 
         return {};
     }
 }
@@ -405,7 +420,7 @@ namespace Btk{
                     }
                     win32_draw_ticks = current;
                     //Execute draw right now
-                    draw(*render);
+                    draw(*render,current);
                 }
                 catch (...){
                     DeferRethrow();

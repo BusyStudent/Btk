@@ -124,7 +124,7 @@ namespace Btk{
             it = items.erase(it);            
         }
     }
-    auto Layout::index_item(int idx) -> Item*{
+    auto Layout::index_item(Uint32 idx) -> Item*{
         if(idx < 0 or idx >= items.size()){
             return nullptr;
         }
@@ -132,12 +132,12 @@ namespace Btk{
         std::advance(it, idx);
         return *it;
     }
-    void Layout::draw(Renderer &r){
+    void Layout::draw(Renderer &r,Uint32 timestamp){
         if(is_dirty){
             update();
             is_dirty = false;
         }
-        Group::draw(r);
+        Group::draw(r,timestamp);
     }
     void Layout::invalidate(){
         is_dirty = true;
@@ -195,9 +195,9 @@ namespace Btk{
         for(auto item:items){
             factors += item->stretch;
         }
-        //In vertical direction, we need to know the height of the layout
+        //In horizontal direction, we need to know the width of the layout
         if(_direction == LeftToRight or _direction == RightToLeft){
-            //V
+            //H
             float x = rect.x;
             float y = rect.y;
             float h = rect.h;
@@ -232,7 +232,7 @@ namespace Btk{
             }
         }
         else{
-            //H
+            //V
             float x = rect.x;
             float y = rect.y;
             float w = rect.w;

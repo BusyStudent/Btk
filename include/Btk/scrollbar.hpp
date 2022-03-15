@@ -52,7 +52,7 @@ namespace Btk{
             SliderBar(Orientation orientation);
             ~SliderBar();
 
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
             //Event handle
             bool handle(Event &) override;
             bool handle_drag(DragEvent &) override;
@@ -209,7 +209,7 @@ namespace Btk{
             ~ScrollBar();
 
             bool handle(Event &) override;
-            void draw(Renderer&) override;
+            void draw(Renderer&,Uint32) override;
             /**
              * @brief Get the value of the scrollbar
              * 

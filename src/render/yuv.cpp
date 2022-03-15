@@ -331,8 +331,8 @@ static stbi_uc *stbi__resample_row_hv_2_simd(stbi_uc *out,const stbi_uc *in_near
 #if defined(STBI_NEON) || defined(STBI_SSE2)
 static stbi_uc *def_resample_row_hv_2(stbi_uc *out,const stbi_uc *in_near,const stbi_uc *in_far, int w, int hs);
 static void def_YCbCr_to_RGB_row(stbi_uc *out, const stbi_uc *y, const stbi_uc *pcb, const stbi_uc *pcr, int count, int step);
-decltype(stbi__resample_row_hv_2) *resample_row_hv_2 = def_resample_row_hv_2;
-decltype(stbi__YCbCr_to_RGB_row) *YCbCr_to_RGB_row = def_YCbCr_to_RGB_row;
+static decltype(stbi__resample_row_hv_2) *resample_row_hv_2 = def_resample_row_hv_2;
+static decltype(stbi__YCbCr_to_RGB_row) *YCbCr_to_RGB_row = def_YCbCr_to_RGB_row;
 static stbi_uc *def_resample_row_hv_2(stbi_uc *out,const stbi_uc *in_near,const stbi_uc *in_far, int w, int hs){
     if(SDL_HasNEON() or SDL_HasSSE2()){
         resample_row_hv_2 = stbi__resample_row_hv_2_simd;

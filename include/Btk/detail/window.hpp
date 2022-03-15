@@ -57,7 +57,7 @@ namespace Btk{
             WindowImpl(const WindowImpl &) = delete;
             ~WindowImpl();
             //Overload the method from widget
-            void draw(Renderer &render) override;
+            void draw(Renderer &render,Uint32 timestamp) override;
             /**
              * @brief Send a redraw request
              * 

@@ -62,7 +62,7 @@ namespace Btk{
         SDL_DestroyWindow(win);
     }
     //Draw window
-    void WindowImpl::draw(Renderer &render){
+    void WindowImpl::draw(Renderer &render,Uint32 timestamp){
         #ifndef NDEBUG
         SDL_Log("[System::Renderer]Draw Window %p",win);
         #endif
@@ -70,7 +70,7 @@ namespace Btk{
         render.begin();
         render.clear(bg_color);
         //Draw each widget
-        Group::draw(render);
+        Group::draw(render,timestamp);
         //Run the draw callback
         auto iter = draw_cbs.begin();
         while(iter != draw_cbs.end()){
@@ -127,7 +127,7 @@ namespace Btk{
             }
             last_draw_ticks = ticks;
         }
-        draw(*render);
+        draw(*render,ticks);
     }
     //TryCloseWIndow
     bool WindowImpl::on_close(){

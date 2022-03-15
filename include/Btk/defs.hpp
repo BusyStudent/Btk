@@ -21,23 +21,11 @@
     #define BTK_CDECLS_END }
 #else
     #include <stdint.h>
-    #include <cstring>
+    #include <string.h>
     #define BTK_CEXTERN
     #define BTK_CDECLS_BEGIN
     #define BTK_CDECLS_END
 #endif
-
-
-//Debug / Test
-#ifdef NDEBUG
-    #define BTK_ON_RELEASE(EXP) EXP
-    #define BTK_ON_DEBUG(EXP) 
-#else
-    #define BTK_ON_RELEASE(EXP) 
-    #define BTK_ON_DEBUG(EXP) EXP
-#endif
-
-#define BTK_RELEASE_INLINE BTK_ON_RELEASE(BTKINLINE)
 
 //Unique name
 #define BTK_MARGE_TOKEN_IMPL(A,B) A ## B
@@ -47,7 +35,8 @@
 #else
     #define BTK_UNIQUE_NAME(NAME) BTK_MARGE_TOKEN(NAME,__LINE__)
 #endif
-
+//Stringify
+#define BTK_STRINGIFY(A) #A
 //Noexcept
 #define BTK_NOEXCEPT_IF(X) noexcept(noexcept(X))
 
@@ -88,6 +77,34 @@
     BTK_ENUM_ALIAS(ENUM,+,|);\
     BTK_ENUM_ALIAS(ENUM,+=,|=);
 
+#if defined(BTK_SHADOW_UNSAFED_HINT) && !defined(DOXYGEN_SHOULD_SKIP_THIS)
+    //< Only for shadow parent method
+    struct _Btk_shadow_t;
+    //Shadow message
+    #define BTK_SHADOWED_MESSAGE(NAME) \
+        "This " #NAME " method is shadowed explicitly."\
+        "If you really know what you are doing,"\
+        "you can use OBJ->ParentClass::" #NAME " instead,but it is not recommended"
+    //Shadow parent method if you don't want user to use it
+    #define BTK_SHADOW_METHOD(NAME) \
+        template<class T = void,class ...Args>\
+        int NAME(Args ...) noexcept{\
+            static_assert(\
+                std::is_same_v<T,_Btk_shadow_t>,\
+                BTK_SHADOWED_MESSAGE(NAME)\
+            );\
+        }\
+        template<class T = void,class ...Args>\
+        int NAME(Args ...) const noexcept{\
+            static_assert(\
+                std::is_same_v<T,_Btk_shadow_t>,\
+                BTK_SHADOWED_MESSAGE(NAME)\
+            );\
+        }
+#else
+    #define BTK_SHADOWED_MESSAGE(NAME)
+    #define BTK_SHADOW_METHOD(NAME)
+#endif
 //Macro to avoid compile still develop code in msvc
 //Bacause msvc will export all the symbols
 #if defined(_MSC_VER) && !defined(BTK_VSCODE_SUPPRESS)
@@ -95,6 +112,25 @@
 #else
     #define BTK_STILL_DEV 1
 #endif
+//Debugs macro for header files
+#ifdef BTK_HEADER_DEBUG_HINT
+    #define BTK_H_INFO(...) _BtkL_Info(__VA_ARGS__)
+    #define BTK_H_WARN(...) _BtkL_Warn(__VA_ARGS__)
+    #define BTK_H_ERROR(...) _BtkL_Error(__VA_ARGS__)
+#else
+    #define BTK_H_INFO(...)
+    #define BTK_H_WARN(...)
+    #define BTK_H_ERROR(...)
+#endif
+
+//Debugs function
+BTK_CDECLS_BEGIN
+
+BTKAPI void _BtkL_Info(const char *fmt, ...);
+BTKAPI void _BtkL_Warn(const char *fmt, ...);
+BTKAPI void _BtkL_Error(const char *fmt, ...);
+
+BTK_CDECLS_END
 
 #if BTK_CXX
 namespace Btk{

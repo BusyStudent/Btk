@@ -18,7 +18,7 @@ namespace Btk{
             ~Layout();
 
             bool handle(Event &) override;
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
             void set_rect(const Rect &) override;
 
 
@@ -91,10 +91,10 @@ namespace Btk{
             /**
              * @brief Get item by index
              * 
-             * @param index 
+             * @param index (negative index is not allowed)
              * @return Item* 
              */
-            Item *index_item(int index);
+            Item *index_item(Uint32 index);
             /**
              * @brief Get item by widget
              * 
@@ -146,6 +146,12 @@ namespace Btk{
             }
             float spacing() const noexcept{
                 return _spacing;
+            }
+            bool is_horizontal() const noexcept{
+                return _direction == LeftToRight or _direction == RightToLeft;
+            }
+            bool is_vertical() const noexcept{
+                return _direction == TopToBottom or _direction == BottomToTop;
             }
             /**
              * @brief Set the stretch object of widget

@@ -42,7 +42,7 @@ namespace Btk{
     Label::~Label(){
 
     }
-    void Label::draw(Renderer &render){
+    void Label::draw(Renderer &render,Uint32){
         if(text_.empty()){
             return;
         }

@@ -7,6 +7,24 @@
 struct SDL_Window;
 #include "defs.hpp"
 #include "widget.hpp"
+
+#define BTK_TABWIDGET_TAB_NAME "_tabname_"
+#define BTK_STACKEDWIDGET_INDEX "_sidx_"
+
+//Shadow utils
+//Hide all container's method
+#define BTK_SHADOW_CONTAINER_METHOD() \
+    BTK_SHADOW_METHOD(add);\
+    BTK_SHADOW_METHOD(remove);\
+    BTK_SHADOW_METHOD(detach);\
+    BTK_SHADOW_METHOD(clear);\
+    BTK_SHADOW_METHOD(for_each);\
+    BTK_SHADOW_METHOD(raise_widget);\
+    BTK_SHADOW_METHOD(lower_widget);\
+    BTK_SHADOW_METHOD(move_widget);\
+    BTK_SHADOW_METHOD(index_widget);\
+    BTK_SHADOW_METHOD(find_children);\
+
 namespace Btk{
     class NativeWindow;
     enum class WindowFlags:Uint32;
@@ -19,7 +37,8 @@ namespace Btk{
             Group() = default;
             ~Group() = default;
         public:
-            void draw(Renderer             &) override;
+            void draw(Renderer &,Uint32     ) override;
+
             bool handle(Event              &) override;
             bool handle_drop(DropEvent     &) override;
             bool handle_drag(DragEvent     &) override;
@@ -36,6 +55,9 @@ namespace Btk{
              * 
              */
             bool set_focus_widget(Widget *);
+
+            //FIXME:Should we add a method to tell Group to invalidate the cache
+            //like Group::invalidate_cache()?
         private:
             //< The current dragging widget
             Widget *drag_widget = nullptr;
@@ -50,7 +72,7 @@ namespace Btk{
             GroupBox();
             ~GroupBox();
             
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
             // bool handle(Event  &) override;
         private:
             Color borader_color;
@@ -68,11 +90,92 @@ namespace Btk{
     class BTKAPI ScrollArea:public Group{
         
     };
-    class BTKAPI TabWidget:public Group{
+    class BTKAPI ListView:public Group{
+
+    };
+    class BTKAPI TreeView:public Group{
         
     };
-    class BTKAPI StackedWidget:public Group{
+    /**
+     * @brief Lay Widget
+     * 
+     */
+    class BTKAPI TabWidget:public Group{
+        public:
+            TabWidget();
+            ~TabWidget();
 
+            BTK_SHADOW_CONTAINER_METHOD();
+
+            Group &insert_tab(u8string_view txt,long where);
+        private:
+            Signal<void(int change_to)> signal_tab_changed;
+            long current_index = 0;
+    };
+    /**
+     * @brief a group of widgets,but each time only one widget can be shown
+     * @note Index start from 0(<0 is invalid,means no widget will be shown)
+     */
+    class BTKAPI StackedWidget:public Group{
+        public:
+            StackedWidget();
+            ~StackedWidget();
+
+            Widget *current_widget() const{
+                return _current_widget;
+            }
+            Sint32  current_index() const{
+                return _current_index;
+            }
+            /**
+             * @brief Get the widget index
+             * 
+             * @param w 
+             * @return Sint32 
+             */
+            Sint32 index_of(Widget *w) const{
+                if(w == nullptr){
+                    return -1;
+                }
+                void *p = w->userdata(BTK_STACKEDWIDGET_INDEX);
+                if(p == nullptr){
+                    return -1;
+                }
+                return LoadPodInPointer<Sint32>(p);
+            }
+
+            void set_current_widget(Widget *w);
+            void set_current_widget(Sint32 index);
+
+            using Container::add;
+            /**
+             * @brief Add a widget to the stack,The first widget added index is 0
+             * 
+             * @param w 
+             * @return true 
+             * @return false 
+             */
+            bool add(Widget *w) override;
+            bool detach(Widget *w) override;
+            void move_widget(Widget *w,long index) override;
+
+            //Exposed signals
+            auto signal_current_changed() -> Signal<void(Sint32 )> &{
+                return _signal_current_changed;
+            }
+            auto signal_widget_removed() -> Signal<void(Sint32 )> &{
+                return _signal_widget_removed;
+            }
+        private:
+            Sint32 proc_index(Sint32) const;
+
+            Sint32  _current_index = -1;//< The index of current widget
+            Widget *_current_widget = nullptr;
+            bool _allow_invalid_index = false;//< Use invalid index to show nothing
+
+            //Signals
+            Signal<void(Sint32 change_to)> _signal_current_changed;
+            Signal<void(Sint32 index)> _signal_widget_removed;
     };
     /**
      * @brief A virtual window
@@ -91,7 +194,7 @@ namespace Btk{
             EmbedWindow();
             ~EmbedWindow();
 
-            void draw(Renderer &) override;
+            void draw(Renderer &,Uint32) override;
             void set_rect(const Rect &) override;
             void set_parent(Widget *) override;
             void set_window(NativeWindow *win);
@@ -110,7 +213,7 @@ namespace Btk{
              * 
              */
             void init();
-            void draw(Renderer &) override final;
+            void draw(Renderer &,Uint32) override final;
             /**
              * @brief Draw by OpenGL Context
              * 

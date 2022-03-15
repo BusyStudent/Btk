@@ -22,7 +22,7 @@ namespace Btk{
         attr.user_rect = true;
     }
     ImageView::~ImageView() = default;
-    void ImageView::draw(Renderer &render){
+    void ImageView::draw(Renderer &render,Uint32){
         if(dirty){
             //Cleanup
             texture = nullptr;

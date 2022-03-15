@@ -163,6 +163,7 @@ namespace Btk{
         
         Uint32 defer_call_ev_id;//defer call Event ID
         Uint32 redraw_win_ev_id;//redraw window Event ID
+        Uint32 timer_timeout_ev_id;//timer timeout Event ID
         Uint32 wait_event_delay = 1;//<Delay in wait event
         //called after a exception was throwed
         //return false to abort program
