@@ -227,14 +227,20 @@ namespace Btk{
                 case 1:
                     guass_filter.at(i) /= sum;i++;
             }
-       
+        }
+
+         for (int i = 0;i<r;i++){
+            for(int j = 0;j <r;j++){
+                printf("%f ",guass_filter[i*r + j]);
+            }
+            printf("\n");
         }
         BTK_LOGINFO("guass filter init end ...");
         
     }
 
-    PixBuf PixBufRef::blur(int r) const{
-        if(r < 1){
+    PixBuf PixBufRef::blur(float sigma,int r) const{
+        if(sigma < 3/2 && r < 1){
             return {};
         }
         if(empty()){
@@ -245,7 +251,8 @@ namespace Btk{
         //Do Gaussian blur algo
         // BTK_FIXME("Need Impl");
         SDL_LockSurface(surface);
-        int blur_size = r*6 + 1;
+        int blur_size = static_cast<int>(sigma*6) + 1;
+        if(r > 0) blur_size = r;
         Uint32 *pixel = static_cast<Uint32 *>(surface->pixels);
         std::vector<Uint32> dpixel(buf.h() * buf.w());
         std::vector<float> guass_filter(blur_size*blur_size);
@@ -259,7 +266,7 @@ namespace Btk{
                 for(int m = i - blur_size / 2;m < i + blur_size / 2; m ++){
                     for(int n = j - blur_size / 2;n < j + blur_size / 2;n ++) {
                         ++ index;
-                        if(m < 0 || n < 0 || m >= buf.w() || n >= buf.h()) {
+                        if(m < 0 || n < 0 || m >= buf.h() || n >= buf.w()) {
                             continue;
                         }
                         Color color = GetRGBA32(*(pixel + m*buf.w() + n));
@@ -277,26 +284,26 @@ namespace Btk{
                 dpixel.at(i * buf.w() + j) = MapRGBA32(color);
             }
         }
-        int i,pixel_size = buf.w() * buf.h();
+        int i = 0,pixel_size = buf.w() * buf.h();
         switch (pixel_size % 8)
         {
             for(;i < pixel_size;){
                 case 0:
-                    pixel[i] = dpixel.at(i); i++;
+                    *(pixel + i) = dpixel.at(i); ++i;
                 case 7:
-                    pixel[i] = dpixel.at(i); i++;
+                    *(pixel + i) = dpixel.at(i); ++i;
                 case 6:
-                    pixel[i] = dpixel.at(i); i++;
+                    *(pixel + i) = dpixel.at(i); ++i;
                 case 5:
-                    pixel[i] = dpixel.at(i); i++;
+                    *(pixel + i) = dpixel.at(i); ++i;
                 case 4:
-                    pixel[i] = dpixel.at(i); i++;
+                    *(pixel + i) = dpixel.at(i); ++i;
                 case 3:
-                    pixel[i] = dpixel.at(i); i++;
+                    *(pixel + i) = dpixel.at(i); ++i;
                 case 2:
-                    pixel[i] = dpixel.at(i); i++;
+                    *(pixel + i) = dpixel.at(i); ++i;
                 case 1:
-                    pixel[i] = dpixel.at(i); i++;
+                    *(pixel + i) = dpixel.at(i); ++i;
             }
         
         }

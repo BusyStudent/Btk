@@ -7,7 +7,7 @@ int main(){
     Btk::Init();
     auto buf = Btk::PixBuf::FromXPMArray(icon);
     auto resized = buf.resize(1000,1000);
-    auto blur1 = buf.blur(10);
+    auto blur1 = buf.blur(0.9,20);
     resized.save("hello.bmp");
     blur1.save("hello_test.bmp");
 }
