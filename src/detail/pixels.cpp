@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <math.h>
 #ifdef BTK_HAS_SDLIMG
     #include <SDL2/SDL_image.h>
 #endif
@@ -28,6 +29,9 @@
 #include <Btk/rect.hpp>
 #include <ostream>
 namespace Btk{
+
+    const double PI = acos(-1);
+    
     //Load XPM DATA
     static inline PixBuf load_xpm_from(const char *const*);
 
@@ -190,6 +194,45 @@ namespace Btk{
         SDL_BlitSurface(buf.surf,&t,buf.surf,nullptr);
         return buf;
     }
+
+    void pixels_guass_filter(int r,std::vector<float> &guass_filter,float sigma) {
+        BTK_LOGINFO("guass filter init start ...");
+        float sum = 0;
+        for (int i = 0;i<r;i++){
+            for(int j = 0;j <r;j++){
+                float r2 = (i - r/2)*(i - r/2) + (j - r/2)*(j - r/2);
+                guass_filter.at(i*r + j) = (1.0 / (2*PI*sigma*sigma))*exp(-r2/(2*sigma*sigma));
+                sum += guass_filter.at(i*r + j);
+                if(guass_filter[i*r + j] > 0.0001) BTK_LOGINFO("%d,%d:%f",i - r/2,j - r/2,guass_filter[i*r + j]);
+            }
+        }
+        int i = 0;
+        switch ((r*r)%8)
+        {
+            for(;i<r*r;){
+                case 0:
+                    guass_filter.at(i) /= sum;i++;
+                case 7:
+                    guass_filter.at(i) /= sum;i++;
+                case 6:
+                    guass_filter.at(i) /= sum;i++;
+                case 5:
+                    guass_filter.at(i) /= sum;i++;
+                case 4:
+                    guass_filter.at(i) /= sum;i++;
+                case 3:
+                    guass_filter.at(i) /= sum;i++;
+                case 2:
+                    guass_filter.at(i) /= sum;i++;
+                case 1:
+                    guass_filter.at(i) /= sum;i++;
+            }
+       
+        }
+        BTK_LOGINFO("guass filter init end ...");
+        
+    }
+
     PixBuf PixBufRef::blur(int r) const{
         if(r < 1){
             return {};
@@ -198,9 +241,67 @@ namespace Btk{
             return {};
         }
         auto buf = convert(SDL_PIXELFORMAT_RGBA32);
+        auto surface = buf.get();
         //Do Gaussian blur algo
-        BTK_FIXME("Need Impl");
-        return buf;        
+        // BTK_FIXME("Need Impl");
+        SDL_LockSurface(surface);
+        int blur_size = r*6 + 1;
+        Uint32 *pixel = static_cast<Uint32 *>(surface->pixels);
+        std::vector<Uint32> dpixel(buf.h() * buf.w());
+        std::vector<float> guass_filter(blur_size*blur_size);
+        pixels_guass_filter(blur_size,guass_filter,r);
+        for (int i = 0;i<buf.h();i ++) {
+            for(int j = 0;j<buf.w();j ++){
+
+                float sum[4] = {0.,0.,0.,0.};
+                int index = -1;
+
+                for(int m = i - blur_size / 2;m < i + blur_size / 2; m ++){
+                    for(int n = j - blur_size / 2;n < j + blur_size / 2;n ++) {
+                        ++ index;
+                        if(m < 0 || n < 0 || m >= buf.w() || n >= buf.h()) {
+                            continue;
+                        }
+                        Color color = GetRGBA32(*(pixel + m*buf.w() + n));
+                        sum[0] += color.r * guass_filter.at(index);
+                        sum[1] += color.g * guass_filter.at(index);
+                        sum[2] += color.b * guass_filter.at(index);
+                        sum[3] += color.a * guass_filter.at(index);
+                    }
+                }
+                for (int l = 0;l < 4; l++) {
+                    if(sum[l] < 0) sum[l] = 0;
+                    if(sum[l] > 255) sum[l] = 255;
+                }
+                Color color(sum[0],sum[1],sum[2],sum[3]);
+                dpixel.at(i * buf.w() + j) = MapRGBA32(color);
+            }
+        }
+        int i,pixel_size = buf.w() * buf.h();
+        switch (pixel_size % 8)
+        {
+            for(;i < pixel_size;){
+                case 0:
+                    pixel[i] = dpixel.at(i); i++;
+                case 7:
+                    pixel[i] = dpixel.at(i); i++;
+                case 6:
+                    pixel[i] = dpixel.at(i); i++;
+                case 5:
+                    pixel[i] = dpixel.at(i); i++;
+                case 4:
+                    pixel[i] = dpixel.at(i); i++;
+                case 3:
+                    pixel[i] = dpixel.at(i); i++;
+                case 2:
+                    pixel[i] = dpixel.at(i); i++;
+                case 1:
+                    pixel[i] = dpixel.at(i); i++;
+            }
+        
+        }
+        SDL_UnlockSurface(surface);
+        return buf;
     }
 
     void PixBufRef::bilt(PixBufRef buf,const Rect *src,Rect *dst){
