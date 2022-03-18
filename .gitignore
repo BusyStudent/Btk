@@ -45,3 +45,5 @@
 #vs
 /.vs/
 /docs/
+#config file
+/include/Btk/detail/config.hpp

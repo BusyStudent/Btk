@@ -39,7 +39,7 @@ using namespace Btk;
 
 //Freetype
 
-#ifdef BTK_USE_STBTT
+#ifdef BTK_USE_STB_TRUETYPE
 	#define BTK_HAS_FREETYPE 0
 #else
 	#define BTK_HAS_FREETYPE __has_include(<ft2build.h>)

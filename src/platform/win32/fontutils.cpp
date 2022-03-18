@@ -17,15 +17,15 @@
 #include <Btk/Btk.hpp>
 #include <thread>
 #include <mutex>
-namespace Btk{
-namespace FontUtils{
+
+namespace Btk::FontUtils{
     void Init(){
     
     }
     void Quit(){
 
     }
-    static u16string get_font_from_name(Win32::RegKey &regkey,const char16_t *name){
+    static u16string get_font_from_name(Win32::RegKey &regkey,const wchar_t *name){
         wchar_t buffer[MAX_PATH + 1];//Return value buffer
         buffer[MAX_PATH] = '\0';
 
@@ -80,28 +80,61 @@ namespace FontUtils{
                 nullptr,
                 nullptr
             );
-            if(ret == ERROR_SUCCESS){
-                // BTK_LOGINFO("Name of %s",u16string_view((const char16_t*)buffer).to_utf8().c_str());
-                if(SDL_wcsncasecmp(name.w_str(),buffer,name.length()) == 0){
-                    return get_font_from_name(regkey,reinterpret_cast<char16_t*>(buffer));
-                }
-                else if(SDL_wcsstr(buffer,name.w_str()) != 0){
-                    //Like xx & req
-                    return get_font_from_name(regkey,reinterpret_cast<char16_t*>(buffer));
-                }
-                else{
-                    //Reset the buffer
-                    memset(buffer,'\0',buflen * sizeof(wchar_t));
-                    buflen = MAX_PATH;
-                }
-            }
-            else{
-                BTK_LOGINFO("RegEnumKeyExA => %s",StrMessageA(GetLastError()).c_str());
+            if(ret != ERROR_SUCCESS){
+                //No more value
+                break;
             }
             index ++;
+            // BTK_LOGINFO("Name of %s",u16string_view((const char16_t*)buffer).to_utf8().c_str());
+            if(SDL_wcsncasecmp(name.w_str(),buffer,name.length()) == 0){
+                return get_font_from_name(regkey,buffer);
+            }
+            else if(SDL_wcsstr(buffer,name.w_str()) != 0){
+                //Like xx & req
+                return get_font_from_name(regkey,buffer);
+            }
+            //Reset the buffer
+            memset(buffer,'\0',buflen * sizeof(wchar_t));
+            buflen = MAX_PATH;
         }
-        while(ret == ERROR_SUCCESS);
+        while(true);
         return {};
+    }
+    //Callback for enum font
+    template<typename Param>
+    static BOOL CALLBACK gdi_callback(const LOGFONTW *font,const TEXTMETRICW*w,DWORD type,LPARAM param){
+        Param *p = reinterpret_cast<Param*>(param);
+        return (*p)(font,w,type);
+    };
+    template<class Callable,class ...Args>
+    static void gdi_enum_font(Callable &&callable,Args &&...args){
+
+        auto callback_forward = [&](const LOGFONTW *font,const TEXTMETRICW*w,DWORD type) -> BOOL{
+            //Does the callback has return value?
+            constexpr bool has_return_type = std::is_same_v<
+                std::invoke_result_t<Callable,const LOGFONTW&,const TEXTMETRICW&,DWORD,Args...>,
+                bool
+            >;
+
+            if constexpr(has_return_type){
+                return callable(*font,*w,type,std::forward<Args>(args)...);
+            }
+            else{
+                callable(*font,*w,type,std::forward<Args>(args)...);
+                return TRUE;
+            }
+        };
+        auto gdi_font_cb = gdi_callback<decltype(callback_forward)>;
+
+        HDC hdc = GetDC(nullptr);
+        if(hdc == nullptr){
+            throwWin32Error(GetLastError());
+        }
+        //EnumFontFamiliesExW
+        if(!EnumFontFamiliesExW(hdc,nullptr,gdi_font_cb,reinterpret_cast<LPARAM>(&callback_forward),0)){
+            throwWin32Error(GetLastError());
+        }
+        ReleaseDC(nullptr,hdc);
     }
     //It need impove if the value is 'MS Gothic & MS UI Gothic & MS PGothic (TrueType)'
     u8string GetFileByName(u8string_view name){
@@ -125,16 +158,6 @@ namespace FontUtils{
         info.index = 0;
         return info;
     }
-    //Callback for enum font
-    static int CALLBACK font_cb(const LOGFONTA *font,const TEXTMETRICA*,DWORD type,LPARAM data){
-        if(type == TRUETYPE_FONTTYPE){
-            //Is truetype
-            BTK_LOGINFO(font->lfFaceName);
-            ((u8string*)data)->assign(font->lfFaceName);
-            return 0;
-        }
-        return 1;
-    };
     u8string GetDefaultFont(){
         NONCLIENTMETRICSW info;
         info.cbSize = sizeof(NONCLIENTMETRICSW);
@@ -160,7 +183,4 @@ namespace FontUtils{
         return ret.to_utf8();
     }
 }
-}
-
-
 #endif

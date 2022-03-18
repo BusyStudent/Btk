@@ -10,28 +10,37 @@
 
 namespace Btk{
     //SDL_Thread
-    namespace Impl{
-        template<class T,class ...Args>
-        struct ThreadInvoker:public std::tuple<Args...>{
-            T callable;
-            
-            //A Simple invoker for SDL_Thread
-            static int SDLCALL Run(void *__self){
-                //It is easy to move
-                if constexpr(std::is_nothrow_move_assignable_v<ThreadInvoker>
-                         and std::is_trivially_move_assignable_v<ThreadInvoker>
-                    ){
-                    ThreadInvoker self = std::move(*static_cast<ThreadInvoker*>(__self));
-                    delete static_cast<ThreadInvoker*>(__self);
-                    std::apply(self.callable,static_cast<std::tuple<Args...>&&>(self));
-                }
-                else{
-                    std::unique_ptr<ThreadInvoker> ptr(static_cast<ThreadInvoker*>(__self));
-                    std::apply(ptr->callable,static_cast<std::tuple<Args...>&&>(*ptr));
-                }
-                return 0;
+    template<class T,class ...Args>
+    struct _ThreadInvoker:public std::tuple<Args...>{
+        T callable;
+        
+        //A Simple invoker for SDL_Thread
+        static int SDLCALL Run(void *__self){
+            //It is easy to move
+            if constexpr(std::is_nothrow_move_assignable_v<_ThreadInvoker>
+                        and std::is_trivially_move_assignable_v<_ThreadInvoker>
+                ){
+                _ThreadInvoker self = std::move(*static_cast<_ThreadInvoker*>(__self));
+                delete static_cast<_ThreadInvoker*>(__self);
+                std::apply(self.callable,static_cast<std::tuple<Args...>&&>(self));
             }
-        };
+            else{
+                std::unique_ptr<_ThreadInvoker> ptr(static_cast<_ThreadInvoker*>(__self));
+                std::apply(ptr->callable,static_cast<std::tuple<Args...>&&>(*ptr));
+            }
+            return 0;
+        }
+    };
+    /**
+     * @brief ThreadPriority enum for thread priority
+     * 
+     */
+    enum class ThreadPriority:int{
+        Idle = SDL_THREAD_PRIORITY_LOW,
+        Low = SDL_THREAD_PRIORITY_LOW,
+        Normal = SDL_THREAD_PRIORITY_NORMAL,
+        High = SDL_THREAD_PRIORITY_HIGH,
+        Realtime = SDL_THREAD_PRIORITY_TIME_CRITICAL
     };
     class Thread{
         public:
@@ -45,7 +54,7 @@ namespace Btk{
              */
             template<class Callable,class ...Args>
             Thread(Callable &&callable,Args ...args){
-                using InvokerType = Impl::ThreadInvoker
+                using InvokerType = _ThreadInvoker
                     <std::remove_reference_t<Callable>,Args...>;
                 
                 
@@ -61,7 +70,7 @@ namespace Btk{
             };
             template<class Callable,class ...Args>
             Thread(const char *name,Callable &&callable,Args ...args){
-                using InvokerType = Impl::ThreadInvoker
+                using InvokerType = _ThreadInvoker
                     <std::remove_reference_t<Callable>,Args...>;
                 
                 
@@ -98,6 +107,9 @@ namespace Btk{
                 SDL_DetachThread(thrd);
                 thrd = nullptr;
             };
+            const char *name(){
+                return SDL_GetThreadName(thrd);
+            };
             
             Thread &operator =(Thread &&th){
                 thrd = th.thrd;
@@ -107,7 +119,26 @@ namespace Btk{
         private:
             SDL_Thread *thrd;
     };
-};
+    /**
+     * @brief Set the Thread Priority object on the current thread
+     * 
+     * @param priority The thread priority
+     * @param errcode The error code reference
+     */
+    inline void SetThreadPriority(ThreadPriority priority,int &errcode) noexcept{
+        errcode = SDL_SetThreadPriority(static_cast<SDL_ThreadPriority>(priority));
+    };
+    /**
+     * @brief Set the Thread Priority object on the current thread
+     * 
+     * @param priority The thread priority
+     */
+    inline void SetThreadPriority(ThreadPriority priority){
+        if(SDL_SetThreadPriority(static_cast<SDL_ThreadPriority>(priority)) != 0){
+            throwSDLError();
+        }
+    };
+}
 
 
 #endif // _BTK_IMPL_THREAD_HPP_

@@ -15,11 +15,12 @@
 
 #include "../libs/nanovg.h"
 
-#ifndef BTK_USE_GLES2
-    #define BTK_USE_GLES2 0
+#ifndef BTK_USE_OPENGLES2
+    #define BTK_USE_OPENGLES2 0
     #define NANOVG_GLES3_IMPLEMENTATION
 #else
-    #define BTK_USE_GLES2 1
+    #undef BTK_USE_OPENGLES2
+    #define BTK_USE_OPENGLES2 1
     #define NANOVG_GLES2_IMPLEMENTATION
 #endif
 
@@ -683,7 +684,7 @@ namespace Btk{
             BTK_LOGINFO("Enable Stencil on create context");
             flags |= NVG_STENCIL_STROKES;
         }
-        #if BTK_USE_GLES2
+        #if BTK_USE_OPENGLES2
         return nvgCreateGLES2(flags,this);
         #else
         return nvgCreateGLES3(flags,this);
@@ -692,7 +693,7 @@ namespace Btk{
     }
     void GLDevice::destroy_context(Context ctxt){
         BTK_GL_BEGIN();
-        #if BTK_USE_GLES2
+        #if BTK_USE_OPENGLES2
         return nvgDeleteGLES2(ctxt);        
         #else
         return nvgDeleteGLES3(ctxt);
@@ -905,7 +906,7 @@ namespace Btk{
         if(not owned){
             f |= TextureFlags(NVG_IMAGE_NODELETE);
         }
-        #if BTK_USE_GLES2
+        #if BTK_USE_OPENGLES2
         return nvglCreateImageFromHandleGLES2(ctxt,tex,w,h,int(f));
         #else
         return nvglCreateImageFromHandleGLES3(ctxt,tex,w,h,int(f));

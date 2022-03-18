@@ -23,7 +23,7 @@
 #include <Btk/defs.hpp>
 #include <Btk/Btk.hpp>
 
-#ifdef BTK_USE_SWDEVICE
+#ifdef BTK_HAVE_SOFTWARE_DEVICE
 //Enable Software Device
     #include <Btk/gl/software.hpp>
 #endif
@@ -58,24 +58,54 @@ namespace{
             f();
         }
     }
-    //For timer in event loop
-    // struct sdl_timer_event_detail{
-    //     bool (*cb)(Uint32 timeout_time,void *data);
-    //     SDL_TimerID id;
-    // };
-    // Uint32 sdl_timer_event_cb(Uint32 interval,void *param){
-    //     SDL_Event event;
-    //     event.type = Btk::GetSystem()->timer_timeout_ev_id;
-    //     event.user.timestamp = SDL_GetTicks();
-    //     event.user.data1 = param;//< For mark which timer
-    //     return interval;
-    // }
-    // void sdl_timer_stop_internal(sdl_timer_event_detail *p){
-    //     SDL_RemoveTimer(p->id);
-    //     //Check event queue has this event belong to this timer
-    //     int SDL_HasEvent(Uint32 type);
-    //     delete p;
-    // }
+    // For timer in event loop
+    struct sdl_timer_event_detail{
+        Btk::Atomic refcount = 1;
+        bool (*cb)(Uint32 timestamp,void *data1,void *data2) = nullptr;
+        SDL_TimerID id = 0;
+        void *userdata1 = nullptr;
+        void *userdata2 = nullptr;
+        bool active = true;
+
+        void unref(){
+            --refcount;
+            if(refcount == 0){
+                delete this;
+            }
+        }
+        void ref(){
+            ++refcount;
+        }
+    };
+    Uint32 sdl_timer_event_cb(Uint32 interval,void *param){
+        SDL_Event event;
+        event.type = Btk::GetSystem()->timer_timeout_ev_id;
+        event.user.timestamp = SDL_GetTicks();
+        event.user.data1 = param;//< For mark which timer
+
+        static_cast<sdl_timer_event_detail*>(param)->ref();
+        return interval;
+    }
+    void timer_timeout_cb(const SDL_Event &event,void *){
+        auto detail = static_cast<sdl_timer_event_detail*>(event.user.data1);
+        if(detail->active){
+            if(not detail->cb(event.user.timestamp,detail->userdata1,detail->userdata2)){
+                //Require close timer
+                detail->unref();
+                detail->active = false;
+            }
+        }
+        detail->unref();
+    }
+    void sdl_timer_stop_internal(sdl_timer_event_detail *p){
+        if(p != nullptr){
+            if(p->active){
+                SDL_RemoveTimer(p->id);
+                p->active = false;
+                p->unref();
+            }
+        }
+    }
     //ResourceBase
     Btk::Constructable<Btk::BasicResource> resource_base;
     bool resource_inited = false;
@@ -311,6 +341,7 @@ namespace Btk{
             //regitser handler
             regiser_eventcb(defer_call_ev_id,defer_call_cb,nullptr);
             regiser_eventcb(redraw_win_ev_id,redraw_win_cb,nullptr);
+            regiser_eventcb(timer_timeout_ev_id,timer_timeout_cb,nullptr);
         }
 
         //First stop text input
@@ -990,7 +1021,7 @@ namespace Btk{
         resource_init();
         RendererDevice *dev;
 
-        #ifdef BTK_USE_SWDEVICE
+        #ifdef BTK_HAVE_SOFTWARE_DEVICE
         try{
         #endif
         
@@ -1000,7 +1031,7 @@ namespace Btk{
                 return dev;
             }
         }
-        #ifdef BTK_USE_SWDEVICE
+        #ifdef BTK_HAVE_SOFTWARE_DEVICE
         }catch(RuntimeError &){
 
         }

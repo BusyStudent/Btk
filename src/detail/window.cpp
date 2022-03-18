@@ -650,7 +650,7 @@ namespace Btk{
             //Translate flags into SDL flags
             Uint32 sdl_flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN;
 
-            #if (BTK_X11 && !defined(BTK_NO_GLDEVICE)) || (BTK_WIN32 && !defined(BTK_USE_DXDEVICE))
+            #if (BTK_X11 && defined(BTK_HAVE_OPENGL_DEVICE)) || (BTK_WIN32 && !defined(BTK_HAVE_DIRECTX_DEVICE))
             sdl_flags |= SDL_WINDOW_OPENGL;
             #endif
 

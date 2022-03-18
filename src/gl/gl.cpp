@@ -15,7 +15,7 @@ namespace Btk::GL{
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_CORE);
         #endif
 
-        #ifdef BTK_USE_GLES2
+        #ifdef BTK_USE_OPENGLES2
         //Use OpenGL 2.0
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,2);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,0);
@@ -35,7 +35,7 @@ namespace Btk::GL{
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,1);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,4);
 
-        #ifndef BTK_NO_GLDEVICE
+        #ifdef BTK_HAVE_OPENGL_DEVICE
         //Register our Device
         RegisterDevice([](SDL_Window *win) -> RendererDevice*{
             //Check is OpenGL Window

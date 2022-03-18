@@ -10,37 +10,37 @@
 
 namespace Btk{
 
-#ifdef BTK_HAS_PNG
+#ifdef BTK_HAVE_LIBPNG
     BTKHIDDEN void RegisterPNG();
 #else
     inline void RegisterPNG(){}
 #endif
 
-#ifdef BTK_HAS_SDLIMG
+#ifdef BTK_HAVE_SDL_IMAGE
     BTKHIDDEN void RegisterSDLImage();
 #else
     inline void RegisterSDLImage(){}
 #endif
 
-#ifdef BTK_HAS_STBII
+#ifdef BTK_HAVE_STB_IMAGE
     BTKHIDDEN void RegisterSTBII();
 #else
     inline void RegisterSTBII(){}
 #endif
 
-#ifdef BTK_HAS_WEBP
+#ifdef BTK_HAVE_LIBWEBP
     BTKHIDDEN void RegisterWEBP();
 #else
     inline void RegisterWEBP(){}
 #endif
 
-#ifdef BTK_HAS_WIC
+#ifdef BTK_HAVE_WINCODEC
     BTKHIDDEN void RegisterWIC();
 #else
     inline void RegisterWIC(){}
 #endif
 
-#ifdef BTK_HAS_GIF
+#ifdef BTK_HAVE_GIFLIB
     BTKHIDDEN void RegisterGIF();
 #else
     inline void RegisterGIF(){};

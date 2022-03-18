@@ -147,7 +147,7 @@ namespace Btk{
             bool is_vertical() const noexcept{
                 return orientation == Vertical;
             }
-        private:
+        protected:
             //Value for slider
             float _value = 0.0f;//< The value of the slider
             float _min_value = 0.0f;//< The minimum value of the slider
@@ -177,6 +177,8 @@ namespace Btk{
             
             Orientation orientation;
             Signal<void(float)> _signal_changed;
+            Signal<void()>      _signal_pressed;
+            Signal<void()>      _signal_released;
 
             FMargin margin = {
                 2,

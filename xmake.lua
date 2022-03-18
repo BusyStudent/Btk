@@ -2,7 +2,7 @@ add_rules("mode.debug", "mode.release")
 --add SDL require
 add_requires("libsdl")
 add_requires("freetype","libsdl_image",{optional = true})
-add_packages("libsdl","freetype","libsdl_image")
+add_packages("libsdl")
 
 is_windows = is_plat("windows") or is_plat("mingw")
 
@@ -52,43 +52,73 @@ option("software_renderer")
     set_default(false)
     set_showmenu(true)
     set_description("Add software renderer in DeviceList")
+    set_configvar("BTK_HAVE_SOFTWARE_DEVICE",true)
 option("opengl_renderer")
     set_default(true)
     set_showmenu(true)
     set_description("Add opengl renderer in DeviceList")
+    set_configvar("BTK_HAVE_OPENGL_DEVICE",true)
 option("stb_truetype")
     set_default(false)
     set_showmenu(true)
     set_description("Force to use stb_truetype")
+    set_configvar("BTK_USE_STB_TRUETYPE",true)
 option("svg_parser")
     set_default(true)
     set_showmenu(true)
     set_description("Render svg")
+    set_configvar("BTK_USE_SVG_PARSER",true)
 option("opengles2")
     set_default(false)
     set_showmenu(true)
     set_description("Use OpenGLES2")
+    set_configvar("BTK_USE_OPENGLES2",true)
 option("precompiled_header")
     set_default(false)
     set_showmenu(true)
     set_description("Use Precompiled header")
+option("sdl_image")
+    set_default(has_package("libsdl_image"))
+    set_showmenu(true)
+    set_description("Use SDL_image")
+    set_configvar("BTK_HAVE_SDL_IMAGE",true)
+option("stb_image")
+    set_default(not has_config("sdl_image"))
+    set_showmenu(true)
+    set_description("Use stb_image")
+    set_configvar("BTK_HAVE_STB_IMAGE",true)
+option("c_interface")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Add C interface")
 -- Win32 Option
 option("directx_renderer")
     set_default(is_windows)
     set_showmenu(true)
     set_description("Add DirectX renderer in DeviceList")
+    set_configvar("BTK_HAVE_DIRECTX_DEVICE",true)
 option("wincodec")
     set_default(is_windows)
     set_showmenu(true)
     set_description("Add WIC")
-
+    set_configvar("BTK_HAVE_WINCODEC",true)
 target("btk")
-
     -- Import option
+    add_options("precompiled_header")
     add_options("software_renderer")
     add_options("directx_renderer")
     add_options("opengl_renderer")
     add_options("stb_truetype")
+    add_options("stb_image")
+    add_options("sdl_image")
+    add_options("svg_parser")
+    add_options("opengles2")
+    add_options("wincodec")
+    add_options("c_interface")
+
+    -- Add configurations files
+    add_configfiles("include/Btk/detail/config.hpp.in")
+    set_configdir("include/Btk/detail")
 
     
     if is_plat("linux") then
@@ -109,9 +139,6 @@ target("btk")
     --Add gif ext
     if has_package("gif") then
         add_files("./src/images/gif.cpp")
-        add_defines("BTK_HAS_GIF")
-    else
-        add_defines("BTK_NGIF")
     end
 
     -- Install copy the headers
@@ -169,70 +196,68 @@ target("btk")
 
     if has_config("software_renderer") then
         add_files("./src/render/render_sw.cpp")
-        add_defines("BTK_USE_SWDEVICE")
     end
 
     if has_config("opengl_renderer") then
-        if has_config("opengles2") then
-            add_defines("BTK_USE_GLES2")
-        end
         add_files("./src/render/render_gles2.cpp")
-    else
-        add_defines("BTK_NO_GLDEVICE")
     end
     
     if has_config("directx_renderer") then
         add_files("./src/render/render_dx11.cpp")
-        add_defines("BTK_USE_DXDEVICE")
         add_links("dxguid")
     end
 
-    --SVG
-    if not has_config("svg_parser") then
-        add_defines("BTK_DISABLE_SVG")
-    end
+    -- --SVG
+    -- if not has_config("svg_parser") then
+    --     add_defines("BTK_DISABLE_SVG")
+    -- end
 
     --Font
     add_files("./src/font/fontstash.cpp")
-    if has_config("stb_truetype") then
-        add_defines("BTK_USE_STBTT")
+    if not has_config("stb_truetype") then
+        --We should use freetype
+        set_configvar("BTK_USE_FREETYPE",true)
+        add_packages("freetype")
+    else
+        set_configvar("BTK_USE_STB_TRUETYPE",true)
     end
     --Image
     add_files("./src/images/adapter.cpp")
     --Check Image Library
     
     if has_package("libpng") then
-        add_defines("BTK_HAS_PNG")
         add_packages("libpng")
         add_files("./src/images/png.cpp")
     end
 
     if has_package("webp") then
-        add_defines("BTK_HAS_WEBP")
         add_packages("webp")
         add_files("./src/images/webp.cpp")
     end
 
     if has_config("wincodec") then
-        add_defines("BTK_HAS_WIC")
         add_files("./src/images/wincodec.cpp")
         add_links("Windowscodecs")
     end
 
     --SDL_image support
-    if has_package("libsdl_image") then
-        add_defines("BTK_HAS_SDLIMG")
+    if has_config("sdl_image") then
         add_files("./src/images/sdl_image.cpp")
-        add_links("SDL2_image")
-    else
+        add_packages("libsdl_image")
+    end
+
+    if has_config("stb_image") then
         --No SDL_image use stb_image instead
-        add_defines("BTK_HAS_STBII")
         add_files("./src/images/stb_image.cpp")
     end
 
     if has_config("precompiled_header") then
         add_defines("_BTK_PRECOMPILED_HEADER")
         set_pcxxheader("./src/build.hpp")
+    end
+
+    if has_config("c_interface") then 
+        add_files("./src/ext/capi.cpp")
     end
 if is_mode("debug") then
     target("hello")
@@ -259,14 +284,3 @@ end
 target("btk-rcc")
     set_kind("binary")
     add_files("./tools/btk-rcc.cpp")
---Do you need CAPI
---If not,omit it
-if true and not is_plat("windows")then 
-    target("btk_capi")
-        if not has_package("gif") then
-            add_defines("BTK_NGIF")
-        end
-
-        set_kind("shared")
-        add_files("./src/ext/capi.cpp")
-end

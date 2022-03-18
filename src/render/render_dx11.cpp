@@ -8,6 +8,7 @@
 #include <Btk/gl/direct3d11.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
+#include <Btk/canvas.hpp>
 #include <Btk/Btk.hpp>
 
 
@@ -684,5 +685,71 @@ namespace Btk{
     }
     RendererDevice *CreateD3D11Device(HWND h){
         return new DxDevice(h);
+    }
+}
+
+namespace Btk{
+    //DxCanvas
+    void DxCanvas::set_parent(Widget *parent){
+        if(parent == nullptr and is_inited){
+            dx_release();
+            is_inited = false;
+        }
+        Widget::set_parent(parent);
+        if(renderer() == nullptr){
+            return;
+        }
+        prepare_device();
+    }
+    void DxCanvas::prepare_device(){
+        auto dev = renderer()->device();
+        if(dev->backend() != RendererBackend::Dx11){
+            throwRendererError("DxCanvas::prepare_device: backend is not D3D11");
+        }
+        auto dxdev = static_cast<DxDevice*>(dev);
+        dx_init();
+        is_inited = true;
+    }
+    void DxCanvas::draw(Renderer &r,Uint32 t){
+        auto dev = r.device();
+        auto dxdev = static_cast<DxDevice*>(dev);
+        if(not is_inited){
+            prepare_device();
+        }
+        auto [win_w,win_h] = dxdev->logical_size();
+        auto [phy_w,phy_h] = dxdev->physical_size();
+
+        float w_ratio = float(phy_w) / float(win_w);
+        float h_ratio = float(phy_h) / float(win_h);
+
+        dxdev->end_frame(r.context());
+        dxdev->unbind();
+
+        //Calc the viewport of by position and size
+        D3D11_VIEWPORT viewport;
+        viewport.TopLeftX = x() * w_ratio;
+        viewport.TopLeftY = y() * h_ratio;
+        viewport.Width = w() * w_ratio;
+        viewport.Height = h() * h_ratio;
+        viewport.MinDepth = 0.0f;
+        viewport.MaxDepth = 1.0f;
+
+        dxdev->context->RSSetViewports(1,&viewport);
+
+        //Draw
+        dx_draw(t);
+
+        dxdev->bind();
+        //Reset viewport
+        dxdev->set_viewport(nullptr);
+        dxdev->begin_frame_ex(
+            r.context(),
+            win_w,win_h,
+            w_ratio
+        );
+        return;
+    }
+    DxDevice *DxCanvas::dx_device() const{
+        return dynamic_cast<DxDevice*>(renderer()->device());
     }
 }

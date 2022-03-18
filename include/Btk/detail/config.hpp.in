@@ -1,0 +1,40 @@
+#ifndef _BTK_DETAIL_CONFIG_HPP_
+#define _BTK_DETAIL_CONFIG_HPP_
+//Renderer
+${define BTK_HAVE_OPENGL_DEVICE}
+${define BTK_HAVE_DIRECTX_DEVICE}
+${define BTK_HAVE_VULKAN_DEVICE}
+${define BTK_HAVE_METAL_DEVICE}
+${define BTK_HAVE_SOFTWARE_DEVICE}
+//Image
+${define BTK_HAVE_SDL_IMAGE}
+${define BTK_HAVE_STB_IMAGE}
+${define BTK_HAVE_WINCODEC}
+${define BTK_HAVE_GIFLIB}
+${define BTK_HAVE_LIBPNG}
+${define BTK_HAVE_LIBJPEG}
+${define BTK_HAVE_LIBTIFF}
+${define BTK_HAVE_LIBWEBP}
+//Font
+${define BTK_USE_STB_TRUETYPE}
+${define BTK_USE_FREETYPE}
+//SVG
+${define BTK_USE_SVG_PARSER}
+//GLCONFIG
+${define BTK_USE_DYNAMIC_GLLIB}
+${define BTK_USE_OPENGLES2}
+//Version
+${define BTK_VERSION_STRING}
+${define BTK_VERSION_MAJOR}
+${define BTK_VERSION_MINOR}
+${define BTK_VERSION_PATCH}
+//Extension
+${define BTK_HAVE_FONTCONFIG}
+${define BTK_HAVE_UCHARDET}
+${define BTK_HAVE_ICONV}
+${define BTK_HAVE_DBUS}
+${define BTK_HAVE_ZLIB}
+//C++ Compiler attributes
+${define BTK_CPP_DESIGNATED_INITIALIZER}
+${define BTK_CPP_DYNAMIC_ARRAY}
+#endif //_BTK_DETAIL_CONFIG_HPP_

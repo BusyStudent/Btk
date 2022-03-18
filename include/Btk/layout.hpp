@@ -35,10 +35,14 @@ namespace Btk{
                 float w = -1,h = -1;
                 float x = -1,y = -1;
 
-                bool fixed_size = false;//< If true, the widget will not be resized
-
                 //TODO: Need support for min/max size
                 //TODO: Need support for fixed size
+
+                //< The fixed_size
+                FSize fixed_size = {
+                    -1.0f,//< -1 means no fixed size on horizontal
+                    -1.0f//< -1 means no fixed size on vertical
+                };
             };
             //override method we need
             using Group::add;
@@ -160,6 +164,28 @@ namespace Btk{
             void set_stretch(Widget *w,float stretch);
             void set_stretch(Widget &w,float stretch){
                 set_stretch(&w,stretch);
+            }
+            /**
+             * @brief Set the fixed size object of widget
+             * 
+             * @param w The widget ptr
+             * @param fixed_width width(-1 on auto)
+             * @param fixed_height width(-1 on auto)
+             */
+            void set_fixed_size(Widget *w,float fixed_width,float fixed_height);
+            void set_fixed_size(Widget &w,float fixed_width,float fixed_height){
+                set_fixed_size(&w,fixed_width,fixed_height);
+            }
+            /**
+             * @brief Reset the fixed size object of widget
+             * 
+             * @param w 
+             */
+            void reset_fixed_size(Widget *w){
+                set_fixed_size(w,-1,-1);
+            }
+            void reset_fixed_size(Widget &w){
+                set_fixed_size(&w,-1,-1);
             }
         private:
             void  update() override;

@@ -181,7 +181,7 @@ namespace Win32{
         SDL_SetEventFilter(event_filter,nullptr);
 
 
-        #ifdef BTK_USE_DXDEVICE
+        #ifdef BTK_HAVE_DIRECTX_DEVICE
         // #ifdef BTK_RENDERDEVICE_D3D11
         //Has D3D11 Device
         RegisterDevice([](SDL_Window *win) -> RendererDevice*{
@@ -372,7 +372,7 @@ namespace Btk{
             Btk_SmallFree(arr[n]);
         }
         Btk_SmallFree(arr); 
-        return {};
+        return ret;
     }
 }
 namespace Btk{

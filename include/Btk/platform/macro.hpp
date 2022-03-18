@@ -85,10 +85,12 @@
     #define BTKEXPORT __attribute__((dllexport))
     #define BTKIMPORT __attribute__((dllimport))
     #define BTKCDEL   __attribute__((cdel))
+    #define BTKFAST   __attribute__((fastcall))
 #elif BTK_MSVC
     #define BTKEXPORT __declspec(dllexport)
     #define BTKIMPORT __declspec(dllimport)
     #define BTKCDEL   __cdel
+    #define BTKFAST   __fastcall
 
     #undef not
     #undef and
@@ -101,11 +103,13 @@
     #define BTKEXPORT __attribute__((visibility("default")))  
     #define BTKIMPORT 
     #define BTKCDEL
+    #define BTKFAST   __attribute__((fastcall))
 #else
     //Ignored
     #define BTKCDEL
     #define BTKEXPORT 
-    #define BTKIMPORT 
+    #define BTKIMPORT
+    #define BTKFAST
 #endif
 //Export symbols --end
 

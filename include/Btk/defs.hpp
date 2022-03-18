@@ -2,6 +2,7 @@
 #define _BTK_DEFS_HPP_
 //Get complier / platform
 #include "platform/macro.hpp"
+#include "detail/config.hpp"
 
 //Export symbols
 #ifdef _BTK_SOURCE

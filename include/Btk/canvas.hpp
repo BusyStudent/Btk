@@ -114,17 +114,37 @@ namespace Btk{
             
             bool _is_inited = false;
     };
-    #if BTK_STILL_DEV
+    #ifdef BTK_HAVE_DIRECTX_DEVICE
+    class DxDevice;
     /**
      * @brief Basic class for using Direct3D 11
-     * 
+     * @note Remember to cleanup resources in destructor
      */
-    class BTKAPI DxCanvas{
+    class BTKAPI DxCanvas:public Widget{
         public:
-            virtual void draw(Renderer&) final;
-            virtual void dx_draw() = 0;
+            virtual void draw(Renderer&,Uint32 t) final;
+            virtual void dx_draw(Uint32 time) = 0;
+            /**
+             * @brief Ask you,the device is ready,init the resource
+             * 
+             */
+            virtual void dx_init() = 0;
+            /**
+             * @brief Ask you,the device is ready,cleanup the resource
+             * 
+             */
+            virtual void dx_release() = 0;
+            virtual void set_parent(Widget *) final;
 
+            DxDevice *dx_device() const;
+        private:
+            void prepare_device();
+
+            bool is_inited = false;
     };
+    #endif
+
+    #if BTK_STILL_DEV
     class BTKAPI VkCanvas{
         public:
             virtual void draw(Renderer&) final;

@@ -26,6 +26,11 @@ int main(){
 
     lay.set_content_margins(0,20,0,20);
 
+    auto &fixed = lay.add<Btk::Button>();
+    fixed.set_text("Fixed");
+
+    lay.set_fixed_size(fixed,100,100);
+
     auto &sub = lay.add<Btk::BoxLayout>(Btk::BoxLayout::TopToBottom);
 
     auto &swit = sub.add<Btk::Button>();

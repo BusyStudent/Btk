@@ -11,8 +11,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <cstdbool>
-
 
 namespace Btk{
     //Init / Delete context
@@ -176,6 +174,16 @@ namespace Btk{
             throwRuntimeError("unknown widget in container");
         }
         it->stretch = stretch;
+        invalidate();
+    }
+    void BoxLayout::set_fixed_size(Widget *w,float width,float height){
+        auto it = index_item(w);
+        if(it == nullptr){
+            throwRuntimeError("unknown widget in container");
+        }
+        it->fixed_size.w = width;
+        it->fixed_size.h = height;
+        invalidate();
     }
 
     auto BoxLayout::alloc_item(Widget *w) -> Item*{
@@ -190,18 +198,29 @@ namespace Btk{
         //Begin pack
         auto rect  = margin.apply(rectangle<float>());
         auto &list = get_childrens();
+        //Content rectangle
+        float x = rect.x;
+        float y = rect.y;
+        float h = rect.h;
+        float w = rect.w;
         //Calc all item factors
         float factors = 0;
         for(auto item:items){
-            factors += item->stretch;
+            //If is fixed size
+            if(item->fixed_size.w > 0 and is_horizontal()){
+                w -= item->fixed_size.w;
+            }
+            else if(item->fixed_size.h > 0 and is_vertical()){
+                h -= item->fixed_size.h;
+            }
+            else{
+                factors += item->stretch;
+            }
         }
         //In horizontal direction, we need to know the width of the layout
         if(_direction == LeftToRight or _direction == RightToLeft){
             //H
-            float x = rect.x;
-            float y = rect.y;
-            float h = rect.h;
-            float w = rect.w;
+
             //Calc the useable width after the spacing
             w -= _spacing * (items.size() - 1);
 
@@ -212,7 +231,13 @@ namespace Btk{
                     item->y = y;
                     item->h = h;
 
-                    item->w = w / factors * item->stretch;
+                    if(item->fixed_size.w > 0){
+                        //Use fixed size if
+                        item->w = item->fixed_size.w;
+                    }
+                    else{
+                        item->w = w / factors * item->stretch;
+                    }
 
                     //Step by spacing
                     x += item->w + _spacing;
@@ -224,7 +249,13 @@ namespace Btk{
                     item->y = y;
                     item->h = h;
 
-                    item->w = w / factors * item->stretch;
+                    if(item->fixed_size.w > 0){
+                        //Use fixed size if
+                        item->w = item->fixed_size.w;
+                    }
+                    else{
+                        item->w = w / factors * item->stretch;
+                    }
 
                     //Step by spacing
                     x += item->w + _spacing;
@@ -233,10 +264,6 @@ namespace Btk{
         }
         else{
             //V
-            float x = rect.x;
-            float y = rect.y;
-            float w = rect.w;
-            float h = rect.h;
 
             //Calc useable height after the spacing
             h -= _spacing * (items.size() - 1);
@@ -248,7 +275,14 @@ namespace Btk{
                     item->y = y;
                     item->w = w;
 
-                    item->h = h / factors * item->stretch;
+                    //We can use the fixed size
+                    if(item->fixed_size.h > 0){
+                        item->h = item->fixed_size.h;
+                    }
+                    else{
+                        item->h = h / factors * item->stretch;
+                    }
+
 
                     //Step by spacing
                     y += item->h + _spacing;
@@ -260,7 +294,13 @@ namespace Btk{
                     item->y = y;
                     item->w = w;
 
-                    item->h = h / factors * item->stretch;
+                    //We can use the fixed size
+                    if(item->fixed_size.h > 0){
+                        item->h = item->fixed_size.h;
+                    }
+                    else{
+                        item->h = h / factors * item->stretch;
+                    }
 
                     //Step
                     y += item->h + _spacing;

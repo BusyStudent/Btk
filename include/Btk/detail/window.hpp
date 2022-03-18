@@ -171,13 +171,13 @@ namespace Btk{
             // Process draw event in win event loop when sizing
             bool win32_sizing_draw = true;
             
-            void __stdcall handle_win32(
+            void BTKFAST handle_win32(
                 void *hwnd,
                 unsigned int message,
                 Uint64 wParam,
                 Sint64 lParam
             );
-            void __stdcall win32_poll_draw();
+            void BTKFAST win32_poll_draw();
             //Win32 MessageHook
             Function<void(void *,unsigned int,Uint64,Sint64)> win32_hooks;
             
