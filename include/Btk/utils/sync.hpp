@@ -80,6 +80,7 @@ namespace Btk{
      */
     class BTKAPI SyncEvent{
         public:
+            //TODO : we could use Win32 Event in windows platform
             SyncEvent();
             SyncEvent(const SyncEvent &) = delete;
             ~SyncEvent();
@@ -92,7 +93,7 @@ namespace Btk{
             void wait();
             bool wait(Uint32 ms);
         private:
-            //Portect isset
+            //Protect isset
             mutable SpinLock it_lock;
             SDL_cond *cond = nullptr;
             SDL_mutex *mtx = nullptr;

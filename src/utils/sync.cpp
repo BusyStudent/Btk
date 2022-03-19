@@ -148,6 +148,6 @@ namespace Btk{
             }
         }
         SDL_UnlockMutex(mtx);
-        return true;
+        return val;
     }
 }

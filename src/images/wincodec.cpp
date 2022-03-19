@@ -9,6 +9,23 @@
 #include <Shlwapi.h>
 #include <wincodec.h>
 
+#define WIC_LOCAL_FMT_LIST \
+    WIC_PROC(Bmp) \
+    WIC_PROC(Dds) \
+    WIC_PROC(Gif) \
+    WIC_PROC(Ico) \
+    WIC_PROC(Jpeg) \
+    WIC_PROC(Jpg) \
+    WIC_PROC(Jxr) \
+    WIC_PROC(Wdp) \
+    WIC_PROC(Png) \
+    WIC_PROC(Tiff) \
+    //
+
+#define GUID_ContainerFormatJpg CLSID_WICJpegEncoder
+#define GUID_ContainerFormatJxr CLSID_WICWmpEncoder
+#define GUID_ContainerFormatWdp CLSID_WICWmpEncoder
+
 namespace{
 //TODO::Finish it
 struct RwopsIstream:public IStream{
@@ -168,6 +185,8 @@ namespace{
         }
     }
     SDL_Surface *load_image_istream(IStream *istream){
+        BTK_LOGINFO("[Wincodec] Load image from IStream %p",istream);
+
         HRESULT hr;
         ComInstance<IWICBitmapDecoder> decoder;
         ComInstance<IWICBitmapFrameDecode> frame;
@@ -229,7 +248,6 @@ namespace{
         return surf;
     }
     //TODO
-    #if 0
     bool wic_save_generic(const GUID &encoder_fmt,SDL_Surface *surf,SDL_RWops *rwops){
         //Check format
         const GUID &surf_fmt = translate_sdl_fmt(surf->format->format);
@@ -275,34 +293,75 @@ namespace{
         WIC_CHECK2(hr,false);
         //Init
         hr = frame->Initialize(nullptr);
+        WIC_CHECK2(hr,false);
         hr = frame->SetSize(w,h);
+        WIC_CHECK2(hr,false);
+        WICPixelFormatGUID pixel_fmt = surf_fmt;
+        hr = frame->SetPixelFormat(&pixel_fmt);
+        WIC_CHECK2(hr,false);
+        if(pixel_fmt != surf_fmt){
+            //Create a tmp bitmap for surface
+            //Create a convert 
+            ComInstance<IWICFormatConverter> surf_cvt;
+            ComInstance<IWICBitmap> surf_bitmap;
+
+            hr = wic_factory->CreateBitmapFromMemory(
+                w,
+                h,
+                surf_fmt,
+                surf->pitch,
+                surf->pitch * h,
+                (BYTE*)surf->pixels,
+                &surf_bitmap
+            );
+            WIC_CHECK2(hr,false);
+
+            hr = wic_factory->CreateFormatConverter(&surf_cvt);
+            WIC_CHECK2(hr,false);
+            hr = surf_cvt->Initialize(
+                surf_bitmap,
+                pixel_fmt,
+                WICBitmapDitherTypeNone,
+                nullptr,
+                0.0,
+                WICBitmapPaletteTypeCustom
+            );
+            WIC_CHECK2(hr,false);
+            //Convert done
+            hr = frame->WriteSource(
+                surf_cvt,
+                nullptr
+            );
+            WIC_CHECK2(hr,false);
+        }
+        else{
         //Write pixels
-        ComInstance<IWICFormatConverter> converter;
-        hr = wic_factory->CreateFormatConverter(&converter);
-        // hr = converter->Initialize(
-        //     frame,
-        //     GUID_WICPixelFormat32bppPRGBA,
-        //     WICBitmapDitherTypeNone,
-        //     nullptr,
-        //     0,
-        //     WICBitmapPaletteTypeCustom
-        // );
-        hr = converter->CopyPixels(
-            nullptr,
-            w * 4,
-            w * h * 4,
-            (BYTE*)surf->pixels
-        );
-        //copy to frame
-        frame->WriteSource(converter,nullptr);
-
-
+            hr = frame->WritePixels(h,surf->pitch,h * surf->pitch,(BYTE*)surf->pixels);
+            WIC_CHECK2(hr,false);
+        }
         //flush
         hr = frame->Commit();
+        WIC_CHECK2(hr,false);
         hr = encoder->Commit();
+        WIC_CHECK2(hr,false);
         return true;
     }
-    #endif
+    //For selected format
+    template<const GUID &fmt_id>
+    struct WicSaver{
+        #ifndef BTK_WINCODEC_NO_IMAGE_ENCODER
+        static bool save(SDL_RWops *rwops,SDL_Surface *surf,int){
+            return wic_save_generic(fmt_id,surf,rwops);
+        }
+        #else
+        static constexpr auto save = nullptr;
+        #endif
+    };
+    //No ico encoder
+    template<>
+    struct WicSaver<GUID_ContainerFormatIco>{
+        static constexpr auto save = nullptr;
+    };
     // SDL_Surface *load_image_wic_direct(SDL_RWops *rwops){
     //     BTK_RW_SAVE_STATUS(rwops);
     //     Sint64 size = Btk::RWtellsize(rwops);
@@ -341,19 +400,16 @@ namespace{
     adapter.name = #TYPE;\
     adapter.vendor = "wincodec";\
     adapter.fn_load = load_image_wic;\
+    adapter.fn_save = WicSaver<GUID_ContainerFormat##TYPE>::save;\
     RegisterImageAdapter(adapter);\
 }
 
 namespace Btk{
     void RegisterWIC(){
         if(InitWIC()){
-            BTK_WIC_WRAPPER(JPEG);
-            BTK_WIC_WRAPPER(TIFF);
-            BTK_WIC_WRAPPER(DDS);
-            BTK_WIC_WRAPPER(BMP);
-            BTK_WIC_WRAPPER(GIF);
-            BTK_WIC_WRAPPER(ICO);
-            BTK_WIC_WRAPPER(PNG);
+            #define WIC_PROC(x) BTK_WIC_WRAPPER(x);
+            WIC_LOCAL_FMT_LIST
+            #undef WIC_PROC
         }
     }
 }

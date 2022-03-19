@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="268mm"
+   height="96mm"
+   viewBox="0 0 268 96"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="logo.svg"
+   inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.67178375"
+     inkscape:cx="472.62233"
+     inkscape:cy="296.22628"
+     inkscape:window-width="1440"
+     inkscape:window-height="837"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     height="296mm"
+     inkscape:snap-global="true" />
+  <defs
+     id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient18312">
+      <stop
+         style="stop-color:#44516f;stop-opacity:1;"
+         offset="0"
+         id="stop18308" />
+      <stop
+         style="stop-color:#44516f;stop-opacity:0;"
+         offset="1"
+         id="stop18310" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient13508">
+      <stop
+         style="stop-color:#676e8e;stop-opacity:1;"
+         offset="0"
+         id="stop13504" />
+      <stop
+         style="stop-color:#676e8e;stop-opacity:0;"
+         offset="1"
+         id="stop13506" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient29250"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop29248" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient29250"
+       id="linearGradient29252"
+       x1="50.682007"
+       y1="71.458344"
+       x2="68.985741"
+       y2="71.458344"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient13508"
+       id="linearGradient13510"
+       x1="200.68651"
+       y1="-30.778656"
+       x2="262.14026"
+       y2="30.675098"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.2571716,0,0,1.1819485,-66.785555,6.1230637)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient18312"
+       id="linearGradient18318"
+       x1="200.56052"
+       y1="-0.051778793"
+       x2="262.26627"
+       y2="-0.051778793"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.2571716,0,0,1.1819485,-66.785555,6.1230637)" />
+  </defs>
+  <g
+     inkscape:label="layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;white-space:pre;inline-size:21.4649;opacity:0.98;fill:#676e8e;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="50.231525"
+       y="74.615761"
+       id="text1089"
+       transform="matrix(9.3495164,0,0,10.8081,-458.90211,-720.57531)"><tspan
+         x="50.231525"
+         y="74.615761"
+         id="tspan5444"><tspan
+           style="font-style:italic;font-family:'Javanese Text';-inkscape-font-specification:'Javanese Text Italic'"
+           id="tspan5442">Btk</tspan></tspan></text>
+    <rect
+       style="opacity:0.98;fill:url(#linearGradient13510);fill-opacity:1;fill-rule:nonzero;stroke:url(#linearGradient18318);stroke-width:0.307184;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;image-rendering:auto"
+       id="rect13137"
+       width="77.258408"
+       height="72.635178"
+       x="185.51186"
+       y="-30.255724"
+       transform="matrix(0.98268189,0.18530058,-0.21073967,0.97754222,0,0)" />
+  </g>
+  <metadata
+     id="metadata26421">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <cc:license
+           rdf:resource="http://artlibre.org/licence/lal" />
+      </cc:Work>
+      <cc:License
+         rdf:about="http://artlibre.org/licence/lal">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+        <cc:requires
+           rdf:resource="http://creativecommons.org/ns#ShareAlike" />
+        <cc:requires
+           rdf:resource="http://creativecommons.org/ns#Notice" />
+        <cc:requires
+           rdf:resource="http://creativecommons.org/ns#Attribution" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>

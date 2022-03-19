@@ -1,5 +1,7 @@
 # Btk
 
+![Logo](./logo/logo.svg)
+
 Btk is a C++ tiny retained mode GUI library based on SDL2 and nanovg.  
 
 It was written in morden C++,so it was very easy to use.  
@@ -8,9 +10,10 @@ It was written in morden C++,so it was very easy to use.
 
 ## CI
 
-![C/C++ CI on Linux](https://github.com/BusyStudent/Btk/workflows/C/C++%20CI%20on%20Linux/badge.svg)
-
-[![C/C++ CI on Windows](https://github.com/BusyStudent/Btk/actions/workflows/windows.yml/badge.svg)](https://github.com/BusyStudent/Btk/actions/workflows/windows.yml)
+|Platform| CI Status|
+| ---    | ---      |
+|Linux   |![C/C++ CI on Linux](https://github.com/BusyStudent/Btk/workflows/C/C++%20CI%20on%20Linux/badge.svg)|
+|Windows |[![C/C++ CI on Windows](https://github.com/BusyStudent/Btk/actions/workflows/windows.yml/badge.svg)](https://github.com/BusyStudent/Btk/actions/workflows/windows.yml)|
 
 ----
 
@@ -93,6 +96,8 @@ int main(){
 |  GLWidget | No      |      |             |
 |  Label    |         |      |             |
 |  Line     |         |      |             |
+|  Layout   |         |      |             |
+|  BoxLayout|         |      |             |
 
 ----
 
