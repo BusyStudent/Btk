@@ -18,6 +18,14 @@
     BTK_THEME_FILED(Color,highlight)\
     BTK_THEME_FILED(Color,highlight_text)\
 
+//Docs for Palette
+//text => for Text and Button
+//window => for Window background
+//Background => for textbox background
+//border => for border
+//button => for button background
+//highlight => for highlight background
+//highlight_text => for highlight text color
 
 namespace Btk{
     class Theme{
@@ -40,13 +48,25 @@ namespace Btk{
                 BTK_THEME_PALETTE
             } active,inactive,disabled;
             #undef  BTK_THEME_FILED
+            //Font
             Font font;
             //Button 
-            float button_rad = 0;
+            float button_radius = 0;
             //Menu
-            float menubar_height = 20;//???
+            float menubar_height = 25;//???
+            //Slider fixed size constant
+            float slider_circle_radius = 10.0f;
+            float slider_bar_radius = 4.0f;
+            float slider_bar_width = 10.0f;
+            float slider_bar_height = 10.0f;
+
     };
     RefPtr<Theme> CurrentTheme();
+    /**
+     * @brief Change current theme to
+     * 
+     * @param name 
+     */
     void   UseTheme(u8string_view name);
     void   AddTheme(u8string_view name,u8string_view config);
 }

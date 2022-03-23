@@ -159,7 +159,10 @@ namespace Btk{
     class u16string;
     class u8string_view;
     class u8string;
-    
+    /**
+     * @brief Orientation of widget etc...
+     * 
+     */
     enum class Orientation:Uint8{
         Vertical = 0,
         Horizontal = 1,

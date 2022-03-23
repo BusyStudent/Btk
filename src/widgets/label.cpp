@@ -35,7 +35,6 @@ namespace Btk{
         rect = {
             x,y,w,h
         };
-        attr.user_rect = true;
 
         //ptsize = window()->theme.font.ptsize();
     }

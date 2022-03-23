@@ -355,7 +355,7 @@ namespace Btk{
 
         u8string s;
         s.resize(n);
-        if(fread(f,n,1,f) != 1){
+        if(fread(s.data(),n,1,f) != 1){
             fclose(f);
             throwCRuntimeError();
         }
@@ -391,7 +391,10 @@ namespace Btk{
         va_end(varg);
     }
     void u8string::append_from(const void *buf,size_t n,const char *encoding){
-        IconvHolder i("UTF-8",GET_CHARSET_FROM(buf,n));
+        if(encoding == nullptr){
+            encoding = GET_CHARSET_FROM(buf,n);
+        }
+        IconvHolder i("UTF-8",encoding);
         iconv_string<std::string>(i,base(),static_cast<const char*>(buf),n);
     }
 }

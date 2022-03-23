@@ -145,7 +145,7 @@ namespace Btk{
         inline void on_mousebutton(const SDL_Event &event);//Handle SDL_MouseButton
         inline void on_textinput(const SDL_Event &event);//Handle SDL_TextInputEvent
         inline void on_textediting(const SDL_Event &event);//Handle SDL_TextInputEvent
-        inline void on_quit();//Handle SDL_Quit
+        inline bool on_quit();//Handle Quit in method run() 
         //defercall in eventloop
         void defer_call(void(* fn)(void*),void *data = nullptr);
         //Get window from WindowID

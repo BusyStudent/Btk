@@ -16,7 +16,7 @@ namespace Btk{
     //Init / Delete context
     Layout::Layout(){
         attr.layout = true;
-
+        attr.auto_size = true;
     }
     Layout::~Layout(){
         #ifndef NDEBUG

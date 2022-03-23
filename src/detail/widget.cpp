@@ -314,6 +314,15 @@ namespace Btk{
         Event event(Event::Show);
         handle(event);
     }
+    Size Widget::size_hint() const{
+        return Size(-1,-1);
+    }
+    Size Widget::minimum_size_hint() const{
+        return Size(-1,-1);
+    }
+    Size Widget::maximum_size_hint() const{
+        return Size(-1,-1);
+    }
 
     void Widget::inhert_style(){
         if(parent() != nullptr){
@@ -419,8 +428,11 @@ namespace Btk{
                 throwRuntimeError("unknown widget in container");
             }
 
-            iter_pos = childrens.end();
-            iter_pos = std::prev(iter_pos,std::abs(position) - 1);
+            iter_pos = --childrens.end();
+            while(position != -1){
+                --iter_pos;
+                position ++;
+            }
         }
         else{
             if(position >= childrens.size()){

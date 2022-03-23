@@ -242,6 +242,9 @@ namespace X11{
         signal(SIGSEGV,crash_handler);
         signal(SIGABRT,crash_handler);
         signal(SIGILL,crash_handler);
+        signal(SIGUSR1,[](int){
+            _Btk_Backtrace();
+        });
         _Xdebug = 1;
         #endif
         XSetErrorHandler(XErrorHandler);

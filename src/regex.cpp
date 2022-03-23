@@ -5,11 +5,12 @@
 #if __has_include(<regex.h>) && !BTK_MINGW
 // #if 0
 
+#include <regex.h>
+
 #ifndef REG_NOERROR
     #define REG_NOERROR REG_OK
 #endif
 
-#include <regex.h>
 namespace Btk{
     struct Regex::Impl:public regex_t{
         u8string expression;

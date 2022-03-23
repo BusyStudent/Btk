@@ -185,6 +185,18 @@ namespace Btk{
             T *pixels() const noexcept{
                 return static_cast<T*>(surf->pixels);
             }
+            template<class T = Uint32>
+            Uint32 &pixel_at(int x,int y){
+                return reinterpret_cast<T*>(
+                    static_cast<Uint8*>(surf->pixels) + surf->pitch * y
+                )[x];
+            }
+            template<class T = Uint32>
+            const Uint32 &pixel_at(int x,int y) const{
+                return reinterpret_cast<T*>(
+                    static_cast<Uint8*>(surf->pixels) + surf->pitch * y
+                )[x];
+            }
             SDL_Surface *get() const noexcept{
                 return surf;
             }
@@ -196,6 +208,13 @@ namespace Btk{
             void unlock() const noexcept;
             //Set RLE
             void set_rle(bool val = true);
+            /**
+             * @brief Fill area by pixels
+             * 
+             * @param r 
+             * @param pix 
+             */
+            void fill(const Rect *r,Uint32 pix);
             /**
              * @brief Convert a pixbuf's format
              * 
@@ -695,7 +714,7 @@ namespace Btk{
                 int *p_delay = nullptr
             ) = 0;
             /**
-             * @brief Read frame
+             * @brief Read frame pixels
              * 
              * @param frame_index 
              * @param rect 
@@ -708,6 +727,14 @@ namespace Btk{
                 void *pixels,
                 const PixelFormat *wanted = nullptr
             ) = 0;
+            /**
+             * @brief Read current frame,and put it into a pixels buffer
+             * 
+             * @param frame_idx 
+             * @param r 
+             * @return PixBuf 
+             */
+            virtual PixBuf read_frame(size_t frame_idx,const Rect *r = nullptr);
             /**
              * @brief Open a stream
              * 
@@ -758,7 +785,6 @@ namespace Btk{
                 query_frame(idx,nullptr,&delay);
                 return delay;
             }
-            PixBuf read_frame(size_t frame_idx,const Rect *r = nullptr);
         protected:
             virtual void decoder_open() = 0;
             virtual void decoder_close() = 0;

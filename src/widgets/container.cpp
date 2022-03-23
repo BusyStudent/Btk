@@ -11,10 +11,11 @@ namespace Btk{
         borader_color = theme().active.border;
     }
     GroupBox::~GroupBox() = default;
-    void GroupBox::draw(Renderer &render,Uint32){
+    void GroupBox::draw(Renderer &render,Uint32 t){
         if(draw_background){
             render.draw_box(rectangle(),background_color);
         }
+        Group::draw(render,t);
         if(draw_boarder){
             render.draw_rect(rectangle(),borader_color);
         }

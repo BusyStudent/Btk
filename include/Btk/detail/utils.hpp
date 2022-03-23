@@ -19,7 +19,7 @@ namespace Btk{
      * @param v_align V alignment
      * @return -1 if failed
      */
-    [[depercated("Donnot use it any more")]]
+    [[deprecated("Donnot use it any more")]]
     inline int CalculateXByAlign(const Rect &rect,int w,Align v_align){
         switch(v_align){
             case Align::Left:
@@ -40,7 +40,7 @@ namespace Btk{
      * @param h_align H alignment
      * @return -1 if failed
      */
-    [[depercated("Donnot use it any more")]]
+    [[deprecated("Donnot use it any more")]]
     inline int CalculateYByAlign(const Rect &rect,int h,Align h_align){
         switch(h_align){
             case Align::Top:
@@ -63,7 +63,7 @@ namespace Btk{
      * @param h_align H alignment
      * @return aligned rect empty() if failed
      */
-    [[depercated("Donnot use it any more")]]
+    [[deprecated("Donnot use it any more")]]
     inline Rect CalculateRectByAlign
         (const Rect &rect,
          int w,int h,
@@ -83,14 +83,14 @@ namespace Btk{
      * 
      * @return BTKAPI& 
      */
-    [[depercated("Donnot use it any more")]]
+    [[deprecated("Donnot use it any more")]]
     BTKAPI u8string& InternalU8Buffer();
     /**
      * @brief Internal Utf16 string buffer(thread_local)
      * 
      * @return BTKAPI& 
      */
-    [[depercated("Donnot use it any more")]]
+    [[deprecated("Donnot use it any more")]]
     BTKAPI u16string& InternalU16Buffer();
     /**
      * @brief Fill the internal u8buffer(thread_local)
@@ -98,13 +98,13 @@ namespace Btk{
      * @param view 
      * @return std::string& 
      */
-    [[depercated("Donnot use it any more")]]
+    [[deprecated("Donnot use it any more")]]
     inline u8string& FillInternalU8Buffer(u8string_view view){
         auto &buf = InternalU8Buffer();
         buf = view;
         return buf;
     }
-    [[depercated("Donnot use it any more")]]
+    [[deprecated("Donnot use it any more")]]
     inline u8string& FillInternalU8Buffer(u8string &&text){
         auto &buf = InternalU8Buffer();
         buf = std::move(text);
@@ -116,7 +116,7 @@ namespace Btk{
      * @param view 
      * @return std::string& 
      */
-    [[depercated("Donnot use it any more")]]
+    [[deprecated("Donnot use it any more")]]
     inline u8string& FillInternalU8Buffer(u16string_view view){
         auto &buf = InternalU8Buffer();
         buf.clear();

@@ -226,11 +226,13 @@ target("btk")
     --Check Image Library
     
     if has_package("libpng") then
+        set_configvar("BTK_HAVE_LIBPNG",true)
         add_packages("libpng")
         add_files("./src/images/png.cpp")
     end
 
     if has_package("webp") then
+        set_configvar("BTK_HAVE_LIBWEBP",true)
         add_packages("webp")
         add_files("./src/images/webp.cpp")
     end
@@ -275,6 +277,10 @@ if is_mode("debug") then
     target("pixmap")
         set_kind("binary")
         add_files("./tests/pixmap.cpp")
+        add_deps("btk")
+    target("menubar")
+        set_kind("binary")
+        add_files("./tests/menubar.cpp")
         add_deps("btk")
     target("sliderable")
         set_kind("binary")

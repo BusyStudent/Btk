@@ -1,6 +1,7 @@
 #include "../build.hpp"
 
 #include <Btk/platform/popen.hpp>
+#include <Btk/platform/color.hpp>
 #ifndef NDEBUG
 #include <string_view>
 #include <string>
@@ -44,7 +45,7 @@ extern "C" void _Btk_Backtrace(){
     void *address[100];
     int ret = backtrace(address,100);
 
-    fprintf(stderr,"Backtrace Begin pid:%d\n",int(getpid()));
+    fprintf(stderr,"\033[1;31m--Backtrace Begin-- pid:%d\033[0m\n",int(getpid()));
     //get address
     char **str = backtrace_symbols(address,ret);
     if(str == nullptr){
@@ -99,11 +100,11 @@ extern "C" void _Btk_Backtrace(){
         else{
             outbuffer = func;
         }
-        fprintf(stderr,"  at %p: %s (in %s)\n",address[i],func,filename.c_str());
+        fprintf(stderr,"  \x1B[34mat\x1B[0m %p: %s (in %s)\n",address[i],func,filename.c_str());
     }
     free(str);
     free(outbuffer);
-    fputs("Backtrace End\n",stderr);
+    fputs("\033[1;31m--Backtrace End--\033[0m\n",stderr);
     fflush(stderr);
 };
 #elif defined(_WIN32) && defined(_MSC_VER)

@@ -63,8 +63,20 @@ namespace Btk{
              * 
              */
             void redraw();
+            /**
+             * @brief Send a close request(blocked)
+             * 
+             */
+            void close();
+            void move(int x,int y);
+            void raise();
+
             bool handle(Event &) override;
+
+            Point position() const;
+            Size  size() const;
             
+            [[deprecated("Use size() instead")]]
             void pixels_size(int *w,int *h);//GetWindowSize
             /**
              * @brief The framebuffer's size
@@ -72,6 +84,7 @@ namespace Btk{
              * @param w 
              * @param h 
              */
+            [[deprecated]]
             void buffer_size(int *w,int *h);//GetWindowSize
             //tirgger close cb
             
@@ -107,7 +120,51 @@ namespace Btk{
              * @param v 
              */
             void set_modal(bool v = true);
+            /**
+             * @brief Set the input focus 
+             * 
+             * @param v 
+             */
+            void set_input_focus();
             void query_dpi(float *ddpi,float *hdpi,float *vdpi);
+
+            //Expose signals
+            [[nodiscard]]
+            auto signal_leave() noexcept -> Signal<void()> &{
+                return _signal_leave;
+            }
+            [[nodiscard]]
+            auto signal_enter() noexcept -> Signal<void()> &{
+                return _signal_enter;
+            }
+            [[nodiscard]]
+            auto signal_close() noexcept -> Signal<bool()> &{
+                return _signal_close;
+            }
+            [[nodiscard]]
+            auto signal_closed() noexcept -> Signal<void()> &{
+                return _signal_closed;
+            }
+            [[nodiscard]]
+            auto signal_resize() noexcept -> Signal<void(int,int)> &{
+                return _signal_resize;
+            }
+            [[nodiscard]]
+            auto signal_dropfile() noexcept -> Signal<void(u8string_view)> &{
+                return _signal_dropfile;
+            }
+            [[nodiscard]]
+            auto signal_event() noexcept -> Signal<bool(Event&)> &{
+                return _signal_event;
+            }
+            [[nodiscard]]
+            auto signal_keyboard_take_focus() noexcept -> Signal<void()> &{
+                return _signal_keyboard_take_focus;
+            }
+            [[nodiscard]]
+            auto signal_keyboard_lost_focus() noexcept -> Signal<void()> &{
+                return _signal_keyboard_lost_focus;
+            }
         public:
             //Process Event
             bool handle_drop(DropEvent     &) override;
@@ -120,14 +177,16 @@ namespace Btk{
             //Render's device
             RendererDevice *_device = nullptr;
             //Signals
-            Signal<void()> sig_leave;//mouse leave
-            Signal<void()> sig_enter;//mouse enter
-            Signal<bool()> sig_close;//CloseWIndow
-            Signal<void(u8string_view)> sig_dropfile;//DropFile
-            Signal<void(int new_w,int new_h)> sig_resize;//WindowResize
-            Signal<bool(Event &)> sig_event;//Process Unhandled Event
-            Signal<void()> signal_keyboard_take_focus;
-            Signal<void()> signal_keyboard_lost_focus;
+            Signal<void()> _signal_leave;//mouse leave
+            Signal<void()> _signal_enter;//mouse enter
+            Signal<bool()> _signal_close;//Will be close
+            Signal<void()> _signal_closed;//Is closed
+            Signal<void(u8string_view)> _signal_dropfile;//DropFile
+            Signal<void(int new_w,int new_h)> _signal_resize;//WindowResize
+            Signal<void(int new_x,int new_y)> _signal_moved;//WindowMove
+            Signal<bool(Event &)> _signal_event;//Process Unhandled Event
+            Signal<void()> _signal_keyboard_take_focus;
+            Signal<void()> _signal_keyboard_lost_focus;
             //BackGroud Color
             Color bg_color;
             //Background cursor
@@ -203,7 +262,22 @@ namespace Btk{
         friend class System;
         friend void PushEvent(Event *,Window &);
     };
-    BTKAPI WindowImpl *NewWindow(u8string_view title,int x,int y,WindowFlags);
+    /**
+     * @brief Create a Window object
+     * 
+     * @param title 
+     * @param w 
+     * @param h 
+     * @param flags
+     * @return The WindowImpl handler
+     */
+    BTKAPI WindowImpl *CreateWindow(u8string_view title,int w,int h,WindowFlags f);
+    /**
+     * @brief Get the Mouse Focus Window
+     * 
+     * @return BTKAPI* 
+     */
+    BTKAPI WindowImpl *GetMouseFocus();
 }
 
 #endif // _BTKIMPL_WINDOW_HPP_

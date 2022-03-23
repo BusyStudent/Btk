@@ -90,9 +90,9 @@
     #else
         #define Btk_SmallAlloc(SIZE) \
             (_Btk_SmallAllocHelper( \
-                SIZE > BTK_SMALL_STACK_SIZE \ 
+                SIZE > BTK_SMALL_STACK_SIZE \
                 ? std::malloc(SIZE + sizeof(BTK_SMALL_SIZE_T)) \
-                : Btk_StackAlloc(SIZE+ sizeof(BTK_SMALL_SIZE_T)) \ 
+                : Btk_StackAlloc(SIZE+ sizeof(BTK_SMALL_SIZE_T)) \
                 , SIZE\
             ))
     #endif

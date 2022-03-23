@@ -85,6 +85,11 @@ namespace Btk{
             throwSDLError();
         }
     }
+    void PixBufRef::fill(const Rect *r,Uint32 pix){
+        if(SDL_FillRect(surf,r,pix) == -1){
+            throwSDLError();
+        }
+    }
     //save PixBuf
     void PixBufRef::save_bmp(RWops &rw){
         if(SDL_SaveBMP_RW(surf,rw.get(),false) == -1){

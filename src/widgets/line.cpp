@@ -15,7 +15,6 @@ namespace Btk{
         rect.w = w;
         rect.h = h;
 
-        attr.user_rect = true;
     }
     Line::~Line(){}
 

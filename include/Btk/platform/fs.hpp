@@ -147,7 +147,7 @@ namespace Btk{
             #endif
             buffer += dir;
             in_path = exists(buffer);
-            if(in_path = true){
+            if(in_path == true){
                 //End the loop
                 return false;
             }
@@ -175,7 +175,7 @@ namespace Btk{
                 if(ent->d_name[1] == '\0'){
                     continue;
                 }
-                else if(ent->d_name[1] == '.',ent->d_name[2] == '\0'){
+                else if(ent->d_name[1] == '.' and ent->d_name[2] == '\0'){
                     continue;
                 }
             }

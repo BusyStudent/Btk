@@ -893,7 +893,7 @@ namespace Btk{
             }
 
             template<class Callable,class ...Args>
-            [[depercated("Using Timer::bind instead")]]
+            [[deprecated("Using Timer::bind instead")]]
             Timer &set_callback(Callable &&callable,Args &&...args){
                 bind(std::forward<Callable>(callable),std::forward<Args>(args)...);
                 return *this;

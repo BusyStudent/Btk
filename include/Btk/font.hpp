@@ -131,8 +131,8 @@ namespace Btk{
              * @param text The text
              * @return w and h (-1 if failed)
              */
-            FSize size(u8string_view text);
-            FSize size(u16string_view text);
+            FSize size(u8string_view text) const;
+            FSize size(u16string_view text) const;
             /**
              * @brief Close font
              * 

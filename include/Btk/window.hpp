@@ -277,16 +277,6 @@ namespace Btk{
             }
     };
     /**
-     * @brief Create a Window object
-     * 
-     * @param title 
-     * @param w 
-     * @param h 
-     * @param flags
-     * @return The WindowImpl handler
-     */
-    BTKAPI WindowImpl *CreateWindow(u8string_view title,int w,int h,WindowFlags f);
-    /**
      * @brief Get the Screen Size object
      * @param display The display index(0 on default)
      * @return BTKAPI 

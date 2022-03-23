@@ -19,7 +19,6 @@ namespace Btk{
         rect.w = w;
         rect.h = h;
         //User defined its position
-        attr.user_rect = true;
     }
     ImageView::~ImageView() = default;
     void ImageView::draw(Renderer &render,Uint32){

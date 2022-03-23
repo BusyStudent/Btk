@@ -171,6 +171,12 @@ namespace Btk{
      * @return BTKAPI 
      */
     BTKAPI bool WaitEvent();
+    /**
+     * @brief Interrupt the event loop
+     * 
+     * @return BTKAPI 
+     */
+    BTKAPI void InterruptLoop();
 
     /**
      * @brief Enter the EventLoop

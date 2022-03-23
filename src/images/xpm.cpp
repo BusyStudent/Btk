@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 namespace {
-    SDL_Surface *load_xpm_from_string(SDL_RWops *rwops){
+    inline SDL_Surface *load_xpm_from_string(SDL_RWops *rwops){
         size_t length;
         void *data = SDL_LoadFile_RW(rwops,&length,SDL_FALSE);
 
@@ -52,15 +52,14 @@ namespace {
         return Btk::PixBuf::FromXPMArray(vecs.data()).detach();
     }
     #ifndef BTK_NO_XPM_WRITER
-    bool save_xpm_from_buf(SDL_RWops *rwops,SDL_Surface *surf,int){
+    //FIXME:It will generate a huge color table when it was too many kinds of colors
+    inline bool save_xpm_from_buf(SDL_RWops *rwops,SDL_Surface *surf,int){
         if(surf->format->format != SDL_PIXELFORMAT_RGBA32){
             //Convert to RGBA32
             return save_xpm_from_buf(rwops,Btk::PixBufRef(surf).convert(SDL_PIXELFORMAT_RGBA32).get(),0);
         }
-        Uint32 trpix = Btk::MapRGBA32(0,0,0,0);
 
         //Use std::string 
-        std::string outbuf;
         std::unordered_map<Uint32,std::string> colormap;
         //Map RGBA -> Pixels String
 
@@ -73,27 +72,46 @@ namespace {
 
         for(int y = 0;y < surf-> h; ++ y){
             for(int x = 0;x < surf->w; ++ x){
-                Uint32 pix = buf[y * surf->h + x];
+                Uint32 pix = buf[y * surf->w + x];
                 //Create a place
                 colormap[pix];
             }
         }
         //Dirty way
-        //There is 95 printable chars
-        constexpr int printable = 95;
-        //Char peer pixels
-        int cpp = std::ceil(float(colormap.size()) / printable);
-        
+        //There is 94 printable chars
         int char_begin = 0x20;
         int char_end = 0x7E;
+
+        int printable = char_end - char_begin - 1;
+        //Remove " beacuase it was invalid
+        //Char peer pixels
+        int cpp = 1;
+        while(std::pow(printable,cpp) < double(colormap.size())){
+            BTK_ASSERT(cpp < 5);//< Too big!!!
+            ++ cpp;
+        }
 
         std::string pixstr;
         pixstr.resize(cpp);
         for(auto &c:pixstr){
             c = char_begin;
         }
-        //Fill colormap
-        int cur_position = 0;//position in pixstr
+        //Do add algo on string
+        const auto &do_add = [&](char *current) -> void{
+            const auto &add = [&](auto &&self,char *current) -> void{
+                *current += 1;
+                if(*current == '"'){
+                    *current += 1;
+                }
+                if(*current > char_end){
+                    //Reach end
+                    *current = char_begin;
+                    self(self,current + 1);
+                }
+            };
+            add(add,current);
+        };
+        //Build colormap
         for(int y = 0;y < surf-> h; ++ y){
             for(int x = 0;x < surf->w; ++ x){
                 Uint32 pix = buf[y * surf->h + x];
@@ -104,12 +122,8 @@ namespace {
                     continue;
                 }
                 target = pixstr;
-                //Add a char
-                pixstr[cur_position] =+ 1;
-                if(pixstr[cur_position] == char_end){
-                    //This position cannot hold more
-                    cur_position += 1;
-                }
+
+                do_add(&pixstr[0]);
             }
         }
         //colormap build done
@@ -123,9 +137,21 @@ namespace {
         //Write table
         for(auto &par:colormap){
             auto c = Btk::GetRGBA32(par.first);
-            SDL_RWpinrt(rwops,"\"%s   c %h%h%h%h\",\n",par.second,c.r,c.g,c.b,c.a);
+            if(c.a != 255){
+                //Has alpha
+                if(c.a == 0){
+                    //Use none
+                    SDL_RWpinrt(rwops,"\"%s c none\",\n",par.second.c_str());
+                }
+                else{
+                    SDL_RWpinrt(rwops,"\"%s c #%02X%02X%02X%02X\",\n",par.second.c_str(),c.r,c.g,c.b,c.a);
+                }
+            }
+            else{
+                SDL_RWpinrt(rwops,"\"%s c #%02X%02X%02X\",\n",par.second.c_str(),c.r,c.g,c.b,c.a);
+            }
         }
-        //Writw pixels
+        //Write pixels
         pixstr.resize(surf->w * cpp);
 
         for(int y = 0;y < surf-> h; ++ y){
@@ -133,7 +159,7 @@ namespace {
             for(int x = 0;x < surf->w; ++ x){
                 Uint32 pix = buf[y * surf->h + x];
                 //Create a place
-                auto &req = colormap[pix];
+                auto &req = colormap.at(pix);
 
                 memcpy(&pixstr[x * cpp],req.c_str(),req.size());
             }

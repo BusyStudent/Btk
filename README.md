@@ -72,7 +72,7 @@ int main(){
 
 - [x] Rewrite font system to get better performence  
 - [ ] Add more useful widgets  
-- [x] Add Btk::Bind(...) to bind object and functions
+- [ ] MessageLoop need to be refactored  
 - [ ] Rewrite ImageView By OpenGL to implement AntiAlias
 - [ ] To implement Menu
 - [ ] Add CMake

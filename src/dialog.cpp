@@ -29,8 +29,8 @@ namespace{
         bool *has_got = new bool(false);
         auto sig_handle = std::signal(SIGCHLD,[](int){
             //Got a sigchld
-            //Ask the btk to quit loop
-            Btk::Exit();
+            //Interrupt the loop
+            Btk::InterruptLoop();
         });
 
         Btk_defer [pid,has_got,sig_handle](){

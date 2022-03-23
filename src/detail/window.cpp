@@ -63,9 +63,9 @@ namespace Btk{
     }
     //Draw window
     void WindowImpl::draw(Renderer &render,Uint32 timestamp){
-        #ifndef NDEBUG
-        SDL_Log("[System::Renderer]Draw Window %p",win);
-        #endif
+        
+        BTK_LOGINFO("[System::Renderer]Draw Window %p",win);
+        
         std::lock_guard<std::recursive_mutex> locker(mtx);
         render.begin();
         render.clear(bg_color);
@@ -131,21 +131,20 @@ namespace Btk{
     }
     //TryCloseWIndow
     bool WindowImpl::on_close(){
-        if(not sig_close.empty()){
-            return sig_close();
+        if(not _signal_close.empty()){
+            return _signal_close();
         }
         return true;
     }
+    void WindowImpl::close(){
+        return GetSystem()->close_window(this);
+    }
     //DropFilecb
     void WindowImpl::on_dropfile(u8string_view file){
-        if(not sig_dropfile.empty()){
-            sig_dropfile(file);
-        }
+        _signal_dropfile(file);
     }
     void WindowImpl::on_resize(int new_w,int new_h){
-        if(not sig_resize.empty()){
-            sig_resize(new_w,new_h);
-        }
+        _signal_resize(new_w,new_h);
         //Ask layout to update
         update_postion();
     }
@@ -184,9 +183,8 @@ namespace Btk{
             //w = window's w
             //h = window's h
             Widget *widget = *widgets_list.begin();
-            if(not widget->attr.user_rect){
-                int w,h;
-                pixels_size(&w,&h);
+            if(widget->attr.auto_size){
+                auto [w,h] = size();
                 widget->set_rect(0,0,w,h);
             }
         }
@@ -223,6 +221,24 @@ namespace Btk{
             }
         }
     }
+    void WindowImpl::move(int x,int y){
+        std::lock_guard locker(mtx);
+        SDL_SetWindowPosition(win,x,y);
+    }
+    void WindowImpl::raise(){
+        std::lock_guard locker(mtx);
+        SDL_RaiseWindow(win);
+    }
+    Point WindowImpl::position() const{
+        int x,y;
+        SDL_GetWindowPosition(win,&x,&y);
+        return Point(x,y);
+    }
+    Size  WindowImpl::size() const{
+        int w,h;
+        SDL_GetWindowSize(win,&w,&h);
+        return Size(w,h);
+    }
 }
 //Event Processing
 namespace Btk{
@@ -244,6 +260,7 @@ namespace Btk{
             }
             case Event::Show:{
                 SDL_ShowWindow(win);
+                update_postion();
                 return true;
             }
             case Event::Hide:{
@@ -256,7 +273,7 @@ namespace Btk{
                 }
             }
         }
-        return sig_event(event);
+        return _signal_event(event);
     }
     void WindowImpl::handle_windowev(const SDL_Event &event){
         switch(event.window.event){
@@ -296,9 +313,7 @@ namespace Btk{
                 }
                 Event enter(Event::Enter);
                 handle(enter);
-                if(not sig_enter.empty()){
-                    sig_enter();
-                }
+                _signal_enter();
                 break;
             }
             case SDL_WINDOWEVENT_LEAVE:{
@@ -311,20 +326,22 @@ namespace Btk{
                 //container.handle(leave);
                 Event event(Event::Leave);
                 handle(event);
-                if(not sig_leave.empty()){
-                    sig_leave();
-                }
+                _signal_leave();
                 break;
             }
             case SDL_WINDOWEVENT_FOCUS_GAINED:{
-                signal_keyboard_take_focus();
+                BTK_LOGINFO("[Window]Focus Gained %p",this);
+                _signal_keyboard_take_focus();
                 break;
             }
             case SDL_WINDOWEVENT_FOCUS_LOST:{
-                signal_keyboard_lost_focus();
+                BTK_LOGINFO("[Window]Focus Lost %p",this);
+                _signal_keyboard_lost_focus();
                 break;
             }
             case SDL_WINDOWEVENT_MOVED:{
+                BTK_LOGINFO("[Window]Move To (%d,%d)",event.window.data1,event.window.data2);
+                _signal_moved(event.window.data1,event.window.data2);
                 break;
             }
         }
@@ -449,16 +466,16 @@ namespace Btk{
         return Btk::run() == 0;
     }
     Window::SignalClose &Window::signal_close(){
-        return pimpl->sig_close;
+        return pimpl->signal_close();
     }
     Window::SignalEvent &Window::signal_event(){
-        return pimpl->sig_event;
+        return pimpl->signal_event();
     }
     Window::SignalResize &Window::signal_resize(){
-        return pimpl->sig_resize;
+        return pimpl->signal_resize();
     }
     Window::SignalDropFile& Window::signal_dropfile(){
-        return pimpl->sig_dropfile;
+        return pimpl->signal_dropfile();
     }
     void Window::set_title(u8string_view title){
         SDL_SetWindowTitle(pimpl->win,title.data());
@@ -591,21 +608,16 @@ namespace Btk{
     }
     //Show window and set Widget postions
     void Window::done(){
-        update();
-        SDL_ShowWindow(pimpl->win);
+        pimpl->show();
     }
     Font Window::font() const{
         return pimpl->font();
     }
     Size Window::size() const{
-        Size s;
-        SDL_GetWindowSize(pimpl->win,&s.w,&s.h);
-        return s;
+        return pimpl->size();
     }
     Point Window::position() const{
-        Point p;
-        SDL_GetWindowPosition(pimpl->win,&p.x,&p.y);
-        return p;
+        return pimpl->position();
     }
     u8string_view Window::title() const{
         return SDL_GetWindowTitle(pimpl->win);
@@ -617,10 +629,7 @@ namespace Btk{
         return *pimpl;
     }
     void *Window::internal_data(const char *key){
-        return SDL_GetWindowData(
-            SDL_GetWindowFromID(winid),
-            key
-        );
+        return pimpl->userdata(key);
     }
 
 }
@@ -691,5 +700,11 @@ namespace Btk{
         }
         return GetSystem()->create_window(sdl_win);
     }
-
+    WindowImpl *GetMouseFocus(){
+        SDL_Window *win = SDL_GetMouseFocus();
+        if(win == nullptr){
+            return nullptr;
+        }
+        return GetSystem()->get_window_s(SDL_GetWindowID(win));
+    }
 }

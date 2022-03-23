@@ -26,8 +26,11 @@ namespace Btk{
             void on_click(T &&...args){
                 clicked.connect(std::forward<T>(args)...);
             }
-            Signal<void()> &signal_clicked(){
+            auto signal_clicked() -> Signal<void()> &{
                 return clicked;
+            }
+            auto siganl_hovered() -> Signal<void()> &{
+                return hovered;
             }
             /**
              * @brief Get the button text
@@ -84,6 +87,7 @@ namespace Btk{
             Texture  bicon_tex;//< Button icon's texture
 
             Signal<void()> clicked;
+            Signal<void()> hovered;
         private:
             bool need_crt_tex = false;
     };
@@ -102,6 +106,7 @@ namespace Btk{
         protected:
             bool handle_mouse(MouseEvent &) override;
             void onleave() override;
+            void onenter() override;
             //PixBuf  textbuf;
             //Texture texture;
             //Font    textfont;

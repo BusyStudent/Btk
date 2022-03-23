@@ -9,6 +9,7 @@
 #include "font.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
+
 namespace Btk{
     class Font;
     class Theme;
@@ -36,12 +37,29 @@ namespace Btk{
         Renderer &renderer;
         Uint32    timestamp;
     };
-
+    /**
+     * @brief Qt like focus policy
+     * 
+     */
     enum class FocusPolicy:Uint8{
         None = 0,
         KeyBoard = 1,
         Mouse = 2,//< The widget will get focus by mouse and lost focus by mouse
         Wheel = 3
+    };
+    /**
+     * @brief Qt like focus policy
+     * 
+     */
+    enum class SizePolicy:Uint8{
+        Fixed = 0,
+        Minimum = 1,
+        Maximum = 2,
+        Preferred = 3,
+        Expanding = 4,
+        MinimumExpanding = 5,
+        MaximumExpanding = 6,
+        Ignored = 7
     };
     /**
      * @brief Widget align (same as TextAlign)
@@ -76,7 +94,7 @@ namespace Btk{
     struct WidgetAttr{
         bool hide = false;//<Is hide
         bool window = false;//<Is window
-        bool user_rect = false;//<Using user defined position
+        bool auto_size = false;//<Let top window to set the size
         bool container = false;//<Is container
         bool disable = false;//<The widget is disabled?
         bool layout = false;//<Is layout?
@@ -116,6 +134,11 @@ namespace Btk{
             //Resize
             void resize(int w,int h,bool is_sizing = false);
             void move(int x,int y);
+
+            //Size Hint
+            virtual Size size_hint() const;
+            virtual Size maximum_size_hint() const;
+            virtual Size minimum_size_hint() const;
 
             //Hide and show
             void hide();
@@ -263,11 +286,39 @@ namespace Btk{
                 return p.translate(-x(),-y());
             }
             // TODO Set/Get Userdata?
-            void  set_userdata(const char *name,void *value);
             void *userdata(const char *name);
             
             const char *name() const noexcept{
                 return _name;
+            }
+            const Font &font() const noexcept{
+                return _font;
+            }
+            const Theme &theme() const noexcept{
+                return *_theme;
+            }
+
+            void set_font(const Font &font){
+                _font = font;
+                redraw();
+            }
+            void set_theme(const RefPtr<Theme> &theme){
+                _theme = theme;
+                redraw();
+            }
+            void set_name(u8string_view name);
+            void set_userdata(const char *name,void *value);
+            void set_hint(const char *hint_name,bool value){
+                void *p = nullptr;
+                StorePodInPointer(&p,value);
+                set_userdata(hint_name,p);
+            }
+            /**
+             * @brief Let window to set the size to fit the window size
+             * 
+             */
+            void set_auto_size_hint(){
+                attr.auto_size = true;
             }
         protected:
             /**
@@ -301,23 +352,6 @@ namespace Btk{
              * 
              */
             void inhert_style();
-
-            const Font &font() const noexcept{
-                return _font;
-            }
-            const Theme &theme() const noexcept{
-                return *_theme;
-            }
-
-            void set_font(const Font &font){
-                _font = font;
-                redraw();
-            }
-            void set_theme(const RefPtr<Theme> &theme){
-                _theme = theme;
-                redraw();
-            }
-            void set_name(u8string_view name);
         public:
             //Event Handle Method,It will be called in Widget::handle()
             /**
@@ -438,8 +472,8 @@ namespace Btk{
              * @param args 
              */
             template<class Callable,class ...Args>
-            void for_each(Callable &&callable,Args &&...args) const{
-                if constexpr(std::is_same_v<std::invoke_result_t<Callable,Args...>,bool>){
+            void for_each(Callable &&callable,Args &&...args){
+                if constexpr(std::is_same_v<std::invoke_result_t<Callable,Widget*,Args...>,bool>){
                     //Has bool return type
                     for(auto w:childrens){
                         if(not callable(w,std::forward<Args>(args)...)){

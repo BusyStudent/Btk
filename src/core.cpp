@@ -35,13 +35,13 @@ namespace{
         //defer call
         typedef void (*defer_fn_t)(void*);
         defer_fn_t fn = reinterpret_cast<defer_fn_t>(ev.user.data1);
-        #ifndef NDEBUG
-            SDL_Log("[System::EventDispather]call %p data = %p",fn,ev.user.data2);
-        #endif
+        
+        BTK_LOGINFO("[System::EventDispather]call %p data = %p",fn,ev.user.data2);
+        
         fn(ev.user.data2);
     }
     void redraw_win_cb(const SDL_Event &ev,void *){
-        auto w = Btk::Instance().get_window_s(ev.user.windowID);
+        auto w = Btk::GetSystem()->get_window_s(ev.user.windowID);
         if(w == nullptr){
             return;
         }
@@ -91,6 +91,7 @@ namespace{
         if(detail->active){
             if(not detail->cb(event.user.timestamp,detail->userdata1,detail->userdata2)){
                 //Require close timer
+                SDL_RemoveTimer(detail->id);
                 detail->unref();
                 detail->active = false;
             }
@@ -123,6 +124,9 @@ namespace{
             std::atexit(resource_atexit_handler);
         }
     }
+    struct _interrupt_loop_t{
+        //Interrupt
+    };
 }
 
 namespace Btk{
@@ -257,6 +261,12 @@ namespace Btk{
     static std::thread::id main_thrd;
     System* System::instance = nullptr;
     bool    System::is_running = false;
+
+    #ifndef NDEBUG
+    static int loop_depth = 0;
+    //< MessageLoop depth
+    #endif
+
     void Init(){
         resource_init();
         //Init Btk
@@ -274,59 +284,88 @@ namespace Btk{
         int retvalue = EXIT_SUCCESS;
         //resume from error
         resume:
-            Instance().is_running = true;
+            GetSystem()->is_running = true;
         try{
-            
-            Instance().run();
+            GetSystem()->run();
         }
         catch(int i){
             //Exit
-            Instance().is_running = false;
+            if(not GetSystem()->on_quit()){
+                //Resume
+                goto resume;
+            }
+            GetSystem()->is_running = false;
             retvalue = i;
         }
         catch(std::exception &exp){
             
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::GetException] %s",exp.what());
-            if(Instance().try_handle_exception(&exp)){
+            if(GetSystem()->try_handle_exception(&exp)){
                 goto resume;
             }
-            Instance().is_running = false;
+            GetSystem()->is_running = false;
             throw;
         }
         catch(...){
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"[System::GetException]Unknown");
-            if(Instance().try_handle_exception(nullptr)){
+            if(GetSystem()->try_handle_exception(nullptr)){
                 goto resume;
             }
-            Instance().is_running = false;
+            GetSystem()->is_running = false;
             throw;
         }
-        Instance().is_running = false;
+        GetSystem()->is_running = false;
         return retvalue;
     }
     bool PollEvent(){
+        #ifndef NDEBUG
+        Btk_defer [](){
+            BTK_LOGINFO("[System::Loop]Leaving Loop");
+            loop_depth -= 1;
+        };
+        loop_depth += 1;
+        BTK_LOGINFO("[System::Loop]Enter Loop");
+        #endif
+
         try{
             SDL_Event event;
             while(SDL_PollEvent(&event)){
-                Instance().dispatch_event(event);
+                GetSystem()->dispatch_event(event);
             }
-            Instance().on_idle();
+            GetSystem()->on_idle();
             return true;
         }
-        catch(int){
+        catch(_interrupt_loop_t){
+            return false;
+        }
+        catch(...){
+            DeferRethrow();
             return false;
         }
     }
     bool WaitEvent(){
+        #ifndef NDEBUG
+        Btk_defer [](){
+            BTK_LOGINFO("[System::Loop]Leaving Loop");
+            loop_depth -= 1;
+        };
+        loop_depth += 1;
+        BTK_LOGINFO("[System::Loop]Enter Loop");
+        #endif
+
         try{
             SDL_Event event;
             while(SDL_WaitEvent(&event)){
-                Instance().dispatch_event(event);
+                GetSystem()->dispatch_event(event);
             }
-            Instance().on_idle();
+            GetSystem()->on_idle();
             return true;
         }
-        catch(int){
+        catch(_interrupt_loop_t){
+            return false;
+        }
+        catch(...){
+            DeferRethrow();
             return false;
         }
     }
@@ -348,7 +387,9 @@ namespace Btk{
         SDL_StopTextInput();
     }
     System::~System(){
-
+        // while(not wins_map.empty()){
+        //     close_window(wins_map.begin()->second);
+        // }
     }
     //Init or Quit
     int  System::Init(){
@@ -410,7 +451,8 @@ namespace Btk{
     void System::dispatch_event(SDL_Event &event){
         switch(event.type){
             case SDL_QUIT:{
-                on_quit();
+                BTK_LOGINFO("[System::Core]Got SDL_QUIT");
+                Exit(EXIT_SUCCESS);
                 break;
             }
             case SDL_CLIPBOARDUPDATE:{
@@ -562,7 +604,7 @@ namespace Btk{
         auto wheel = tr_event(event.wheel);
         if(win->handle_wheel(wheel)){
             if(not wheel.is_accepted()){
-                win->sig_event(wheel);
+                win->signal_event().emit(wheel);
             }
         }
     }
@@ -589,7 +631,7 @@ namespace Btk{
         if(not win->handle_keyboard(kevent)){
             //No one process it
             if(not kevent.is_accepted()){
-                win->sig_event(kevent);
+                win->signal_event().emit(kevent);
             }
         }
     }
@@ -611,7 +653,7 @@ namespace Btk{
         auto ev = tr_event(event.edit);
         win->handle_textediting(ev);
     }
-    inline void System::on_quit(){
+    inline bool System::on_quit(){
         if(signal_quit.empty()){
             //Deafult close all the window and quit
             BTK_LOGINFO("[System::Core]Try to quit");
@@ -630,12 +672,15 @@ namespace Btk{
                 }
             }
             if(wins_map.empty()){
-                Exit();
+                //Do quit
+                return true;
             }
+            return false;
         }
         else{
             BTK_LOGINFO("[System::Core]Emitting SignalQuit");
             signal_quit();
+            return true;
         }
     }
     void System::register_window(WindowImpl *impl){
@@ -731,6 +776,7 @@ namespace Btk{
             return;
         }
         if(win->on_close()){
+            win->_signal_closed.nothrow_emit();
             signal_window_closed(win);
             unregister_window(win);
         }
@@ -830,26 +876,31 @@ namespace Btk{
         tasks_queue.emplace(task);
         event.set();
     }
-
     void AsyncCall(void (*fn)(void*),void *data){
         //Check is inited
         Init();
         AsyncSystem::Task task;
         task.data = data;
         task.fn = fn;
-        Instance().async.add_task(task);
+        GetSystem()->async.add_task(task);
     }
 }
 namespace Btk{
-    static inline void exit_impl_cb(void *args){
+    static void exit_impl_cb(void *args){
         int v = LoadPodInPointer<int>(args);
         DeletePodInPointer<int>(args);
         throw v;
     }
+    static void interrupt_impl_cb(){
+        throw _interrupt_loop_t{};
+    }
     void Exit(int code){
-        void *args;
+        void *args = nullptr;
         NewPodInPointer<int>(&args,code);
         DeferCall(exit_impl_cb,args);
+    }
+    void InterruptLoop(){
+        DeferCall(interrupt_impl_cb);
     }
     ExceptionHandler SetExceptionHandler(ExceptionHandler handler){
         ExceptionHandler current = System::instance->handle_exception;
@@ -865,7 +916,7 @@ namespace Btk{
         resource_base->atexit(fn);
     }
     void AtIdle(void(*fn)(void*),void *data){
-        Instance().idle_handlers.push_back({fn,data});
+        GetSystem()->idle_handlers.push_back({fn,data});
     }
     void AtIdle(void(*fn)()){
         AtIdle(callback_wrapper,reinterpret_cast<void*>(fn));
@@ -890,7 +941,7 @@ namespace Btk{
         return main_thrd == std::this_thread::get_id();
     }
     bool CouldBlock(){
-        return not Instance().is_running or not IsMainThread();
+        return not GetSystem()->is_running or not IsMainThread();
     }
     void RegisterImageAdapter(const ImageAdapter & a){
         resource_init();
@@ -1104,18 +1155,60 @@ namespace Btk{
 BTK_CDECLS_BEGIN
 
 void _BtkL_Info(const char *fmt, ...){
+    #ifndef NDEBUG
+    if(Btk::loop_depth > 0){
+        std::va_list varg;
+        va_start(varg,fmt);
+        auto s = Btk::u8vformat(fmt,varg);
+        va_end(varg);
+        //add space by loop depth
+        for(int i = 0;i < Btk::loop_depth;i++){
+            s.prepend("    ");
+        }
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,"%s",s.c_str());
+        return;
+    }
+    #endif
     std::va_list varg;
     va_start(varg,fmt);
     SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION,SDL_LOG_PRIORITY_INFO,fmt,varg);
     va_end(varg);
 }
 void _BtkL_Warn(const char *fmt, ...){
+    #ifndef NDEBUG
+    if(Btk::loop_depth > 0){
+        std::va_list varg;
+        va_start(varg,fmt);
+        auto s = Btk::u8vformat(fmt,varg);
+        va_end(varg);
+        //add space by loop depth
+        for(int i = 0;i < Btk::loop_depth;i++){
+            s.prepend("    ");
+        }
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,"%s",s.c_str());
+        return;
+    }
+    #endif
     std::va_list varg;
     va_start(varg,fmt);
     SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION,SDL_LOG_PRIORITY_WARN,fmt,varg);
     va_end(varg);
 }
 void _BtkL_Error(const char *fmt, ...){
+    #ifndef NDEBUG
+    if(Btk::loop_depth > 0){
+        std::va_list varg;
+        va_start(varg,fmt);
+        auto s = Btk::u8vformat(fmt,varg);
+        va_end(varg);
+        //add space by loop depth
+        for(int i = 0;i < Btk::loop_depth;i++){
+            s.prepend("    ");
+        }
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"%s",s.c_str());
+        return;
+    }
+    #endif
     std::va_list varg;
     va_start(varg,fmt);
     SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION,SDL_LOG_PRIORITY_ERROR,fmt,varg);

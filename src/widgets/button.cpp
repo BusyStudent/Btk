@@ -78,7 +78,6 @@ namespace Btk{
 namespace Btk{
     Button::Button() = default;
     Button::Button(int x,int y,int w,int h){
-        attr.user_rect = true;
         rect = {
             x,y,w,h
         };
@@ -118,7 +117,7 @@ namespace Btk{
         //Draw box
         render.begin_path();
         render.fill_color(bg);
-        render.rounded_rect(fixed_rect,theme().button_rad);
+        render.rounded_rect(fixed_rect,theme().button_radius);
         render.fill();
         //Render text
         if(btext.size() != 0){
@@ -156,10 +155,10 @@ namespace Btk{
         }
         //draw the boarder
         if(draw_border and not is_entered){
-            render.draw_rounded_rect(fixed_rect,theme().button_rad,boarder);
+            render.draw_rounded_rect(fixed_rect,theme().button_radius,boarder);
         }
         else if(draw_border_on_hover and is_entered){
-            render.draw_rounded_rect(fixed_rect,theme().button_rad,boarder);
+            render.draw_rounded_rect(fixed_rect,theme().button_radius,boarder);
         }
     }
     bool Button::handle_mouse(MouseEvent &event){
@@ -185,6 +184,11 @@ namespace Btk{
     void Button::onleave(){
         is_entered = false;
         is_pressed = false;
+        redraw();
+    }
+    void Button::onenter(){
+        is_entered = true;
+        hovered();
         redraw();
     }
 }

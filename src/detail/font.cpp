@@ -202,7 +202,7 @@ namespace Btk{
         throwRuntimeError("Unimpl yet");
     }
     //size
-    FSize Font::size(u8string_view text){
+    FSize Font::size(u8string_view text) const{
         // int w,h;
         // if(TTF_SizeUTF8(pimpl->font,text.data(),&w,&h) != 0){
         //     w = -1;
@@ -214,7 +214,7 @@ namespace Btk{
         BtkFt_TextSize(font,ptsize_,blur_,spacing_,text,&size);
         return size;
     }
-    FSize Font::size(u16string_view text){
+    FSize Font::size(u16string_view text) const{
         // int w,h;
         // if(TTF_SizeUNICODE(pimpl->font,
         //     reinterpret_cast<const Uint16*>(text.data()),

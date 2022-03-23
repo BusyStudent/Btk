@@ -7,7 +7,6 @@ namespace Btk{
     Canvas::Canvas() = default;
     Canvas::Canvas(int x,int y,int w,int h){
         rect = {x,y,w,h};
-        attr.user_rect = true;
     }
     Canvas::~Canvas() = default;
     void Canvas::draw(Renderer &renderer){
