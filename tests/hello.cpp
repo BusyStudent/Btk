@@ -38,7 +38,7 @@ struct Hello:public Btk::Window{
 
     RadioButton *rad_btn;
 
-    TextBox *tbox;
+    LineEdit *tbox;
     ImageView *img_view;
     
     bool fullscreen_flags = true;
@@ -49,7 +49,7 @@ Hello::Hello():Window("Hello",500,500){
     close_btn = new Button("Close the window");
     seticon_btn = new Button("Set the icon");
     show_btn = new Button("Show the text");
-    tbox = new TextBox();
+    tbox = new LineEdit();
     defc_btn = new Button("DeferCall");
     fsc_btn = new Button("FullScreen");
     dmp_btn = new Button("Dump Object Tree");
@@ -115,7 +115,7 @@ void Hello::on_fullscreen(){
     fullscreen_flags = not fullscreen_flags;
 }
 void Hello::show_text(){
-    Btk::MessageBox msgbox("Show text",tbox->u8text());
+    Btk::MessageBox msgbox("Show text",tbox->text());
     msgbox.set_parent(*this);
     msgbox.run();
 }

@@ -54,6 +54,7 @@
 #else
     #define BTK_ASSERT(EXP) 
 #endif
+#define BTK_PANIC(MSG) BTK_ASSERT(!(MSG));
 
 //Check type macro
 #define BTK_ASSERT_CASTABLE(TYPE,PTR) BTK_ASSERT(dynamic_cast<TYPE*>(PTR) != nullptr)

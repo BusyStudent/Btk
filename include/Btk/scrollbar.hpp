@@ -198,82 +198,52 @@ namespace Btk{
             
             bool enable_fixed_size = true;
     };
+    /**
+     * @brief ScrollBar
+     * 
+     */
     class BTKAPI ScrollBar:public Widget{
         public:
-            using Widget::set_rect;
-            /**
-             * @brief Construct a new Scroll Bar object
-             * 
-             * @param orientation The scrollbar's orientation
-             */
-            ScrollBar(Orientation orientation);
-            ScrollBar(const ScrollBar &) = delete;
+            ScrollBar(Orientation);
             ~ScrollBar();
 
-            bool handle(Event &) override;
-            void draw(Renderer&,Uint32) override;
+            void draw(Renderer &,Uint32) override;
+        protected:
             /**
-             * @brief Get the value of the scrollbar
+             * @brief The scrollbar content_rect
              * 
-             * @return 0 on min,100 on max
+             * @return FRect 
              */
-            int value() const noexcept{
-                return bar_value;
-            }
-            void set_value(int value);
-            int move_slider(int x);
-            
-            void set_rect(const Rect &r) override;
-            void set_parent(Widget *w) override;
+            FRect content_rect() const noexcept;
+            /**
+             * @brief The slider bar rectange
+             * 
+             * @return FRect 
+             */
+            FRect bar_rect() const noexcept;
 
-            template<class Method,class TObject>
-            void set_move_signal(Method&& method,TObject* object)
-            {
-                signal.connect(method,object);
+            bool is_vertical() const noexcept{
+                return orientation == Vertical;
             }
-            Signal<void(int)> &signal_moved(){
-                return signal;
-            }
-            
-            bool handle_drag(DragEvent &) override;
-            bool handle_wheel(WheelEvent &) override;
-        private:
-            /*
-            *|--Widget's rect-|
-            *|                |
-            *|----bar_range---|
-            *|  ||bar_rect||  |
-            *|----------------|
-            *|                |
-            *|----------------|
-            */
+        protected:
+            float _value = 0.0f;
+            float _min_value = 0.0f;
+            float _max_value = 100.0f;
+            float _step = 1.0f;
+            float _long = 10.0f;
+
             Orientation orientation;
-            //<The color of the scroll bar
-            Color bar_color;
-            //<The color when user enter the bar's position
-            Color bar_enter_color;
-            //<The color when user press or drag the bar
-            Color bar_pressed_color;
-            //<Bar's background
-            Color bar_bg_color;
-            //< The rect of the bar
-            // Rect bar_rect;
-            //< The rect of the bar's range
-            Rect bar_range;
-            //< The value of the var,100 on max,0 on min
-            int bar_value = 0;
-            int max_bar_value = 100;
-            //< When the flag is true,draw hight color
-            bool actived = false;
-            bool dragging = false;
-            //When min value of the bar
-            int min = 5;
-            int max = 99;
-            //The signal when the silder was moved
-            Signal<void(int)> signal;
-            //The silder
-            Rect slider_rect;
-            Color slider_color;
+
+            FMargin margin = {
+                2,
+                2,
+                2,
+                2 //< Anti-aliasing make it fatter
+            };
+            //Fixed size hint
+            float fixed_size_width = 10;
+            float fixed_size_height = 10;
+            bool enable_fixed_size = true;
     };
 }
 

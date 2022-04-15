@@ -53,7 +53,9 @@ namespace Btk{
         //Get queue
         vkGetDeviceQueue(dev,0,0,&queue);
         //Create done
-        SDL_Vulkan_CreateSurface(win,instance,&surface);
+        if(not SDL_Vulkan_CreateSurface(win,instance,&surface)){
+            throwSDLError();
+        }
     }
     VulkanDevice::~VulkanDevice(){
         vkDestroyDevice(dev,nullptr);
@@ -74,6 +76,6 @@ namespace Btk{
         nvgDeleteVk(ctxt);
     }
     void VulkanDevice::swap_buffer(){
-        
+
     }
 }

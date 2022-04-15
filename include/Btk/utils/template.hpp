@@ -479,6 +479,33 @@ namespace Btk{
         public VirtualFunction<void,RetT(Args...) const>{
 
     };
+    /**
+     * @brief Call and delete self
+     * 
+     * @tparam Callable 
+     * @tparam Args 
+     */
+    template<class Callable,class ...Args>
+    struct _OnceInvoker:public std::tuple<Args...>{
+        Callable callable;
+        static void Run(void *__self){
+            _OnceInvoker *self = static_cast<_OnceInvoker*>(__self);
+            std::unique_ptr<_OnceInvoker> ptr(self);
+            std::apply(std::forward<Callable>(ptr->callable),
+                        std::forward<std::tuple<Args...>&&>(*ptr));
+            
+        }
+    };
+    template<class Callable,class ...Args>
+    struct _GenericInvoker:public std::tuple<Args...>{
+        Callable callable;
+        static void Run(void *__self){
+            _GenericInvoker *ptr = static_cast<_GenericInvoker*>(__self);
+            std::apply(std::forward<Callable>(ptr->callable),
+                        std::forward<std::tuple<Args...>&&>(*ptr));
+        }
+    };
+
     //Store Pod in a pointer
     template<class Pod,class ...Args>
     void NewPodInPointer(void **ptr,Args &&...args){

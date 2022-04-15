@@ -176,7 +176,7 @@ namespace Btk{
             //render text
             redraw();
             if(not clicked.empty()){
-                clicked.emit();
+                clicked.defer_emit();
             }
         }
         return event.accept();
@@ -279,7 +279,7 @@ namespace Btk{
                 checked = ! checked;
                 redraw();
             }
-            signal_clicked().emit();
+            signal_clicked().defer_emit();
         }
         return event.accept();
     }

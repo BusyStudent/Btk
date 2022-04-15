@@ -6,6 +6,7 @@
 #include "function.hpp"
 #include "signal.hpp"
 #include "themes.hpp"
+#include "loop.hpp"
 #include "font.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
@@ -94,7 +95,6 @@ namespace Btk{
     struct WidgetAttr{
         bool hide = false;//<Is hide
         bool window = false;//<Is window
-        bool auto_size = false;//<Let top window to set the size
         bool container = false;//<Is container
         bool disable = false;//<The widget is disabled?
         bool layout = false;//<Is layout?
@@ -312,13 +312,6 @@ namespace Btk{
                 void *p = nullptr;
                 StorePodInPointer(&p,value);
                 set_userdata(hint_name,p);
-            }
-            /**
-             * @brief Let window to set the size to fit the window size
-             * 
-             */
-            void set_auto_size_hint(){
-                attr.auto_size = true;
             }
         protected:
             /**

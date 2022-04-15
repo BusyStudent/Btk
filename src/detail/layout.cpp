@@ -16,7 +16,6 @@ namespace Btk{
     //Init / Delete context
     Layout::Layout(){
         attr.layout = true;
-        attr.auto_size = true;
     }
     Layout::~Layout(){
         #ifndef NDEBUG
@@ -138,6 +137,7 @@ namespace Btk{
         Group::draw(r,timestamp);
     }
     void Layout::invalidate(){
+        Group::invalidate();
         is_dirty = true;
         redraw();
     }

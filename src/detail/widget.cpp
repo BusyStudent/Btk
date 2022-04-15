@@ -715,4 +715,23 @@ namespace Btk{
         #endif
         return true;
     }
+    //TODO: Still need improve
+    void Group::invalidate(){
+        if(window() == nullptr){
+            return;
+        }
+        //Check current mouse point widget
+        auto pos = window()->mouse_position();
+        if(cur_widget != nullptr){
+            //Make a leave event
+            Event levent(Event::Leave);
+            cur_widget->handle(levent);
+            cur_widget = nullptr;
+        }
+        if(focus_widget != nullptr){
+            set_focus_widget(nullptr);
+        }
+        focus_widget = nullptr;
+        drag_widget = nullptr;
+    }
 }

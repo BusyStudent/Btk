@@ -2,7 +2,7 @@
 
 env = Environment(CXXFLAGS = "-std=c++17")
 
-env.Append(CPPDEFINES ='BTK_USE_GFX')
+# env.Append(CPPDEFINES ='BTK_USE_GFX')
 
 libs = ['SDL2','SDL2_image','SDL2_ttf']
 
@@ -10,11 +10,14 @@ src = Glob("./src/*.cpp")
 
 src.extend(Glob("./src/thirdparty/*.c"))
 #Impl files
-src.extend(Glob("./src/impl/*.cpp"))
+src.extend(Glob("./src/detail/*.cpp"))
 src.extend(Glob("./src/themes/*.cpp"))
 src.extend(Glob("./src/utils/*.cpp"))
 src.extend(Glob("./src/widgets/*.cpp"))
-src.extend(Glob("./src/msgbox/*.cpp"))
+src.extend(Glob("./src/images/stb_image.cpp"))
+src.extend(Glob("./src/images/adapter.cpp"))
+src.extend(Glob("./src/font/*.cpp"))
+src.extend(Glob("./src/gl/*.cpp"))
 src.extend(Glob("./src/platform/*.cpp"))
 
 #Check platform

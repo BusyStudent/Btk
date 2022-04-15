@@ -164,7 +164,6 @@ namespace Btk{
     inline constexpr auto CaseInSensitive = true;
 
     //Convert 
-    BTKAPI size_t Utf32ToUtf8(char32_t codepoint,const char *buf,int limit = -1);
 
     /**
      * @brief Get len of a utf8 string
@@ -174,6 +173,14 @@ namespace Btk{
      * @return The string's size
      */
     BTKAPI size_t Utf8Strlen(const char *beg,const char *end = nullptr) noexcept;
+    /**
+     * @brief Encode a utf32 codepoint to utf8
+     * 
+     * @param codepoint The codepoint
+     * @param buf The buffer to store the result(must be at least 6 bytes)
+     * @return BTKAPI 
+     */
+    BTKAPI size_t Utf32Encode(char buf[6],char32_t codepoint) noexcept;
     BTKAPI size_t Utf32CharSize(char32_t codepoint) noexcept;
     /**
      * @brief Get size of a utf8 char
@@ -1018,9 +1025,143 @@ namespace Btk{
             void erase(const _Utf8IteratorBase<T> beg,const _Utf8IteratorBase<T> end){
                 base().erase(
                     _translate_pointer(beg.current),
-                    _translate_pointer(Utf8GetNext(end.current))
+                    _translate_pointer(end.current)
                 );
             }
+            //Index version
+            void erase(size_t idx){
+                erase(
+                    begin() + idx
+                );
+            }
+            void erase(size_t idx,size_t n);
+            template<class T>
+            void insert(const _Utf8IteratorBase<T> iter,const char *s,size_t n){
+                base().insert(
+                    _translate_pointer(iter.current),
+                    s,
+                    n
+                );
+            }
+            template<class T>
+            void insert(const _Utf8IteratorBase<T> iter,const char *s){
+                base().insert(
+                    _translate_pointer(iter.current),
+                    s
+                );
+            }
+            template<class T>
+            void insert(const _Utf8IteratorBase<T> iter,char32_t ch){
+                char buf[6];
+                auto n = Utf32Encode(buf,ch);
+                base().insert(
+                    _translate_pointer(iter.current),
+                    buf,
+                    n
+                );
+            }
+            //Index version of insert
+            void insert(size_t pos,char32_t ch){
+                char buf[6];
+                auto n = Utf32Encode(buf,ch);
+                base().insert(
+                    raw_index_of(pos),
+                    buf,
+                    n
+                );
+            }
+            void insert(size_t pos,const char *s,size_t n){
+                base().insert(
+                    raw_index_of(pos),
+                    s,
+                    n
+                );
+            }
+            void insert(size_t pos,const char *s){
+                base().insert(
+                    raw_index_of(pos),
+                    s
+                );
+            }
+            void insert(size_t pos,u8string_view view){
+                insert(pos,view.data(),view.size());
+            }
+            //Replace
+            template<class T>
+            void replace(const _Utf8IteratorBase<T> beg,const _Utf8IteratorBase<T> end,char32_t s){
+                char buf[6];
+                auto n = Utf32Encode(buf,s);
+                base().replace(
+                    _translate_pointer(beg.current),
+                    _translate_pointer(end.current),
+                    buf,
+                    n
+                );
+            }
+            template<class T>
+            void replace(const _Utf8IteratorBase<T> beg,const _Utf8IteratorBase<T> end,const char *s,size_t n){
+                base().replace(
+                    _translate_pointer(beg.current),
+                    _translate_pointer(end.current),
+                    s,
+                    n
+                );
+            }
+            template<class T>
+            void replace(const _Utf8IteratorBase<T> beg,const _Utf8IteratorBase<T> end,const char *s){
+                base().replace(
+                    _translate_pointer(beg.current),
+                    _translate_pointer(end.current),
+                    s
+                );
+            }
+            template<class T>
+            void replace(const _Utf8IteratorBase<T> beg,const _Utf8IteratorBase<T> end,u8string_view view){
+                replace(beg,end,view.data(),view.size());
+            }
+            //Position version of replace
+            void replace(size_t pos,size_t n,u8string_view view){
+                //Convert pos and n to iterator
+                iterator iter = begin();
+                iter += pos;
+                iterator end = (n == npos ? this->end() : iter + n);
+                replace(iter,end,view);
+            }
+            void replace(size_t pos,size_t n,const char *s,size_t m){
+                //Convert pos and n to iterator
+                iterator iter = begin();
+                iter += pos;
+                iterator end = (n == npos ? this->end() : iter + n);
+                replace(iter,end,s,m);
+            }
+            void replace(size_t pos,size_t n,const char *s){
+                //Convert pos and n to iterator
+                iterator iter = begin();
+                iter += pos;
+                iterator end = (n == npos ? this->end() : iter + n);
+                replace(iter,end,s);
+            }
+            void replace(size_t pos,size_t n,char32_t ch){
+                //Convert pos and n to iterator
+                iterator iter = begin();
+                iter += pos;
+                iterator end = (n == npos ? this->end() : iter + n);
+                replace(iter,end,ch);
+            }
+            void replace(size_t pos,u8string_view v){
+                replace(pos,v.size(),v);
+            }
+            void replace(size_t pos,char32_t ch){
+                char buf[6];
+                auto n = Utf32Encode(buf,ch);
+                base().replace(
+                    raw_index_of(pos),
+                    raw_index_of(pos) + n,
+                    buf,
+                    n
+                );
+            }
+
             template<class ...Args>
             void assign(Args &&...args){
                 base().assign(std::forward<Args>(args)...);
@@ -1178,6 +1319,24 @@ namespace Btk{
             u8string_view view() const{
                 return u8string_view(*this);
             }
+            //Index
+            /**
+             * @brief Convert a raw index in utf8 index
+             * 
+             * @param idx 
+             * @return size_t 
+             */
+            size_t index_of(size_t idx){
+                return index_of(c_str() + idx);
+            }
+            size_t index_of(const char *s);
+            /**
+             * @brief Convert utf8 index into raw index
+             * 
+             * @param idx 
+             * @return size_t 
+             */
+            size_t raw_index_of(size_t idx) const;
             /**
              * @brief Create string from
              * 

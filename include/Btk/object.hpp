@@ -1,6 +1,5 @@
 #if !defined(_BTK_OBJECT_HPP_)
 #define _BTK_OBJECT_HPP_
-#include "detail/invoker.hpp"
 #include "utils/template.hpp"
 #include "utils/traits.hpp"
 #include "utils/sync.hpp"
@@ -326,72 +325,6 @@ namespace Btk{
         _GenericCallFunctor(_GenericCallBase *defercall);
     };
     /**
-     * @brief Basic signal
-     * 
-     */
-    class BTKAPI SignalBase{
-        public:
-            SignalBase();
-            SignalBase(const SignalBase &) = delete;
-            ~SignalBase();
-            /**
-             * @brief The signal is empty?
-             * 
-             * @return true 
-             * @return false 
-             */
-            bool empty() const{
-                return slots.empty();
-            }
-            /**
-             * @brief The signal is emitting?
-             * 
-             * @return true 
-             * @return false 
-             */
-            bool emitting() const{
-                return spinlock.is_lock();
-            }
-            bool operator ==(std::nullptr_t) const{
-                return empty();
-            }
-            bool operator !=(std::nullptr_t) const{
-                return not empty();
-            }
-            operator bool() const{
-                return not empty();
-            }
-            /**
-             * @brief Debug for dump
-             * 
-             * @param output 
-             */
-            void dump_slots(FILE *output = stderr) const;
-            void disconnect_all();
-        public:
-            /**
-             * @brief Lock the signal
-             * @internal use shound not use it
-             */
-            void lock() const{
-                spinlock.lock();
-            }
-            /**
-             * @brief Unlock the signal
-             * @internal use shound not use it
-             */
-
-            void unlock() const{
-                spinlock.unlock();
-            }
-        protected:
-            std::list<_SlotBase*> slots;//< All slots
-            mutable SpinLock spinlock;//< SDL_spinlock for multithreading
-        template<class RetT>
-        friend class Signal;
-        friend class Connection;
-    };
-    /**
      * @brief Generic object provide signals/slots timer etc...
      * 
      */
@@ -407,7 +340,7 @@ namespace Btk{
 
             template<class Callable,class ...Args>
             void on_destroy(Callable &&callable,Args &&...args){
-                using Invoker = Btk::Impl::OnceInvoker<Callable,Args...>;
+                using Invoker = _OnceInvoker<Callable,Args...>;
                 add_callback(
                     Invoker::Run,
                     new Invoker{
@@ -562,6 +495,72 @@ namespace Btk{
         _ConnectionFunctor(Connection con);
     };
     /**
+     * @brief Basic signal
+     * 
+     */
+    class BTKAPI SignalBase:public Object{
+        public:
+            SignalBase();
+            SignalBase(const SignalBase &) = delete;
+            ~SignalBase();
+            /**
+             * @brief The signal is empty?
+             * 
+             * @return true 
+             * @return false 
+             */
+            bool empty() const{
+                return slots.empty();
+            }
+            /**
+             * @brief The signal is emitting?
+             * 
+             * @return true 
+             * @return false 
+             */
+            bool emitting() const{
+                return spinlock.is_lock();
+            }
+            bool operator ==(std::nullptr_t) const{
+                return empty();
+            }
+            bool operator !=(std::nullptr_t) const{
+                return not empty();
+            }
+            operator bool() const{
+                return not empty();
+            }
+            /**
+             * @brief Debug for dump
+             * 
+             * @param output 
+             */
+            void dump_slots(FILE *output = stderr) const;
+            void disconnect_all();
+        public:
+            /**
+             * @brief Lock the signal
+             * @internal use shound not use it
+             */
+            void lock() const{
+                spinlock.lock();
+            }
+            /**
+             * @brief Unlock the signal
+             * @internal use shound not use it
+             */
+
+            void unlock() const{
+                spinlock.unlock();
+            }
+        protected:
+            std::list<_SlotBase*> slots;//< All slots
+            mutable SpinLock spinlock;//< SDL_spinlock for multithreading
+        template<class RetT>
+        friend class Signal;
+        friend class Connection;
+    };
+    /**
      * @brief Signals
      * 
      * @tparam RetT Return types
@@ -638,6 +637,17 @@ namespace Btk{
                     return ret;
                 }
             }
+            /**
+             * @brief Push the emit into event queue
+             * 
+             * @param args 
+             */
+            void defer_emit(Args &&...args){
+                if(empty()){
+                    return;
+                }
+                defer_call(&Signal::defer_emit_entry,std::forward<Args>(args)...);
+            }
             RetT operator ()(Args ...args) const{
                 return emit(std::forward<Args>(args)...);
             }
@@ -701,6 +711,11 @@ namespace Btk{
                 slot->location = object->Object::add_functor(functor);
                 
                 return {object,slot->location};
+            }
+        private:
+            //< Impl for defer emit
+            void defer_emit_entry(Args ...args){
+                emit(std::forward<Args>(args)...);
             }
     };
     using HasSlots = Object;

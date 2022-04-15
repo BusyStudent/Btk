@@ -29,26 +29,6 @@ extern "C"{
     }
 
 namespace Btk{
-    void Renderer::end(){
-        if(is_drawing){
-            device()->end_frame(nvg_ctxt);
-            device()->swap_buffer();
-            //Too many caches
-            if(cached_texs.size() > max_caches){
-                int n = cached_texs.size() - max_caches;
-                BTK_LOGINFO("[Rebderer]Clear %d textures",n);
-                for(int i = 0;i < n;i++){
-                    device()->destroy_texture(nvg_ctxt,cached_texs.front().tex);
-                    cached_texs.pop_front();
-                }
-                //Set another caches to unused
-                for(auto &item:cached_texs){
-                    item.used = false;
-                }
-            }
-            is_drawing = false;
-        }
-    }
     Texture Renderer::load(u8string_view fname,TextureFlags flags){
         return create_from(PixBuf::FromFile(fname),flags);
     }
@@ -289,9 +269,25 @@ namespace Btk{
         nvgTextBox(nvg_ctxt,x,y,width,&buf[0],nullptr);
     }
     //Sizeof
-    FRect Renderer::text_bounds(float x,float y,u8string_view s){
+    FBounds Renderer::text_bounds(float x,float y,u8string_view s){
         float bounds[4];
         nvgTextBounds(nvg_ctxt,x,y,&s.front(),&s.back(),bounds);
+        BTK_LOGINFO("bounds = {%f,%f,%f,%f}",
+            bounds[0],
+            bounds[1],
+            bounds[2],
+            bounds[3]
+        );
+        return {
+            bounds[0],
+            bounds[1],
+            bounds[2],
+            bounds[3]
+        };
+    }
+    FBounds Renderer::textbox_bounds(float x,float y,float w,u8string_view s){
+        float bounds[4];
+        nvgTextBoxBounds(nvg_ctxt,x,y,w,&s.front(),&s.back(),bounds);
         BTK_LOGINFO("bounds = {%f,%f,%f,%f}",
             bounds[0],
             bounds[1],
@@ -451,10 +447,7 @@ namespace Btk{
 
         nvg_ctxt = device()->create_context();
     }
-    void Renderer::destroy(){
-        if(device() == nullptr){
-            return;
-        }
+    Renderer::~Renderer(){
         //Cleanup buffer
         for(auto iter = cached_texs.begin();iter != cached_texs.end();){
             device()->destroy_texture(nvg_ctxt,iter->tex);
@@ -480,11 +473,38 @@ namespace Btk{
     }
 
     void Renderer::begin(){
+        mtx.lock();
         auto [w,h] = device()->logical_size();
         //Init viewport
         device()->set_viewport(nullptr);
         //Begin frame
         begin_frame(w,h,float(device()->physical_size().w) / float(w));
+    }
+    void Renderer::end(){
+        if(is_drawing){
+            device()->end_frame(nvg_ctxt);
+            device()->swap_buffer();
+            //Too many caches
+            if(cached_texs.size() > max_caches){
+                int n = cached_texs.size() - max_caches;
+                BTK_LOGINFO("[Renderer]Clear %d textures",n);
+                for(int i = 0;i < n;i++){
+                    device()->destroy_texture(nvg_ctxt,cached_texs.front().tex);
+                    cached_texs.pop_front();
+                }
+                //Set another caches to unused
+                for(auto &item:cached_texs){
+                    item.used = false;
+                }
+            }
+            is_drawing = false;
+            //Free the queue
+            while(not free_texs.empty()){
+                destroy_texture(free_texs.front());
+                free_texs.pop();
+            }
+            mtx.unlock();
+        }
     }
 }
 namespace Btk{
@@ -501,6 +521,17 @@ namespace Btk{
         render->destroy_texture(texture);
         texture = -1;
         render = nullptr;        
+    }
+    void Texture::defer_clear(){
+        if(empty()){
+            return;
+        }
+        std::lock_guard locker(render->mtx);
+        BTK_LOGINFO("[Texture] defer clear %d for %p",texture,render);
+        render->free_texs.push(texture);
+        
+        texture = -1;
+        render = nullptr;
     }
 
     //Update...
@@ -622,6 +653,35 @@ namespace Btk{
         t.texture = -1;
         return *this;
     }
+
+    void Brush::clear(){
+        if(_type == BrushType::Image){
+            data.image.buf.~PixBuf();
+        }
+        _type = BrushType::Color;
+        data.color = Color(0,0,0,0);
+    }
+    Brush::Brush(const Brush &brush):Brush(){
+        if(brush._type != BrushType::Image){
+            //Just memcpy
+            memcpy(this,&brush,sizeof(Brush));
+            return;
+        }
+        new (&(data.image.buf)) PixBuf(brush.data.image.buf);
+        data.image.flags = brush.data.image.flags;
+        _type = BrushType::Image;
+    }
+    void Brush::assign(const Brush &brush){
+        clear();
+        if(brush._type != BrushType::Image){
+            //Just memcpy
+            memcpy(this,&brush,sizeof(Brush));
+            return;
+        }
+        new (&(data.image.buf)) PixBuf(brush.data.image.buf);
+        data.image.flags = brush.data.image.flags;
+        _type = BrushType::Image;
+    }
 }
 namespace Btk{
     //Paint
@@ -677,6 +737,18 @@ namespace Btk{
 }
 namespace Btk{
     //Draw functions
+    void Renderer::use_brush(const Brush &brush){
+        cur_brush = brush;
+        switch(brush.type()){
+            case BrushType::Color:{
+                fill_color(brush.color());
+                break;
+            }
+            default:{
+                BTK_UNIMPLEMENTED();
+            }
+        }            
+    }
     void Renderer::draw_rounded_box(const FRect &r,float rad,Color c){
         begin_path();
         rounded_rect(r,rad);

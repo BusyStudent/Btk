@@ -208,8 +208,8 @@ namespace Btk{
          * 
          */
         enum{
-            Pressed,//< Button UP
-            Released//< Button Down
+            Pressed = 1,//< Button UP
+            Released = 0,//< Button Down
         }state;
         /**
          * @brief Which button?
@@ -258,8 +258,8 @@ namespace Btk{
         Keycode  keycode;
         Keymode  keymode;
         enum{
-            Pressed,
-            Released
+            Pressed = 1,//< Button UP
+            Released = 0,//< Button Down
         }state;
         bool repeat;//is repeat
         //Check kmode

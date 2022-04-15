@@ -46,6 +46,8 @@ namespace Btk{
         SDL_SetWindowData(win,"btk_impl",this);
         SDL_SetWindowData(win,"btk_dev",_device);
 
+        winid = SDL_GetWindowID(win);
+
         #ifndef NDEBUG
         debug_draw_bounds = (std::getenv("BTK_DRAW_BOUNDS") != nullptr);
         #endif
@@ -64,7 +66,7 @@ namespace Btk{
     //Draw window
     void WindowImpl::draw(Renderer &render,Uint32 timestamp){
         
-        BTK_LOGINFO("[System::Renderer]Draw Window %p",win);
+        BTK_LOGINFO("[Window]Draw %d",winid);
         
         std::lock_guard<std::recursive_mutex> locker(mtx);
         render.begin();
@@ -97,22 +99,25 @@ namespace Btk{
         if(fps_limit > 0){
             //Has limit
             Uint32 durl = 1000 / fps_limit;
-            if(last_redraw_ticks - current < durl){
+            if(current - last_redraw_ticks < durl and draw_event_counter != 0){
                 //Too fast,ignore it
-                BTK_LOGINFO("Drawing too fast,ignored");
+                BTK_LOGINFO("[Window] %d : Drawing too fast,ignored timestamp %d",winid,current);
+                BTK_LOGINFO("[Window] %d : Drawing pending %d",winid,draw_event_counter);
                 return;
             }
         }
         //Update it
         last_redraw_ticks = current;
+        draw_event_counter ++;
         
         SDL_Event event;
-        event.type = Instance().redraw_win_ev_id;
+        event.type = GetSystem()->redraw_win_ev_id;
         event.user.timestamp = current;
-        event.user.windowID = SDL_GetWindowID(win);
+        event.user.windowID = id();
         SDL_PushEvent(&event);
     }
     void WindowImpl::handle_draw(Uint32 ticks){
+        draw_event_counter --;
         //redraw window
         if(fps_limit > 0){
             //Check the limit
@@ -122,7 +127,7 @@ namespace Btk{
                 //Too late(and has been drawed recently)
                 //2 is a magic number(I think it is fit)
                 //Drop it
-                BTK_LOGINFO("Too Late , Drop the frame");    
+                BTK_LOGINFO("[Window] %d: Too Late , Drop the frame timestamp",winid,ticks);    
                 return;
             }
             last_draw_ticks = ticks;
@@ -137,7 +142,15 @@ namespace Btk{
         return true;
     }
     void WindowImpl::close(){
-        return GetSystem()->close_window(this);
+        hide();
+        
+        DeferCall([i = id()](){
+            WindowImpl *win = GetSystem()->get_window_s(i);
+            if(win == nullptr){
+                return;
+            }
+            GetSystem()->close_window(win);
+        });
     }
     //DropFilecb
     void WindowImpl::on_dropfile(u8string_view file){
@@ -183,7 +196,7 @@ namespace Btk{
             //w = window's w
             //h = window's h
             Widget *widget = *widgets_list.begin();
-            if(widget->attr.auto_size){
+            if(flat_widget){
                 auto [w,h] = size();
                 widget->set_rect(0,0,w,h);
             }
@@ -203,7 +216,7 @@ namespace Btk{
         }
     }
     void WindowImpl::set_modal(bool v){
-        BTK_LOGINFO("[Window::set_modal] %s",v?"true":"false");
+        BTK_LOGINFO("[Window::set_modal] %d => %s",winid,v?"true":"false");
         std::lock_guard locker(mtx);
         modal = v;
         //Update window attr
@@ -278,6 +291,7 @@ namespace Btk{
     void WindowImpl::handle_windowev(const SDL_Event &event){
         switch(event.window.event){
             case SDL_WINDOWEVENT_EXPOSED:{
+                draw_event_counter ++;
                 handle_draw(event.window.timestamp);
                 break;
             }
@@ -295,7 +309,7 @@ namespace Btk{
                     return ;
                 }
                 //Close window;
-                Instance().close_window(this);
+                GetSystem()->close_window(this);
                 break;
             }
             case SDL_WINDOWEVENT_RESIZED:{
@@ -330,17 +344,17 @@ namespace Btk{
                 break;
             }
             case SDL_WINDOWEVENT_FOCUS_GAINED:{
-                BTK_LOGINFO("[Window]Focus Gained %p",this);
+                BTK_LOGINFO("[Window]Focus Gained %d",winid);
                 _signal_keyboard_take_focus();
                 break;
             }
             case SDL_WINDOWEVENT_FOCUS_LOST:{
-                BTK_LOGINFO("[Window]Focus Lost %p",this);
+                BTK_LOGINFO("[Window]Focus Lost %d",winid);
                 _signal_keyboard_lost_focus();
                 break;
             }
             case SDL_WINDOWEVENT_MOVED:{
-                BTK_LOGINFO("[Window]Move To (%d,%d)",event.window.data1,event.window.data2);
+                BTK_LOGINFO("[Window]Move To (%d,%d) %d",event.window.data1,event.window.data2,winid);
                 _signal_moved(event.window.data1,event.window.data2);
                 break;
             }
@@ -433,7 +447,7 @@ namespace Btk{
                     delete event;
                 }
             };
-            auto win = Instance().get_window_s(id);
+            auto win = GetSystem()->get_window_s(id);
 
             if(win != nullptr){
                 win->handle(*event);
@@ -448,7 +462,7 @@ namespace Btk{
         pimpl = CreateWindow(title,w,h,f);
         // pimpl->container.window = pimpl;
         SDL_SetWindowData(pimpl->win,"btk_win",this);
-        winid = SDL_GetWindowID(pimpl->win);
+        winid = pimpl->id();
     }
     Window::Window(const NativeWindow *native_handle){
         SDL_Window *sdl_window = SDL_CreateWindowFrom(native_handle);
@@ -456,10 +470,10 @@ namespace Btk{
             pimpl = nullptr;
             throwSDLError();
         }
-        pimpl = Instance().create_window(sdl_window);
+        pimpl = GetSystem()->create_window(sdl_window);
         // pimpl->container.window = pimpl;
         SDL_SetWindowData(pimpl->win,"btk_win",this);
-        winid = SDL_GetWindowID(pimpl->win);
+        winid = pimpl->id();
     }
     bool Window::mainloop(){
         done();
@@ -531,7 +545,7 @@ namespace Btk{
     //Window exists
     bool Window::exists() const{
         //Lock maps
-        return Instance().get_window_s(winid) == pimpl;
+        return GetSystem()->get_window_s(winid) == pimpl;
     }
     //update widgets postions
     void Window::update(){

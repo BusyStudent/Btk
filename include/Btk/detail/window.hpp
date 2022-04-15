@@ -64,7 +64,7 @@ namespace Btk{
              */
             void redraw();
             /**
-             * @brief Send a close request(blocked)
+             * @brief Send a close request
              * 
              */
             void close();
@@ -99,7 +99,7 @@ namespace Btk{
             void update_postion();
 
             Uint32 id() const{
-                return SDL_GetWindowID(win);
+                return winid;
             }
             SDL_Window *sdl_window() const noexcept{
                 return win;
@@ -113,6 +113,22 @@ namespace Btk{
                     SDL_SetWindowModalFor(win,nullptr);
                     set_modal(false);
                 }
+            }
+            /**
+             * @brief Get the mouse position in local coordinates
+             * 
+             * @return Point 
+             */
+            [[nodiscard]]
+            Point mouse_position() const{
+                Point p;
+                Point loc;
+                SDL_GetGlobalMouseState(&p.x,&p.y);
+                SDL_GetWindowPosition(win,&loc.x,&loc.y);
+                return {
+                    p.x - loc.x,
+                    p.y - loc.y
+                };
             }
             /**
              * @brief Set the modal flags
@@ -202,14 +218,19 @@ namespace Btk{
             Uint32 fps_limit = 60;
             //Window flags
             Uint32 last_win_flags = 0;//< The last window flags
+            //Window ID
+            Uint32 winid;
             //The draw callback
             //It will be called at last
             std::list<DrawCallback> draw_cbs;
+            //Draw event event pending in the queue
+            Uint32 draw_event_counter = 0;
 
             //Current menu bar
             MenuBar *menu_bar = nullptr;
 
             bool debug_draw_bounds = false;
+            bool flat_widget = true;//< Flat the widget if only one child
             
             //Methods for Widget impl
         private:
@@ -272,6 +293,7 @@ namespace Btk{
      * @return The WindowImpl handler
      */
     BTKAPI WindowImpl *CreateWindow(u8string_view title,int w,int h,WindowFlags f);
+    BTKAPI WindowImpl *GetKeyboardFocus();
     /**
      * @brief Get the Mouse Focus Window
      * 

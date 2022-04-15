@@ -100,7 +100,8 @@
         "unordered_set": "cpp",
         "regex": "cpp",
         "shared_mutex": "cpp",
-        "climits": "cpp"
+        "climits": "cpp",
+        "nanovg.c": "cpp"
     },
     "files.exclude": {
         "**/.git": true,

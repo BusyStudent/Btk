@@ -11,6 +11,8 @@
 #include <cctype>
 #include <new>
 
+//TODO: String need to be refactored
+
 #define BTK_ICONV_FN(FN) decltype(FN) FN = reinterpret_cast<decltype(FN)>(SDL_##FN);
 //Iconv
 namespace Btk{
@@ -268,6 +270,14 @@ namespace Btk{
             )
         };
     }
+    size_t u8string::raw_index_of(size_t idx) const{
+        const char *s = utf8_index(
+            impl_begin(),
+            impl_end(),
+            idx
+        );
+        return s - impl_begin();
+    }
     //For replace a unicode char
     char * u8string::replace_char(char *where,char32_t ch){
         std::string buffer;
@@ -322,6 +332,18 @@ namespace Btk{
         auto iter = begin();
         // base().erase(_translate_pointer(iter.current),_translate_pointer(iter._end));
         erase(iter);
+    }
+    void u8string::erase(size_t idx,size_t n){
+        iterator start = begin() + idx;
+        iterator end;
+        if(n == npos){
+            end = this->end();
+        }
+        else{
+            end = start + n;
+        }
+        //Erase[start,end)
+        erase(start,end);
     }
     std::string u8string::encoode(const char *to) const{
         char *i = SDL_iconv_string(to,"UTF-8",c_str(),base().size());
@@ -509,6 +531,33 @@ namespace Btk{
         else {
             return 4;
         }
+    }
+    size_t Utf32Encode(char *buf,char32_t codepoint) noexcept{
+        if ((0xffffff80 & codepoint) == 0){
+            buf[0] = static_cast<char>(codepoint);
+            return 1;
+        } 
+        else if((0xfffff800 & codepoint) == 0){
+            buf[0] = static_cast<char>(0xC0 | ((codepoint >> 6) & 0x1F));
+            buf[1] = static_cast<char>(0x80 | (codepoint & 0x3F));
+            return 2;
+        } 
+        else if((0xffff0000 & codepoint) == 0){
+            buf[0] = static_cast<char>(0xE0 | ((codepoint >> 12) & 0x0F));
+            buf[1] = static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+            buf[2] = static_cast<char>(0x80 | (codepoint & 0x3F));
+            return 3;
+        } 
+        else {
+            buf[0] = static_cast<char>(0xF0 | ((codepoint >> 18) & 0x07));
+            buf[1] = static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F));
+            buf[2] = static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+            buf[3] = static_cast<char>(0x80 | (codepoint & 0x3F));
+            return 4;
+        }
+        //Should never reach here
+        BTK_ASSERT(!"Should never reach here");
+        return 0;
     }
     size_t Utf8CharSize(const char *s) noexcept{
         #if 0

@@ -5,6 +5,8 @@
 #include "rect.hpp"
 #include "defs.hpp"
 #include <vector>
+#include <mutex>
+#include <queue>
 #include <list>
 struct SDL_Window;
 
@@ -60,20 +62,14 @@ namespace Btk{
         Miter,
     };
 
-    enum class PathWinding{
+    enum class PathWinding:int{
         CCW = 1, //solid shapes
         CW = 2, //Hole
 
         Solid = CCW,
         Hole = CW
     };
-    //TextAlign operator
-    // inline TextAlign operator |(TextAlign a,TextAlign b){
-    //     return static_cast<TextAlign>(int(a) | int(b));
-    // }
-    // inline TextAlign operator +(TextAlign a,TextAlign b){
-    //     return static_cast<TextAlign>(int(a) | int(b));
-    // }
+
     BTK_FLAGS_OPERATOR(TextAlign,int);
     /**
      * @brief The renderer backend
@@ -95,6 +91,17 @@ namespace Btk{
         const char* str;	// Position of the glyph in the input string.
         float x;			// The x-coordinate of the logical glyph position.
         float minx, maxx;	// The bounds of the glyph shape.
+    };
+    /**
+     * @brief Text row from nanovg
+     * 
+     */
+    struct TextRow{
+        const char* start;	// Pointer to the input text where the row starts.
+        const char* end;	// Pointer to the input text where the row ends (one past the last character).
+        const char* next;	// Pointer to the beginning of the next row.
+        float width;		// Logical width of the row.
+        float minx, maxx;	// Actual bounds of the row. Logical with and bounds can differ because of kerning and some parts over extending.
     };
     /**
      * @brief Same defs in nanovg
@@ -395,14 +402,7 @@ namespace Btk{
              */
             Renderer(Device &dev,bool owned = false);
             Renderer(const Renderer &) = delete;
-            ~Renderer(){
-                destroy();
-            }
-            /**
-             * @brief Destroy the renderer
-             * 
-             */
-            void destroy();
+            ~Renderer();
             /**
              * @brief Create a Texture from Pixbuf
              * 
@@ -454,29 +454,11 @@ namespace Btk{
             Texture load(u8string_view fname,TextureFlags flags = TextureFlags::Linear);
             Texture load(RWops &,TextureFlags flags = TextureFlags::Linear);
             /**
-             * @brief Draw text
+             * @brief Set current fill and stroke brush
              * 
-             * @param x The text's x
-             * @param y The text's y
-             * @param c The text's color
-             * @param u8 The utf8 text
-             * 
-             * @return 0 on success
+             * @param brush 
              */
-            int  text(Font &,int x,int y,Color c,u8string_view u8);
-            int  text(Font &,int x,int y,Color c,u16string_view u16);
-            /**
-             * @brief Draw text by using c-tyle format string
-             * 
-             * @param x The text's x
-             * @param y The text's y
-             * @param c The text's color
-             * @param fmt The utf8 fmt txt
-             * @param ... The format args
-             * @return 0 on success
-             */
-            int  vtext(Font &,int x,int y,Color c,u8string_view fmt,...);
-            int  vtext(Font &,int x,int y,Color c,u16string_view fmt,...);
+            void use_brush(const Brush &brush);
             /**
              * @brief Draw a image
              * 
@@ -811,7 +793,8 @@ namespace Btk{
             void textbox(float x,float y,float width,u8string_view text);
             void textbox(float x,float y,float width,u16string_view text);
 
-            FRect text_bounds(float x,float y,u8string_view str);
+            FBounds text_bounds(float x,float y,u8string_view str);
+            FBounds textbox_bounds(float x,float y,float width,u8string_view str);
             /**
              * @brief Get the size of the rendered string
              * 
@@ -844,7 +827,7 @@ namespace Btk{
             /**
              * @brief Get position of glyph
              * 
-             * @note It is low level a operation
+             * @note It is a low level operation,use for_glyph_positions instead
              * 
              * @param x The text's x
              * @param y The text's y
@@ -853,12 +836,129 @@ namespace Btk{
              * @param user The userdata
              * @return size_t 
              */
-            size_t glyph_position(
+            size_t glyph_positions(
                 float x,float y,
                 u8string_view text,
                 bool (*callback)(const GlyphPosition &,void *user),
                 void *user    
             );
+            /**
+             * @brief For each glyph position
+             * 
+             * @tparam T 
+             * @tparam Args 
+             * @param x 
+             * @param y 
+             * @param text 
+             * @param callback 
+             * @param args 
+             * @return size_t 
+             */
+            template<class T,class ...Args>
+            size_t for_glyph_positions(
+                float x,float y,
+                u8string_view text,
+                T &&callback,
+                Args &&...args
+            ){
+                auto forward = [&](const GlyphPosition &pos){
+                    constexpr bool has_return_type = std::is_same_v<
+                        std::invoke_result_t<T,const GlyphPosition &,Args...>,
+                        bool
+                    >;
+                    if constexpr(true){
+                        return callback(pos,std::forward<Args>(args)...);
+                    }
+                    else{
+                        callback(pos,std::forward<Args>(args)...);
+                        return true;
+                    }
+                };
+                bool (*entry)(const GlyphPosition &,void *user);
+                entry = [](const GlyphPosition &pos,void *p) -> bool{
+                    auto cb = reinterpret_cast<decltype(forward)*>(p);
+                    return (*cb)(pos);
+                };
+                return glyph_positions(x,y,text,entry,reinterpret_cast<void *>(&forward));
+            }
+            /**
+             * @brief Get glyph's positions vector
+             * 
+             * @param x 
+             * @param y 
+             * @param text 
+             * @param max 
+             * @return std::vector<GlyphPosition> 
+             */
+            auto glyph_positions(
+                float x,float y,
+                u8string_view text,
+                size_t max = size_t(-1)
+            ) -> std::vector<GlyphPosition>;
+            /**
+             * @brief Get text rows
+             * 
+             * @note It is a low level operation,use for_text_breaklines instead
+             * 
+             * @param width The text row's width
+             * @param text 
+             * @param callback 
+             * @param user 
+             * @return size_t 
+             */
+            size_t text_breaklines(
+                float width,
+                u8string_view text,
+                bool (*callback)(const TextRow &,void *user),
+                void *user
+            );
+            /**
+             * @brief For each text row
+             * 
+             * @tparam T 
+             * @tparam Args 
+             * @return size_t 
+             */
+            template<class T,class ...Args>
+            size_t for_text_breaklines(
+                float width,
+                u8string_view text,
+                T &&callback,
+                Args &&...args
+            ){
+                auto forward = [&](const TextRow &pos){
+                    constexpr bool has_return_type = std::is_same_v<
+                        std::invoke_result_t<T,const TextRow &,Args...>,
+                        bool
+                    >;
+                    if constexpr(true){
+                        return callback(pos,std::forward<Args>(args)...);
+                    }
+                    else{
+                        callback(pos,std::forward<Args>(args)...);
+                        return true;
+                    }
+                };
+                bool (*entry)(const TextRow &,void *user);
+                entry = [](const TextRow &pos,void *p) -> bool{
+                    auto cb = reinterpret_cast<decltype(forward)*>(p);
+                    return (*cb)(pos);
+                };
+                return text_breaklines(width,text,entry,reinterpret_cast<void *>(&forward));
+            }
+            /**
+             * @brief Get text rows vector
+             * 
+             * @param width 
+             * @param text 
+             * @param max 
+             * @return std::vector<TextRow> 
+             */
+            auto  text_breaklines(
+                float width,
+                u8string_view text,
+                size_t max = size_t(-1)
+            ) -> std::vector<TextRow>;
             /**
              * @brief Get the height of the current font
              * 
@@ -1035,12 +1135,17 @@ namespace Btk{
             TextureFlags get_texture_flags(int texture_id){
                 return device()->texture_flags(nvg_ctxt,texture_id);
             }
+            std::recursive_mutex mtx;//< For protecting the data
+            Brush cur_brush;//< Current brush
 
             NVGcontext *nvg_ctxt = nullptr;//<NanoVG Context
             Device     *_device = nullptr;//<Render device data
 
-            std::list<CachedItem> cached_texs;//< Texture cache
+            std::deque<CachedItem> cached_texs;//< Texture cache
             int max_caches = 20;//< Max cache
+
+            //Queue free
+            std::queue<TextureID> free_texs;//< Free textures
 
             bool is_drawing = false;//< Is nanovg Has BeginFrame
             bool free_device = false;

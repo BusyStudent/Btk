@@ -1,6 +1,7 @@
 #include "../build.hpp"
 
 #include <Btk/thirdparty/utf8.h>
+#include <Btk/detail/input.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/render.hpp>
 #include <Btk/event.hpp>
@@ -242,52 +243,334 @@ static void  STB_TEXTEDIT_LAYOUTROW(void *result,STB_TEXTEDIT_STRING *s,int inde
 
 namespace Btk{
     LineEdit::LineEdit(){
-        cur_text = "Hello";
+        attr.focus = FocusPolicy::Mouse;
+        // cur_text = "Hello";
     }
     LineEdit::~LineEdit() = default;
+    bool LineEdit::handle(Event &event){
+        if(Widget::handle(event)){
+            return true;
+        }
+        if(event.type() == Event::TakeFocus){
+            SetTextInputRect(rectangle());
+            StartTextInput();
+            BTK_LOGINFO("LineEdit take focus");
+
+            show_cur = true;
+            has_focus = true;
+            redraw();
+            return event.accept();
+        }
+        else if(event.type() == Event::LostFocus){
+            StopTextInput();
+            BTK_LOGINFO("LineEdit lost focus");
+            show_cur = false;
+            has_focus = false;
+            redraw();
+            return event.accept();
+        }
+
+        return false;
+    }
+    bool LineEdit::handle_mouse(MouseEvent &event){
+        if(event.is_pressed()){
+            size_t pos = get_pos_from(event.position());
+            BTK_LOGINFO("LineEdit::handle_mouse %d",int(pos));
+
+            cur_pos = pos;
+            //Reset empty selection
+            clear_sel();
+
+            redraw();
+        }
+        return event.accept();
+    }
+    bool LineEdit::handle_keyboard(KeyEvent &event){
+        if(event.is_released()){
+            return event.accept();
+        }
+        switch(event.keycode){
+            case Keycode::Backspace:{
+                if(has_selection()){
+                    //Delete selection
+                    auto [start,end] = sel_range();
+
+                    cur_text.erase(
+                        start,
+                        end - start
+                    );
+
+                    cur_pos = start;
+
+                    clear_sel();
+                    redraw();
+                    //Notify
+                    _signal_value_changed.defer_emit();
+                }
+                else if(not cur_text.empty() and cur_pos > 0){
+                    //Normal delete
+                    cur_text.erase(cur_pos - 1);
+                    if(cur_pos != 0){
+                        cur_pos --;
+                    }
+                    redraw();
+                    //Notify
+                    _signal_value_changed.defer_emit();
+                }
+                break;
+            }
+            case Keycode::Right:{
+                if(cur_pos < cur_text.length()){
+                    cur_pos ++;
+                }
+                clear_sel();
+                redraw();
+                break;
+            }
+            case Keycode::Left:{
+                if(cur_pos > 0){
+                    cur_pos --;
+                }
+                clear_sel();
+                redraw();
+                break;
+            }
+            case Keycode::V:{
+                //Ctrl + V
+                if(event.has_kmod(Keymode::Ctrl)){
+                    BTK_LOGINFO("Ctrl + V");
+                    if(HasClipboardText()){
+                        do_paste(GetClipboardText());
+                    }
+                } 
+                break;
+            }
+            case Keycode::C:{
+                //Ctrl + C
+                if(event.has_kmod(Keymode::Ctrl)){
+                    BTK_LOGINFO("Ctrl + C");
+                    if(has_selection()){
+                        SetClipboardText(selection());
+                    }
+                    else{
+                        SetClipboardText(cur_text);
+                    }
+                }
+                break;
+            }
+            case Keycode::X:{
+                if(event.has_kmod(Keymode::Ctrl) and has_selection()){
+                    BTK_LOGINFO("Ctrl + X");
+                    //Set to clipbiard
+                    SetClipboardText(selection());
+                    //Remove it
+                    auto [start,end] = sel_range();
+                    cur_text.erase(
+                        start,
+                        end - start
+                    );
+                    cur_pos = start;
+
+                    clear_sel();
+                    redraw();
+                    //Notify
+                    _signal_value_changed.defer_emit();
+                }
+                break;
+            }
+            case Keycode::Kp_Enter:{
+                if(not _signal_enter_pressed.empty()){
+                    _signal_enter_pressed.defer_emit();
+                    break;
+                }
+                [[fallthrough]];
+            }
+            default:{
+                return event.reject();
+            }
+        }
+        return event.accept();
+    }
+    bool LineEdit::handle_textinput(TextInputEvent &event){
+        if(event.text.size() == 0){
+            return event.accept();
+        }
+        do_paste(event.text);
+        return event.accept();
+    }
+    bool LineEdit::handle_drag(DragEvent &event){
+        switch(event.type()){
+            case Event::DragBegin:
+                //Set to current pos
+                has_sel = true;
+                sel_beg = cur_pos;
+                sel_end = cur_pos;
+                break;
+            case Event::DragEnd:
+                if(sel_beg == sel_end){
+                    //No text is selected
+                    clear_sel();
+                }
+                break;
+            case Event::Drag:
+                sel_end = get_pos_from(event.position());
+                break;
+        }
+        redraw();
+        return event.accept();
+    }
+    void LineEdit::do_paste(u8string_view txt){
+        BTK_LOGINFO("LineEdit::paste %s",txt.data());
+
+        if(has_selection()){
+            auto [start,end] = sel_range();
+
+            cur_text.replace(
+                start,
+                end - start,
+                txt
+            );
+
+            //Make the cur to the pasted end
+            cur_pos = start + txt.length();
+
+            clear_sel();
+        }
+        else{
+            cur_text.insert(cur_pos,txt);
+            cur_pos += txt.length();
+        }
+
+        redraw();
+        _signal_value_changed.defer_emit();
+    }
+    void LineEdit::clear_sel(){
+        has_sel = false;
+        sel_beg = 0;
+        sel_end = 0;
+    }
+    void LineEdit::set_text(u8string_view txt){
+        cur_text = txt;
+        cur_pos = 0;
+        redraw();
+        _signal_value_changed.defer_emit();
+    }
     void LineEdit::draw(Renderer &p,Uint32){
-        auto txt_limit = map_to_root(text_limit_area);
-        auto txt_center = map_to_root(text_area);
-        auto txt_pos = map_to_root(text_pos);
 
         p.save();
         //Boarder and background
         p.draw_box(rect,theme().active.background);
-        p.draw_rect(rect,theme().active.border);
+        if(has_focus){
+            p.draw_rect(rect,theme().active.highlight);
+        }
+        else{
+            p.draw_rect(rect,theme().active.border);
+        }
 
         //Draw txt
-        // p.intersest_scissor(txt_limit);
+        p.intersest_scissor(rectangle());
 
         // p.use_font(font());
         p.use_font(font());
-        p.text_size(18);
-        p.draw_text(txt_pos.x,txt_pos.y,cur_text,{0,0,0});
-        // p.draw_line({0,0},txt_pos,{0,0,0});
+        p.text_align(align);
+        if(not cur_text.empty()){
+            p.draw_text(text_pos.x,text_pos.y,cur_text,theme().active.text);
+        }
+        if(show_cur){
+            //Draw cursor
+            if(cur_pos == 0 and cur_text.empty()){
+                //TODO
+                float h = p.font_height();
+                float y = text_pos.y - h / 2;
+                p.draw_line(
+                    text_pos.x,y,
+                    text_pos.x,y + h,
+                    theme().active.text
+                );
+            }
+            else{
+                auto bounds = p.text_bounds(text_pos.x,text_pos.y,cur_text);
+                auto vec = p.glyph_positions(text_pos.x,text_pos.y,cur_text);
+                auto get = [&](size_t idx){
+                    if(idx == vec.size()){
+                        return vec.back().maxx;
+                    }
+                    return vec.at(idx).minx;
+                };
+                float x = get(cur_pos);
+                if(has_selection()){
+                    //Draw selection
+                    auto [start,end] = sel_range();
+
+                    float sel_x = get(start);
+                    float sel_w = get(end) - sel_x;
+                    float sel_h = bounds.cast<FRect>().h;
+                    float sel_y = bounds.cast<FRect>().y;
+
+                    //Draw 
+                    p.draw_box(sel_x,sel_y,sel_w,sel_h,theme().active.highlight);
+                    p.intersest_scissor(sel_x,sel_y,sel_w,sel_h);
+                    //Draw HeightText back
+                    p.draw_text(text_pos.x,text_pos.y,cur_text,theme().active.highlight_text);
+                    p.reset_scissor();
+                }
+                
+                //Draw cursor
+                p.draw_line(
+                    x,bounds.miny,
+                    x,bounds.maxy,
+                    theme().active.text
+                );
+
+            }
+        }
 
         p.restore();
 
     }
+    auto LineEdit::selection() const -> u8string_view{
+        auto [start,end] = sel_range();
+        return cur_text.view().substr(start,end - start);
+    }
     auto LineEdit::get_pos_from(const Point &p) -> size_t{
         //Use font
+        if(cur_text.empty()){
+            return 0;
+        }
+
         renderer()->use_font(font());
+        renderer()->text_align(align);
         FSize size;
 
-        map_to_self(p);
         auto view = cur_text.view();
-        size_t len = view.length();
+        auto vec = renderer()->glyph_positions(text_pos.x,text_pos.y,view);
 
-        for(size_t cur = 0;cur < len;++cur){
-            size = renderer()->text_size(view.substr(0,cur));
-
-            return cur;
+        size_t cur = 0;
+        for(auto &i:vec){
+            if(p.x >= i.minx and p.x <= i.maxx or (&i == &vec.back() and p.x >= i.minx)){
+                //Got
+                float w = i.maxx - i.minx;
+                if(p.x - i.x < w / 2){
+                    return cur;
+                }
+                else{
+                    return cur + 1;
+                }                    
+            }
+            cur++;
         }
-        //Unknown
-        return size_t(-1);
+        //Unknown => First
+        return size_t(0);
     }
     void LineEdit::set_rect(const Rect &r){
         Widget::set_rect(r);
         //Config local
-        text_limit_area = map_to_self(rectangle<float>());
-        text_pos = {text_limit_area.x + 5,h<float>() / 2};
+        FRect area = limit_margin.apply(r);
+        text_pos = {
+            area.x,
+            area.y + area.h / 2
+        };
+        //Plus 2 to make it look better
+        text_pos.y += 2;
     }
 }

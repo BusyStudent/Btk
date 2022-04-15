@@ -70,14 +70,15 @@ int main(){
 
 ## TODO List  
 
-- [x] Rewrite font system to get better performence  
 - [ ] Add more useful widgets  
 - [ ] MessageLoop need to be refactored  
 - [ ] Rewrite ImageView By OpenGL to implement AntiAlias
-- [ ] To implement Menu
 - [ ] Add CMake
 - [ ] Add GLX and WGL OpenGL Adapter
 - [ ] Add API to get system color and system metrics
+- [ ] Widget Interface need to be refactored
+- [ ] String Interface need to be refactored to fit STL  
+- [ ] Font need to be refactored,Current font backend is not good enough(need hb support)
 
 ----
 
@@ -86,11 +87,14 @@ int main(){
 |  Widgets  |  Done?  | TODO | Description |
 |  ---      |  ---    | ---  | ---         |
 |  Button   |         |      |             |
+|  RadioButton   |         |      |             |
+|  CheckButton   |         |      |             |
 |  ImageView|         |      |             |
-|  TextBox  |         |      |             |
+|  TextBox  |         |Refactoring|             |
 |  ProgressBar  |         |      |             |
 |  EmbedWindow  | No      |      |             |
 |  ScrollBar|        |      |             |
+|  SilderBar|        |      |             |
 |  Canvas   |         |      |             |
 |  GLCanvas |         |      |             |
 |  GLWidget | No      |      |             |
@@ -98,6 +102,7 @@ int main(){
 |  Line     |         |      |             |
 |  Layout   |         |      |             |
 |  BoxLayout|         |      |             |
+|  StackedWidget|     |      |             |  
 
 ----
 

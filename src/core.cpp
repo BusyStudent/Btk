@@ -317,7 +317,7 @@ namespace Btk{
         GetSystem()->is_running = false;
         return retvalue;
     }
-    bool PollEvent(){
+    auto PollEvent() -> LoopStatus{
         #ifndef NDEBUG
         Btk_defer [](){
             BTK_LOGINFO("[System::Loop]Leaving Loop");
@@ -333,17 +333,17 @@ namespace Btk{
                 GetSystem()->dispatch_event(event);
             }
             GetSystem()->on_idle();
-            return true;
+            return LoopStatus::Running;
         }
         catch(_interrupt_loop_t){
-            return false;
+            return LoopStatus::Interrupted;
         }
         catch(...){
             DeferRethrow();
-            return false;
+            return LoopStatus::Exception;
         }
     }
-    bool WaitEvent(){
+    auto WaitEvent() -> LoopStatus{
         #ifndef NDEBUG
         Btk_defer [](){
             BTK_LOGINFO("[System::Loop]Leaving Loop");
@@ -359,14 +359,14 @@ namespace Btk{
                 GetSystem()->dispatch_event(event);
             }
             GetSystem()->on_idle();
-            return true;
+            return LoopStatus::Running;
         }
         catch(_interrupt_loop_t){
-            return false;
+            return LoopStatus::Interrupted;
         }
         catch(...){
             DeferRethrow();
-            return false;
+            return LoopStatus::Exception;
         }
     }
     System::System(){
@@ -697,7 +697,7 @@ namespace Btk{
             return;
         }
         std::lock_guard locker(map_mtx);
-        Uint32 winid = SDL_GetWindowID(impl->win);
+        Uint32 winid = impl->id();
         
         auto iter = wins_map.find(winid);
         if(iter == wins_map.end()){
@@ -709,6 +709,32 @@ namespace Btk{
             delete iter->second;
             iter->second = nullptr;
             wins_map.erase(iter);
+
+            #ifndef NDEBUG
+            //Dump still alive window
+            BTK_LOGINFO("");//Space
+            BTK_LOGINFO("--- Still alive Windows ---");//Space
+            for(auto &pair:wins_map){
+                BTK_ASSERT(pair.second != nullptr);
+                Uint32 flags;
+                int x,y;
+                int w,h;
+
+                flags = SDL_GetWindowFlags(pair.second->win);
+                bool visuable = (flags & SDL_WINDOW_SHOWN) != 0;
+                
+                SDL_GetWindowPosition(pair.second->win,&x,&y);
+                SDL_GetWindowSize(pair.second->win,&w,&h);
+                BTK_LOGINFO("[Window %d]'%s' At Desktop(%d,%d,%d,%d) %s",
+                    pair.first,
+                    SDL_GetWindowTitle(pair.second->win),
+                    x,y,w,h,
+                    visuable ? "Visiable" : "Invisiable"
+                );
+            }
+            BTK_LOGINFO("--- End Dump ---");
+            BTK_LOGINFO("");//Space
+            #endif
         }
     }
     //Push a defercall event
@@ -814,7 +840,6 @@ namespace Btk{
     }
     inline
     void AsyncSystem::add_task(const Task &task){
-        //TODO Find the worker witch has fewest tasks
         for(auto &worker:workers){
             if(worker.idle){
                 worker.add_task(task);
@@ -826,7 +851,13 @@ namespace Btk{
             workers.back().add_task(task);
             return;
         }
-        workers.front().add_task(task);
+        //Find the worker with least tasks
+        auto iter = std::min_element(workers.begin(),workers.end(),
+            [](const Worker &lhs,const Worker &rhs){
+                return lhs.tasks_queue.size() < rhs.tasks_queue.size();
+            }
+        );
+        iter->add_task(task);
     }
 
     using _AsyncWorker = AsyncSystem::Worker;

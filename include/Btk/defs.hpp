@@ -210,6 +210,12 @@ namespace Btk{
         }
         return v;
     }
+    /**
+     * @brief Init Btk all subsystems
+     * 
+     * @return BTKAPI 
+     */
+    BTKAPI void Init();
 }
 #endif
 

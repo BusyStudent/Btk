@@ -1,5 +1,5 @@
 static void construct_theme_default(Btk::Theme & theme){
-    theme.font = Btk::Font("<default>",12);
+    theme.font = Btk::Font("<default>",13);
     theme.active.text = Btk::Color(0,0,0);
     theme.active.window = Btk::Color(239,240,241);
     theme.active.button = Btk::Color(233,234,235);

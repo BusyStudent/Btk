@@ -601,7 +601,7 @@ namespace Btk{
             }
 
             ~Texture(){
-                clear();
+                defer_clear();
             }
 
 
@@ -616,6 +616,11 @@ namespace Btk{
              * 
              */
             void clear();
+            /**
+             * @brief Release the texture by using cmd queue
+             * 
+             */
+            void defer_clear();
 
             //assign
             //Texture &operator =(BtkTexture*);
@@ -629,6 +634,82 @@ namespace Btk{
                 clear();
                 return *this;
             }
+    };
+    /**
+     * @brief Brush content type
+     * 
+     */
+    enum class BrushType{
+        Color,
+        Image,
+        LinearGradient,
+        RadialGradient,
+    };
+    /**
+     * @brief Fill content abstraction
+     * 
+     */
+    class BTKAPI Brush{
+        public:
+            Brush() = default;
+            Brush(const Brush &);
+            ~Brush(){
+                clear();
+            }
+
+            Brush(PixBufRef ref){
+                set_image(ref);
+            }
+            Brush(Color c){
+                set_color(c);
+            }
+
+            void clear();
+            void assign(const Brush &);
+
+            void set_image(PixBufRef image){
+                clear();
+                _type = BrushType::Image;
+                new (&data.image.buf) PixBuf(image);
+                data.image.flags = TextureFlags(0);
+            }
+            void set_color(Color c){
+                clear();
+                _type = BrushType::Color;
+                data.color = c;
+            }
+
+            BrushType type() const noexcept{
+                return _type;
+            }
+            Color color() const{
+                return data.color;
+            }
+            PixBufRef image() const{
+                return data.image.buf;
+            }
+
+
+
+            Brush &operator =(const Brush &brush){
+                if(&brush == this){
+                    return *this;
+                }
+                assign(brush);
+                return *this;
+            }
+        private:
+            union Data{
+                Data(){}
+                ~Data(){}
+
+                Color color = Color(0,0,0,0);
+                struct {
+                    TextureFlags flags;
+                    PixBuf buf;
+                }image;
+            }data;
+            BrushType _type = BrushType::Color;
     };
     /**
      * @brief Gif Decoding class

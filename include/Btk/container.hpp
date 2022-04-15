@@ -57,7 +57,8 @@ namespace Btk{
             bool set_focus_widget(Widget *);
 
             //FIXME:Should we add a method to tell Group to invalidate the cache
-            //like Group::invalidate_cache()?
+            // like Group::invalidate_cache()?
+            void invalidate();
         private:
             //< The current dragging widget
             Widget *drag_widget = nullptr;

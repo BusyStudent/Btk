@@ -1417,6 +1417,7 @@ int Runtime::alloc_font()
 	if (font->glyphs == NULL) goto error;
 	font->cglyphs = FONS_INIT_GLYPHS;
 	font->nglyphs = 0;
+	font->nfallbacks = 0;
 	//Done register it to runtime 
 	runtime->fonts_map[font->id] = font;
 

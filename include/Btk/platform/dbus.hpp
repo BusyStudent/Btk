@@ -106,6 +106,7 @@ namespace Btk::DBus{
         unref();
         con = c.con;
         c.con = nullptr;
+        return *this;
     }
     //Error
     inline Error::Error(){

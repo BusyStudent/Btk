@@ -134,6 +134,219 @@ namespace Btk{
 	}
 	return npos;
     }
+
+    static size_t BtkTextBreakLines(
+        NVGcontext* ctx, 
+        float breakRowWidth, 
+        u8string_view str,
+        bool(*callback)(const TextRow &,void *),
+        void *data
+    ){
+        NVGstate* state = nvg__getState(ctx);
+        float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+        float invscale = 1.0f / scale;
+        FONStextIter iter, prevIter;
+        FONSquad q;
+        TextRow row;
+        int nrows = 0;
+        float rowStartX = 0;
+        float rowWidth = 0;
+        float rowMinX = 0;
+        float rowMaxX = 0;
+        const char* rowStart = NULL;
+        const char* rowEnd = NULL;
+        const char* wordStart = NULL;
+        float wordStartX = 0;
+        float wordMinX = 0;
+        const char* breakEnd = NULL;
+        float breakWidth = 0;
+        float breakMaxX = 0;
+        int type = NVG_SPACE, ptype = NVG_SPACE;
+        unsigned int pcodepoint = 0;
+
+        if (state->fontId == FONS_INVALID) return 0;
+
+        const char *string = &*str.base().begin();
+        const char *end = &*str.base().end();
+
+        if (string == end) return 0;
+
+        fonsSetSize(ctx->fs, state->fontSize*scale);
+        fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
+        fonsSetBlur(ctx->fs, state->fontBlur*scale);
+        fonsSetAlign(ctx->fs, state->textAlign);
+        fonsSetFont(ctx->fs, state->fontId);
+
+        breakRowWidth *= scale;
+
+        fonsTextIterInit(ctx->fs, &iter, 0, 0, string, end, FONS_GLYPH_BITMAP_OPTIONAL);
+        prevIter = iter;
+        while (fonsTextIterNext(ctx->fs, &iter, &q)) {
+            if (iter.prevGlyphIndex < 0 && nvg__allocTextAtlas(ctx)) { // can not retrieve glyph?
+                iter = prevIter;
+                fonsTextIterNext(ctx->fs, &iter, &q); // try again
+            }
+            prevIter = iter;
+            switch (iter.codepoint) {
+                case 9:			// \t
+                case 11:		// \v
+                case 12:		// \f
+                case 32:		// space
+                case 0x00a0:	// NBSP
+                    type = NVG_SPACE;
+                    break;
+                case 10:		// \n
+                    type = pcodepoint == 13 ? NVG_SPACE : NVG_NEWLINE;
+                    break;
+                case 13:		// \r
+                    type = pcodepoint == 10 ? NVG_SPACE : NVG_NEWLINE;
+                    break;
+                case 0x0085:	// NEL
+                    type = NVG_NEWLINE;
+                    break;
+                default:
+                    if ((iter.codepoint >= 0x4E00 && iter.codepoint <= 0x9FFF) ||
+                        (iter.codepoint >= 0x3000 && iter.codepoint <= 0x30FF) ||
+                        (iter.codepoint >= 0xFF00 && iter.codepoint <= 0xFFEF) ||
+                        (iter.codepoint >= 0x1100 && iter.codepoint <= 0x11FF) ||
+                        (iter.codepoint >= 0x3130 && iter.codepoint <= 0x318F) ||
+                        (iter.codepoint >= 0xAC00 && iter.codepoint <= 0xD7AF))
+                        type = NVG_CJK_CHAR;
+                    else
+                        type = NVG_CHAR;
+                    break;
+            }
+
+            if (type == NVG_NEWLINE) {
+                // Always handle new lines.
+                row.start = rowStart != NULL ? rowStart : iter.str;
+                row.end = rowEnd != NULL ? rowEnd : iter.str;
+                row.width = rowWidth * invscale;
+                row.minx = rowMinX * invscale;
+                row.maxx = rowMaxX * invscale;
+                row.next = iter.next;
+                nrows++;
+                if (callback(row,data) == false)
+                    return nrows;
+                // Set null break point
+                breakEnd = rowStart;
+                breakWidth = 0.0;
+                breakMaxX = 0.0;
+                // Indicate to skip the white space at the beginning of the row.
+                rowStart = NULL;
+                rowEnd = NULL;
+                rowWidth = 0;
+                rowMinX = rowMaxX = 0;
+            } else {
+                if (rowStart == NULL) {
+                    // Skip white space until the beginning of the line
+                    if (type == NVG_CHAR || type == NVG_CJK_CHAR) {
+                        // The current char is the row so far
+                        rowStartX = iter.x;
+                        rowStart = iter.str;
+                        rowEnd = iter.next;
+                        rowWidth = iter.nextx - rowStartX;
+                        rowMinX = q.x0 - rowStartX;
+                        rowMaxX = q.x1 - rowStartX;
+                        wordStart = iter.str;
+                        wordStartX = iter.x;
+                        wordMinX = q.x0 - rowStartX;
+                        // Set null break point
+                        breakEnd = rowStart;
+                        breakWidth = 0.0;
+                        breakMaxX = 0.0;
+                    }
+                } else {
+                    float nextWidth = iter.nextx - rowStartX;
+
+                    // track last non-white space character
+                    if (type == NVG_CHAR || type == NVG_CJK_CHAR) {
+                        rowEnd = iter.next;
+                        rowWidth = iter.nextx - rowStartX;
+                        rowMaxX = q.x1 - rowStartX;
+                    }
+                    // track last end of a word
+                    if (((ptype == NVG_CHAR || ptype == NVG_CJK_CHAR) && type == NVG_SPACE) || type == NVG_CJK_CHAR) {
+                        breakEnd = iter.str;
+                        breakWidth = rowWidth;
+                        breakMaxX = rowMaxX;
+                    }
+                    // track last beginning of a word
+                    if ((ptype == NVG_SPACE && (type == NVG_CHAR || type == NVG_CJK_CHAR)) || type == NVG_CJK_CHAR) {
+                        wordStart = iter.str;
+                        wordStartX = iter.x;
+                        wordMinX = q.x0;
+                    }
+
+                    // Break to new line when a character is beyond break width.
+                    if ((type == NVG_CHAR || type == NVG_CJK_CHAR) && nextWidth > breakRowWidth) {
+                        // The run length is too long, need to break to new line.
+                        if (breakEnd == rowStart) {
+                            // The current word is longer than the row length, just break it from here.
+                            row.start = rowStart;
+                            row.end = iter.str;
+                            row.width = rowWidth * invscale;
+                            row.minx = rowMinX * invscale;
+                            row.maxx = rowMaxX * invscale;
+                            row.next = iter.str;
+                            nrows++;
+                            if (callback(row,data) == false)
+                                return nrows;
+                            rowStartX = iter.x;
+                            rowStart = iter.str;
+                            rowEnd = iter.next;
+                            rowWidth = iter.nextx - rowStartX;
+                            rowMinX = q.x0 - rowStartX;
+                            rowMaxX = q.x1 - rowStartX;
+                            wordStart = iter.str;
+                            wordStartX = iter.x;
+                            wordMinX = q.x0 - rowStartX;
+                        } else {
+                            // Break the line from the end of the last word, and start new line from the beginning of the new.
+                            row.start = rowStart;
+                            row.end = breakEnd;
+                            row.width = breakWidth * invscale;
+                            row.minx = rowMinX * invscale;
+                            row.maxx = breakMaxX * invscale;
+                            row.next = wordStart;
+                            nrows++;
+                            if (callback(row,data) == false)
+                                return nrows;
+                            // Update row
+                            rowStartX = wordStartX;
+                            rowStart = wordStart;
+                            rowEnd = iter.next;
+                            rowWidth = iter.nextx - rowStartX;
+                            rowMinX = wordMinX - rowStartX;
+                            rowMaxX = q.x1 - rowStartX;
+                        }
+                        // Set null break point
+                        breakEnd = rowStart;
+                        breakWidth = 0.0;
+                        breakMaxX = 0.0;
+                    }
+                }
+            }
+
+            pcodepoint = iter.codepoint;
+            ptype = type;
+        }
+
+        // Break the line from the end of the last word, and start new line from the beginning of the new.
+        if (rowStart != NULL) {
+            row.start = rowStart;
+            row.end = rowEnd;
+            row.width = rowWidth * invscale;
+            row.minx = rowMinX * invscale;
+            row.maxx = rowMaxX * invscale;
+            row.next = end;
+            nrows++;
+            //notify the callback function
+            callback(row,data);
+        }
+
+        return nrows;
+    }
 }
 
 
@@ -174,12 +387,12 @@ namespace Btk{
         nvg_ctxt->params.renderFlush(nvg_ctxt->params.userPtr);
     }
     //Our text method
-    size_t Renderer::glyph_position(
+    size_t Renderer::glyph_positions(
         float x,float y,
         u8string_view text,
         bool (*callback)(const GlyphPosition &,void *user),
         void *user
-        ){
+    ){
         
         return BtkTextGlyphPositions(
             nvg_ctxt,
@@ -189,7 +402,50 @@ namespace Btk{
             user
         );
     }
-     //Set font
+    size_t Renderer::text_breaklines(
+        float breakRowWidth,
+        u8string_view text,
+        bool (*callback)(const TextRow &,void *user),
+        void *user
+    ){
+        
+        return BtkTextBreakLines(
+            nvg_ctxt,
+            breakRowWidth,
+            text,
+            callback,
+            user
+        );
+    }
+    auto Renderer::glyph_positions(float x,float y,u8string_view txt,size_t max) -> std::vector<GlyphPosition>{
+        std::vector<GlyphPosition> ret;
+        if(max != size_t(-1)){
+            ret.reserve(max);
+        }
+        for_glyph_positions(x,y,txt,[&](const GlyphPosition &pos){
+            if(max != size_t(-1) and ret.size() >= max){
+                return false;
+            }
+            ret.push_back(pos);
+            return true;
+        });
+        return ret;
+    }
+    auto Renderer::text_breaklines(float breakRowWidth,u8string_view txt,size_t max) -> std::vector<TextRow>{
+        std::vector<TextRow> ret;
+        if(max != size_t(-1)){
+            ret.reserve(max);
+        }
+        for_text_breaklines(breakRowWidth,txt,[&](const TextRow &row){
+            if(max != size_t(-1) and ret.size() >= max){
+                return false;
+            }
+            ret.push_back(row);
+            return true;
+        });
+        return ret;
+    }
+    //Set font
     bool Renderer::use_font(u8string_view fontname) noexcept{
         int font_id = BtkFt_GetID(BtkFt_GlobalFind(fontname));
         if(font_id == -1){
