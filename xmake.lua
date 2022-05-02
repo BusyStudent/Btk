@@ -35,11 +35,6 @@ if is_plat("linux") then
     if is_mode("release") then
         add_cxxflags("-fvisibility=hidden","-march=native")
         add_cflags("-fvisibility=hidden","-march=native")
-    -- elseif is_mode("debug") then
-    --     add_cxxflags("-fsanitize=address")
-    --     add_cflags("-fsanitize=address")
-    --     add_links("asan")
-    --     --Debug mode or etc
     end
 end
 
@@ -91,6 +86,10 @@ option("c_interface")
     set_default(false)
     set_showmenu(true)
     set_description("Add C interface")
+option("memcheck")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Add GCC fsanitize")
 -- Win32 Option
 option("directx_renderer")
     set_default(is_windows)
@@ -102,6 +101,13 @@ option("wincodec")
     set_showmenu(true)
     set_description("Add WIC")
     set_configvar("BTK_HAVE_WINCODEC",true)
+option_end()
+-- Debug Check
+if has_config("memcheck") then 
+    add_cxxflags("-fsanitize=address")
+    add_cflags("-fsanitize=address")
+    add_links("asan")
+end
 target("btk")
     -- Import option
     add_options("precompiled_header")
@@ -112,6 +118,7 @@ target("btk")
     add_options("stb_image")
     add_options("sdl_image")
     add_options("svg_parser")
+    add_options("fsanitize")
     add_options("opengles2")
     add_options("wincodec")
     add_options("c_interface")
@@ -178,8 +185,6 @@ target("btk")
     add_files("./src/*.cpp")
     --widgets
     add_files("./src/widgets/*.cpp")
-    --SDL_gfx
-    add_files("./src/thirdparty/*.c")
     --Themes
     add_files("./src/themes/*.cpp")
     --Platform
@@ -187,8 +192,8 @@ target("btk")
     --Utils
     add_files("./src/utils/*.cpp")
     --Mixer
-    add_files("./src/mixer/mixer.cpp")
-    add_files("./src/mixer/raw.cpp")
+    -- add_files("./src/mixer/mixer.cpp")
+    -- add_files("./src/mixer/raw.cpp")
     --GL
     add_files("./src/gl/*.cpp")
     --Render
@@ -258,9 +263,6 @@ target("btk")
         set_pcxxheader("./src/build.hpp")
     end
 
-    if has_config("c_interface") then 
-        add_files("./src/ext/capi.cpp")
-    end
 if is_mode("debug") then
     target("hello")
         set_kind("binary")
@@ -287,6 +289,3 @@ if is_mode("debug") then
         add_files("./tests/sliderable.cpp")
         add_deps("btk")
 end
-target("btk-rcc")
-    set_kind("binary")
-    add_files("./tools/btk-rcc.cpp")

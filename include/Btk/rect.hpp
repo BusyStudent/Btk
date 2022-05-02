@@ -416,6 +416,10 @@ namespace Btk{
             this->x2 = x2;
             this->y2 = y2;
         }
+        _Line(_Point<T> beg,_Point<T> end):
+            _Line(beg.x,beg.y,end.x,end.y){
+
+        }
         //Autocast
         template<class Elem>
         _Line(Elem x1,Elem y1,Elem x2,Elem y2) noexcept{
@@ -426,7 +430,7 @@ namespace Btk{
         }
 
         _Point<T> p1() const noexcept{
-            return {x1,x2};   
+            return {x1,y1};   
         }
         _Point<T> p2() const noexcept{
             return {x2,y2};
@@ -511,10 +515,10 @@ namespace Btk{
         template<class Rect,class Elem = typename Rect::value_type>
         _Rect<Elem> cast() const noexcept{
             return {
-                minx,
-                miny,
-                maxx - minx,
-                maxy - miny,
+                static_cast<T>(minx),
+                static_cast<T>(miny),
+                static_cast<T>(maxx - minx),
+                static_cast<T>(maxy - miny),
             };
         }
         /**
@@ -684,10 +688,10 @@ namespace Btk{
         template<class Elem>
         _Bounds<Elem> apply(const _Bounds<Elem> &bounds) const noexcept{
             return {
-                bounds.minx + left,
-                bounds.miny + top,
-                bounds.maxx - right,
-                bounds.maxy - bottom
+                static_cast<Elem>(bounds.minx + left),
+                static_cast<Elem>(bounds.miny + top),
+                static_cast<Elem>(bounds.maxx - right),
+                static_cast<Elem>(bounds.maxy - bottom)
             };
         }
         /**
@@ -697,10 +701,10 @@ namespace Btk{
         template<class Elem>
         _Rect<Elem> apply(const _Rect<Elem> &rect) const noexcept{
             return {
-                rect.x + left,
-                rect.y + top,
-                rect.w - right - left,
-                rect.h - bottom - top
+                static_cast<Elem>(rect.x + left),
+                static_cast<Elem>(rect.y + top),
+                static_cast<Elem>(rect.w - right - left),
+                static_cast<Elem>(rect.h - bottom - top)
             };
         }
         /**
@@ -712,10 +716,10 @@ namespace Btk{
         template<class Elem>
         _Bounds<Elem> unapply(const _Bounds<Elem> &bounds) const noexcept{
             return {
-                bounds.minx - left,
-                bounds.miny - top,
-                bounds.maxx + right,
-                bounds.maxy + bottom
+                static_cast<Elem>(bounds.minx - left),
+                static_cast<Elem>(bounds.miny - top),
+                static_cast<Elem>(bounds.maxx + right),
+                static_cast<Elem>(bounds.maxy + bottom)
             };
         }
         /**
@@ -727,10 +731,10 @@ namespace Btk{
         template<class Elem>
         _Rect<Elem> unapply(const _Rect<Elem> &rect) const noexcept{
             return {
-                rect.x - left,
-                rect.y - top,
-                rect.w + right + left,
-                rect.h + bottom + top
+                static_cast<Elem>(rect.x - left),
+                static_cast<Elem>(rect.y - top),
+                static_cast<Elem>(rect.w + right + left),
+                static_cast<Elem>(rect.h + bottom + top)
             };
         }
         template<class Elem>
@@ -1064,6 +1068,21 @@ namespace Btk{
     template<class T1,class T2,class T3>
     inline bool PointInCircle(const _Point<T1> &center,T2 r,const _Point<T3> &point) noexcept{
         return center.distance(point) <= r;
+    }
+    template<class T1,class T2>
+    inline bool PointInLine(const _Line<T1> &line,const _Point<T2> &point) noexcept{
+        double dxc = point.x - line.x1;
+        double dyc = point.y - line.y1;
+
+        double dxl = line.x2 - line.x1;
+        double dyl = line.y2 - line.y1;
+
+        double threshold = 0.1;
+        double cross = dxc * dyl - dyc * dxl;
+        if(std::abs(cross) > threshold){
+            return false;
+        }
+        return true;
     }
     //TODO List
     //PointInShape

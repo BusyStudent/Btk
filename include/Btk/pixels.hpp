@@ -23,7 +23,9 @@ namespace Btk{
      * 
      */
     struct Color:public SDL_Color{
-        Color() = default;
+        Color(){
+            r = g = b = a = 0;
+        };
         Color(Uint8 r,Uint8 g,Uint8 b,Uint8 a = 255){
             this->r = r;
             this->g = g;

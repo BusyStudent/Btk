@@ -20,6 +20,57 @@ namespace Btk{
             render.draw_rect(rectangle(),borader_color);
         }
     }
+    //DelegateWidget --begin
+    void DelegateWidget::set_parent(Widget *w){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->set_parent(w);
+    }
+    void DelegateWidget::set_rect(const Rect &r){
+        Widget::set_rect(r);
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->set_rect(r);
+    }
+    void DelegateWidget::draw(Renderer &p,Uint32    ticks){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->draw(p,ticks);
+    }
+    bool DelegateWidget::handle(Event              &event){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->handle(event);
+    }
+    bool DelegateWidget::handle_drop(DropEvent     &event){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->handle_drop(event);
+    }
+    bool DelegateWidget::handle_drag(DragEvent     &event){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->handle_drag(event);
+    }
+    bool DelegateWidget::handle_mouse(MouseEvent   &event){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->handle_mouse(event);
+    }
+    bool DelegateWidget::handle_wheel(WheelEvent   &event){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->handle_wheel(event);
+    }
+    bool DelegateWidget::handle_motion(MotionEvent &event){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->handle_motion(event);
+    }
+    bool DelegateWidget::handle_keyboard(KeyEvent  &event){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->handle_keyboard(event);
+    }
+    bool DelegateWidget::handle_textinput(TextInputEvent     &event){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->handle_textinput(event);
+    }
+    bool DelegateWidget::handle_textediting(TextEditingEvent &event){
+        BTK_ASSERT(_delegate != nullptr);
+        return _delegate->handle_textediting(event);
+    }
+    //DelegateWidget --end
 
     //StackedWidget
     StackedWidget::StackedWidget(){
@@ -118,7 +169,7 @@ namespace Btk{
 
         w->show();
 
-        _signal_current_changed(idx);
+        _signal_current_changed.defer_emit(idx);
 
         redraw();
     }
@@ -138,7 +189,7 @@ namespace Btk{
 
         _current_widget->show();
 
-        _signal_current_changed(idx);
+        _signal_current_changed.defer_emit(idx);
         redraw();
     }
     //StackedWidget --end

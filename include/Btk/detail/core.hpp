@@ -177,6 +177,7 @@ namespace Btk{
         Signal<void()> signal_audio_device_added;
         Signal<void()> signal_audio_device_removed;
         Signal<void()> signal_keymap_changed;
+        Signal<void()> signal_locale_changed;
         Signal<void()> signal_quit;
         #if BTK_MOBILE
         //<The signals on android and iphone

@@ -5,7 +5,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_hints.h>
 #include <Btk/detail/utils.hpp>
-#include <Btk/gl/software.hpp>
+#include <Btk/graphics/software.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <cassert>

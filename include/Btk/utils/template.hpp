@@ -233,7 +233,7 @@ namespace Btk{
              * @param args 
              */
             template<class ...Args>
-            void construct(Args &&...args){
+            void construct(Args &&...args) noexcept(std::is_nothrow_constructible_v<T,Args...>){
                 new(reinterpret_cast<void*>(buffer)) T(
                     std::forward<Args>(args)...
                 );
@@ -242,7 +242,7 @@ namespace Btk{
              * @brief Destruct the object
              * 
              */
-            void destroy(){
+            void destroy() noexcept(std::is_nothrow_destructible_v<T>){
                 if constexpr(std::is_destructible_v<T>){
                     get()->~T();
                 }

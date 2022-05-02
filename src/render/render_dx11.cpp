@@ -5,7 +5,7 @@
 #include <SDL2/SDL_loadso.h>
 
 #include <Btk/platform/win32.hpp>
-#include <Btk/gl/direct3d11.hpp>
+#include <Btk/graphics/direct3d11.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/render.hpp>
 #include <Btk/canvas.hpp>

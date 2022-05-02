@@ -119,6 +119,7 @@
     #define BTKHIDDEN  
     #define BTKINLINE __forceinline
     
+    #define BTK_ATTRIBUTE(...) __declspec(__VA_ARGS__)
     #define BTK_NODISCARD(MSG) __declspec((nodiscard(MSG)))
     #define BTK_FUNCTION __FUNCSIG__
 #elif BTK_GCC
@@ -126,6 +127,7 @@
     #define BTKHIDDEN __attribute__((visibility("hidden")))
     #define BTKINLINE __attribute__((__always_inline__))
 
+    #define BTK_ATTRIBUTE(...) __attribute__((__VA_ARGS__))
     #define BTK_NODISCARD(MSG) __attribute__((nodiscard(MSG)))
     #define BTK_FUNCTION __PRETTY_FUNCTION__
 #else
@@ -133,6 +135,8 @@
     #define BTKHIDDEN
     #define BTKINLINE 
 
+    #define BTK_ATTRIBUTE(...)
+    #define BTK_NODISCARD(MSG)
     #define BTK_FUNCTION __FUNCTION__
 #endif
 //Complier attributes --end
@@ -144,6 +148,10 @@
     #define BTK_HAS_BULTIN(X) 0
 #endif
 
-
+//Architecture
+#ifdef __ARM__
+    #undef  BTKFAST
+    #define BTKFAST
+#endif
 
 #endif // _BTK_PLATFORM_MACRO_HPP_

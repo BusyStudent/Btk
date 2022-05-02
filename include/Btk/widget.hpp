@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <list>
 #include "function.hpp"
-#include "signal.hpp"
+#include "object.hpp"
 #include "themes.hpp"
 #include "loop.hpp"
 #include "font.hpp"

@@ -8,6 +8,7 @@
 #include <cstring>
 
 #include "../libs/ini.h"
+#include "../libs/ini.c"
 
 #define PARSER_BEGIN if(0){}
 #define PARSER_ON_STI(name) else if(Btk::strcasecmp(name,section) == 0)

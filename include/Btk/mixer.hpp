@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 #include "defs.hpp"
-#include "signal.hpp"
+#include "mixer.hpp"
 #include "string.hpp"
 #include "function.hpp"
 

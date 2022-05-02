@@ -9,7 +9,7 @@
 #include "../container.hpp"
 #include "../render.hpp"
 #include "../string.hpp"
-#include "../signal.hpp"
+#include "../object.hpp"
 #include "../widget.hpp"
 #include "../themes.hpp"
 #include "../render.hpp"
@@ -142,7 +142,22 @@ namespace Btk{
              * @param v 
              */
             void set_input_focus();
+            /**
+             * @brief Set the Real time refresh fps(0 on disable)
+             * 
+             * @note Set it only your want to refresh your app in a fps
+             * @param fps 
+             */
+            void set_rt_fps(Uint32 fps);
             void query_dpi(float *ddpi,float *hdpi,float *vdpi);
+            /**
+             * @brief Get the Real time refresh fps
+             * 
+             * @return Uint32 
+             */
+            Uint32 rt_fps() const noexcept{
+                return rt_draw_fps;
+            }
 
             //Expose signals
             [[nodiscard]]
@@ -180,6 +195,11 @@ namespace Btk{
             [[nodiscard]]
             auto signal_keyboard_lost_focus() noexcept -> Signal<void()> &{
                 return _signal_keyboard_lost_focus;
+            }
+
+            [[nodiscard]]
+            auto flags() const noexcept -> WindowFlags{
+                return win_flags;
             }
         public:
             //Process Event
@@ -225,6 +245,11 @@ namespace Btk{
             std::list<DrawCallback> draw_cbs;
             //Draw event event pending in the queue
             Uint32 draw_event_counter = 0;
+            //Rt draw timer / variable
+            int    rt_draw_timer = 0;
+            Uint32 rt_draw_fps = 0;
+            //Window Create Flags
+            WindowFlags win_flags = {};
 
             //Current menu bar
             MenuBar *menu_bar = nullptr;
@@ -233,6 +258,7 @@ namespace Btk{
             bool flat_widget = true;//< Flat the widget if only one child
             
             //Methods for Widget impl
+            Uint32 rt_timer_cb(Uint32 interval);
         private:
             /**
              * @brief The mouse is pressed

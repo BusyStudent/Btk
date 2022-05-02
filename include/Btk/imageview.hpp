@@ -52,6 +52,7 @@ namespace Btk{
             Color boarder_color = {208,208,208,255};
             Color bg_color;
 
+            bool keep_aspect_ratio = false;
             bool draw_borader = false;//< Should we draw the boarder
             bool draw_background = false;//< Should we draw the boarder
             bool dragable = false;//Enable drag to set the image_rect

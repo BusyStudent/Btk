@@ -2,7 +2,7 @@
 
 #include <Btk/detail/window.hpp>
 #include <Btk/detail/core.hpp>
-#include <Btk/gl/opengl.hpp>
+#include <Btk/graphics/opengl.hpp>
 #include <Btk/Btk.hpp>
 #include <SDL2/SDL_video.h>
 

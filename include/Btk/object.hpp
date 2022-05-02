@@ -642,7 +642,7 @@ namespace Btk{
              * 
              * @param args 
              */
-            void defer_emit(Args &&...args){
+            void defer_emit(Args ...args){
                 if(empty()){
                     return;
                 }

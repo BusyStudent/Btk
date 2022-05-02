@@ -1,128 +1,25 @@
 #if !defined(_BTKIMPL_UTILS_HPP_)
 #define _BTKIMPL_UTILS_HPP_
-//This headers provide some utils
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_endian.h>
-#include "../utils/mem.hpp"
-#include "../string.hpp"
-#include "../widget.hpp"
-#include "../event.hpp"
-#include "../rect.hpp"
+
 #include "window.hpp"
-#include <string>
+
+//Internal used utils
+
 namespace Btk{
     /**
-     * @brief Calcaute a area's X in a Rect by alignment
+     * @brief Alloc a temporary Window from pool
      * 
-     * @param rect The rect
-     * @param w The W
-     * @param v_align V alignment
-     * @return -1 if failed
+     * @param req_flags 
+     * @param exclude 
+     * @return WindowImpl* 
      */
-    [[deprecated("Donnot use it any more")]]
-    inline int CalculateXByAlign(const Rect &rect,int w,Align v_align){
-        switch(v_align){
-            case Align::Left:
-                return rect.x;
-            case Align::Right:
-                return rect.x + rect.w - w;
-            case Align::Center:
-                return rect.x + ((rect.w - w) / 2);
-            default:
-                return -1;
-        }
-    };
+    WindowImpl *AllocWindow(WindowFlags req_flags = {},WindowFlags exclude = {});
     /**
-     * @brief Calcaute a area's Y in a Rect by alignment
+     * @brief Free a Window from pool
      * 
-     * @param rect The rect
-     * @param h The height
-     * @param h_align H alignment
-     * @return -1 if failed
+     * @param window 
      */
-    [[deprecated("Donnot use it any more")]]
-    inline int CalculateYByAlign(const Rect &rect,int h,Align h_align){
-        switch(h_align){
-            case Align::Top:
-                return rect.y;
-            case Align::Bottom:
-                return rect.y + rect.h - h;
-            case Align::Center:
-                return rect.y + ((rect.h - h) / 2);
-            default:
-                return -1;
-        }
-    };
-    /**
-     * @brief Calcaute a area in a Rect by alignment
-     * 
-     * @param rect The Rect
-     * @param w area w
-     * @param h area h
-     * @param v_align V alignment
-     * @param h_align H alignment
-     * @return aligned rect empty() if failed
-     */
-    [[deprecated("Donnot use it any more")]]
-    inline Rect CalculateRectByAlign
-        (const Rect &rect,
-         int w,int h,
-         Align v_align,
-         Align h_align){
-        
-        
-        return Rect{
-            CalculateXByAlign(rect,w,v_align),
-            CalculateYByAlign(rect,h,h_align),
-            w,
-            h   
-        };
-    };
-    /**
-     * @brief Internal Utf8 string buffer(thread_local)
-     * 
-     * @return BTKAPI& 
-     */
-    [[deprecated("Donnot use it any more")]]
-    BTKAPI u8string& InternalU8Buffer();
-    /**
-     * @brief Internal Utf16 string buffer(thread_local)
-     * 
-     * @return BTKAPI& 
-     */
-    [[deprecated("Donnot use it any more")]]
-    BTKAPI u16string& InternalU16Buffer();
-    /**
-     * @brief Fill the internal u8buffer(thread_local)
-     * 
-     * @param view 
-     * @return std::string& 
-     */
-    [[deprecated("Donnot use it any more")]]
-    inline u8string& FillInternalU8Buffer(u8string_view view){
-        auto &buf = InternalU8Buffer();
-        buf = view;
-        return buf;
-    }
-    [[deprecated("Donnot use it any more")]]
-    inline u8string& FillInternalU8Buffer(u8string &&text){
-        auto &buf = InternalU8Buffer();
-        buf = std::move(text);
-        return buf;
-    }
-    /**
-     * @brief Fill the internal u8buffer(thread_local)
-     * 
-     * @param view 
-     * @return std::string& 
-     */
-    [[deprecated("Donnot use it any more")]]
-    inline u8string& FillInternalU8Buffer(u16string_view view){
-        auto &buf = InternalU8Buffer();
-        buf.clear();
-        Utf16To8(buf,view);
-        return buf;
-    }
-};
+    void        FreeWindow(WindowImpl *window);
+}
 
 #endif // _BTKIMPL_UTILS_HPP_

@@ -8,39 +8,39 @@
 
 
 //App implment
-namespace Btk{
-    ApplicationImpl::ApplicationImpl(){        
-        dbus_con = DBus::GetBus(DBUS_BUS_SESSION,&dbus_err);
-        if(dbus_err.is_set()){
-            //Has error
-            throwRuntimeError(dbus_err.message);
-        }
-    }
-    ApplicationImpl::~ApplicationImpl(){
-        //dbus_connection_close(con);
-    }
-}
-namespace Btk{
-    bool Application::notify(u8string_view title,u8string_view body){
-        if(app == nullptr){
-            return false;
-        }
-        auto &con = app->dbus_con;
-        auto *err = &(app->dbus_err);
-        auto msg = DBus::NewMethodCall(
-            nullptr,
-            "/org/freedesktop/Notifications",
-            "org.freedesktop.Notifications",
-            "Notify"
-        );
-        auto iter = msg.add();
-        iter << "";
-        iter << Uint32(0);
-        iter << "";
-        iter << title;
-        iter << body;
+// namespace Btk{
+//     ApplicationImpl::ApplicationImpl(){        
+//         dbus_con = DBus::GetBus(DBUS_BUS_SESSION,&dbus_err);
+//         if(dbus_err.is_set()){
+//             //Has error
+//             throwRuntimeError(dbus_err.message);
+//         }
+//     }
+//     ApplicationImpl::~ApplicationImpl(){
+//         //dbus_connection_close(con);
+//     }
+// }
+// namespace Btk{
+//     bool Application::notify(u8string_view title,u8string_view body){
+//         if(app == nullptr){
+//             return false;
+//         }
+//         auto &con = app->dbus_con;
+//         auto *err = &(app->dbus_err);
+//         auto msg = DBus::NewMethodCall(
+//             nullptr,
+//             "/org/freedesktop/Notifications",
+//             "org.freedesktop.Notifications",
+//             "Notify"
+//         );
+//         auto iter = msg.add();
+//         iter << "";
+//         iter << Uint32(0);
+//         iter << "";
+//         iter << title;
+//         iter << body;
 
-        iter << Int32(0);
+//         iter << Int32(0);
         // DBusMessage *msg = dbus_message_new_method_call(
         //     nullptr,
         //     "/org/freedesktop/Notifications",
@@ -105,12 +105,12 @@ namespace Btk{
         // //dbus_connection_flush(con);
         // con.flush();
         // dbus_message_unref(msg);
-        iter.close();
-        con.send(msg,nullptr);
-        return true;
-    }
-    bool Application::openurl(u8string_view _url){
-        u8string url(_url);
-        // return X11::Execute("xdg-open",url);
-    }
-}
+    //     iter.close();
+    //     con.send(msg,nullptr);
+    //     return true;
+    // }
+    // bool Application::openurl(u8string_view _url){
+    //     u8string url(_url);
+    //     // return X11::Execute("xdg-open",url);
+    // }
+// }

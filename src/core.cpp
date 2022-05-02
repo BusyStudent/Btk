@@ -14,7 +14,7 @@
 #include <Btk/detail/scope.hpp>
 #include <Btk/detail/utils.hpp>
 #include <Btk/detail/core.hpp>
-#include <Btk/gl/opengl.hpp>
+#include <Btk/graphics/opengl.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/module.hpp>
 #include <Btk/async.hpp>
@@ -24,8 +24,8 @@
 #include <Btk/Btk.hpp>
 
 #ifdef BTK_HAVE_SOFTWARE_DEVICE
-//Enable Software Device
-    #include <Btk/gl/software.hpp>
+    //Enable Software Device
+    #include <Btk/graphics/software.hpp>
 #endif
 
 
@@ -111,7 +111,7 @@ namespace{
     Btk::Constructable<Btk::BasicResource> resource_base;
     bool resource_inited = false;
     //Cleanup / Init
-    void resource_atexit_handler(){
+    void resource_cleanup() noexcept{
         if(resource_inited){
             resource_inited = false;
             resource_base.destroy();
@@ -121,7 +121,7 @@ namespace{
         if(not resource_inited){
             resource_inited = true;
             resource_base.construct();
-            std::atexit(resource_atexit_handler);
+            std::atexit(resource_cleanup);
         }
     }
     struct _interrupt_loop_t{
@@ -242,7 +242,7 @@ namespace{
                 BTK_LOGINFO("DropText");
                 break;
             default:
-                BTK_ASSERT(!"");
+                BTK_PANIC("Impossible");
         }
         return ev;
     }
@@ -271,6 +271,9 @@ namespace Btk{
         resource_init();
         //Init Btk
         System::Init();
+    }
+    void Quit(){
+        resource_cleanup();
     }
     int  run(){
         if(main_thrd == std::thread::id()){
@@ -355,10 +358,10 @@ namespace Btk{
 
         try{
             SDL_Event event;
-            while(SDL_WaitEvent(&event)){
+            while(true){
+                GetSystem()->wait_event(event);
                 GetSystem()->dispatch_event(event);
             }
-            GetSystem()->on_idle();
             return LoopStatus::Running;
         }
         catch(_interrupt_loop_t){
@@ -387,14 +390,14 @@ namespace Btk{
         SDL_StopTextInput();
     }
     System::~System(){
-        // while(not wins_map.empty()){
-        //     close_window(wins_map.begin()->second);
-        // }
+        while(not wins_map.empty()){
+            close_window(wins_map.begin()->second);
+        }
     }
     //Init or Quit
     int  System::Init(){
         if(instance == nullptr){
-            if(SDL_Init(SDL_INIT_VIDEO) == -1){
+            if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == -1){
                 //Failed to init
                 return -1;
             }
@@ -434,7 +437,7 @@ namespace Btk{
     //Global Cleanup
     void System::Quit(){
         if(instance != nullptr){
-            BTK_ASSERT(System::instance->is_running == false);
+            BTK_ASSERT(GetSystem()->is_running == false);
             //delete instance to cleanup windows
             delete instance;
             instance = nullptr;
@@ -525,6 +528,14 @@ namespace Btk{
                 break;
             }
             #endif
+
+            #ifdef SDL_LOCALECHANGED
+            case SDL_LOCALECHANGED:{
+                signal_locale_changed();
+                break;
+            }
+            #endif
+            
             default:{
                 //get function from event callbacks map
                 auto iter = evcbs_map.find(event.type);
@@ -816,7 +827,15 @@ namespace Btk{
         register_window(p);
         SDL_SetWindowData(win,"btk_imp",p);
         signal_window_created(p);
+
+        #ifndef NDEBUG
+        int display = SDL_GetWindowDisplayIndex(win);
+        float vdpi,hdpi;
+        SDL_GetDisplayDPI(display,nullptr,&hdpi,&vdpi);
+        BTK_LOGINFO("[Window::DPI]win v : %f h: %f",vdpi,hdpi);
+        #endif
         return p;
+
     }
 }
 namespace Btk{
@@ -934,8 +953,8 @@ namespace Btk{
         DeferCall(interrupt_impl_cb);
     }
     ExceptionHandler SetExceptionHandler(ExceptionHandler handler){
-        ExceptionHandler current = System::instance->handle_exception;
-        System::instance->handle_exception = handler;
+        auto current = GetSystem()->handle_exception;
+        GetSystem()->handle_exception = handler;
         return current;
     }
     void AtExit(void(* fn)(void*),void *data){
@@ -954,14 +973,14 @@ namespace Btk{
     }
 
     void DeferCall(void(*fn)(void*),void *userdata){
-        BTK_ASSERT(System::instance != nullptr);
+        BTK_ASSERT(GetSystem() != nullptr);
         
-        System::instance->defer_call(
+        GetSystem()->defer_call(
             fn,userdata
         );
     }
     void DeferCall(void(*fn)()){
-        System::instance->defer_call(
+        GetSystem()->defer_call(
             callback_wrapper,reinterpret_cast<void*>(fn)
         );
     }
@@ -1171,22 +1190,23 @@ namespace Btk{
         return false;
     }
 }
-namespace Btk{
-    static thread_local u8string u8buf; 
-    static thread_local u16string u16buf;
-
-    u8string&  InternalU8Buffer(){
-        return u8buf;
-    }
-    u16string& InternalU16Buffer(){
-        return u16buf;
-    }
-}
 
 BTK_CDECLS_BEGIN
 
+#ifndef NDEBUG
+static bool nolog = false;
+
+Btk_CallOnLoad{
+    nolog = std::getenv("BTK_NOLOG");
+};
+
+#endif
+
 void _BtkL_Info(const char *fmt, ...){
     #ifndef NDEBUG
+    if(nolog){
+        return;
+    }
     if(Btk::loop_depth > 0){
         std::va_list varg;
         va_start(varg,fmt);
@@ -1207,6 +1227,9 @@ void _BtkL_Info(const char *fmt, ...){
 }
 void _BtkL_Warn(const char *fmt, ...){
     #ifndef NDEBUG
+    if(nolog){
+        return;
+    }
     if(Btk::loop_depth > 0){
         std::va_list varg;
         va_start(varg,fmt);
@@ -1227,6 +1250,9 @@ void _BtkL_Warn(const char *fmt, ...){
 }
 void _BtkL_Error(const char *fmt, ...){
     #ifndef NDEBUG
+    if(nolog){
+        return;
+    }
     if(Btk::loop_depth > 0){
         std::va_list varg;
         va_start(varg,fmt);

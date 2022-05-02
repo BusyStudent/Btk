@@ -1,15 +1,15 @@
 #include "build.hpp"
 
-#include <Btk/thirdparty/utf8.h>
 #include <Btk/detail/core.hpp>
 #include <Btk/utils/mem.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/string.hpp>
-#include <SDL2/SDL_stdinc.h>
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
 #include <new>
+
+#include "./libs/utf8.h"
 
 //TODO: String need to be refactored
 

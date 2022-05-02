@@ -587,6 +587,9 @@ namespace Btk{
     class BTKAPI KeySequence{
 
     };
+    //Conversion
+    BTKAPI Keycode  ToKeycode(Scancode sc);
+    BTKAPI Scancode ToScancode(Keycode kc);
 }
 
 #endif // _BTK_LOCALS_HPP_

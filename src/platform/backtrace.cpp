@@ -1,7 +1,6 @@
 #include "../build.hpp"
 
 #include <Btk/platform/popen.hpp>
-#include <Btk/platform/color.hpp>
 #ifndef NDEBUG
 #include <string_view>
 #include <string>

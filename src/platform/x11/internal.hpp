@@ -1,6 +1,7 @@
 #if !defined(_BTK_X11_INTERNAL_HPP_)
 #define _BTK_X11_INTERNAL_HPP_
 #include <SDL2/SDL_syswm.h>
+#include <Btk/platform/dbus.hpp>
 #include <Btk/platform/x11.hpp>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
@@ -45,6 +46,8 @@ namespace X11{
      * @return int 
      */
     BTKHIDDEN int XErrorHandler(Display *display,XErrorEvent *event);
+    //For DBus
+    extern BTKHIDDEN Constructable<DBus::Connection> dbus_con;
     //Value for native file dialog
     extern BTKHIDDEN bool has_zenity;
     extern BTKHIDDEN bool has_kdialog;

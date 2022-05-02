@@ -78,35 +78,37 @@ namespace FontUtils{
         //Begin match
         FcResult result;
         font = FcFontMatch(config,pat,&result);
+        FontInfo info;
 
-        Btk_defer [font,pat](){
-            FcPatternDestroy(font);
-            FcPatternDestroy(pat);
-        };
-        
         if(font == nullptr){
-            throwRuntimeError("Failed to match font");
+            goto err;
         }
         FcChar8 *file;
         if(FcPatternGetString(font,FC_FILE,0,&file) != FcResultMatch){
             //Get String
-            throwRuntimeError("Failed to match font");
+            goto err;
         }
         FcChar8 *fullname;
         if(FcPatternGetString(font,FC_FULLNAME,0,&fullname) != FcResultMatch){
             //Get String
-            throwRuntimeError("Failed to match font");
+            goto err;
         }
         int index;
         if(FcPatternGetInteger(font,FC_INDEX,0,&index) != FcResultMatch){
             //Get index
-            throwRuntimeError("Failed to match font");
+            goto err;
         }
-        FontInfo info;
         info.filename = reinterpret_cast<char*>(file);
         info.fullname = reinterpret_cast<char*>(fullname);
         info.index = index;
+        FcPatternDestroy(font);
+        FcPatternDestroy(pat);
         return info;
+
+        err:
+            FcPatternDestroy(font);
+            FcPatternDestroy(pat);
+            throwRuntimeError("Failed to match font");
     }
     u8string GetFileByName(u8string_view fontname){
         if(not was_init){

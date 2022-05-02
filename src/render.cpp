@@ -249,11 +249,6 @@ namespace Btk{
         nvgText(nvg_ctxt,x,y,text.begin(),text.end());
         #endif
     }
-    void Renderer::text(float x,float y,u16string_view _text){
-        auto &buf = FillInternalU8Buffer(_text);
-        
-        text(x,y,buf);
-    }
     //TextBox
     void Renderer::textbox(float x,float y,float width,u8string_view _text){
         std::string_view text = _text.base();
@@ -262,11 +257,6 @@ namespace Btk{
         #else
         nvgTextBox(nvg_ctxt,x,y,width,text.begin(),text.end());
         #endif
-    }
-    void Renderer::textbox(float x,float y,float width,u16string_view text){
-        auto &buf = FillInternalU8Buffer(text);
-
-        nvgTextBox(nvg_ctxt,x,y,width,&buf[0],nullptr);
     }
     //Sizeof
     FBounds Renderer::text_bounds(float x,float y,u8string_view s){
@@ -301,16 +291,6 @@ namespace Btk{
             bounds[3]
         };
     }
-    FSize Renderer::glyph_size(char16_t ch){
-        auto &buf = FillInternalU8Buffer(std::u16string_view(&ch,1));
-        NVGtextRow  row;
-        nvgTextBreakLines(nvg_ctxt,&buf[0],nullptr,std::numeric_limits<float>::max(),&row,1);
-        return FSize{
-            (row.width),
-            font_height()
-            
-        };
-    }
     //Get the font height
     float Renderer::font_height(){
         float lineh;
@@ -318,23 +298,6 @@ namespace Btk{
         return lineh;
     }
     //Get the rendered text size
-    FSize Renderer::text_size(u16string_view view){
-        auto &buf = FillInternalU8Buffer(view);
-        NVGtextRow  row;
-        nvgTextBreakLinesEx(nvg_ctxt,&buf[0],nullptr,std::numeric_limits<float>::max(),&row,1);
-        return FSize{
-            row.width,
-            font_height()
-        };
-        // save();
-        // text_align(TextAlign::Left | TextAlign::Center);
-        // FSize s;
-        // auto bounds = text_bounds(0,0,buf);
-        // s.w = bounds.w;
-        // s.h = bounds.h;
-        // restore();
-        // return s;
-    }
     FSize Renderer::measure_text(u8string_view _view){
         auto view = _view.base();
         NVGtextRow  row;
@@ -751,57 +714,57 @@ namespace Btk{
     }
     void Renderer::draw_rounded_box(const FRect &r,float rad,Color c){
         begin_path();
-        rounded_rect(r,rad);
         fill_color(c);
+        rounded_rect(r,rad);
         fill();
     }
     void Renderer::draw_rounded_rect(const FRect &r,float rad,Color c){
         begin_path();
-        rounded_rect(r,rad);
         stroke_color(c);
+        rounded_rect(r,rad);
         stroke();
     }
     void Renderer::draw_line(float x,float y,float x2,float y2,Color c){
         begin_path();
+        stroke_color(c);
         move_to(x,y);
         line_to(x2,y2);
-        stroke_color(c);
         stroke();
     }
     void Renderer::draw_rect(const FRect &r,Color c){
         begin_path();
-        rect(r);
         stroke_color(c);
+        rect(r);
         stroke();
     }
     void Renderer::draw_box(const FRect &r,Color c){
         begin_path();
-        rect(r);
         fill_color(c);
+        rect(r);
         fill();
     }
     void Renderer::draw_circle(float x,float y,float rad,Color c){
         begin_path();
-        circle(x,y,rad);
         stroke_color(c);
+        circle(x,y,rad);
         stroke();
     }
     void Renderer::fill_circle(float x,float y,float rad,Color c){
         begin_path();
-        circle(x,y,rad);
         fill_color(c);
+        circle(x,y,rad);
         fill();
     }
     void Renderer::draw_ellipse(float x,float y,float rx,float ry,Color c){
         begin_path();
-        ellipse(x,y,rx,ry);
         stroke_color(c);
+        ellipse(x,y,rx,ry);
         stroke();
     }
     void Renderer::fill_ellipse(float x,float y,float rx,float ry,Color c){
         begin_path();
-        ellipse(x,y,rx,ry);
         fill_color(c);
+        ellipse(x,y,rx,ry);
         fill();
     }
     void Renderer::draw_text(float x,float y,u8string_view txt,Color c){

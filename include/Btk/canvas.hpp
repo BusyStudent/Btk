@@ -32,6 +32,8 @@ namespace Btk{
             //Save / Restore before / after draw
             bool protect_context = true;
     };
+
+    #ifndef BTK_DISABLE_SHAPE_API
     //Shapes --begin
     class BTKAPI ShapeNode:public Widget{
         public:
@@ -39,19 +41,141 @@ namespace Btk{
             ShapeNode(const ShapeNode &) = delete;
             ~ShapeNode();
 
-            virtual FPolygen polygen() const = 0;
+            /**
+             * @brief Get Polygen of the shape(default empty)
+             * 
+             * @return FPolygen 
+             */
+            virtual FPolygen polygen() const;
+            /**
+             * @brief Get the bounding box of the shape
+             * 
+             * @return FRect 
+             */
+            virtual FRect bounding_box() const;
 
+            bool handle(Event &) override;
+            bool handle_drag(DragEvent  &) override;
+            /**
+             * @brief Handle mouse event
+             * 
+             * @return true 
+             * @return false 
+             */
+            bool handle_mouse(MouseEvent &) override;
 
+            //Expose signals
+            Signal<void()> &signal_clicked() noexcept{
+                return _signal_clicked;
+            }
+            Signal<void()> &signal_collided() noexcept{
+                return _signal_collided;
+            }
+            /**
+             * @brief Signal of mouse enter the shape area
+             * 
+             * @return Signal<void()>& 
+             */
+            Signal<void()> &signal_enter() noexcept{
+                return _signal_enter;
+            }
+            /**
+             * @brief Signal of mouse leave the shape area
+             * 
+             * @return Signal<void()>& 
+             */
+            Signal<void()> &signal_leave() noexcept{
+                return _signal_leave;
+            }
+            /**
+             * @brief Allow to move the shape by dragging
+             * 
+             * @param dragable 
+             */
+            void set_dragable(bool dragable = true){
+                _dragable = dragable;
+            }
         private:
-            Signal<void()> signal_clicked;
-            Signal<void()> signal_collided;
+            Signal<void()> _signal_clicked;
+            Signal<void()> _signal_collided;
+            Signal<void()> _signal_enter;
+            Signal<void()> _signal_leave;
+
+            bool _collided = false;
+            bool _mouse_in = false;
+            bool _dragable = false;
+        protected:
+            void notify_mouse_enter(){
+                if(not _mouse_in){
+                    _mouse_in = true;
+                    _signal_enter.defer_emit();
+                }
+            }
+            void notify_mouse_leave(){
+                if(_mouse_in){
+                    _mouse_in = false;
+                    _signal_leave.defer_emit();
+                }
+            }
     };
     class BTKAPI ShapeRectNode:public ShapeNode{
+        public:
+            ShapeRectNode();
+            ShapeRectNode(Color co):c(co){}
+            ShapeRectNode(const ShapeRectNode &) = delete;
+            ~ShapeRectNode();
+
+            bool handle(Event &) override;
+
+            void draw(Renderer&,Uint32) override;
+            void set_color(const Color &color){
+                c = color;
+                redraw();
+            }
+            void set_fill(bool v = true){
+                fill = v;
+                redraw();
+            }
         private:
-            Color c;
+            bool fill = false;
+            Color c = {0,0,0};
     };
     class BTKAPI ShapeLineNode:public ShapeNode{
-        
+        public:
+            ShapeLineNode();
+            ShapeLineNode(FPoint beg,FPoint end){
+                line = FLine(beg,end);
+                set_rect(bounding_box());
+            }
+            ShapeLineNode(float x1,float y1,float x2,float y2){
+                line = FLine(x1,y1,x2,y2);
+                set_rect(bounding_box());
+            }
+            ShapeLineNode(const ShapeLineNode &) = delete;
+            ~ShapeLineNode();
+
+            void draw(Renderer&,Uint32) override;
+            
+            bool handle_mouse(MouseEvent &) override;
+            bool handle_motion(MotionEvent &) override;
+
+            FRect bounding_box() const override;
+            /**
+             * @brief Set the line object
+             * 
+             * @param l 
+             */
+            void set_line(const FLine &l){
+                line = l;
+                set_rect(bounding_box());
+                redraw();
+            }
+        private:
+            FLine line = {};
+            Color c = {0,0,0};
+            float width = 1;
+
+            bool in_line = false;
     };
     class BTKAPI ShapePolygenNode:public ShapeNode{
         public:
@@ -69,18 +193,47 @@ namespace Btk{
             bool fill = false;
     };
     class BTKAPI ShapeImageNode:public ShapeNode{
+        public:
+            ShapeImageNode();
+            ~ShapeImageNode();
 
+            void draw(Renderer&,Uint32) override;
+            /**
+             * @brief Set the image object(it will take a reference)
+             * 
+             * @param image 
+             */
+            void set_image(PixBufRef image);
+            /**
+             * @brief Get the image
+             * 
+             * @return PixBufRef 
+             */
+            auto image() const -> PixBufRef{
+                return buf;
+            }
+        private:
+            Texture texture;
+            PixBuf buf;
+            bool dirty = false;
     };
     class BTKAPI ShapeTextNode:public ShapeNode{
-
+        public:
+            void draw(Renderer&,Uint32) override;
+        private:
+            u8string text;
+            Color c;
     };
     //Shapes --end
+    #endif
+
     class BTKAPI SceneView:public Group{
         public:
             SceneView();
             ~SceneView();
         private:
             bool _relative_coordinate = true;
+            bool _clipping = true;
     };
     class BTKAPI Graph:public Widget{
         private:

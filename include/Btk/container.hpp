@@ -29,12 +29,56 @@ namespace Btk{
     class NativeWindow;
     enum class WindowFlags:Uint32;
     /**
+     * @brief Widget for deletegate
+     * 
+     */
+    class BTKAPI DelegateWidget:public Widget{
+        public:
+            DelegateWidget() = default;
+            DelegateWidget(const DelegateWidget &) = delete;
+            ~DelegateWidget() = default;
+            //Delegate all method to 
+            void set_parent(Widget  *w);
+            void set_rect(const Rect &);
+
+            void draw(Renderer &,Uint32     ) override;
+
+            bool handle(Event              &) override;
+            bool handle_drop(DropEvent     &) override;
+            bool handle_drag(DragEvent     &) override;
+            bool handle_mouse(MouseEvent   &) override;
+            bool handle_wheel(WheelEvent   &) override;
+            bool handle_motion(MotionEvent &) override;
+            bool handle_keyboard(KeyEvent  &) override;
+            bool handle_textinput(TextInputEvent     &) override;
+            bool handle_textediting(TextEditingEvent &) override;
+            /**
+             * @brief Set the delegate widget of this widget
+             * 
+             */
+            void set_delegate(Widget *w){
+                _delegate = w;
+            }
+            /**
+             * @brief Get the delegate widget of this widget
+             * 
+             * @return Widget* 
+             */
+            Widget *delegate() const{
+                return _delegate;
+            }
+        private:
+            Widget *_delegate = nullptr;//< Delegate widget
+    };
+    /**
      * @brief A Interface for manage widget
      * 
      */
     class BTKAPI Group:public Container{
         public:
-            Group() = default;
+            Group(){
+                attr.focus = FocusPolicy::Mouse;
+            }
             ~Group() = default;
         public:
             void draw(Renderer &,Uint32     ) override;

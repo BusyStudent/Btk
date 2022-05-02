@@ -1,10 +1,11 @@
 #include "../build.hpp"
 
-#include <Btk/thirdparty/utf8.h>
 #include <Btk/detail/input.hpp>
 #include <Btk/textbox.hpp>
 #include <Btk/render.hpp>
 #include <Btk/event.hpp>
+
+#include "../libs/utf8.h"
 
 #if 0
 

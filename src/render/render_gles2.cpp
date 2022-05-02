@@ -1,7 +1,7 @@
 #include "../build.hpp"
 
 #include <Btk/detail/window.hpp>
-#include <Btk/gl/opengl.hpp>
+#include <Btk/graphics/opengl.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
 #include <Btk/canvas.hpp>

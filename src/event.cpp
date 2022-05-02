@@ -17,19 +17,18 @@ namespace Btk{
     //Register a event
     Event::Type Event::Register(){
         auto now = current_type.load(
-            std::memory_order::memory_order_consume
+            std::memory_order_consume
         );
 
         if(now == Type::UserMax){
-            return Type::User;
+            return Type::Error;
         }
         else{
-            current_type.store(
+            return current_type.exchange(
                 static_cast<Event::Type>(now + 1),
                 std::memory_order_relaxed
             );
         }
-        return current_type;
     }
 
     //Send event directly

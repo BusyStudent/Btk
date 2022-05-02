@@ -774,11 +774,7 @@ namespace Btk{
              * @param text 
              */
             void text(float x,float y,u8string_view text);
-            void text(float x,float y,u16string_view text);
             void text(const FVec2 &p,u8string_view text){
-                this->text(p.x,p.y,text);
-            }
-            void text(const FVec2 &p,u16string_view text){
                 this->text(p.x,p.y,text);
             }
             /**
@@ -791,7 +787,6 @@ namespace Btk{
              * @param text 
              */
             void textbox(float x,float y,float width,u8string_view text);
-            void textbox(float x,float y,float width,u16string_view text);
 
             FBounds text_bounds(float x,float y,u8string_view str);
             FBounds textbox_bounds(float x,float y,float width,u8string_view str);
@@ -804,8 +799,6 @@ namespace Btk{
             FSize text_size(u8string_view t){
                 return measure_text(t);
             }
-            [[deprecated("use measure_text instead")]]
-            FSize text_size(u16string_view);
             /**
              * @brief Measure the text
              * 

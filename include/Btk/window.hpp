@@ -1,7 +1,7 @@
 #if !defined(_BTK_WINDOW_HPP_)
 #define _BTK_WINDOW_HPP_
 #include "string.hpp"
-#include "signal.hpp"
+#include "object.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
 #include <cstdio>

@@ -15,22 +15,8 @@ namespace Btk{
         BTKAPI void Init();
         BTKAPI void Quit();
         BTKAPI void HandleSysMsg(const SDL_SysWMmsg &);
+        BTKAPI void *GetDBusConnection();
         BTKAPI void *GetXDisplay();
-        /**
-         * @brief For Get System Color
-         * 
-         */
-        enum ColorType{
-            BackgroundColor,
-            ForegroundColor,
-            SelectionBackgroundColor
-        };
-
-        //For SystemMetrics
-        BTK_STRING_CONSTANT(SilderWidth,"silder");
-
-        bool GetSystemColor(ColorType,Color &c);
-        bool GetSystemMetrics(u8string_view t);
 
         SDL_Window *CreateTsWindow(u8string_view title,int w,int h,WindowFlags);
     };

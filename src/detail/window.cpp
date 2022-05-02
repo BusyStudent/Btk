@@ -3,12 +3,12 @@
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_timer.h>
 
+#include <Btk/platform/platform.hpp>
 #include <Btk/detail/window.hpp>
 #include <Btk/detail/scope.hpp>
 #include <Btk/detail/utils.hpp>
 #include <Btk/detail/core.hpp>
 #include <Btk/exception.hpp>
-#include <Btk/platform.hpp>
 #include <Btk/render.hpp>
 #include <Btk/window.hpp>
 #include <Btk/pixels.hpp>
@@ -51,8 +51,17 @@ namespace Btk{
         #ifndef NDEBUG
         debug_draw_bounds = (std::getenv("BTK_DRAW_BOUNDS") != nullptr);
         #endif
+
+        #ifdef BTK_RT_FPS
+        set_rt_fps(BTK_RT_FPS);
+        #endif
     }
     WindowImpl::~WindowImpl(){
+        //Stop timer if
+        if(rt_draw_timer != 0){
+            SDL_RemoveTimer(rt_draw_timer);
+        }
+
         //Delete widgets
         clear_childrens();
         SDL_FreeCursor(cursor);
@@ -215,6 +224,30 @@ namespace Btk{
             handle(event);
         }
     }
+    void WindowImpl::set_rt_fps(Uint32 fps){
+        fps = clamp(fps,0u,fps_limit);
+
+        BTK_LOGINFO("[Window::set_rt_fps] Set Window %d => %d",winid,fps);
+        rt_draw_fps = fps;
+        if(fps == 0 and rt_draw_timer != 0){
+            SDL_RemoveTimer(rt_draw_timer);
+            rt_draw_timer = 0;
+        }
+        else if(rt_draw_timer == 0){
+            //New timer
+            rt_draw_timer = SDL_AddTimer(
+                1000 / rt_draw_fps,
+                [](Uint32 interval,void *win){
+                    return static_cast<WindowImpl*>(win)->rt_timer_cb(interval);
+                },this
+            );
+            //Check
+            if(rt_draw_timer == 0){
+                rt_draw_fps = 0;
+                throwSDLError();
+            }
+        }
+    }
     void WindowImpl::set_modal(bool v){
         BTK_LOGINFO("[Window::set_modal] %d => %s",winid,v?"true":"false");
         std::lock_guard locker(mtx);
@@ -251,6 +284,11 @@ namespace Btk{
         int w,h;
         SDL_GetWindowSize(win,&w,&h);
         return Size(w,h);
+    }
+    Uint32 WindowImpl::rt_timer_cb(Uint32 last_interval){
+        //May there has thread conflict
+        redraw();
+        return 1000 / rt_draw_fps;
     }
 }
 //Event Processing
@@ -713,6 +751,13 @@ namespace Btk{
             throwSDLError();
         }
         return GetSystem()->create_window(sdl_win);
+    }
+    WindowImpl *GetKeyboardFocus(){
+        SDL_Window *win = SDL_GetKeyboardFocus();
+        if(win == nullptr){
+            return nullptr;
+        }
+        return GetSystem()->get_window_s(SDL_GetWindowID(win));
     }
     WindowImpl *GetMouseFocus(){
         SDL_Window *win = SDL_GetMouseFocus();

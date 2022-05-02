@@ -1,6 +1,7 @@
 #include <Btk/progressbar.hpp>
 #include <Btk/scrollbar.hpp>
 #include <Btk/textbox.hpp>
+#include <Btk/canvas.hpp>
 #include <Btk.hpp>
 int main(){
     Btk::Init();
@@ -13,9 +14,12 @@ int main(){
 
     // bar.signal_moved().connect(&Btk::ProgressBar::set_value,&b);
 
-    auto &box = win.add<Btk::LineEdit>();
+    auto &box = win.add<Btk::ShapeRectNode>();
+    auto &line = win.add<Btk::ShapeLineNode>(20,20,100,100);
 
     box.set_rectangle(0,20,100,50);
+    box.set_dragable();
+    box.set_fill();
 
     win.mainloop();
 }

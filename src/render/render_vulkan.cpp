@@ -2,7 +2,7 @@
 
 #include <Btk/detail/scope.hpp>
 #include <Btk/detail/core.hpp>
-#include <Btk/gl/vulkan.hpp>
+#include <Btk/graphics/vulkan.hpp>
 #include <SDL2/SDL_vulkan.h>
 
 //TODO Vulkan Backend

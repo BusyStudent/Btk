@@ -1,8 +1,9 @@
 #include "../../build.hpp"
 
-#include <Btk/gl/opengl_adapter.hpp>
+#include <Btk/graphics/opengl_adapter.hpp>
 #include <Btk/platform/popen.hpp>
 #include <Btk/platform/alloca.hpp>
+#include <Btk/platform/dbus.hpp>
 #include <Btk/platform/x11.hpp>
 #include <Btk/platform/fs.hpp>
 #include <Btk/detail/window.hpp>
@@ -181,11 +182,13 @@ namespace X11{
 }
 namespace Btk{
 namespace X11{
+    Constructable<DBus::Connection> dbus_con;
     bool has_zenity = false;
     bool has_kdialog = false;
     //Map X11's window to btk's wiondow
     static Constructable<std::map<XWindow,WindowImpl*>> wins_map;
     static XDisplay *x_display = nullptr;
+
 
     static void on_add_window(WindowImpl *win){
         //set window 
@@ -274,9 +277,19 @@ namespace X11{
         Instance().signal_window_created.connect(on_add_window);
 
         SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
+
+        //Init DBus
+        DBus::Error err;
+        dbus_con.construct();
+        *dbus_con = DBus::GetBus(DBUS_BUS_SESSION,&err);
+
+        if(err){
+            BTK_LOGINFO("DBus Init failed");
+        }
     }
     void Quit(){
         wins_map.destroy();
+        dbus_con.destroy();
     }
     void HandleSysMsg(const SDL_SysWMmsg &msg){
         const XEvent &event = msg.msg.x11.event;
@@ -314,31 +327,6 @@ namespace X11{
         SDL_SetWindowTitle(sdl,title.data());
 
         return sdl;
-    }
-    bool GetSystemColor(ColorType t,Color &c){
-        const char *opt = nullptr;
-        const char *prog = "Text";
-        switch(t){
-            case BackgroundColor:
-                opt = "background";
-                break;
-            case ForegroundColor:
-                opt = "foreground";
-                break;
-            case SelectionBackgroundColor:
-                opt = "selectBackground";
-                break;
-        }
-
-        XColor xcolor;
-        XDisplay *display = static_cast<XDisplay*>(GetXDisplay());
-        char *ret = XGetDefault(display,prog,opt);
-
-        if(XParseColor(display,DefaultColormap(display,0),ret,&xcolor) != 0){            
-            c = {xcolor.red >> 8,xcolor.green >> 8,xcolor.blue >> 8};
-            return true;
-        }
-        return false;
     }
 }
 }

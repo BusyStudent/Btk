@@ -635,9 +635,9 @@ namespace Btk{
             const std::string_view &base() const noexcept{
                 return *this;
             }
-            operator std::string_view() const{
-                return *this;
-            }
+            // operator std::string_view() const{
+            //     return *this;
+            // }
             /**
              * @brief find a first char of
              * 

@@ -113,5 +113,6 @@
         "**/.sconsign.dblite":true,
         "**/.xmake":true,
         "**/build":true
-    }
+    },
+    "C_Cpp.errorSquiggles": "Enabled"
 }

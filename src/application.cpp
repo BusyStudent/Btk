@@ -10,14 +10,13 @@
 namespace Btk{
     Application::Application(){
         Init();
-        app = new ApplicationImpl;    
     }
     Application::~Application(){
         HasSlots::cleanup();
-        delete app;
+        Quit();
     }
     Signal<void()> &Application::signal_quit(){
-        return Instance().signal_quit;
+        return GetSystem()->signal_quit;
     }
     int Application::run(){
         return Btk::run();

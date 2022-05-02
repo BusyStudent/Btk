@@ -157,6 +157,13 @@ namespace Btk{
     void Widget::set_rect(const Rect &rect){
         this->rect = rect;    
     }
+    void Widget::move(int x,int y){
+        set_rect(
+            x,y,
+            rect.w,
+            rect.h
+        );
+    }
     void Widget::resize(int w,int h,bool is_sizing){
         ResizeEvent event(w,h,is_sizing);
         handle(event);
@@ -698,11 +705,6 @@ namespace Btk{
         event.set_type(Event::TakeFocus);
 
         bool val = dispatch_to_widget(focus_widget,event);
-        //Refuse to take focus
-        if(not val or event.is_rejected()){
-            focus_widget = nullptr;
-            return false;
-        }
         #ifndef NDEBUG
         if(focus_widget != nullptr){
             BTK_LOGINFO("[%s->Group:%p]'%s' %p TakeFocus",
@@ -713,7 +715,7 @@ namespace Btk{
             );
         }
         #endif
-        return true;
+        return val;
     }
     //TODO: Still need improve
     void Group::invalidate(){

@@ -79,6 +79,7 @@ int main(){
 - [ ] Widget Interface need to be refactored
 - [ ] String Interface need to be refactored to fit STL  
 - [ ] Font need to be refactored,Current font backend is not good enough(need hb support)
+- [ ] Renderer backend DPI support
 
 ----
 
