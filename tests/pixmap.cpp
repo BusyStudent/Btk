@@ -1,3 +1,4 @@
+#include <Btk/graphics/base.hpp>
 #include <Btk/pixels.hpp>
 
 #include "resource/icon.xpm"

@@ -3,6 +3,7 @@
 #include <iosfwd>
 
 #include "utils/template.hpp"
+#include "graphics/base.hpp"
 #include "string.hpp"
 #include "pixels.hpp"
 #include "font.hpp"
@@ -10,13 +11,13 @@
 
 //define theme context
 #define BTK_THEME_PALETTE \
-    BTK_THEME_FILED(Color,text)\
-    BTK_THEME_FILED(Color,window)\
-    BTK_THEME_FILED(Color,background)\
-    BTK_THEME_FILED(Color,border)\
-    BTK_THEME_FILED(Color,button)\
-    BTK_THEME_FILED(Color,highlight)\
-    BTK_THEME_FILED(Color,highlight_text)\
+    BTK_THEME_FILED(Brush,text)\
+    BTK_THEME_FILED(Brush,window)\
+    BTK_THEME_FILED(Brush,background)\
+    BTK_THEME_FILED(Brush,border)\
+    BTK_THEME_FILED(Brush,button)\
+    BTK_THEME_FILED(Brush,highlight)\
+    BTK_THEME_FILED(Brush,highlight_text)\
 
 //Docs for Palette
 //text => for Text and Button

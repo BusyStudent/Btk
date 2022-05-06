@@ -6,6 +6,7 @@
 #include "function.hpp"
 #include "object.hpp"
 #include "themes.hpp"
+#include "cursor.hpp"
 #include "loop.hpp"
 #include "font.hpp"
 #include "rect.hpp"
@@ -313,6 +314,19 @@ namespace Btk{
                 StorePodInPointer(&p,value);
                 set_userdata(hint_name,p);
             }
+            /**
+             * @brief Set the cursor object to
+             * 
+             */
+            void set_cursor(const Cursor & c= {}){
+                //TODO : If the cursor is changed while the widget is focused, need add process code
+                _cursor = c;
+            }
+            /**
+             * @brief Make a delete request,It will be delete in the eventloop
+             * 
+             */
+            void defer_delete();
         protected:
             /**
              * @brief Get current window
@@ -371,7 +385,8 @@ namespace Btk{
         private:
             void dump_tree_impl(FILE *output,int depth);
             void draw_bounds_impl();
-            
+            void defer_delete_impl();
+
             template<class Callable,class ...Args>
             void walk_tree_impl(int depth,Callable &&callable,Args &&...args){
                 callable(depth,this,args...);
@@ -388,6 +403,7 @@ namespace Btk{
             void *_userdata = nullptr;
             Widget *_parent = nullptr;//< Parent
             RefPtr<Theme> _theme;//< Theme
+            Cursor        _cursor;//< Cursor
             mutable WindowImpl *_window = nullptr;//<Window pointer
         friend class Window;
         friend class Layout;

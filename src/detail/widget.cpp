@@ -81,6 +81,17 @@ namespace Btk{
             case Event::DropFile:
             case Event::DropText:
                 return handle_drop(event_cast<DropEvent&>(ev));
+            //Cursor switch
+            case Event::Enter:
+                if(not _cursor.empty()){
+                    _cursor.set();
+                }
+                return false;//< Let user process it
+            case Event::Leave:
+                if(not _cursor.empty()){
+                    _cursor.reset();
+                }
+                return false;//< Let user process it
             default:
                 return false;
         }
@@ -309,6 +320,13 @@ namespace Btk{
         for(auto &c:childrens){
             c->draw_bounds_impl();
         }
+    }
+    //Defer
+    void Widget::defer_delete(){
+        defer_call(&Widget::defer_delete);
+    }
+    void Widget::defer_delete_impl(){
+        delete this;
     }
     //Hide and show
     void Widget::hide(){

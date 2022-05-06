@@ -1,8 +1,9 @@
+#include <Btk/render.hpp>
 #include <Btk/window.hpp>
 #include <Btk/canvas.hpp>
 #include <Btk/event.hpp>
 #include <iostream>
-#include "icon.xpm"
+#include "../resource/icon.xpm"
 using namespace Btk;
 int main(){
     Bounds bounds = {0,0,500,500};
@@ -21,6 +22,11 @@ int main(){
     FVec2 end_point = {500.0f,500.0f};
     float w = 0,h = 0;
 
+    Gradient g(Gradient::YoungGrass);
+    // g.add_color(0,Color{255,0,0});
+    // g.add_color(1.0,Color{0,255,0});
+    Brush brush(g);
+
     canvas.draw() = [&](Renderer &render){
         //render.box({0,0,500,500},{1,1,1});
         render.begin_path();
@@ -29,11 +35,11 @@ int main(){
         render.fill();
         
         //render.draw_image(image,pos.x,pos.y,500,500);
-        FRect cliprect = {100,0,200,200};
+        Rect cliprect = {100,0,200,200};
         FRect dst = {pos.x,pos.y,w,h};
         render.draw_image(image,&cliprect,&dst);
         if(vec2 != FVec2{0,0}){
-            render.draw_line({0,0},vec2,{255,255,255,255});
+            render.draw_line({0,0},vec2,Color{255,255,255,255});
         }
         render.begin_path();
         render.text_align(AlignVCenter | Align::HCenter);
@@ -49,9 +55,10 @@ int main(){
         render.stroke();
         //render.show_path_caches();
 
-        render.begin_path();
-        render.circle(vec2,100);
-        render.stroke();
+        // render.begin_path();
+        // render.circle(vec2,100);
+        // render.stroke();
+        render.fill_circle(vec2,100,brush);
 
         render.begin_path();
         render.move_to(0,0);

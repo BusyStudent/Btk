@@ -42,7 +42,7 @@ namespace Btk{
             // }
             //render image
             FRect dst = rect;
-            FRect src = image_rect;
+            Rect src = image_rect;
             render.draw_image(texture,&src,&dst);
             //render.restore();
             // if(scale_fact != 1.0f){

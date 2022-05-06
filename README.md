@@ -171,3 +171,7 @@ etc...
 ## License
 
 MIT
+
+## Some md for dev
+
+[Folder strucutre](./src/README.md)

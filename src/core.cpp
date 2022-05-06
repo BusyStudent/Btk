@@ -320,7 +320,7 @@ namespace Btk{
         GetSystem()->is_running = false;
         return retvalue;
     }
-    auto PollEvent() -> LoopStatus{
+    auto PollEvent() noexcept -> LoopStatus{
         #ifndef NDEBUG
         Btk_defer [](){
             BTK_LOGINFO("[System::Loop]Leaving Loop");
@@ -346,7 +346,7 @@ namespace Btk{
             return LoopStatus::Exception;
         }
     }
-    auto WaitEvent() -> LoopStatus{
+    auto WaitEvent() noexcept -> LoopStatus{
         #ifndef NDEBUG
         Btk_defer [](){
             BTK_LOGINFO("[System::Loop]Leaving Loop");

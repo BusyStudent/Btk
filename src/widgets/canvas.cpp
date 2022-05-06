@@ -9,7 +9,7 @@ namespace Btk{
         rect = {x,y,w,h};
     }
     Canvas::~Canvas() = default;
-    void Canvas::draw(Renderer &renderer){
+    void Canvas::draw(Renderer &renderer,Uint32){
         if(not draw_fn.empty()){
             // auto viewport = renderer.get_viewport();
             // renderer.set_viewport(rect);

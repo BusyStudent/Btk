@@ -33,7 +33,7 @@
     #define BTK_NAMESPACE Btk
 #endif
 
-#define BTK_NS_BEGIN namespace BTK_NAMESPACE{
+#define BTK_NS_BEGIN(X) namespace X{
 #define BTK_NS_END }
 //Unique name
 #define BTK_MARGE_TOKEN_IMPL(A,B) A ## B

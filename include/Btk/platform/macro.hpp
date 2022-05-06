@@ -18,8 +18,8 @@
 //Complier --begin
 #define BTK_MINGW 0
 #define BTK_CLANG 0
-#define BTK_MSVC 0
-#define BTK_GCC 0
+#define BTK_MSVC  0
+#define BTK_GCC   0
 
 #ifdef __GNUC__
     #undef  BTK_GCC 
@@ -82,11 +82,13 @@
 
 //Export symbols --begin
 #if   BTK_MINGW
+    #define BTKHIDDEN  __attribute__((visibility("hidden")))
     #define BTKEXPORT __attribute__((dllexport))
     #define BTKIMPORT __attribute__((dllimport))
     #define BTKCDEL   __attribute__((cdel))
     #define BTKFAST   __attribute__((fastcall))
 #elif BTK_MSVC
+    #define BTKHIDDEN
     #define BTKEXPORT __declspec(dllexport)
     #define BTKIMPORT __declspec(dllimport)
     #define BTKCDEL   __cdel
@@ -100,6 +102,7 @@
     #define and &&
     #define or ||
 #elif BTK_GCC
+    #define BTKHIDDEN  __attribute__((visibility("hidden")))
     #define BTKEXPORT __attribute__((visibility("default")))  
     #define BTKIMPORT 
     #define BTKCDEL
@@ -115,25 +118,27 @@
 
 //Complier attributes --begin
 #if   BTK_MSVC
-    #define BTKWEAK 
-    #define BTKHIDDEN  
-    #define BTKINLINE __forceinline
+    #define BTK_WEAK 
+    #define BTK_INLINE __forceinline
+    #define BTK_RESTRICT __restrict
     
+    #define BTK_NONULL(...)
     #define BTK_ATTRIBUTE(...) __declspec(__VA_ARGS__)
     #define BTK_NODISCARD(MSG) __declspec((nodiscard(MSG)))
     #define BTK_FUNCTION __FUNCSIG__
 #elif BTK_GCC
-    #define BTKWEAK   __attribute__((weak))
-    #define BTKHIDDEN __attribute__((visibility("hidden")))
-    #define BTKINLINE __attribute__((__always_inline__))
+    #define BTK_WEAK   __attribute__((weak))
+    #define BTK_INLINE __attribute__((__always_inline__))
+    #define BTK_RESTRICT __restrict__
 
+    #define BTK_NONULL(...) __attribute__((__nonnull__(__VA_ARGS__)))
     #define BTK_ATTRIBUTE(...) __attribute__((__VA_ARGS__))
     #define BTK_NODISCARD(MSG) __attribute__((nodiscard(MSG)))
     #define BTK_FUNCTION __PRETTY_FUNCTION__
 #else
     #define BTKWEAK 
-    #define BTKHIDDEN
-    #define BTKINLINE 
+    #define BTKINLINE
+    #define BTKRESTRICT 
 
     #define BTK_ATTRIBUTE(...)
     #define BTK_NODISCARD(MSG)
@@ -143,9 +148,9 @@
 
 //Bultin
 #ifdef __has_builtin
-    #define BTK_HAS_BULTIN(X) __has_builtin
+    #define BTK_HAS_BUILTIN(X) __has_builtin
 #else
-    #define BTK_HAS_BULTIN(X) 0
+    #define BTK_HAS_BUILTIN(X) 0
 #endif
 
 //Architecture

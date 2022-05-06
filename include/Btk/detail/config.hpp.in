@@ -23,6 +23,8 @@ ${define BTK_USE_SVG_PARSER}
 //GLCONFIG
 ${define BTK_USE_DYNAMIC_GLLIB}
 ${define BTK_USE_OPENGLES2}
+//Bultin Variables
+${define BTK_USE_BUILTIN_GRADIENTS}
 //Version
 ${define BTK_VERSION_STRING}
 ${define BTK_VERSION_MAJOR}

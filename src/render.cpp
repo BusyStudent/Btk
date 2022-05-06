@@ -13,11 +13,18 @@
 #include <cstdarg>
 #include <limits>
 #include <vector>
+#include <set>
 
 
 extern "C"{
     #include "libs/fontstash.h"
     #include "libs/nanovg.h"
+
+    //Rect Pack
+    #define STBRP_ASSERT BTK_ASSERT
+    #define STB_RECT_PACK_IMPLEMENTATION
+    #define STBRP_STATIC
+    #include "libs/stb_rect_pack.h"
 }
 
 #define UNPACK_COLOR(C) C.r,C.g,C.b,C.a
@@ -34,148 +41,6 @@ namespace Btk{
     }
     Texture Renderer::load(RWops &rwops,TextureFlags flags){
         return create_from(PixBuf::FromRWops(rwops),flags);
-    }
-    void Renderer::_draw_image(TextureID texture,float x,float y,float w,float h,float angle,float alpha){
-        //make pattern
-
-        auto paint = nvgImagePattern(
-            nvg_ctxt,
-            x,
-            y,
-            w,
-            h,
-            angle,
-            texture,
-            alpha
-        );
-        nvgBeginPath(nvg_ctxt);
-        nvgRect(nvg_ctxt,x,y,w,h);
-        nvgFillPaint(nvg_ctxt,paint);
-        nvgFill(nvg_ctxt);
-        
-    }
-    void Renderer::_draw_image(TextureID texture,const FRect *src,const FRect *dst){
-
-        FRect _dst;
-        if(dst != nullptr){
-            _dst = *dst;
-        }
-        else{
-            //Get current screnn output size
-            auto [w,h] = device()->logical_size();
-            // SDL_GetWindowSize(window,&w,&h);
-            _dst.x = 0;
-            _dst.y = 0;
-            _dst.w = w;
-            _dst.h = h;
-        }
-        if(src == nullptr){
-            //We donnot need clipping
-            return _draw_image(texture,_dst.x,_dst.y,_dst.w,_dst.h);
-        }
-        if(_dst.empty() or src->empty()){
-            return;
-        }
-        auto [tex_w,tex_h] = device()->texture_size(nvg_ctxt,texture);
-
-        if(src->w == tex_w and src->h == tex_h){
-            //We donnot need clipping
-            return _draw_image(texture,_dst.x,_dst.y,_dst.w,_dst.h);
-        }
-
-        FRect _src;
-        float max_float = std::numeric_limits<float>::max();
-        _src.x = std::clamp(src->x,0.0f,max_float);
-        _src.y = std::clamp(src->y,0.0f,max_float);
-        _src.w = std::clamp(src->w,0.0f,float(tex_w));
-        _src.h = std::clamp(src->h,0.0f,float(tex_h));
-
-        //Save the status
-        //save();
-        //nvgIntersectScissor(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
-
-        float w_ratio = float(tex_w) / _src.w;
-        float h_ratio = float(tex_h) / _src.h;
-
-        FRect target;
-
-        target.w = _dst.w * w_ratio;
-        target.h = _dst.h * h_ratio;
-
-        target.x = _dst.x - (src->x / src->w) * _dst.w;
-        target.y = _dst.y - (src->y / src->h) * _dst.h;
-
-
-        auto paint = nvgImagePattern(
-            nvg_ctxt,
-            target.x,
-            target.y,
-            target.w,
-            target.h,
-            0,
-            texture,
-            1.0f
-        );
-        //nvgResetScissor(nvg_ctxt);
-        nvgBeginPath(nvg_ctxt);
-        nvgRect(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
-        nvgFillPaint(nvg_ctxt,paint);
-        nvgFill(nvg_ctxt);
-        //restore();
-    }
-    //Temp copy
-    void Renderer::draw_image(PixBufRef pixbuf,float x,float y,float w,float h,float angle){
-        CachedItem *cache = find_cache(w,h);
-        if(cache == nullptr){
-            //No cache useable
-            auto texture = create_from(pixbuf);
-            draw_image(texture,x,y,w,h,angle);
-            //Add it to cache
-            CachedItem item;
-            item.w = texture.w();
-            item.h = texture.h();
-            item.tex = texture.detach();
-            item.used = true;
-            cached_texs.push_back(item);
-            return;
-        }
-        //TODO need improve
-        cache->used = true;
-        update_texture(cache->tex,{0,0,int(w),int(h)},pixbuf->pixels);
-        //Send a draw request
-        auto paint = nvgImagePattern(
-            nvg_ctxt,
-            x,
-            y,
-            w,
-            h,
-            angle,
-            cache->tex,
-            1.0f
-        );
-        nvgBeginPath(nvg_ctxt);
-        nvgRect(nvg_ctxt,x,y,w,h);
-        nvgFillPaint(nvg_ctxt,paint);
-        nvgFill(nvg_ctxt);
-    }
-    void Renderer::draw_image(PixBufRef pixbuf,const FRect *src,const FRect *dst){
-        auto texture = create_from(pixbuf);
-        draw_image(texture,src,dst);
-        //Add it to cache
-        CachedItem item;
-        item.w = texture.w();
-        item.h = texture.h();
-        item.tex = texture.detach();
-        item.used = true;
-        cached_texs.push_back(item);
-    }
-    auto Renderer::find_cache(int w,int h) -> CachedItem *{
-        for(auto &item:cached_texs){
-            if(not item.used and item.w >= w and item.h >= h){
-                return &item;
-            }
-        }
-        return nullptr;
     }
 }
 namespace Btk{
@@ -300,12 +165,8 @@ namespace Btk{
     //Get the rendered text size
     FSize Renderer::measure_text(u8string_view _view){
         auto view = _view.base();
-        NVGtextRow  row;
-        nvgTextBreakLinesEx(nvg_ctxt,&view.front(),&view.back() + 1,std::numeric_limits<float>::max(),&row,1);
-        return FSize{
-            row.width,
-            font_height()
-        };
+        auto r = text_bounds(0,0,_view).cast<FRect>();
+        return {r.w,r.h}; 
     }
     void Renderer::text_align(TextAlign align){
         nvgTextAlign(nvg_ctxt,int(align));
@@ -404,6 +265,88 @@ namespace Btk{
     }
 }
 namespace Btk{
+    //Temp Texture for drawing
+    struct Renderer::TempTexture{
+        stbrp_node nodes[64];
+        stbrp_context rp;
+        void *pixels;//< Pixels buffer to update
+        bool rp_init;
+        int tex;
+        int w,h;
+        //Use this to avoid a object used multiple times in a single frame?
+        // std::set<void*> object_hits;
+
+        void init(NVGcontext *ctxt,int tex,int w,int h){
+            this->w = w;
+            this->h = h;
+            this->tex = tex;
+            this->rp_init = false;
+            this->pixels = nullptr;
+        }
+        void clear(NVGcontext *ctxt){
+            nvgDeleteImage(ctxt,tex);
+            SDL_free(pixels);
+        }
+        /**
+         * @brief If you want to pack,call this first
+         * 
+         */
+        void begin_pack(){
+            if(not rp_init){
+                stbrp_init_target(&rp,w,h,nodes,SDL_arraysize(nodes));
+                stbrp_setup_allow_out_of_mem(&rp,1);
+                rp_init = true;
+                //Lazy init pixels
+                if(pixels == nullptr){
+                    pixels = SDL_malloc(w * h * sizeof(Uint32));
+                }
+            }
+        }
+        /**
+         * @brief Called at end()
+         * 
+         */
+        void pack_cleanup(){
+            rp_init = false;
+        }
+        /**
+         * @brief Pack a rect
+         * 
+         * @param w 
+         * @param h 
+         * @param out 
+         * @return true 
+         * @return false 
+         */
+        bool pack(int w,int h,Point *out){
+            stbrp_rect r;
+            r.w = w;
+            r.h = h;
+
+            stbrp_pack_rects(&rp,&r,1);
+
+            out->x = r.x;
+            out->y = r.y;
+
+            return r.was_packed;
+        }
+    };
+    static FRect sub_image_pattern(int tex_w,int tex_h,const Rect &src,const FRect &dst){
+
+        float w_ratio = float(tex_w) / float(src.w);
+        float h_ratio = float(tex_h) / float(src.h);
+
+        FRect target;
+
+        target.w = dst.w * w_ratio;
+        target.h = dst.h * h_ratio;
+
+        target.x = dst.x - (src.x / src.w) * dst.w;
+        target.y = dst.y - (src.y / src.h) * dst.h;
+
+        return target;
+    }
+
     Renderer::Renderer(RendererDevice &dev,bool val){
         _device = &dev;
         free_device = val;
@@ -412,9 +355,9 @@ namespace Btk{
     }
     Renderer::~Renderer(){
         //Cleanup buffer
-        for(auto iter = cached_texs.begin();iter != cached_texs.end();){
-            device()->destroy_texture(nvg_ctxt,iter->tex);
-            iter = cached_texs.erase(iter);
+        for(auto iter = temp_texs.begin();iter != temp_texs.end();){
+            iter->clear(nvg_ctxt);
+            iter = temp_texs.erase(iter);
         }
         device()->destroy_context(nvg_ctxt);
 
@@ -436,7 +379,6 @@ namespace Btk{
     }
 
     void Renderer::begin(){
-        mtx.lock();
         auto [w,h] = device()->logical_size();
         //Init viewport
         device()->set_viewport(nullptr);
@@ -447,27 +389,223 @@ namespace Btk{
         if(is_drawing){
             device()->end_frame(nvg_ctxt);
             device()->swap_buffer();
-            //Too many caches
-            if(cached_texs.size() > max_caches){
-                int n = cached_texs.size() - max_caches;
-                BTK_LOGINFO("[Renderer]Clear %d textures",n);
-                for(int i = 0;i < n;i++){
-                    device()->destroy_texture(nvg_ctxt,cached_texs.front().tex);
-                    cached_texs.pop_front();
-                }
-                //Set another caches to unused
-                for(auto &item:cached_texs){
-                    item.used = false;
-                }
-            }
+            //Cleanup tmp tex
+            flush_temp_tex();
+
             is_drawing = false;
             //Free the queue
             while(not free_texs.empty()){
                 destroy_texture(free_texs.front());
                 free_texs.pop();
             }
-            mtx.unlock();
         }
+    }
+
+    //Temp texture
+    void Renderer::flush_temp_tex(){
+        if(temp_texs.size() > max_caches){
+            //Cleanup
+            //Sort by size
+            std::sort(temp_texs.begin(),temp_texs.end(),
+                [](const TempTexture &a,const TempTexture &b){
+                    return a.w * a.h > b.w * b.h;
+                }
+            );
+            //Cleanup with min size
+            int n_to_clean = temp_texs.size() - max_caches;
+            for(int i = 0;i < n_to_clean;i++){
+                temp_texs.back().clear(nvg_ctxt);
+                temp_texs.pop_back();
+            }
+        }
+        //Reset pack state
+        for(auto &tex : temp_texs){
+            tex.pack_cleanup();
+        }
+    }
+    auto Renderer::alloc_temp_tex(int w,int h,int *x,int *y) -> TempTexture *{
+        Point where;
+        for(auto &tex : temp_texs){
+            tex.begin_pack();
+            if(tex.pack(w,h,&where)){
+                //Find position
+                *x = where.x;
+                *y = where.y;
+                return &tex;
+            }
+        }
+        int alloc_w = w * 2;
+        int alloc_h = h * 2;
+        //We need to create a new one
+        int tex_id = device()->create_texture(nvg_ctxt,alloc_w,alloc_h,TextureFlags::Linear);
+        if(tex_id == -1){
+            throwRendererError(device()->get_error());
+        }
+        //add it
+        temp_texs.push_front({});
+        temp_texs.front().init(
+            nvg_ctxt,
+            tex_id,
+            alloc_w,
+            alloc_h
+        );
+        BTK_LOGINFO("[Renderer]alloc temp tex:%d,%d",alloc_w,alloc_h);
+        BTK_LOGINFO("[Renderer]current temp tex:%d",temp_texs.size());
+        //Pack again
+        return alloc_temp_tex(w,h,x,y);
+    }
+    
+    void Renderer::_draw_image(TextureID texture,float x,float y,float w,float h,float angle,float alpha){
+        //make pattern
+
+        auto paint = nvgImagePattern(
+            nvg_ctxt,
+            x,
+            y,
+            w,
+            h,
+            angle,
+            texture,
+            alpha
+        );
+        nvgBeginPath(nvg_ctxt);
+        nvgRect(nvg_ctxt,x,y,w,h);
+        nvgFillPaint(nvg_ctxt,paint);
+        nvgFill(nvg_ctxt);
+        
+    }
+    void Renderer::_draw_image(TextureID texture,const Rect *src,const FRect *dst){
+
+        FRect _dst;
+        if(dst != nullptr){
+            _dst = *dst;
+        }
+        else{
+            //Get current screnn output size
+            auto [w,h] = device()->logical_size();
+            // SDL_GetWindowSize(window,&w,&h);
+            _dst.x = 0;
+            _dst.y = 0;
+            _dst.w = w;
+            _dst.h = h;
+        }
+        if(src == nullptr){
+            //We donnot need clipping
+            return _draw_image(texture,_dst.x,_dst.y,_dst.w,_dst.h);
+        }
+        if(_dst.empty() or src->empty()){
+            return;
+        }
+        auto [tex_w,tex_h] = device()->texture_size(nvg_ctxt,texture);
+
+        if(src->w == tex_w and src->h == tex_h){
+            //We donnot need clipping
+            return _draw_image(texture,_dst.x,_dst.y,_dst.w,_dst.h);
+        }
+
+        Rect _src;
+        int max_int = std::numeric_limits<int>::max();
+        _src.x = std::clamp(src->x,0,max_int);
+        _src.y = std::clamp(src->y,0,max_int);
+        _src.w = std::clamp(src->w,0,tex_w);
+        _src.h = std::clamp(src->h,0,tex_h);
+
+        // Save the status
+        // save();
+        // nvgIntersectScissor(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
+
+        // float w_ratio = float(tex_w) / float(_src.w);
+        // float h_ratio = float(tex_h) / float(_src.h);
+
+        // FRect target;
+
+        // target.w = _dst.w * w_ratio;
+        // target.h = _dst.h * h_ratio;
+
+        // target.x = _dst.x - (src->x / src->w) * _dst.w;
+        // target.y = _dst.y - (src->y / src->h) * _dst.h;
+
+        auto target = sub_image_pattern(tex_w,tex_h,_src,_dst);
+
+        auto paint = nvgImagePattern(
+            nvg_ctxt,
+            target.x,
+            target.y,
+            target.w,
+            target.h,
+            0,
+            texture,
+            1.0f
+        );
+        //nvgResetScissor(nvg_ctxt);
+        nvgBeginPath(nvg_ctxt);
+        nvgRect(nvg_ctxt,_dst.x,_dst.y,_dst.w,_dst.h);
+        nvgFillPaint(nvg_ctxt,paint);
+        nvgFill(nvg_ctxt);
+        //restore();
+    }
+    void Renderer::draw_image(PixBufRef  buf,const Rect *_src,const FRect *_dst){
+        if(buf.empty()){
+            return;
+        }
+        //Get src if
+        Rect src;
+        if(_src == nullptr){
+            src.x = 0;
+            src.y = 0;
+            src.w = buf->w;
+            src.h = buf->h;
+        }
+        else{
+            src = *_src;
+            //ASSERT
+            BTK_ASSERT(src.x >= 0 and src.y >= 0 and src.w >= 0 and src.h >= 0);
+            BTK_ASSERT(src.w + src.x <= buf->w and src.h + src.y <= buf->h);
+        }
+        //Get dst if
+        FRect dst;
+        if(_dst == nullptr){
+            auto [w,h] = device()->logical_size();
+            dst.x = 0;
+            dst.y = 0;
+            dst.w = w;
+            dst.h = h;
+        }
+        else{
+            dst = *_dst;
+        }
+        if(dst.empty() or src.empty()){
+            return;
+        }
+
+        //Alloc temp tex
+        int x;
+        int y;
+        auto tex = alloc_temp_tex(src.w,src.h,&x,&y);
+
+        uint8_t *buf_data = static_cast<uint8_t*>(buf->pixels) +
+            src.y * buf->pitch +
+            src.x * buf->format->BytesPerPixel;
+        
+        uint8_t *dst_data = reinterpret_cast<uint8_t*>(tex->pixels) +
+            y * (tex->w * 4) +
+            x * 4;
+
+        //Update bitmap
+        SDL_ConvertPixels(
+            src.w,src.h,
+            buf->format->format,
+            buf_data,buf->pitch,
+            SDL_PIXELFORMAT_RGBA32,
+            dst_data,tex->w * 4
+        );
+        //Update texture
+        Rect update_area = {
+            x,y,src.w,src.h
+        };
+        update_texture(tex->tex,update_area,tex->pixels);
+        //Draw
+        _draw_image(tex->tex,&src,&dst);
     }
 }
 namespace Btk{
@@ -489,7 +627,6 @@ namespace Btk{
         if(empty()){
             return;
         }
-        std::lock_guard locker(render->mtx);
         BTK_LOGINFO("[Texture] defer clear %d for %p",texture,render);
         render->free_texs.push(texture);
         
@@ -621,29 +758,58 @@ namespace Btk{
         if(_type == BrushType::Image){
             data.image.buf.~PixBuf();
         }
+        else if(_type == BrushType::Gradient){
+            data.gradient.~Gradient();
+        }
         _type = BrushType::Color;
         data.color = Color(0,0,0,0);
     }
     Brush::Brush(const Brush &brush):Brush(){
-        if(brush._type != BrushType::Image){
-            //Just memcpy
-            memcpy(this,&brush,sizeof(Brush));
-            return;
-        }
-        new (&(data.image.buf)) PixBuf(brush.data.image.buf);
-        data.image.flags = brush.data.image.flags;
-        _type = BrushType::Image;
+        assign(brush);
     }
     void Brush::assign(const Brush &brush){
         clear();
-        if(brush._type != BrushType::Image){
+        if(brush._type == BrushType::Color){
             //Just memcpy
             memcpy(this,&brush,sizeof(Brush));
-            return;
         }
-        new (&(data.image.buf)) PixBuf(brush.data.image.buf);
-        data.image.flags = brush.data.image.flags;
-        _type = BrushType::Image;
+        else if(brush._type == BrushType::Gradient){
+            //Copy the gradient
+            new(&data.gradient) Gradient(brush.data.gradient);
+            _type = BrushType::Gradient;
+        }
+        else if(brush._type == BrushType::Image){
+            new (&(data.image.buf)) PixBuf(brush.data.image.buf);
+            data.image.flags = brush.data.image.flags;
+            data.image.alpha = brush.data.image.alpha;
+            _type = BrushType::Image;
+        }
+    }
+    void Brush::assign(Brush &&brush){
+        clear();
+        if(brush._type == BrushType::Color){
+            //Just memcpy
+            memcpy(this,&brush,sizeof(Brush));
+        }
+        else if(brush._type == BrushType::Gradient){
+            //Copy the gradient
+            new(&data.gradient) Gradient(std::move(brush.data.gradient));
+            _type = BrushType::Gradient;
+        }
+        else if(brush._type == BrushType::Image){
+            new (&(data.image.buf)) PixBuf(std::move(brush.data.image.buf));
+            data.image.flags = brush.data.image.flags;
+            data.image.alpha = brush.data.image.alpha;
+            _type = BrushType::Image;
+        }
+        //Reset prev types
+        brush._type = BrushType::Color;
+    }
+    Brush::operator Color() const{
+        if(type() != BrushType::Color){
+            throwRuntimeError("Brush is not color");
+        }
+        return color();
     }
 }
 namespace Btk{
@@ -700,70 +866,78 @@ namespace Btk{
 }
 namespace Btk{
     //Draw functions
-    void Renderer::use_brush(const Brush &brush){
-        cur_brush = brush;
-        switch(brush.type()){
-            case BrushType::Color:{
-                fill_color(brush.color());
-                break;
-            }
-            default:{
-                BTK_UNIMPLEMENTED();
-            }
-        }            
-    }
-    void Renderer::draw_rounded_box(const FRect &r,float rad,Color c){
+    void Renderer::draw_rounded_box(const FRect &r,float rad,BrushRef c){
         begin_path();
-        fill_color(c);
+        _apply_brush(c,r);
         rounded_rect(r,rad);
         fill();
     }
-    void Renderer::draw_rounded_rect(const FRect &r,float rad,Color c){
+    void Renderer::draw_rounded_rect(const FRect &r,float rad,BrushRef c){
         begin_path();
-        stroke_color(c);
+        _apply_brush(c,r);
         rounded_rect(r,rad);
         stroke();
     }
-    void Renderer::draw_line(float x,float y,float x2,float y2,Color c){
+    void Renderer::draw_line(float x,float y,float x2,float y2,BrushRef c){
         begin_path();
-        stroke_color(c);
+        //Calc then range
+        float minx = min(x,x2);
+        float miny = min(y,y2);
+        float maxx = max(x,x2);
+        float maxy = max(y,y2);
+
+        FRect rect = {minx,miny,maxx - minx,maxy - miny};
+        _apply_brush(c,rect);
+
         move_to(x,y);
         line_to(x2,y2);
         stroke();
     }
-    void Renderer::draw_rect(const FRect &r,Color c){
+    void Renderer::draw_rect(const FRect &r,BrushRef c){
         begin_path();
-        stroke_color(c);
+        _apply_brush(c);
         rect(r);
         stroke();
     }
-    void Renderer::draw_box(const FRect &r,Color c){
+    void Renderer::draw_box(const FRect &r,BrushRef c){
         begin_path();
-        fill_color(c);
+        _apply_brush(c,r);
         rect(r);
         fill();
     }
-    void Renderer::draw_circle(float x,float y,float rad,Color c){
+    void Renderer::draw_circle(float x,float y,float rad,BrushRef c){
         begin_path();
-        stroke_color(c);
+        //Calc the circle bounds
+        FRect rect = {x-rad,y-rad,rad*2,rad*2};
+        _apply_brush(c,rect);
+
         circle(x,y,rad);
         stroke();
     }
-    void Renderer::fill_circle(float x,float y,float rad,Color c){
+    void Renderer::fill_circle(float x,float y,float rad,BrushRef c){
         begin_path();
-        fill_color(c);
+        //Calc the circle bounds
+        FRect rect = {x-rad,y-rad,rad*2,rad*2};
+        _apply_brush(c,rect);
+        
         circle(x,y,rad);
         fill();
     }
-    void Renderer::draw_ellipse(float x,float y,float rx,float ry,Color c){
+    void Renderer::draw_ellipse(float x,float y,float rx,float ry,BrushRef c){
         begin_path();
-        stroke_color(c);
+        //Calc the ellipse bounds
+        FRect rect = {x-rx,y-ry,rx*2,ry*2};
+        _apply_brush(c,rect);
+
         ellipse(x,y,rx,ry);
         stroke();
     }
-    void Renderer::fill_ellipse(float x,float y,float rx,float ry,Color c){
+    void Renderer::fill_ellipse(float x,float y,float rx,float ry,BrushRef c){
         begin_path();
-        fill_color(c);
+        //Calc the ellipse bounds
+        FRect rect = {x-rx,y-ry,rx*2,ry*2};
+        _apply_brush(c,rect);
+
         ellipse(x,y,rx,ry);
         fill();
     }
@@ -772,5 +946,147 @@ namespace Btk{
         fill_color(c);
         text(x,y,txt);
         fill();
+    }
+
+    //Brush Apply
+    void Renderer::_apply_brush(BrushRef brush){
+        BTK_ASSERT(brush.type() == BrushType::Color);
+        stroke_color(brush.color());
+    }
+    void Renderer::_apply_brush(BrushRef brush,const FRect &r){
+        switch(brush.type()){
+            case BrushType::Color:{
+                fill_color(brush.color());
+                stroke_color(brush.color());
+                break;
+            }
+            case BrushType::Gradient:{
+                const Gradient &g = brush.graident();
+                //Transform the gradient by coordinates
+                FBounds grad_bds;
+
+                if(g._mode == Gradient::Absolute){
+                    grad_bds = g._area;
+                }
+                else{
+                    //From 0 to 1
+                    auto rel_rect = g._area.cast<FRect>();
+
+                    grad_bds.minx = r.x + rel_rect.x * r.w;
+                    grad_bds.miny = r.y + rel_rect.y * r.h;
+                    grad_bds.maxx = r.x + rel_rect.w * r.w;
+                    grad_bds.maxy = r.y + rel_rect.h * r.h;
+                }
+
+                if(g._type == Gradient::Linear){
+                    //TODO : Simulate multi stop points by 2 points per stop
+                    //Find min position and max position
+                    auto &vec = g.colors;
+                    Color min;
+                    Color max;
+
+                    float min_pos = 1.0f;
+                    float max_pos = 0.0f;
+
+                    //Find min and max
+                    for(auto &c : vec){
+                        if(c.position <= min_pos){
+                            min = c.color;
+                            min_pos = c.position;
+                        }
+                        if(c.position >= max_pos){
+                            max = c.color;
+                            max_pos = c.position;
+                        }
+                    }
+                    //NVG gradient out range will use the last color
+                    //So we need to set the range by position
+
+                    grad_bds.minx += min_pos * r.w;
+                    grad_bds.miny += min_pos * r.h;
+
+                    grad_bds.maxx -= (1.0f - max_pos) * r.w;
+                    grad_bds.maxy -= (1.0f - max_pos) * r.h;
+
+                    //Let's make paint
+                    GLColor in = min;
+                    GLColor out = max;
+                    auto paint = nvgLinearGradient(
+                        nvg_ctxt,
+                        grad_bds.minx,
+                        grad_bds.miny,
+                        grad_bds.maxx,
+                        grad_bds.maxy,
+                        reinterpret_cast<NVGcolor&>(in),
+                        reinterpret_cast<NVGcolor&>(out)
+                    );
+                    nvgFillPaint(nvg_ctxt,paint);
+                    nvgStrokePaint(nvg_ctxt,paint);
+                }
+                else if(g._type == Gradient::Radial){
+                    BTK_PANIC("Unimplemented brush type");
+                }
+                else{
+                    //Impossible
+                    BTK_PANIC("Unknown brush type");
+                }
+                break;
+            }
+            case BrushType::Image:{
+                //Image brush
+                //Alloc a temp tex
+                PixBufRef image = brush.image();
+                int w = image->w;
+                int h = image->h;
+                int x;
+                int y;
+                
+                auto tex = alloc_temp_tex(
+                    w,h,&x,&y
+                );
+
+                //Copy to 
+                uint8_t *buf_data = static_cast<uint8_t*>(image->pixels);
+
+                uint8_t *dst_data = reinterpret_cast<uint8_t*>(tex->pixels) +
+                    y * (tex->w * 4) +
+                    x * 4;
+
+                SDL_ConvertPixels(
+                    w,h,
+                    image->format->format,
+                    buf_data,
+                    image->pitch,
+                    SDL_PIXELFORMAT_RGBA32,
+                    dst_data,
+                    tex->w * 4
+                );
+                //Make pattern
+                Rect src = {x,y,w,h};
+                auto target = sub_image_pattern(
+                    tex->w,
+                    tex->h,
+                    src,
+                    r
+                );
+                auto paint = nvgImagePattern(
+                    nvg_ctxt,
+                    target.x,
+                    target.y,
+                    target.w,
+                    target.h,
+                    0,
+                    tex->tex,
+                    1.0f
+                );
+
+                //Set Fill / Stroke
+                nvgFillPaint(nvg_ctxt,paint);
+                nvgStrokePaint(nvg_ctxt,paint);
+                break;
+            }
+            default:
+                BTK_PANIC("Unimplemented brush type");
+        }
     }
 }

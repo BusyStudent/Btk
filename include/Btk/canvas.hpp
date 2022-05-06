@@ -16,8 +16,8 @@ namespace Btk{
             Canvas(const Canvas &) = delete;
             ~Canvas();
 
-            void draw(Renderer&);
-            bool handle(Event &);
+            void draw(Renderer&,Uint32) override;
+            bool handle(Event &) override;
 
             EventFn &handle(){
                 return event_fn;

@@ -1,5 +1,6 @@
 #if !defined(_BTK_RENDERER_HPP_)
 #define _BTK_RENDERER_HPP_
+#include "graphics/base.hpp"
 #include "pixels.hpp"
 #include "string.hpp"
 #include "rect.hpp"
@@ -427,16 +428,6 @@ namespace Btk{
                 TextureFlags flags = TextureFlags::Linear
             );
             /**
-             * @brief Create a Texture
-             * 
-             * @param fmt 
-             * @param access 
-             * @param w 
-             * @param h 
-             * @return Texture 
-             */
-            Texture create(Uint32 fmt,TextureAccess access,int w,int h);
-            /**
              * @brief Create a RGBA32 formatted texture
              * 
              * @param w 
@@ -454,12 +445,6 @@ namespace Btk{
             Texture load(u8string_view fname,TextureFlags flags = TextureFlags::Linear);
             Texture load(RWops &,TextureFlags flags = TextureFlags::Linear);
             /**
-             * @brief Set current fill and stroke brush
-             * 
-             * @param brush 
-             */
-            void use_brush(const Brush &brush);
-            /**
              * @brief Draw a image
              * 
              * @param x 
@@ -475,44 +460,44 @@ namespace Btk{
             void draw_image(TextureRef texture,const FRect &rect,float angle = 0){
                 _draw_image(texture.get(),rect.x,rect.y,rect.w,rect.h,angle);
             }
-            void draw_image(PixBufRef  buf,const FRect &rect,float angle){
+            void draw_image(PixBufRef  buf,const Rect &rect,float angle){
                 draw_image(buf,rect.x,rect.y,rect.w,rect.h,angle);
             }
-            void draw_image(TextureRef tex,const FRect *src = nullptr,const FRect *dst = nullptr){
+            void draw_image(TextureRef tex,const Rect *src = nullptr,const FRect *dst = nullptr){
                 _draw_image(tex.get(),src,dst);
             }
-            void draw_image(PixBufRef  buf,const FRect *src = nullptr,const FRect *dst = nullptr);
+            void draw_image(PixBufRef  buf,const Rect *src = nullptr,const FRect *dst = nullptr);
 
-            void draw_box(const FRect &r,Color c);
-            void draw_box(float x,float y,float w,float h,Color c){
+            void draw_box(const FRect &r,BrushRef c);
+            void draw_box(float x,float y,float w,float h,BrushRef c){
                 draw_box(FRect(x,y,w,h),c);
             }
 
-            void draw_rect(const FRect &r,Color c);
-            void draw_rect(float x,float y,float w,float h,Color c){
+            void draw_rect(const FRect &r,BrushRef c);
+            void draw_rect(float x,float y,float w,float h,BrushRef c){
                 draw_rect(FRect(x,y,w,h),c);
             }
 
-            void draw_line(float x1,float y1,float x2,float y2,Color c);
-            void draw_line(const FVec2 &beg,const FVec2 &end,Color c){
+            void draw_line(float x1,float y1,float x2,float y2,BrushRef c);
+            void draw_line(const FVec2 &beg,const FVec2 &end,BrushRef c){
                 draw_line(beg.x,beg.y,end.x,end.y,c);
             }
 
-            void draw_rounded_rect(const FRect &r,float rad,Color c);
-            void draw_rounded_rect(float x,float y,float w,float h,float rad,Color c){
+            void draw_rounded_rect(const FRect &r,float rad,BrushRef c);
+            void draw_rounded_rect(float x,float y,float w,float h,float rad,BrushRef c){
                 draw_rounded_rect(FRect(x,y,w,h),rad,c);
             }
 
-            void draw_rounded_box(const FRect &r,float rad,Color c);
-            void draw_rounded_box(float x,float y,float w,float h,float rad,Color c){
+            void draw_rounded_box(const FRect &r,float rad,BrushRef c);
+            void draw_rounded_box(float x,float y,float w,float h,float rad,BrushRef c){
                 draw_rounded_box(FRect(x,y,w,h),rad,c);
             }
 
 
-            void draw_ellipse(float x,float y,float rx,float ry,Color c);
-            void fill_ellipse(float x,float y,float rx,float ry,Color c);
-            void draw_circle(float x,float y,float r,Color c);
-            void fill_circle(float x,float y,float r,Color c);
+            void draw_ellipse(float x,float y,float rx,float ry,BrushRef c);
+            void fill_ellipse(float x,float y,float rx,float ry,BrushRef c);
+            void draw_circle(float x,float y,float r,BrushRef c);
+            void fill_circle(float x,float y,float r,BrushRef c);
 
             /**
              * @brief Draw a circle
@@ -521,7 +506,7 @@ namespace Btk{
              * @param r 
              * @param c 
              */
-            void draw_circle(const FVec2 &vec,float r,Color c){
+            void draw_circle(const FVec2 &vec,float r,BrushRef c){
                 draw_circle(vec.x,vec.y,r,c);
             }
             /**
@@ -531,7 +516,7 @@ namespace Btk{
              * @param r 
              * @param c 
              */
-            void fill_circle(const FVec2 &vec,float r,Color c){
+            void fill_circle(const FVec2 &vec,float r,BrushRef c){
                 fill_circle(vec.x,vec.y,r,c);
             }
             void draw_text(float x,float y,u8string_view txt,Color c);
@@ -1069,25 +1054,30 @@ namespace Btk{
         private:
             //Internal
             void _draw_image(TextureID tex,float x,float y,float w,float h,float angle = 0,float alpha = 1);
-            void _draw_image(TextureID texture,const FRect *src,const FRect *dst);
+            void _draw_image(TextureID texture,const Rect *src,const FRect *dst);
+
+            void _apply_brush(BrushRef brush,const FRect &fill); //< For provide the range :)
+            void _apply_brush(BrushRef brush); //< For no range :(
             /**
-             * @brief Item for Texture
+             * @brief Temp Texture
              * 
              */
-            struct CachedItem{
-                int tex = -1;
-                int w = -1;
-                int h = -1;
-                bool used = false;
-            };
+            struct TempTexture;
             /**
              * @brief Try to find a cache
              * 
              * @param req_w Request width
-             * @param req_h Reqyest height
-             * @return nullptr on failure
+             * @param req_h Request height
+             * @param x The x position to write your data
+             * @param y The x position to write your data
+             * 
              */
-            CachedItem *find_cache(int req_w,int req_h);
+            TempTexture *alloc_temp_tex(int req_w,int req_h,int *x,int *y);
+            /**
+             * @brief Cleanup the cache
+             * 
+             */
+            void         flush_temp_tex();
             /**
              * @brief Free a texture
              * 
@@ -1128,13 +1118,11 @@ namespace Btk{
             TextureFlags get_texture_flags(int texture_id){
                 return device()->texture_flags(nvg_ctxt,texture_id);
             }
-            std::recursive_mutex mtx;//< For protecting the data
-            Brush cur_brush;//< Current brush
 
             NVGcontext *nvg_ctxt = nullptr;//<NanoVG Context
             Device     *_device = nullptr;//<Render device data
 
-            std::deque<CachedItem> cached_texs;//< Texture cache
+            std::deque<TempTexture> temp_texs;//< Texture cache
             int max_caches = 20;//< Max cache
 
             //Queue free

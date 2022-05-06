@@ -84,7 +84,7 @@ namespace Btk{
      * @return true on continue
      * @return false on asked to quit
      */
-    BTKAPI auto PollEvent() -> LoopStatus;
+    BTKAPI auto PollEvent() noexcept -> LoopStatus;
     /**
      * @brief Wait event and update status
      * 
@@ -97,7 +97,7 @@ namespace Btk{
      * 
      * @return BTKAPI 
      */
-    BTKAPI auto WaitEvent() -> LoopStatus;
+    BTKAPI auto WaitEvent() noexcept -> LoopStatus;
     /**
      * @brief Interrupt the event loop
      * 
