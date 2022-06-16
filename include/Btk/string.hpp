@@ -751,14 +751,14 @@ namespace Btk{
              * @return true 
              * @return false 
              */
-            bool begin_with(u8string_view text) const{
+            bool starts_with(u8string_view text) const{
                 if(text.raw_length() > raw_length()){
                     //Is longger
                     return false;
                 }
                 return base().substr(0,text.raw_length()) == text.base();
             }
-            bool end_with(u8string_view text) const{
+            bool ends_with(u8string_view text) const{
                 if(text.raw_length() > raw_length()){
                     //Is longger
                     return false;
@@ -1241,6 +1241,9 @@ namespace Btk{
             }
             RefList split_ref(u8string_view delim,size_t max = size_t(-1)){
                 return u8string_view(*this).split_ref(delim,max);
+            }
+            u8string trim() const{
+                return u8string_view(*this).trim();
             }
 
             u8string &operator =(const u8string &) = default;

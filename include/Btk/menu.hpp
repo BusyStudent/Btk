@@ -91,14 +91,14 @@ namespace Btk{
              */
             void run(int x = -1,int y = -1);
             void set_parent(Window &p){
-                _parent = p.impl();
+                _parent = &p;
             }
-            void set_parent(WindowImpl *p){
+            void set_parent(Window *p){
                 _parent = p;
             }
         private:
-            WindowImpl *_window = nullptr;//< The window of the popup menu
-            WindowImpl *_parent = nullptr;//< The parent window of the popup menu
+            Window *_window = nullptr;//< The window of the popup menu
+            Window *_parent = nullptr;//< The parent window of the popup menu
         friend class Menu;
     };
     /**

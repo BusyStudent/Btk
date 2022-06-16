@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import configparser
 import os
+import re
 from sys import platform
 
 internal_varname = "theme"
@@ -33,6 +34,36 @@ def parse_color(c : str) -> str:
         else:
             return "Btk::Color(0x%s,0x%s,0x%s)" % (c[1:3],c[3:5],c[5:7])
     raise RuntimeError("Invalid param %s" % c)
+# Make a brush construct string from c
+def parse_brush(c : str) -> str:
+    if c.startswith("LinearGradient(") and c.endswith(")"):
+        pat = re.compile("""Stop\(.+?\)""")
+
+        ret = "[]() -> Btk::Brush {\n"
+        ret += "        Btk::LinearGradient grad;\n"
+        for stop in pat.findall(c):
+            stop = stop.strip()[5:]
+            #Find first ,
+            pos = stop.find(",")
+            if pos == -1:
+                raise RuntimeError("Invalid stop %s" % stop)
+            #Split on ,
+
+            pos_str = stop[:pos].lower()
+            color_str = stop[pos+1:]
+
+            if pos_str.endswith('f'):
+                pos_str = pos_str[:-1]
+            
+            pos = float(pos_str)
+            color_str = parse_color(color_str)
+
+            ret += "        grad.add_color(%s,%s);\n" % (pos,color_str)
+        ret += "        return Btk::Brush(std::move(grad));\n"
+        ret += "    }()"
+        return ret
+    else:
+        return parse_color(c)
 
 def handle_ui(conf : configparser.ConfigParser,name : str) -> str:
     return ""
@@ -53,7 +84,7 @@ def handle_palette(conf : configparser.ConfigParser,name : str) -> str:
     for v in values:
         op = v[1]
         #Generate theme.p.v = Color(...)
-        result += "    %s.%s.%s = %s;\n" % (internal_varname,palette_area,v[0],parse_color(op))
+        result += "    %s.%s.%s = %s;\n" % (internal_varname,palette_area,v[0],parse_brush(op))
     return result
         
 

@@ -7,6 +7,7 @@
 #include <Btk/window.hpp>
 
 int main(){
+    Btk::Library lib;
     Btk::Window win("Test sliderable",500,500);
     auto &box = win.add<Btk::VBoxLayout>();
 

@@ -16,8 +16,10 @@
     BTK_THEME_FILED(Brush,background)\
     BTK_THEME_FILED(Brush,border)\
     BTK_THEME_FILED(Brush,button)\
+    BTK_THEME_FILED(Brush,button_text)\
     BTK_THEME_FILED(Brush,highlight)\
     BTK_THEME_FILED(Brush,highlight_text)\
+    BTK_THEME_FILED(Brush,placeholder_text)\
 
 //Docs for Palette
 //text => for Text and Button
@@ -52,7 +54,7 @@ namespace Btk{
             //Font
             Font font;
             //Button 
-            float button_radius = 0;
+            float button_radius = 1;
             //Menu
             float menubar_height = 25;//???
             //Slider fixed size constant
@@ -61,6 +63,13 @@ namespace Btk{
             float slider_bar_width = 10.0f;
             float slider_bar_height = 10.0f;
 
+    };
+    /**
+     * @brief Style for widget
+     * 
+     */
+    class Style{
+        //TODO 
     };
     RefPtr<Theme> CurrentTheme();
     /**

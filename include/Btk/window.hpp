@@ -1,18 +1,21 @@
 #if !defined(_BTK_WINDOW_HPP_)
 #define _BTK_WINDOW_HPP_
+#include "container.hpp"
 #include "string.hpp"
-#include "object.hpp"
 #include "rect.hpp"
 #include "defs.hpp"
 #include <cstdio>
+#include <atomic>
+#include <mutex>
 
 //Debug macro
 #define BTK_DEBUGHINT_WINDOW_DRAW_BOUNDS() ::setenv("BTK_DRAW_BOUNDS", "1", 1);
 
 namespace Btk{
-    class WindowImpl;
+    class RendererDevice;
     class Container;
     class GLDevice;
+    class MenuBar;
     class PixBuf;
     class Widget;
     class Event;
@@ -39,7 +42,7 @@ namespace Btk{
      * @brief A Basic Window 
      * 
      */
-    class BTKAPI Window:public HasSlots{
+    class BTKAPI Window:public Group{
         public:
             //Signals
             typedef Signal<bool()> SignalClose;
@@ -50,12 +53,7 @@ namespace Btk{
             //Flags
             using Flags = WindowFlags;
         public:
-            Window():pimpl(nullptr){};
             Window(const Window &) = delete;
-            Window(Window &&win){
-                pimpl = win.pimpl;
-                win.pimpl = nullptr;
-            };
             /**
              * @brief Construct a new Window object
              * 
@@ -72,35 +70,27 @@ namespace Btk{
              */
             explicit Window(const NativeWindow *native_handle);
             /**
-             * @brief Get window impl
+             * @brief Destroy the Window object
              * 
-             * @return WindowImpl* 
              */
-            inline WindowImpl *impl() const noexcept{
-                return pimpl;
+            ~Window();
+
+            inline Uint32 id() const noexcept{
+                return winid;
             }
             /**
-             * @brief Add widget to window
+             * @brief Draw the window
              * 
-             * @param ptr The widget pointer(It can be nullptr)
-             * @return true The ptr is not nullptr
-             * @return false The ptr is nullptr
              */
-            bool add(Widget *ptr);
+            void draw(Renderer &,Uint32) override;
             /**
-             * @brief A helper template to add widget
+             * @brief Handle the event
              * 
-             * @tparam T The widget type
-             * @tparam Args The args to want to pass to construc it
-             * @param args  The args
-             * @return T& The widget reference
+             * @param event 
+             * @return true 
+             * @return false 
              */
-            template<class T,class ...Args>
-            T &add(Args &&...args){
-                T *ptr = new T(std::forward<Args>(args)...);
-                add(ptr);
-                return *ptr;
-            }
+            bool handle(Event  &event) override final;
             /**
              * @brief Update widgets position
              * 
@@ -127,25 +117,34 @@ namespace Btk{
              * @param x The new x
              * @param y The new y
              */
-            void move(int x,int y);
+            void move  (int x,int y);
+            void resize(int w,int h);
             /**
              * @brief Make the window visiable
              * 
              */
             void show();
             /**
+             * @brief Raise the window to top
+             * 
+             */
+            void raise();
+            /**
              * @brief Redraw the window
              * 
              * @note Is is safe to call in multithreading without lock it
              */
-            void draw();
+            void redraw();
+
             /**
              * @brief Send a close request
              * 
              * @note Is is safe to call in multithreading without lock it
+             * 
+             * @return true on window is closed
+             * @return false on the request is pending or canceled
              */
-            void close();
-            void resize(int w,int h);
+            bool close();
             /**
              * @brief Enter the main event loop
              * 
@@ -153,13 +152,6 @@ namespace Btk{
              * @return false Double call
              */
             bool mainloop();
-            /**
-             * @brief Check the window is exist
-             * 
-             * @return true The window is exists
-             * @return false The window is not exists
-             */
-            bool exists() const;
             /**
              * @brief Get window's pixbuf
              * 
@@ -203,61 +195,180 @@ namespace Btk{
              */
             void set_boardered(bool val = true);
             /**
-             * @brief Set the background transparent
+             * @brief Set the rt fps object
              * 
-             * @note Some platform unsupport it
-             * @param val The transparent value
+             * @param fps The fps object(0 means disable)
              */
-            void set_transparent(float value);
-            //Set Callbacks
-            template<class ...T>
-            Connection on_close(T &&...args){
-                return signal_close().connect(std::forward<T>(args)...);
-            }
-            template<class ...T>
-            Connection on_resize(T &&...args){
-                return signal_resize().connect(std::forward<T>(args)...);
-            }
-            template<class ...T>
-            Connection on_dropfile(T &&...args){
-                return signal_dropfile().connect(std::forward<T>(args)...);
-            }
-            //Connect Signals
-            SignalClose&    signal_close();
-            SignalEvent&    signal_event();
-            SignalResize&   signal_resize();
-            SignalDropFile& signal_dropfile();
+            void set_rt_fps(Uint32 fps);
             /**
-             * @brief Set the cursor to default
+             * @brief Set the modal object
              * 
+             * @param val 
              */
-            void set_cursor();
-            /**
-             * @brief Set the cursor 
-             * 
-             * @param pixbuf The image pixelbuf
-             * @param hot_x The cursor's x
-             * @param hot_y The cursor's y
-             */
-            void set_cursor(const PixBuf &pixbuf,int hot_x = 0,int hot_y = 0);
+            void set_modal(bool val = true);
+
+            //Process Event
+            bool handle_sdl(Event          &)         ;
+            bool handle_drop(DropEvent     &) override;
+            bool handle_mouse(MouseEvent   &) override;
+            bool handle_motion(MotionEvent &) override;
+            void handle_draw(Uint32 time    )         ;
             //Get information
             int w() const noexcept;//get w
             int h() const noexcept;//get h
-            Font font() const;//get font
             u8string_view title() const;
             Point      position() const;
             Size           size() const;
-            /**
-             * @brief Dump the widget tree
-             * 
-             */
-            void dump_tree(FILE *output = stderr) const;
-            Container &container() const;
+            Point mouse_position() const;
 
-            void *internal_data(const char *key);
+            void query_dpi(float *ddpi,float *hdpi,float *vdpi);
+
+            [[nodiscard]]
+            SDL_Window *sdl_window() const noexcept{
+                return win;
+            }
+
+            //Expose signals
+            [[nodiscard]]
+            auto signal_leave() noexcept -> Signal<void()> &{
+                return _signal_leave;
+            }
+            [[nodiscard]]
+            auto signal_enter() noexcept -> Signal<void()> &{
+                return _signal_enter;
+            }
+            [[nodiscard]]
+            auto signal_closed() noexcept -> Signal<void()> &{
+                return _signal_closed;
+            }
+            [[nodiscard]]
+            auto signal_close() noexcept -> Signal<void(bool &)> &{
+                return _signal_close;
+            }
+            [[nodiscard]]
+            auto signal_resize() noexcept -> Signal<void(int,int)> &{
+                return _signal_resize;
+            }
+            [[nodiscard]]
+            auto signal_dropfile() noexcept -> Signal<void(u8string_view)> &{
+                return _signal_dropfile;
+            }
+            [[nodiscard]]
+            auto signal_event() noexcept -> Signal<bool(Event&)> &{
+                return _signal_event;
+            }
+            [[nodiscard]]
+            auto signal_keyboard_take_focus() noexcept -> Signal<void()> &{
+                return _signal_keyboard_take_focus;
+            }
+            [[nodiscard]]
+            auto signal_keyboard_lost_focus() noexcept -> Signal<void()> &{
+                return _signal_keyboard_lost_focus;
+            }
+
+            [[nodiscard]]
+            auto flags() const noexcept -> WindowFlags{
+                return win_flags;
+            }
         private:
-            WindowImpl *pimpl;
+            //Methods for Widget impl
+            Uint32 rt_timer_cb(Uint32 interval);
+            //Initilize the window
+            void   initlialize(SDL_Window *win);
+            void   set_rect (const Rect &r) override;
+        private:
+            SDL_Window *win = nullptr;
+            //The renderer
+            Renderer       *_render = nullptr;
+            //Render's device
+            RendererDevice *_device = nullptr;
+            //Signals
+            Signal<void()> _signal_leave;//mouse leave
+            Signal<void()> _signal_enter;//mouse enter
+            Signal<void()> _signal_closed;//Is closed
+            Signal<void(bool &cancel)>  _signal_close;//Will be close
+            Signal<void(u8string_view)> _signal_dropfile;//DropFile
+            Signal<void(int new_w,int new_h)> _signal_resize;//WindowResize
+            Signal<void(int new_x,int new_y)> _signal_moved;//WindowMove
+            Signal<bool(Event &)> _signal_event;//Process Unhandled Event
+            Signal<void()> _signal_keyboard_take_focus;
+            Signal<void()> _signal_keyboard_lost_focus;
+            //BackGroud Color
+            Color bg_color;
+            //Background cursor
+            SDL_Cursor *cursor = nullptr;
+            //mutex
+            std::recursive_mutex mtx;
+            //Last time we call the redraw
+            Uint32 last_redraw_ticks = 0;
+            //Last time the window was drawed(for drop to last event)
+            Uint32 last_draw_ticks = 0;
+            //FPS limit(0 on unlimited)
+            Uint32 fps_limit = 60;
+            //Window flags
+            Uint32 last_win_flags = 0;//< The last window flags
+            //Window ID
             Uint32 winid;
+            //Draw event event pending in the queue
+            Uint32 draw_event_counter = 0;
+            //Rt draw timer / variable
+            int    rt_draw_timer = 0;
+            Uint32 rt_draw_fps = 0;
+            //Window Create Flags
+            WindowFlags win_flags = {};
+            //Internal state
+            /**
+             * @brief The mouse is pressed
+             * 
+             * @note This value is used to check the drag status
+             */
+            bool mouse_pressed = false;
+            bool drag_rejected = false;
+            bool dragging = false;
+            bool modal = false;//< Is the window modal?
+            bool registered = false;//< Is registered to System to recevice events?
+
+            //Current menu bar
+            MenuBar *menu_bar = nullptr;
+
+            bool debug_draw_bounds = false;
+            bool flat_widget = true;//< Flat the widget if only one child
+        public:
+            //Platform specific
+            #ifdef _WIN32
+            //Win32 parts
+            Uint32 win32_draw_ticks = 0;
+            // Process draw event in win event loop when sizing
+            bool win32_sizing_draw = true;
+            
+            void BTKFAST handle_win32(
+                void *hwnd,
+                unsigned int message,
+                Uint64 wParam,
+                Sint64 lParam
+            );
+            void BTKFAST win32_poll_draw();
+            //Win32 MessageHook
+            Function<void(void *,unsigned int,Uint64,Sint64)> win32_hooks;
+            
+            #endif
+
+            #ifdef __gnu_linux__
+            //X11 parts
+            unsigned long x_window;
+            void         *x_display;
+
+            /**
+             * @brief Method for process XEvent
+             * 
+             * @param p_xevent const pointer to XEvent
+             * @return BTKHIDDEN 
+             */
+            BTKHIDDEN
+            void handle_x11(const void *p_xevent);
+            #endif
+        friend class System;
+        friend class Widget;
     };
     /**
      * @brief OpenGL Window
@@ -273,7 +384,7 @@ namespace Btk{
             }
 
             GLDevice *gl_device(){
-                return static_cast<GLDevice*>(internal_data("btk_dev"));
+                return static_cast<GLDevice*>(userdata("btk_dev"));
             }
     };
     /**
@@ -281,6 +392,13 @@ namespace Btk{
      * @param display The display index(0 on default)
      * @return BTKAPI 
      */
-    BTKAPI Size GetScreenSize(int display = 0);
+    BTKAPI Size    GetScreenSize(int display = 0);
+    BTKAPI Window *GetKeyboardFocus();
+    /**
+     * @brief Get the Mouse Focus Window
+     * 
+     * @return BTKAPI* 
+     */
+    BTKAPI Window *GetMouseFocus();
 }
 #endif // _BTK_WINDOW_HPP_

@@ -88,12 +88,14 @@ namespace Btk{
     Button::~Button() = default;
     //draw button
     void Button::draw(Renderer &render,Uint32){
+        render.save();
+        render.set_antialias(false);
         //Fist draw backgroud
         //Rect{rect.x,rect.y + 1,rect.w - 1,rect.h - 1}
         //It makes button look better
         FRect fixed_rect = rectangle<float>();
-        Color bg;//< Background color
-        Color boarder;//< Boarder color
+        const Brush *bg;//< Background color
+        const Brush *boarder;//< Boarder color
 
         fixed_rect.x += 1;
         fixed_rect.y += 1;
@@ -101,24 +103,21 @@ namespace Btk{
         fixed_rect.h -= 1;
         
         if(is_pressed){
-            bg = theme().active.highlight;
+            bg = &theme().active.highlight;
         }
         else{
-            bg = theme().active.button;
+            bg = &theme().active.button;
         }
         
         //second draw border
         if(is_entered){
-            boarder = theme().active.highlight;
+            boarder = &theme().active.highlight;
         }
         else{
-            boarder = theme().active.border;
+            boarder = &theme().active.border;
         }
         //Draw box
-        render.begin_path();
-        render.fill_color(bg);
-        render.rounded_rect(fixed_rect,theme().button_radius);
-        render.fill();
+        render.draw_rounded_box(fixed_rect,theme().button_radius,*bg);
         //Render text
         if(btext.size() != 0){
             //has text
@@ -155,11 +154,12 @@ namespace Btk{
         }
         //draw the boarder
         if(draw_border and not is_entered){
-            render.draw_rounded_rect(fixed_rect,theme().button_radius,boarder);
+            render.draw_rounded_rect(fixed_rect,theme().button_radius,*boarder);
         }
         else if(draw_border_on_hover and is_entered){
-            render.draw_rounded_rect(fixed_rect,theme().button_radius,boarder);
+            render.draw_rounded_rect(fixed_rect,theme().button_radius,*boarder);
         }
+        render.restore();
     }
     bool Button::handle_mouse(MouseEvent &event){
         if(event.is_pressed() and event.button.is_left()){

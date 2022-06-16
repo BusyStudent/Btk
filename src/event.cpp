@@ -33,7 +33,7 @@ namespace Btk{
 
     //Send event directly
     bool SendEvent(Event &ev,Window &receiver){
-        return receiver.impl()->handle(ev);
+        return receiver.handle(ev);
     }
     bool SendEvent(Event &ev,Widget &receiver){
         return receiver.handle(ev);

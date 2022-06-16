@@ -25,7 +25,7 @@ struct Hello:public Btk::Window{
     void on_defc_call();//Test defer_call
     void on_fullscreen();
     void on_dump_tree();//Test dump tree
-    bool handle(Event &event);
+    bool a_handle(Event &event);
     void show_text();
     void dump_tree();
 
@@ -94,8 +94,10 @@ Hello::Hello():Window("Hello",500,500){
     //Config
     img_view->set_draw_boarder();
     rad_btn->set_cirlce_r(10);
+    tbox->set_placeholder("Holder");
 
-    signal_event().connect(&Hello::handle,this);
+    signal_event().connect(&Hello::a_handle,this);
+
 }
 void Hello::onclose(){
     Window::close();
@@ -122,7 +124,10 @@ void Hello::show_text(){
 void Hello::on_defc_call(){
     defer_call(&Hello::show_text);
 }
-bool Hello::handle(Event &event){
+bool Hello::a_handle(Event &event){
+    // if(Window::handle(event)){
+    //     return true;
+    // }
     if(event.type() == Event::KeyBoard){
         auto &key = static_cast<KeyEvent&>(event);
         if(key.state == KeyEvent::Pressed){
@@ -138,6 +143,8 @@ void Hello::dump_tree(){
 }
 int main(){
     // Btk::HideConsole();
+    Btk::Library lib;//< Load the library
+    
     Hello app;
     app.dump_tree();
     app.mainloop();

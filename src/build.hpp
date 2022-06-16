@@ -45,6 +45,12 @@
     #define BTK_DEBUG(...)
     #define BTK_LOGDEBUG(...)
 #endif
+//Color
+#define BTK_CRED(STR) "\033[31m" STR "\033[0m"
+#define BTK_CGREEN(STR) "\033[32m" STR "\033[0m"
+#define BTK_CYELLOW(STR) "\033[33m" STR "\033[0m"
+#define BTK_CBLUE(STR) "\033[34m" STR "\033[0m"
+#define BTK_CMAGENTA(STR) "\033[35m" STR "\033[0m"
 //Assert / PANIC
 #ifndef NDEBUG
     #define BTK_ASSERT(EXP) if(not(EXP)){\

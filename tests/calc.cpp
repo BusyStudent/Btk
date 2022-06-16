@@ -9,6 +9,7 @@
 #include "resource/icon.xpm"
 
 int main(){
+    Btk::Library lib;
     Btk::Window win("Layout Calc",500,500);
     win.set_resizeable();
 

@@ -7,6 +7,7 @@
 using namespace Btk;
 
 int main(){
+    Library lib;
     Window win("HelloWorld",100,500);
     win.set_resizeable();
 

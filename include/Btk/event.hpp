@@ -61,7 +61,7 @@ namespace Btk{
                 //Layout
                 LayoutUpdate,
                 //SDL
-                SDL,
+                SDLWindow,//< SDL Window event,Internal use
                 //Finger
                 Figner,//< Finger click
                 FignerMotion,//< Finger motion
@@ -408,7 +408,7 @@ namespace Btk{
      * 
      */
     struct BTKAPI SDLEvent:public Event{
-        SDLEvent(const SDL_Event *ptr):Event(SDL),sdl_event(ptr){};
+        SDLEvent(Type t,const SDL_Event *ptr):Event(t),sdl_event(ptr){};
         SDLEvent(const SDLEvent &) = default;
         ~SDLEvent() = default;
 

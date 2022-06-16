@@ -9,74 +9,6 @@
 #include "font.hpp"
 namespace Btk{
     class KeyEvent;
-    class BTKAPI TextBox:public Widget{
-        public:
-            TextBox();
-            TextBox(const TextBox &) = delete;
-            ~TextBox();
-
-            bool handle(Event &);
-            void draw(Renderer &,Uint32);
-            /**
-             * @brief Get TextBox's text
-             * 
-             * @return UTF16 encoded string
-             */
-            std::u16string_view text() const{
-                return tb_text;
-            }
-            std::string u8text() const{
-                std::string s;
-                u8text(s);
-                return s;
-            }
-            /**
-             * @brief Get TextBox's utf8 text
-             * 
-             * @param str The UTF8 encoded container
-             */
-            void u8text(std::string &str) const;
-            /**
-             * @brief Set the text 
-             * 
-             * @param txt The UTF16 encoded string 
-             */
-            void set_text(std::u16string_view txt);
-            void set_text(u8string_view txt);
-            void set_parent(Widget *w);
-        private:
-            void timeout();
-            //Process keyboard event
-            bool handle_drag(DragEvent    &) override;
-            bool handle_mouse(MouseEvent  &) override;
-            bool handle_keyboard(KeyEvent &) override;
-            bool handle_textinput(TextInputEvent&) override;
-            bool handle_textediting(TextEditingEvent&) override;
-            //Add string in where the cur_text point
-            void add_string(u8string_view);
-            //Font  tb_font;//Text Font
-            float ptsize;//< Font ptsize
-            
-            std::u16string tb_text;//Text
-            //PixBuf  tb_buf;//Rendered text
-            //Texture texture;
-
-            bool has_focus = false;//Flag of has focus
-            bool is_dragging = false;//< Flag of drag
-            bool show_line = true;//<Flag of show the edit line
-            bool editing = false;
-
-            std::u16string::iterator cur_txt;//Current text
-            //It will be point from tb_text.begin() - 1
-            //to tb_text.end() - 1
-            std::u16string::iterator sel_begin;//select text begin
-            std::u16string::iterator sel_end;//select text end
-
-            Timer timer;//For drawing the line
-            float ft_h;//Rendered Text's h
-            float tb_boarder = 4;//The text boarder
-        friend struct TextBoxInserter;
-    };
     #if 0
     class BTKAPI AbstractEditor:public Widget{
         public:
@@ -133,6 +65,7 @@ namespace Btk{
 
             void set_rect(const Rect &r) override;
             void set_text(u8string_view txt);
+            void set_placeholder(u8string_view txt);
 
             bool has_selection() const noexcept{
                 return has_sel and (sel_beg != sel_end);
@@ -153,6 +86,21 @@ namespace Btk{
             //Utils
             auto get_pos_from(const Point &p) -> size_t;
             void do_paste(u8string_view);
+            /**
+             * @brief Delete a range of text
+             * 
+             * @param start 
+             * @param end 
+             */
+            void do_delete(size_t start,size_t end);
+            /**
+             * @brief Delete text at
+             * 
+             * @param pos 
+             */
+            void do_erase(size_t pos){
+                do_delete(pos,pos + 1);
+            }
             /**
              * @brief Get Range of Selection
              * 
@@ -201,8 +149,9 @@ namespace Btk{
             bool     clear_btn = false;//Has clear button?
             //select
             //Signal
-            Signal<void()> _signal_value_changed;
-            Signal<void()> _signal_enter_pressed;
+            Signal<void(u8string_view t)> _signal_value_deleted;
+            Signal<void(               )> _signal_value_changed;
+            Signal<void(               )> _signal_enter_pressed;
     };
     class BTKAPI TextBroser:public Widget{
         

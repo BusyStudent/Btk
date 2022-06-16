@@ -299,7 +299,7 @@ namespace Btk{
             }
             return c;
         }
-        else if(view.begin_with("RGBA(") and view.end_with(")")){
+        else if(view.starts_with("RGBA(") and view.ends_with(")")){
             //RGBA(R,G,B,A)
             //Copy into buffer
             u8string buf(view);
@@ -314,7 +314,7 @@ namespace Btk{
             c.a = a;
             return c;
         }
-        else if(view.begin_with("RGB(") and view.end_with(")")){
+        else if(view.starts_with("RGB(") and view.ends_with(")")){
             //RGB(R,G,B)
             u8string buf(view);
             int r,g,b;

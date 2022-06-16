@@ -25,6 +25,7 @@ Just create a window and add widget on here
 //Include all headers
 #include <Btk.hpp>
 
+using Btk::Library;
 using Btk::Window;
 using Btk::Button;
 
@@ -53,6 +54,8 @@ struct App:public Window{
     }
 };
 int main(){
+    Library lib;//< For initialize / Quit 
+    //Or call Init() and Quit() explicitly
     App app;
     app.mainloop();
 }

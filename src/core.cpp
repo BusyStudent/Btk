@@ -18,7 +18,6 @@
 #include <Btk/exception.hpp>
 #include <Btk/module.hpp>
 #include <Btk/async.hpp>
-#include <Btk/mixer.hpp>
 #include <Btk/event.hpp>
 #include <Btk/defs.hpp>
 #include <Btk/Btk.hpp>
@@ -390,8 +389,15 @@ namespace Btk{
         SDL_StopTextInput();
     }
     System::~System(){
+        //Cleanup tmp window
+        for(auto &w : temp_wins){
+            delete w;
+        }
+        temp_wins.clear();
         while(not wins_map.empty()){
-            close_window(wins_map.begin()->second);
+            //Cleanup all windows
+            auto it = wins_map.begin();
+            delete it->second;
         }
     }
     //Init or Quit
@@ -581,16 +587,16 @@ namespace Btk{
     }
     //WindowEvent
     inline void System::on_windowev(const SDL_Event &event){
-        WindowImpl *win = get_window_s(event.window.windowID);
+        Window *win = get_window_s(event.window.windowID);
         if(win == nullptr){
             return;
         }
-        SDLEvent ev(&event);
+        SDLEvent ev(Event::SDLWindow,&event);
         win->handle(ev);
     }
     //MouseMotion
     inline void System::on_mousemotion(const SDL_Event &event){
-        WindowImpl *win = get_window_s(event.motion.windowID);
+        Window *win = get_window_s(event.motion.windowID);
         if(win == nullptr){
             return;
         }
@@ -599,7 +605,7 @@ namespace Btk{
     }
     //MouseButton
     inline void System::on_mousebutton(const SDL_Event &event){
-        WindowImpl *win = get_window_s(event.button.windowID);
+        Window *win = get_window_s(event.button.windowID);
         if(win == nullptr){
             return;
         }
@@ -608,7 +614,7 @@ namespace Btk{
     }
     //MouseWheel
     inline void System::on_mousewheel(const SDL_Event &event){
-        WindowImpl *win = get_window_s(event.button.windowID);
+        Window *win = get_window_s(event.button.windowID);
         if(win == nullptr){
             return;
         }
@@ -621,7 +627,7 @@ namespace Btk{
     }
     //DropFile
     inline void System::on_dropev(const SDL_Event &event){
-        WindowImpl *win;
+        Window *win;
         //auto free it
         SDLScopePtr ptr(event.drop.file);
         win = get_window_s(event.drop.windowID);
@@ -634,7 +640,7 @@ namespace Btk{
     }
     //KeyBoardEvent
     inline void System::on_keyboardev(const SDL_Event &event){
-        WindowImpl *win = get_window_s(event.key.windowID);
+        Window *win = get_window_s(event.key.windowID);
         if(win == nullptr){
             return;
         }
@@ -650,14 +656,14 @@ namespace Btk{
         //Get text input
         TextInputEvent ev;
         ev.text = event.text.text;
-        WindowImpl *win = get_window_s(event.text.windowID);
+        Window *win = get_window_s(event.text.windowID);
         if(win == nullptr){
             return;
         }
         win->handle_textinput(ev);
     }
     inline void System::on_textediting(const SDL_Event &event){
-        WindowImpl *win = get_window_s(event.text.windowID);
+        Window *win = get_window_s(event.text.windowID);
         if(win == nullptr){
             return;
         }
@@ -671,16 +677,8 @@ namespace Btk{
             std::lock_guard locker(map_mtx);
             for(auto i = wins_map.begin(); i != wins_map.end();){
                 //Try to close window
-                if(i->second->on_close()){
-                    //Succeed
-                    BTK_LOGINFO("[System::Core]Succeed to close %p",i->second);
-                    signal_window_closed(i->second);
-                    delete i->second;
-                    i = wins_map.erase(i);
-                }
-                else{
-                    ++i;
-                }
+                i->second->close();
+                i = wins_map.erase(i);
             }
             if(wins_map.empty()){
                 //Do quit
@@ -694,16 +692,18 @@ namespace Btk{
             return true;
         }
     }
-    void System::register_window(WindowImpl *impl){
-        if(impl == nullptr){
+    void System::register_window(Window *win){
+        if(win == nullptr){
             return;
         }
         std::lock_guard locker(map_mtx);
-        Uint32 winid = SDL_GetWindowID(impl->win);
+        Uint32 winid = win->id();
         //GetWindowId
-        wins_map.insert(std::make_pair(winid,impl));
+        wins_map.insert(std::make_pair(winid,win));
+        //Notify window registered
+        signal_window_registered(win);
     }
-    void System::unregister_window(WindowImpl *impl){
+    void System::unregister_window(Window *impl){
         if(impl == nullptr){
             return;
         }
@@ -717,7 +717,8 @@ namespace Btk{
         }
         else{
             //erase it
-            delete iter->second;
+            signal_window_unregistered(iter->second);
+
             iter->second = nullptr;
             wins_map.erase(iter);
 
@@ -747,6 +748,11 @@ namespace Btk{
             BTK_LOGINFO("");//Space
             #endif
         }
+        if(wins_map.empty()){
+            //Quit
+            BTK_LOGINFO("[System::WindowsManager]Quit");
+            Exit(0);
+        }
     }
     //Push a defercall event
     void System::defer_call(void(* fn)(void*),void* data){
@@ -765,7 +771,7 @@ namespace Btk{
             data
         };
     }
-    WindowImpl *System::get_window(Uint32 winid){
+    Window *System::get_window(Uint32 winid){
         auto iter = wins_map.find(winid);
         if(iter == wins_map.end()){
             //Warn
@@ -798,7 +804,7 @@ namespace Btk{
             return iter->second;
         }
     }
-    WindowImpl *System::get_window_s(Uint32 winid){
+    Window *System::get_window_s(Uint32 winid){
         std::lock_guard locker(map_mtx);
         return get_window(winid);
     }
@@ -807,35 +813,6 @@ namespace Btk{
             return false;
         }
         return handle_exception(exp);
-    }
-    void System::close_window(WindowImpl *win){
-        if(win == nullptr){
-            return;
-        }
-        if(win->on_close()){
-            win->_signal_closed.nothrow_emit();
-            signal_window_closed(win);
-            unregister_window(win);
-        }
-        if(wins_map.empty()){
-            Exit(EXIT_SUCCESS);
-        }
-    }
-    WindowImpl *System::create_window(SDL_Window *win){
-        BTK_ASSERT(win != nullptr);
-        auto p = new WindowImpl(win);
-        register_window(p);
-        SDL_SetWindowData(win,"btk_imp",p);
-        signal_window_created(p);
-
-        #ifndef NDEBUG
-        int display = SDL_GetWindowDisplayIndex(win);
-        float vdpi,hdpi;
-        SDL_GetDisplayDPI(display,nullptr,&hdpi,&vdpi);
-        BTK_LOGINFO("[Window::DPI]win v : %f h: %f",vdpi,hdpi);
-        #endif
-        return p;
-
     }
 }
 namespace Btk{
@@ -1140,7 +1117,22 @@ namespace Btk{
         #endif
         return nullptr;
     }
-};
+    Window *AllocWindow(WindowFlags req_flags,WindowFlags exclude){
+        for(auto win : GetSystem()->temp_wins){
+            auto flags = win->flags();
+            if((flags & req_flags) == req_flags and (flags & exclude) == WindowFlags::None){
+                //Found ,remove the flag
+                win->set_userdata("_BTK_TMP_",nullptr);
+                return win;
+            }
+        }
+        //Not found create a new one
+        return new Window({},100,100,req_flags);
+    }
+    void FreeWindow(Window *win){
+        GetSystem()->temp_wins.push_back(win);
+    }
+}
 namespace Btk{
     void Module::unload(){
         if(quit != nullptr){

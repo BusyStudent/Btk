@@ -19,7 +19,7 @@
 namespace{
     using Btk::Theme;
     using Btk::Color;
-    using Btk::ParseColor;
+    using Btk::ParseBrush;
     using Btk::ParseHex;
     using Btk::ParseInt;
         
@@ -31,7 +31,7 @@ namespace{
 
             #define BTK_THEME_FILED(TYPE,NAME) \
                 PARSER_ON_KEY(#NAME){ \
-                    p.NAME = ParseColor(value);\
+                    p.NAME = ParseBrush(value);\
                 }
 
             BTK_THEME_PALETTE
@@ -48,12 +48,13 @@ namespace{
         PARSER_ON_STI("Font"){
 
         }
+        PARSER_ON_STI("Palette::Inactive"){
+            process_palette(theme->inactive,key,value);
+        }
         PARSER_ON_STI("Palette::Active"){
-            normal:
             process_palette(theme->active,key,value);
         }
         PARSER_ON_STI("Palette::Disabled"){
-            disabled:
             process_palette(theme->disabled,key,value);
         }
 

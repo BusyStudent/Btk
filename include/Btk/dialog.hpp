@@ -57,11 +57,11 @@ namespace Btk{
             Signal<void()> &signal_rejected() noexcept{
                 return _signal_rejected;
             }
-            void set_parent(const Window &win){
-                _parent = win.impl();
+            void set_parent(Window &win){
+                _parent = &win;
             }
         private:
-            WindowImpl *_parent = {};
+            Window *_parent = {};
             Option _option = {};
             Status _status = {};
             bool _opened = false;
@@ -75,7 +75,7 @@ namespace Btk{
         protected:
             //Function table
 
-            WindowImpl *parent() const noexcept{
+            Window *parent() const noexcept{
                 return _parent;
             }
 

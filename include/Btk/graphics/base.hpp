@@ -541,6 +541,9 @@ namespace Btk {
             BrushType _type = BrushType::Color;
     };
     using BrushRef = const Brush &;
+
+    
+    BTKAPI Brush ParseBrush(u8string_view str);
 }
 
 

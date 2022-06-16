@@ -17,6 +17,7 @@ BTK_X_CONSTANTS(True);
 BTK_X_CONSTANTS(False);
 
 
+BTK_X_TYPE(Bool);
 BTK_X_TYPE(Status);
 BTK_X_TYPE(Display);
 BTK_X_TYPE(Colormap);
@@ -48,9 +49,6 @@ namespace X11{
     BTKHIDDEN int XErrorHandler(Display *display,XErrorEvent *event);
     //For DBus
     extern BTKHIDDEN Constructable<DBus::Connection> dbus_con;
-    //Value for native file dialog
-    extern BTKHIDDEN bool has_zenity;
-    extern BTKHIDDEN bool has_kdialog;
 }
 }
 

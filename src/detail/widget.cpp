@@ -118,7 +118,7 @@ namespace Btk{
     void Widget::set_userdata(const char *key,void *value){
         if(is_window()){
             //We use sdl fn
-            SDL_SetWindowData(static_cast<WindowImpl*>(this)->sdl_window(),key,value);
+            SDL_SetWindowData(static_cast<Window*>(this)->sdl_window(),key,value);
             return;
         }
         //Use our implment
@@ -155,7 +155,7 @@ namespace Btk{
     }
     void *Widget::userdata(const char *name){
         if(is_window()){
-            return SDL_GetWindowData(static_cast<WindowImpl*>(this)->sdl_window(),name);
+            return SDL_GetWindowData(static_cast<Window*>(this)->sdl_window(),name);
         }
         UserDataItem *cur = static_cast<UserDataItem*>(_userdata);
         while(cur != nullptr){
@@ -188,17 +188,17 @@ namespace Btk{
             return;
         }
         //Try to find the window
-        WindowImpl *win = window();
+        Window *win = window();
         if(win == nullptr){
             return;
         }
-        win->WindowImpl::redraw();
+        win->Window::redraw();
     }
     void Widget::raise() const{
         Widget *w = const_cast<Widget*>(this);
         if(is_window()){
             //Self is window
-            SDL_RaiseWindow(static_cast<WindowImpl*>(w)->sdl_window());
+            SDL_RaiseWindow(static_cast<Window*>(w)->sdl_window());
             return;
         }
         //Check has parent
@@ -214,22 +214,15 @@ namespace Btk{
         }
     }
     //Get the window
-    Window &Widget::master() const{
-        auto *pimpl = window();
-        Window *win = static_cast<Window*>(SDL_GetWindowData(pimpl->win,"btk_win"));
-        //This should not happended
-        BTK_ASSERT(win == nullptr);
-        return *win;
-    }
     Renderer *Widget::renderer() const{
         if(parent() == nullptr){
             if(is_window()){
                 auto w = const_cast<Widget*>(this);
-                return &(static_cast<WindowImpl*>(w)->render);
+                return (static_cast<Window*>(w)->_render);
             }
             return nullptr;
         }
-        return &(window()->render);
+        return (window()->_render);
     }
     //Get root
     Widget *Widget::root() const{
@@ -240,7 +233,7 @@ namespace Btk{
         return cur;
     }
     //Try to find the window
-    WindowImpl *Widget::window() const noexcept{
+    Window *Widget::window() const noexcept{
         if(_window != nullptr){
             //Try the cache
             return _window;
@@ -257,8 +250,8 @@ namespace Btk{
         
         if(cur->is_window()){
             //Is the window
-            BTK_ASSERT_CASTABLE(WindowImpl,cur);
-            _window = static_cast<WindowImpl*>(cur);
+            BTK_ASSERT_CASTABLE(Window,cur);
+            _window = static_cast<Window*>(cur);
             return _window;
         }
         return nullptr;
@@ -637,14 +630,14 @@ namespace Btk{
         if(focus_widget == nullptr and event.is_pressed()){
             //Try to GainFocus
             if(cur_widget != nullptr){
-                if(cur_widget->attribute().focus == FocusPolicy::Mouse){
+                if(cur_widget->attribute().focus_policy == FocusPolicy::Mouse){
                     set_focus_widget(cur_widget);
                 }
             }
         }
         else if(event.is_pressed()){
             //Already has a focused widget
-            if(focus_widget->attribute().focus == FocusPolicy::Mouse){
+            if(focus_widget->attribute().focus_policy == FocusPolicy::Mouse){
                 if(not focus_widget->rectangle().has_point(event.position())){
                     //Out of the widget's range
                     //Try reset the focus

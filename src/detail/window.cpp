@@ -16,24 +16,70 @@
 #include <Btk/layout.hpp>
 #include <Btk/themes.hpp>
 #include <Btk/event.hpp>
-#include <Btk/Btk.hpp>
 
 #include <algorithm>
 
 namespace Btk{
-    static RendererDevice *create_device(SDL_Window *_win){
-        auto dev = CreateDevice(_win);
-        if(dev == nullptr){
+    Window::Window(u8string_view title,int w,int h,Flags f){
+        Init();
+
+        auto sdl_win = CreateWindow(title,w,h,f);
+        initlialize(sdl_win);
+
+        win_flags = f;
+    }
+    Window::Window(const NativeWindow *native_handle){
+        SDL_Window *sdl_win = SDL_CreateWindowFrom(native_handle);
+        if(sdl_win == nullptr){
+            throwSDLError();
+        }
+        initlialize(sdl_win);
+    }
+    bool Window::mainloop(){
+        done();
+        return Btk::run() == 0;
+    }
+    void Window::set_title(u8string_view title){
+        SDL_SetWindowTitle(win,title.data());
+    }
+    void Window::resize(int w,int h){
+        SDL_SetWindowSize(win,w,h);
+    }
+    
+    void Window::set_icon(u8string_view file){
+        return set_icon(PixBuf::FromFile(file));
+    }
+    void Window::set_icon(const PixBuf &pixbuf){
+        SDL_SetWindowIcon(win,pixbuf.get());
+    }
+
+    PixBuf Window::pixbuf(){
+        return SDL_GetWindowSurface(win);
+    }
+    
+    int Window::w() const noexcept{
+        int w;
+        SDL_GetWindowSize(win,&w,nullptr);
+        return w;
+    }
+    int Window::h() const noexcept{
+        int h;
+        SDL_GetWindowSize(win,nullptr,&h);
+        return h;
+    }
+    void Window::initlialize(SDL_Window *_win){
+        winid = SDL_GetWindowID(_win);
+        win = _win;
+
+        attr.window = true;
+
+        //Construct renderer
+        _device = CreateDevice(_win);
+        if(_device == nullptr){
             throwRendererError("Couldnot create device");
         }
-        BTK_LOGINFO("[Window::Device] Create Device %s",get_typename(dev).c_str());
-        return dev;
-    }
-    WindowImpl::WindowImpl(SDL_Window *_win):
-        win(_win),
-        _device(create_device(_win)){
-        //Construct renderer
-        render.construct(*_device);
+        _render = new Renderer(*_device);
+
         //Set background color
         bg_color = theme().active.window;        
         attr.window = true;
@@ -46,8 +92,6 @@ namespace Btk{
         SDL_SetWindowData(win,"btk_impl",this);
         SDL_SetWindowData(win,"btk_dev",_device);
 
-        winid = SDL_GetWindowID(win);
-
         #ifndef NDEBUG
         debug_draw_bounds = (std::getenv("BTK_DRAW_BOUNDS") != nullptr);
         #endif
@@ -56,7 +100,11 @@ namespace Btk{
         set_rt_fps(BTK_RT_FPS);
         #endif
     }
-    WindowImpl::~WindowImpl(){
+    Window::~Window(){
+        //Unregister window
+        if(registered){
+            GetSystem()->unregister_window(this);
+        }
         //Stop timer if
         if(rt_draw_timer != 0){
             SDL_RemoveTimer(rt_draw_timer);
@@ -66,14 +114,14 @@ namespace Btk{
         clear_childrens();
         SDL_FreeCursor(cursor);
         //destroy the render before destroy the window
-        render.destroy();
+        delete _render;
         //destroy Device
         delete _device;
 
         SDL_DestroyWindow(win);
     }
     //Draw window
-    void WindowImpl::draw(Renderer &render,Uint32 timestamp){
+    void Window::draw(Renderer &render,Uint32 timestamp){
         
         BTK_LOGINFO("[Window]Draw %d",winid);
         
@@ -82,25 +130,11 @@ namespace Btk{
         render.clear(bg_color);
         //Draw each widget
         Group::draw(render,timestamp);
-        //Run the draw callback
-        auto iter = draw_cbs.begin();
-        while(iter != draw_cbs.end()){
-            if(not iter->call(render)){
-                //Remove it
-                iter = draw_cbs.erase(iter);
-            }
-        }
-
-        #ifndef NDEBUG
-        if(debug_draw_bounds){
-            draw_bounds();
-        }
-        #endif
-
+        //Flush to screen
         render.end();
     }
-    void WindowImpl::redraw(){
-        if(not visible){
+    void Window::redraw(){
+        if(not visible()){
             //Window is not visible
             return;
         }
@@ -110,8 +144,8 @@ namespace Btk{
             Uint32 durl = 1000 / fps_limit;
             if(current - last_redraw_ticks < durl and draw_event_counter != 0){
                 //Too fast,ignore it
-                BTK_LOGINFO("[Window] %d : Drawing too fast,ignored timestamp %d",winid,current);
-                BTK_LOGINFO("[Window] %d : Drawing pending %d",winid,draw_event_counter);
+                // BTK_LOGINFO("[Window] %d : Drawing too fast,ignored timestamp %d",winid,current);
+                // BTK_LOGINFO("[Window] %d : Drawing pending %d",winid,draw_event_counter);
                 return;
             }
         }
@@ -125,7 +159,7 @@ namespace Btk{
         event.user.windowID = id();
         SDL_PushEvent(&event);
     }
-    void WindowImpl::handle_draw(Uint32 ticks){
+    void Window::handle_draw(Uint32 ticks){
         draw_event_counter --;
         //redraw window
         if(fps_limit > 0){
@@ -141,50 +175,37 @@ namespace Btk{
             }
             last_draw_ticks = ticks;
         }
-        draw(*render,ticks);
+        draw(*_render,ticks);
     }
     //TryCloseWIndow
-    bool WindowImpl::on_close(){
-        if(not _signal_close.empty()){
-            return _signal_close();
+    bool Window::close(){
+        if(not IsMainThread()){
+        //send a close request
+            SDL_Event event;
+            SDL_zero(event);
+            event.type = SDL_WINDOWEVENT;
+            event.window.timestamp = SDL_GetTicks();
+            event.window.windowID = winid;
+            event.window.event = SDL_WINDOWEVENT_CLOSE;
+            SDL_PushEvent(&event);
+            return false;
         }
+        
+        bool cancel = false;
+        _signal_close(cancel);
+        if(cancel){
+            return false;
+        }
+        hide();
+        //Let user destroy window the window
+        _signal_closed.defer_emit();
+        //Remove window from system
+        GetSystem()->unregister_window(this);
+
         return true;
     }
-    void WindowImpl::close(){
-        hide();
-        
-        DeferCall([i = id()](){
-            WindowImpl *win = GetSystem()->get_window_s(i);
-            if(win == nullptr){
-                return;
-            }
-            GetSystem()->close_window(win);
-        });
-    }
     //DropFilecb
-    void WindowImpl::on_dropfile(u8string_view file){
-        _signal_dropfile(file);
-    }
-    void WindowImpl::on_resize(int new_w,int new_h){
-        _signal_resize(new_w,new_h);
-        //Ask layout to update
-        update_postion();
-    }
-    void WindowImpl::pixels_size(int *w,int *h){
-        SDL_GetWindowSize(win,w,h);
-        
-        //SDL_GL_GetDrawableSize(win,w,h);
-    }
-    void WindowImpl::buffer_size(int *w,int *h){
-        auto size = render->output_size();
-        if(w != nullptr){
-            *w = size.w;
-        }
-        if(h != nullptr){
-            *h = size.h;
-        }
-    }
-    void WindowImpl::query_dpi(float *ddpi,float *hdpi,float *vdpi){
+    void Window::query_dpi(float *ddpi,float *hdpi,float *vdpi){
         int idx = SDL_GetWindowDisplayIndex(win);
         if(idx == -1){
             throwSDLError();
@@ -193,8 +214,8 @@ namespace Btk{
             throwSDLError();
         }
     }
-    //update widgets postions
-    void WindowImpl::update_postion(){
+    // update widgets postions
+    void Window::update(){
         auto &widgets_list = childrens;
         if(widgets_list.empty()){
             return;
@@ -224,7 +245,12 @@ namespace Btk{
             handle(event);
         }
     }
-    void WindowImpl::set_rt_fps(Uint32 fps){
+    void Window::set_rect(const Rect &r){
+        Widget::set_rect(r);
+        update();
+        redraw();
+    }
+    void Window::set_rt_fps(Uint32 fps){
         fps = clamp(fps,0u,fps_limit);
 
         BTK_LOGINFO("[Window::set_rt_fps] Set Window %d => %d",winid,fps);
@@ -238,7 +264,7 @@ namespace Btk{
             rt_draw_timer = SDL_AddTimer(
                 1000 / rt_draw_fps,
                 [](Uint32 interval,void *win){
-                    return static_cast<WindowImpl*>(win)->rt_timer_cb(interval);
+                    return static_cast<Window*>(win)->rt_timer_cb(interval);
                 },this
             );
             //Check
@@ -248,7 +274,7 @@ namespace Btk{
             }
         }
     }
-    void WindowImpl::set_modal(bool v){
+    void Window::set_modal(bool v){
         BTK_LOGINFO("[Window::set_modal] %d => %s",winid,v?"true":"false");
         std::lock_guard locker(mtx);
         modal = v;
@@ -267,42 +293,98 @@ namespace Btk{
             }
         }
     }
-    void WindowImpl::move(int x,int y){
+    void Window::move(int x,int y){
         std::lock_guard locker(mtx);
         SDL_SetWindowPosition(win,x,y);
     }
-    void WindowImpl::raise(){
+    void Window::raise(){
         std::lock_guard locker(mtx);
         SDL_RaiseWindow(win);
     }
-    Point WindowImpl::position() const{
+    Point Window::position() const{
         int x,y;
         SDL_GetWindowPosition(win,&x,&y);
         return Point(x,y);
     }
-    Size  WindowImpl::size() const{
+    Size  Window::size() const{
         int w,h;
         SDL_GetWindowSize(win,&w,&h);
         return Size(w,h);
     }
-    Uint32 WindowImpl::rt_timer_cb(Uint32 last_interval){
+    Uint32 Window::rt_timer_cb(Uint32 last_interval){
         //May there has thread conflict
         redraw();
         return 1000 / rt_draw_fps;
     }
+    Point Window::mouse_position() const{
+        int wx,wy;
+        int x,y;
+        SDL_GetMouseState(&x,&y);
+        SDL_GetWindowPosition(win,&wx,&wy);
+        return Point(x - wx,y - wy);
+    }
+    void Window::set_fullscreen(bool val){
+        Uint32 flags;
+        if(val){
+            flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
+        }
+        else{
+            flags = 0;
+        }
+        if(SDL_SetWindowFullscreen(win,flags) != 0){
+            throwSDLError();
+        }
+    }
+    //set resize able
+    void Window::set_resizeable(bool val){
+        SDL_bool s_val;
+        if(val){
+            s_val = SDL_TRUE;
+        }
+        else{
+            s_val = SDL_FALSE;
+        }
+        SDL_SetWindowResizable(win,s_val);
+    }
+    void Window::set_boardered(bool val){
+        SDL_bool s_val;
+        if(val){
+            s_val = SDL_TRUE;
+        }
+        else{
+            s_val = SDL_FALSE;
+        }
+        SDL_SetWindowBordered(win,s_val);
+    }
+    //multi threading
+    void Window::lock(){
+        mtx.lock();
+    }
+    void Window::unlock(){
+        mtx.unlock();
+    }
+    //Show window and set Widget postions
+    void Window::done(){
+        update();
+        show();
+    }
+    void Window::show(){
+        Widget::show();
+    }
+    u8string_view Window::title() const{
+        return SDL_GetWindowTitle(win);
+    }
 }
 //Event Processing
 namespace Btk{
-    bool WindowImpl::handle(Event &event){
+    bool Window::handle(Event &event){
+        if(Widget::handle(event)){
+            return true;
+        }
         switch(event.type()){
-            case Event::SDL:{
+            case Event::SDLWindow:{
                 //Is SDL_WindowEvent
-                auto &e = event_cast<SDLEvent&>(event);
-                if(e.sdl_event->type == SDL_WINDOWEVENT){
-                    handle_windowev(*(e.sdl_event));
-                    return true;
-                }
-                break;
+                return handle_sdl(event);
             }
             case Event::Resize:{
                 auto &e = event_cast<ResizeEvent&>(event);
@@ -311,7 +393,11 @@ namespace Btk{
             }
             case Event::Show:{
                 SDL_ShowWindow(win);
-                update_postion();
+                if(not registered){
+                    registered = true;
+                    //Register to the event loop
+                    GetSystem()->register_window(this);
+                }
                 return true;
             }
             case Event::Hide:{
@@ -326,7 +412,8 @@ namespace Btk{
         }
         return _signal_event(event);
     }
-    void WindowImpl::handle_windowev(const SDL_Event &event){
+    bool Window::handle_sdl(Event &v){
+        const SDL_Event &event = *(static_cast<SDLEvent&>(v).sdl_event);
         switch(event.window.event){
             case SDL_WINDOWEVENT_EXPOSED:{
                 draw_event_counter ++;
@@ -334,26 +421,26 @@ namespace Btk{
                 break;
             }
             case SDL_WINDOWEVENT_HIDDEN:{
-                visible = false;
+                attr.hide = true;
                 break;
             }
             case SDL_WINDOWEVENT_SHOWN:{
-                visible = true;
+                attr.hide = false;
                 break;
             }
             case SDL_WINDOWEVENT_CLOSE:{
                 //Drop event if modal
                 if(modal){
-                    return ;
+                    return true;
                 }
                 //Close window;
-                GetSystem()->close_window(this);
+                close();
                 break;
             }
             case SDL_WINDOWEVENT_RESIZED:{
                 //window resize
-                set_rect(0,0,event.window.data1,event.window.data2);
-                on_resize(event.window.data1,event.window.data2);
+                set_rectangle(0,0,event.window.data1,event.window.data2);
+                // on_resize(event.window.data1,event.window.data2);
                 break;
             }
             case SDL_WINDOWEVENT_ENTER:{
@@ -396,9 +483,13 @@ namespace Btk{
                 _signal_moved(event.window.data1,event.window.data2);
                 break;
             }
+            default:{
+                return false;
+            }
         }
+        return true;
     }
-    bool WindowImpl::handle_motion(MotionEvent &event){
+    bool Window::handle_motion(MotionEvent &event){
         //Drop event if modal
         if(modal){
             return false;
@@ -425,7 +516,7 @@ namespace Btk{
         }
         return Group::handle_motion(event);
     }
-    bool WindowImpl::handle_mouse(MouseEvent &event){
+    bool Window::handle_mouse(MouseEvent &event){
         //Drop event if modal
         if(modal){
             return false;
@@ -447,7 +538,7 @@ namespace Btk{
         }
         return Group::handle_mouse(event);
     }
-    bool WindowImpl::handle_drop(DropEvent &event){
+    bool Window::handle_drop(DropEvent &event){
         //Drop event if modal
         if(modal){
             return false;
@@ -463,16 +554,16 @@ namespace Btk{
 
         Group::handle_drop(event);
         
-        if(event.type() == Event::DropFile){
-            on_dropfile(event.text);
-        }
+        // if(event.type() == Event::DropFile){
+        //     on_dropfile(event.text);
+        // }
         return true;
     }
     void PushEvent(Event *event,Window &window,void (*deleter)(void *)){
         if(event == nullptr){
             return;
         }
-        Uint32 id = window.impl()->id();
+        Uint32 id = window.id();
         //Push it into queue
         DeferCall([id,event,deleter](){
             //Make cleanup
@@ -494,196 +585,37 @@ namespace Btk{
     }
 }
 namespace Btk{
-    Window::Window(u8string_view title,int w,int h,Flags f){
-        Init();
-
-        pimpl = CreateWindow(title,w,h,f);
-        // pimpl->container.window = pimpl;
-        SDL_SetWindowData(pimpl->win,"btk_win",this);
-        winid = pimpl->id();
-    }
-    Window::Window(const NativeWindow *native_handle){
-        SDL_Window *sdl_window = SDL_CreateWindowFrom(native_handle);
-        if(sdl_window == nullptr){
-            pimpl = nullptr;
-            throwSDLError();
-        }
-        pimpl = GetSystem()->create_window(sdl_window);
-        // pimpl->container.window = pimpl;
-        SDL_SetWindowData(pimpl->win,"btk_win",this);
-        winid = pimpl->id();
-    }
-    bool Window::mainloop(){
-        done();
-        return Btk::run() == 0;
-    }
-    Window::SignalClose &Window::signal_close(){
-        return pimpl->signal_close();
-    }
-    Window::SignalEvent &Window::signal_event(){
-        return pimpl->signal_event();
-    }
-    Window::SignalResize &Window::signal_resize(){
-        return pimpl->signal_resize();
-    }
-    Window::SignalDropFile& Window::signal_dropfile(){
-        return pimpl->signal_dropfile();
-    }
-    void Window::set_title(u8string_view title){
-        SDL_SetWindowTitle(pimpl->win,title.data());
-    }
-    void Window::draw(){
-        pimpl->redraw();
-    }
-    void Window::show(){
-        SDL_ShowWindow(pimpl->win);
-    }
-    void Window::close(){
-        //send a close request
-        SDL_Event event;
-        SDL_zero(event);
-        event.type = SDL_WINDOWEVENT;
-        event.window.timestamp = SDL_GetTicks();
-        event.window.windowID = winid;
-        event.window.event = SDL_WINDOWEVENT_CLOSE;
-        SDL_PushEvent(&event);
-    }
-    void Window::move(int x,int y){
-        SDL_SetWindowPosition(pimpl->win,x,y);
-    }
-    void Window::resize(int w,int h){
-        SDL_SetWindowSize(pimpl->win,w,h);
-    }
-    
-    void Window::set_icon(u8string_view file){
-        return set_icon(PixBuf::FromFile(file));
-    }
-    void Window::set_icon(const PixBuf &pixbuf){
-        SDL_SetWindowIcon(pimpl->win,pixbuf.get());
-    }
-
-    PixBuf Window::pixbuf(){
-        return SDL_GetWindowSurface(pimpl->win);
-    }
-    
-    int Window::w() const noexcept{
-        int w;
-        SDL_GetWindowSize(pimpl->win,&w,nullptr);
-        return w;
-    }
-    int Window::h() const noexcept{
-        int h;
-        SDL_GetWindowSize(pimpl->win,nullptr,&h);
-        return h;
-    }
     //add widget
-    bool Window::add(Widget *ptr){
-        return pimpl->add(ptr);
-    }
-    //Window exists
-    bool Window::exists() const{
-        //Lock maps
-        return GetSystem()->get_window_s(winid) == pimpl;
-    }
     //update widgets postions
-    void Window::update(){
-        pimpl->update_postion();
-    }
     //Set cursor
-    void Window::set_cursor(){
-        SDL_FreeCursor(pimpl->cursor);
-        pimpl->cursor = SDL_CreateSystemCursor(
-            SDL_SYSTEM_CURSOR_ARROW
-        );
-        SDL_Window *win = SDL_GetMouseFocus();
-        if(win != nullptr){
-            if(winid == SDL_GetWindowID(win)){
-                //Window has focus
-                //reset cursor right now
-                SDL_SetCursor(pimpl->cursor);
-            }
-        }
-    }
-    void Window::set_cursor(const PixBuf &pixbuf,int hotx,int hoty){
-        SDL_FreeCursor(pimpl->cursor);
-        pimpl->cursor = SDL_CreateColorCursor(
-            pixbuf.get(),hotx,hoty
-        );
-        SDL_Window *win = SDL_GetMouseFocus();
-        if(win != nullptr){
-            if(winid == SDL_GetWindowID(win)){
-                //Window has focus
-                //reset cursor right now
-                SDL_SetCursor(pimpl->cursor);
-            }
-        }
-    }
-    void Window::set_fullscreen(bool val){
-        Uint32 flags;
-        if(val){
-            flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
-        }
-        else{
-            flags = 0;
-        }
-        if(SDL_SetWindowFullscreen(pimpl->win,flags) != 0){
-            throwSDLError();
-        }
-    }
-    //set resize able
-    void Window::set_resizeable(bool val){
-        SDL_bool s_val;
-        if(val){
-            s_val = SDL_TRUE;
-        }
-        else{
-            s_val = SDL_FALSE;
-        }
-        SDL_SetWindowResizable(pimpl->win,s_val);
-    }
-    void Window::set_boardered(bool val){
-        SDL_bool s_val;
-        if(val){
-            s_val = SDL_TRUE;
-        }
-        else{
-            s_val = SDL_FALSE;
-        }
-        SDL_SetWindowBordered(pimpl->win,s_val);
-    }
-    //multi threading
-    void Window::lock(){
-        pimpl->mtx.lock();
-    }
-    void Window::unlock(){
-        pimpl->mtx.unlock();
-    }
-    //Show window and set Widget postions
-    void Window::done(){
-        pimpl->show();
-    }
-    Font Window::font() const{
-        return pimpl->font();
-    }
-    Size Window::size() const{
-        return pimpl->size();
-    }
-    Point Window::position() const{
-        return pimpl->position();
-    }
-    u8string_view Window::title() const{
-        return SDL_GetWindowTitle(pimpl->win);
-    }
-    void Window::dump_tree(FILE *output) const{
-        pimpl->dump_tree(output);
-    }
-    Container &Window::container() const{
-        return *pimpl;
-    }
-    void *Window::internal_data(const char *key){
-        return pimpl->userdata(key);
-    }
-
+    // void Window::set_cursor(){
+    //     SDL_FreeCursor(cursor);
+    //     cursor = SDL_CreateSystemCursor(
+    //         SDL_SYSTEM_CURSOR_ARROW
+    //     );
+    //     SDL_Window *win = SDL_GetMouseFocus();
+    //     if(win != nullptr){
+    //         if(winid == SDL_GetWindowID(win)){
+    //             //Window has focus
+    //             //reset cursor right now
+    //             SDL_SetCursor(cursor);
+    //         }
+    //     }
+    // }
+    // void Window::set_cursor(const PixBuf &pixbuf,int hotx,int hoty){
+    //     SDL_FreeCursor(cursor);
+    //     cursor = SDL_CreateColorCursor(
+    //         pixbuf.get(),hotx,hoty
+    //     );
+    //     SDL_Window *win = SDL_GetMouseFocus();
+    //     if(win != nullptr){
+    //         if(winid == SDL_GetWindowID(win)){
+    //             //Window has focus
+    //             //reset cursor right now
+    //             SDL_SetCursor(cursor);
+    //         }
+    //     }
+    // }
 }
 namespace Btk{
     Size GetScreenSize(int index){
@@ -693,7 +625,7 @@ namespace Btk{
         }
         return {mode.w,mode.h};
     }
-    WindowImpl *CreateWindow(u8string_view title,int w,int h,WindowFlags flags){
+    SDL_Window *CreateWindow(u8string_view title,int w,int h,WindowFlags flags){
         auto has_flag = [](WindowFlags f1,WindowFlags f2){
             return (f1 & f2) == f2;
         };
@@ -750,16 +682,16 @@ namespace Btk{
         if(sdl_win == nullptr){
             throwSDLError();
         }
-        return GetSystem()->create_window(sdl_win);
+        return sdl_win;
     }
-    WindowImpl *GetKeyboardFocus(){
+    Window *GetKeyboardFocus(){
         SDL_Window *win = SDL_GetKeyboardFocus();
         if(win == nullptr){
             return nullptr;
         }
         return GetSystem()->get_window_s(SDL_GetWindowID(win));
     }
-    WindowImpl *GetMouseFocus(){
+    Window *GetMouseFocus(){
         SDL_Window *win = SDL_GetMouseFocus();
         if(win == nullptr){
             return nullptr;

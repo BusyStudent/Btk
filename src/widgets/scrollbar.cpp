@@ -226,6 +226,10 @@ namespace Btk{
     void  SliderBar::draw(Renderer &r,Uint32){
         auto rect = content_rect();
         auto circle = content_circle();
+
+        r.save();
+        r.set_antialias(false);
+
         //Draw background
         r.draw_rounded_box(rect,bar_radius,theme().active.background);
         r.draw_rounded_rect(rect,bar_radius,theme().active.border);
@@ -259,7 +263,7 @@ namespace Btk{
             r.restore();
         }
         //Cirlce done
-
+        r.restore();
         //Process circle content
         if(pressed){
             r.fill_circle(circle,circle_radius,theme().active.highlight);

@@ -8,6 +8,7 @@
 #include <Btk/platform/fs.hpp>
 #include <Btk/detail/window.hpp>
 #include <Btk/detail/scope.hpp>
+#include <Btk/detail/utils.hpp>
 #include <Btk/detail/core.hpp>
 #include <Btk/exception.hpp>
 #include <Btk/window.hpp>
@@ -183,14 +184,12 @@ namespace X11{
 namespace Btk{
 namespace X11{
     Constructable<DBus::Connection> dbus_con;
-    bool has_zenity = false;
-    bool has_kdialog = false;
     //Map X11's window to btk's wiondow
-    static Constructable<std::map<XWindow,WindowImpl*>> wins_map;
+    static Constructable<std::map<XWindow,Window*>> wins_map;
     static XDisplay *x_display = nullptr;
 
 
-    static void on_add_window(WindowImpl *win){
+    static void on_add_window(Window *win){
         //set window 
         auto [display,window] = GetXContext(win->sdl_window());
 
@@ -199,7 +198,7 @@ namespace X11{
         //Add to map
         wins_map->emplace(std::make_pair(window,win));
     }
-    static void on_del_window(WindowImpl *win){
+    static void on_del_window(Window *win){
         //Remove it
         wins_map->erase(BTK_X_WINDOW(win->x_window));
     }
@@ -207,20 +206,9 @@ namespace X11{
         if(x_display != nullptr){
             return x_display;
         }
-        SDL_Window *win = SDL_CreateWindow(
-            nullptr,
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED,
-            100,
-            100,
-            SDL_WINDOW_HIDDEN
-        );
-        if(win == nullptr){
-            throwSDLError();
-        }
-        auto [display,window] = GetXContext(win);
-
-        SDL_DestroyWindow(win);
+        auto w = AllocWindow();
+        auto [display,window] = GetXContext(w->sdl_window());
+        FreeWindow(w);
 
         x_display = display;
         return x_display;
@@ -252,29 +240,12 @@ namespace X11{
         #endif
         XSetErrorHandler(XErrorHandler);
         u8string buf;
-        //Find zenity and kdialog
-        ForPath([&](u8string_view fdir){
-            buf = fdir;
-            //add it
-            if(buf.back() != '/'){
-                buf.push_back('/');
-            }
-            if(not has_zenity){
-                has_zenity = exists(buf + "zenity");
-            }
-            if(not has_kdialog){
-                has_kdialog = exists(buf + "kdialog");
-            }
-            if(has_kdialog and has_zenity){
-                BTK_LOGINFO("Zenity and kdialog found");
-                return false;
-            }
-            return true;
-        });
-        //Hook window create
+
+        //Hook window add / remove
         wins_map.construct();
 
-        Instance().signal_window_created.connect(on_add_window);
+        GetSystem()->signal_window_registered.connect(on_add_window);
+        GetSystem()->signal_window_unregistered.connect(on_del_window);
 
         SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
 
@@ -465,22 +436,22 @@ namespace Btk{
 //Some platform depended operations for Window
 namespace Btk{
     //< Note This method is not impl yet
-    void Window::set_transparent(float value){
-        using namespace X11;
-        auto [display,window] = GetXContext(pimpl->win);
+    // void Window::set_transparent(float value){
+    //     using namespace X11;
+    //     auto [display,window] = GetXContext(pimpl->win);
         
-        XVisualInfo vinfo;
-        if(not XMatchVisualInfo(display,DefaultScreen(display),32,TrueColor,&vinfo)){
-            //Oh no
-            throwRuntimeError("XMatchVisualInfo failed");
-            return;
-        }
-        XSetWindowAttributes attr;
-        attr.background_pixel = 0;
-        attr.border_pixel = 0;
-        XChangeWindowAttributes(display,window,CWBorderPixel | CWBackPixel,&attr);
-        pimpl->bg_color.a = 0;
-    }
+    //     XVisualInfo vinfo;
+    //     if(not XMatchVisualInfo(display,DefaultScreen(display),32,TrueColor,&vinfo)){
+    //         //Oh no
+    //         throwRuntimeError("XMatchVisualInfo failed");
+    //         return;
+    //     }
+    //     XSetWindowAttributes attr;
+    //     attr.background_pixel = 0;
+    //     attr.border_pixel = 0;
+    //     XChangeWindowAttributes(display,window,CWBorderPixel | CWBackPixel,&attr);
+    //     pimpl->bg_color.a = 0;
+    // }
     bool HideConsole(){
         return daemon(1,0) == 0;
     }

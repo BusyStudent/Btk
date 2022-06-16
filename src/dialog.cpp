@@ -12,6 +12,7 @@
 
 #if BTK_X11
     #include <Btk/platform/popen.hpp>
+    #include <Btk/platform/fs.hpp>
     #include <sys/wait.h>
     #include "./platform/x11/internal.hpp"
 #elif BTK_WIN32
@@ -49,6 +50,47 @@ namespace{
                 return;
             }
         }
+    }
+
+    bool has_native_dialog_detected = false;
+    bool _has_kdialog = false;
+    bool _has_zenity = false;
+
+    void detect_native_dialog_support(){
+        //Check if we can use native dialog
+        Btk::u8string buf;
+        Btk::ForPath([&](auto fdir){
+            buf = fdir;
+            //add it
+            if(buf.back() != '/'){
+                buf.push_back('/');
+            }
+            if(not _has_zenity){
+                _has_zenity = Btk::exists(buf + "zenity");
+            }
+            if(not _has_kdialog){
+                _has_kdialog = Btk::exists(buf + "kdialog");
+            }
+            if(_has_kdialog and _has_zenity){
+                BTK_LOGINFO("Zenity and kdialog found");
+                return false;//< break
+            }
+            return true;
+        });
+        has_native_dialog_detected = true;
+    }
+
+    bool has_kdialog(){
+        if(not has_native_dialog_detected){
+            detect_native_dialog_support();
+        }
+        return _has_kdialog;
+    }
+    bool has_zenity(){
+        if(not has_native_dialog_detected){
+            detect_native_dialog_support();
+        }
+        return _has_zenity;
     }
 }
 #endif
@@ -166,7 +208,7 @@ namespace Btk{
         if(native_impl == nullptr){
             native_impl = new _Native;
         }
-        if(X11::has_kdialog){
+        if(has_kdialog()){
             //Has kdialog
             u8string_view cmd;
             switch(_flag){
@@ -194,7 +236,7 @@ namespace Btk{
                 );
             }
         }
-        else if(X11::has_zenity){
+        else if(has_zenity()){
             //Has zenity
             u8string_view cmd;
             switch(_flag){
@@ -406,7 +448,7 @@ namespace Btk{
         if(native_impl == nullptr){
             native_impl = new _Native;
         }
-        if(X11::has_kdialog){
+        if(has_kdialog()){
             //Parse args
             u8string_view kind;
             if((_flags & Open) == Open){
@@ -427,7 +469,7 @@ namespace Btk{
                 native_impl->pstream = popen("kdialog",kind,"--title",_title);
             }
         }
-        else if(X11::has_zenity){
+        else if(has_zenity()){
             //Parse args
             StringRefList reflist = {"zenity","--file-selection"};
             if((_flags & Multiple) == Multiple){

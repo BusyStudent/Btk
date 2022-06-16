@@ -229,6 +229,20 @@ namespace Btk{
      * @return BTKAPI 
      */
     BTKAPI void Quit();
+    /**
+     * @brief Helper for initializing / quitting Btk
+     * 
+     */
+    class Library{
+        public:
+            Library(){
+                Init();
+            }
+            ~Library(){
+                Quit();
+            }
+            Library(const Library &) = delete;
+    };
 }
 #endif
 

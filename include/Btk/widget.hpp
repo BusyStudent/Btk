@@ -23,8 +23,6 @@ namespace Btk{
     class Widget;
     class Container;
 
-    class WindowImpl;
-
     struct KeyEvent;
     struct DragEvent;
     struct DropEvent;
@@ -99,7 +97,7 @@ namespace Btk{
         bool container = false;//<Is container
         bool disable = false;//<The widget is disabled?
         bool layout = false;//<Is layout?
-        FocusPolicy focus = FocusPolicy::None;//<Default the widget couldnot get focus
+        FocusPolicy focus_policy = FocusPolicy::None;//<Default the widget couldnot get focus
     };
     class BTKAPI Widget:public HasSlots{
         public:
@@ -155,12 +153,6 @@ namespace Btk{
                 };
                 
             };
-            /**
-             * @brief Return The widget's master
-             * 
-             * @return Window ref
-             */
-            Window &master() const;
             //Set widget rect
             void set_rect(int x,int y,int w,int h){
                  set_rect({x,y,w,h});
@@ -264,29 +256,11 @@ namespace Btk{
             
             Widget *root() const;
             /**
-             * @brief Translate Position in locale widget to root widget
+             * @brief Get UserData
              * 
-             * @tparam T 
-             * @param p 
-             * @return PointImpl<T> 
+             * @param name The name of the data
+             * @return void* 
              */
-            template<class T = int>
-            PointImpl<T> map_to_root(const PointImpl<T> &p){
-                return p.translate(x(),y());
-            }
-            template<class T = int>
-            RectImpl<T> map_to_root(const RectImpl<T> &p){
-                return p.translate(x(),y());
-            }
-            template<class T = int>
-            PointImpl<T> map_to_self(const PointImpl<T> &p){
-                return p.translate(-x(),-y());
-            }
-            template<class T = int>
-            RectImpl<T> map_to_self(const RectImpl<T> &p){
-                return p.translate(-x(),-y());
-            }
-            // TODO Set/Get Userdata?
             void *userdata(const char *name);
             
             const char *name() const noexcept{
@@ -327,13 +301,18 @@ namespace Btk{
              * 
              */
             void defer_delete();
+
+            template<class T>
+            bool can_cast() const noexcept{
+                return dynamic_cast<T*>(this) != nullptr;
+            }
         protected:
             /**
              * @brief Get current window
              * 
-             * @return WindowImpl* 
+             * @return Window* 
              */
-            WindowImpl *window() const noexcept;
+            Window *window() const noexcept;
             /**
              * @brief Get current window's renderer
              * 
@@ -404,10 +383,10 @@ namespace Btk{
             Widget *_parent = nullptr;//< Parent
             RefPtr<Theme> _theme;//< Theme
             Cursor        _cursor;//< Cursor
-            mutable WindowImpl *_window = nullptr;//<Window pointer
+            mutable Window *_window = nullptr;//<Window pointer
         friend class Window;
         friend class Layout;
-        friend class WindowImpl;
+        friend class Window;
         friend class Container;
         friend void  PushEvent(Event *,Widget &);
     };

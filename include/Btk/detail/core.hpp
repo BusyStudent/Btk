@@ -20,7 +20,7 @@
 
 
 namespace Btk{
-    class WindowImpl;
+    class Window;
     class RendererDevice;
     struct GenericHandler{
         //Function pointer
@@ -123,9 +123,8 @@ namespace Btk{
         static bool    is_running;
         
         //Window Register
-        void register_window(WindowImpl *impl);
-        void unregister_window(WindowImpl *impl);
-        void close_window(WindowImpl *impl);
+        void register_window(Window *impl);
+        void unregister_window(Window *impl);
         //Handle event
         inline void run();
         /**
@@ -149,15 +148,15 @@ namespace Btk{
         //defercall in eventloop
         void defer_call(void(* fn)(void*),void *data = nullptr);
         //Get window from WindowID
-        WindowImpl *get_window(Uint32 winid);//< It is thread unsafe
-        WindowImpl *get_window_s(Uint32 winid);//< It is thread safe
-        WindowImpl *create_window(SDL_Window *win);
+        Window *get_window(Uint32 winid);//< It is thread unsafe
+        Window *get_window_s(Uint32 winid);//< It is thread safe
 
         void regiser_eventcb(Uint32 evid,EventHandler::FnPtr ptr,void *data = nullptr);
         bool try_handle_exception(std::exception *exp);
 
-        std::unordered_map<Uint32,WindowImpl*> wins_map;//Windows map
+        std::unordered_map<Uint32,Window*> wins_map;//Windows map
         std::unordered_map<Uint32,EventHandler> evcbs_map;//Event callbacks map
+        std::vector<Window*> temp_wins;//Temporary windows
         // std::recursive_mutex map_mtx;
         SpinLock map_mtx;
         
@@ -170,9 +169,9 @@ namespace Btk{
         bool (*handle_exception)(std::exception *) = nullptr;
         //called atexit
         std::list<GenericHandler> idle_handlers;//< Called on idle
-        //<The signal will be init before the window will be removed
-        Signal<void(WindowImpl *)> signal_window_closed;
-        Signal<void(WindowImpl *)> signal_window_created;
+        //<The signal will be emit before the window will be removed
+        Signal<void(Window *)> signal_window_registered;
+        Signal<void(Window *)> signal_window_unregistered;
         Signal<void()> signal_clipboard_update;
         Signal<void()> signal_audio_device_added;
         Signal<void()> signal_audio_device_removed;
@@ -250,7 +249,7 @@ namespace Btk{
      * @return BTKAPI* 
      */
     BTKAPI RendererDevice *CreateDevice(SDL_Window *window);
-    BTKAPI WindowImpl     *GetWindowFromID(Uint32 windowid);
+    // BTKAPI WindowImpl     *GetWindowFromID(Uint32 windowid);
 };
 
 

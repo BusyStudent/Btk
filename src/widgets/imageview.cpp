@@ -22,6 +22,8 @@ namespace Btk{
     }
     ImageView::~ImageView() = default;
     void ImageView::draw(Renderer &render,Uint32){
+        render.save();
+        render.set_antialias(false);
         if(dirty){
             //Cleanup
             texture = nullptr;
@@ -55,6 +57,7 @@ namespace Btk{
             render.stroke_color(boarder_color);
             render.stroke();
         }
+        render.restore();
     }
     void ImageView::set_image(const PixBuf &buf){
         pixelbuf = buf.clone();

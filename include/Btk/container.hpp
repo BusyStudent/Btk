@@ -77,7 +77,7 @@ namespace Btk{
     class BTKAPI Group:public Container{
         public:
             Group(){
-                attr.focus = FocusPolicy::Mouse;
+                attr.focus_policy = FocusPolicy::Mouse;
             }
             ~Group() = default;
         public:

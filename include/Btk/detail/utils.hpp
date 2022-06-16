@@ -13,13 +13,13 @@ namespace Btk{
      * @param exclude 
      * @return WindowImpl* 
      */
-    WindowImpl *AllocWindow(WindowFlags req_flags = {},WindowFlags exclude = {});
+    Window *AllocWindow(WindowFlags req_flags = {},WindowFlags exclude = {});
     /**
-     * @brief Free a Window from pool
+     * @brief Put a temporary Window back to pool
      * 
      * @param window 
      */
-    void        FreeWindow(WindowImpl *window);
+    void    FreeWindow(Window *window);
 }
 
 #endif // _BTKIMPL_UTILS_HPP_

@@ -244,7 +244,7 @@ static void  STB_TEXTEDIT_LAYOUTROW(void *result,STB_TEXTEDIT_STRING *s,int inde
 
 namespace Btk{
     LineEdit::LineEdit(){
-        attr.focus = FocusPolicy::Mouse;
+        attr.focus_policy = FocusPolicy::Mouse;
         // cur_text = "Hello";
     }
     LineEdit::~LineEdit() = default;
@@ -296,11 +296,7 @@ namespace Btk{
                     //Delete selection
                     auto [start,end] = sel_range();
 
-                    cur_text.erase(
-                        start,
-                        end - start
-                    );
-
+                    do_delete(start,end);
                     cur_pos = start;
 
                     clear_sel();
@@ -310,7 +306,7 @@ namespace Btk{
                 }
                 else if(not cur_text.empty() and cur_pos > 0){
                     //Normal delete
-                    cur_text.erase(cur_pos - 1);
+                    do_erase(cur_pos - 1);
                     if(cur_pos != 0){
                         cur_pos --;
                     }
@@ -366,10 +362,7 @@ namespace Btk{
                     SetClipboardText(selection());
                     //Remove it
                     auto [start,end] = sel_range();
-                    cur_text.erase(
-                        start,
-                        end - start
-                    );
+                    do_delete(start,end);
                     cur_pos = start;
 
                     clear_sel();
@@ -426,6 +419,13 @@ namespace Btk{
         if(has_selection()){
             auto [start,end] = sel_range();
 
+            //Has selection, notify before delete
+            if(not _signal_value_deleted.empty()){
+                _signal_value_deleted(cur_text.substr(start,end - start));
+            }
+            
+            BTK_LOGINFO("LineEdit::delete "BTK_CYELLOW("[%d,%d)"),int(start),int(end));
+
             cur_text.replace(
                 start,
                 end - start,
@@ -445,6 +445,17 @@ namespace Btk{
         redraw();
         _signal_value_changed.defer_emit();
     }
+    void LineEdit::do_delete(size_t start,size_t end){
+        BTK_LOGINFO("LineEdit::delete "BTK_CYELLOW("[%d,%d)"),int(start),int(end));
+        //Notify if has signal
+        if(not _signal_value_deleted.empty()){
+            _signal_value_deleted(cur_text.substr(start,end - start));
+        }
+        cur_text.erase(start,end - start);
+        //Notify
+        redraw();
+        _signal_value_changed.defer_emit();
+    }
     void LineEdit::clear_sel(){
         has_sel = false;
         sel_beg = 0;
@@ -456,9 +467,13 @@ namespace Btk{
         redraw();
         _signal_value_changed.defer_emit();
     }
+    void LineEdit::set_placeholder(u8string_view txt){
+        placeholder = txt;
+        redraw();
+    }
     void LineEdit::draw(Renderer &p,Uint32){
-
         p.save();
+        p.set_antialias(false);
         //Boarder and background
         p.draw_box(rect,theme().active.background);
         if(has_focus){
@@ -474,8 +489,14 @@ namespace Btk{
         // p.use_font(font());
         p.use_font(font());
         p.text_align(align);
+        //Draw text
         if(not cur_text.empty()){
             p.draw_text(text_pos.x,text_pos.y,cur_text,theme().active.text);
+        }
+        else if(not placeholder.empty()){
+            //Draw place holder
+            //Gray color
+            p.draw_text(text_pos.x,text_pos.y,placeholder,Color(128,128,128));
         }
         if(show_cur){
             //Draw cursor
